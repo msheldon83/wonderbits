@@ -1,0 +1,28 @@
+import type { RunOutcome } from '../runtime/contract';
+
+export type Tone = 'info' | 'success' | 'problem';
+
+/** One short sentence per outcome, in words a nine-year-old reads easily. */
+export function outcomeMessage(outcome: RunOutcome, stepNumber: number | null): { tone: Tone; text: string } {
+  const at = stepNumber ? ` at step ${stepNumber}` : '';
+  switch (outcome.status) {
+    case 'success':
+      return { tone: 'success', text: 'You did it! The robot reached the flag.' };
+    case 'incomplete':
+      return { tone: 'problem', text: 'The robot stopped before the flag. Does it need more steps?' };
+    case 'blocked':
+      switch (outcome.reason) {
+        case 'wall':
+          return { tone: 'problem', text: `Bump! Something is in the way${at}.` };
+        case 'gap':
+          return { tone: 'problem', text: `Whoa! There is a gap${at}. The robot stopped just in time.` };
+        case 'edge':
+          return { tone: 'problem', text: `The robot cannot leave the island${at}.` };
+      }
+      break;
+    case 'halted':
+      return { tone: 'problem', text: 'That program ran too long, so the robot stopped.' };
+    case 'error':
+      return { tone: 'problem', text: 'Something went wrong. Press Reset and try again.' };
+  }
+}

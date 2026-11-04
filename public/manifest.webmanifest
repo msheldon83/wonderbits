@@ -1,0 +1,9 @@
+{
+  "name": "Wonderbits",
+  "short_name": "Wonderbits",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#eef6ef",
+  "theme_color": "#cfe8d4"
+}
