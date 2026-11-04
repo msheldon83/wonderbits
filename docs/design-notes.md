@@ -1,7 +1,8 @@
 # Design notes
 
 Decisions and deviations recorded while building, as the plan's agent
-handoff contract requires. Newest first.
+handoff contract requires. The plan itself is in [plan.md](plan.md); its build
+sequence is section 10. Newest first.
 
 ## Build step 2: vertical slice
 

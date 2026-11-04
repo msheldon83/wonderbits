@@ -4,6 +4,10 @@ A visual-first programming game for children aged 8 to 12. Kids guide a robot
 across an isometric island by building programs from cards. Every card is a
 real line of TypeScript they can look at, and later edit.
 
+The product and technical plan is in [docs/plan.md](docs/plan.md). It covers
+the phases, the build sequence, the architecture, and the exit gate for the
+first child test. Read it before starting new work.
+
 This repository is at **build step 2 of the plan: the vertical slice**. It
 proves the architecture and the game feel with one puzzle, one command, and a
 temporary vector robot. See [docs/design-notes.md](docs/design-notes.md) for
