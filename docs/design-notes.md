@@ -4,6 +4,33 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Plan change: top-down 2D board (2026-11-05)
+
+The plan dropped the isometric board for a top-down 2D grid with square
+tiles. Isometric made AI asset generation too hard: every object needed a
+2:1 projection and depth sorting, and the robot needed four facings with a
+full pose set each. Top-down needs one drawing per object, and one robot
+sprite pointing up is rotated in code. Up is always north, so Rotate CW is
+clockwise on screen.
+
+What this means for the code:
+
+- **No change** to the IR, simulation, runtime contract, interpreter, TS
+  projection, lesson schema, validator or editor. They never knew about the
+  projection.
+- **Replace** `src/render/iso.ts`, the floor, wall and robot art in
+  `src/render/art.tsx`, and the projection parts of `src/render/controller.ts`
+  with a square-grid layout. The sequencer, the Board's layer structure and
+  the Web Animations approach stay.
+- **Rotation becomes a transform.** The controller rotates the robot element
+  by 90 degrees per turn instead of swapping front and back views and
+  mirroring.
+- **The level layout rule below no longer applies.** It was specific to
+  isometric overlap.
+
+The plan's prompt list for ChatGPT art is rewritten for top-down square
+assets in section 3.
+
 ## Build step 2: vertical slice
 
 ### What is built
@@ -62,7 +89,7 @@ sequence is section 10. Newest first.
 - **Only the forest theme exists.** The theme interface is in place. The
   frozen theme and the identical-trace check across themes come in step 5.
 
-### Level layout rule learned from the first screenshots
+### Level layout rule learned from the first screenshots (isometric only, now obsolete)
 
 A wall directly behind the goal, one tile up and one tile left in grid terms,
 lines up vertically with it on screen. The flag then looks planted on the
@@ -73,6 +100,9 @@ tile, tall enough to clear the robot's head.
 
 ### Open items for step 3
 
-- Measure the `?perf` page on a real iPad and record the numbers here.
+- Replace the isometric renderer with the top-down grid, as described in the
+  plan change above. Do this first; the rest of step 3 builds on it.
+- Measure the `?perf` page on a real iPad and record the numbers here, after
+  the renderer swap.
 - Rotation cue with a curved arrow, and a quick facing check with the tester.
 - Undo and redo, Step and Pause buttons, landscape and portrait polish.

@@ -1,14 +1,12 @@
 # Visual-First Programming: Revised Product and Technical Plan
 
-> Repository copy of the plan doc at
-> https://claude.ai/artifact/Kk99psiY6HF2PzzB2Nv2NR, taken on 2026-11-04.
-> The doc's two drawings are redrawn here as Mermaid diagrams. When the plan
-> changes, update both copies. Build progress is tracked in
-> [design-notes.md](design-notes.md), not here.
+> This file is the master copy of the plan. The Claude Doc it started as has
+> been retired. Build progress is tracked in [design-notes.md](design-notes.md),
+> not here. Revised 2026-11-05: the board is top-down 2D, not isometric.
 
 ## Decision summary
 
-Build a polished isometric robot-puzzle MVP first, with a visual program IR as the single source of truth and TypeScript shown as read-only "see the code". Validate puzzle play with the first child tester before writing the full curriculum, Game Workshop, or AI features.
+Build a polished top-down 2D robot-puzzle MVP first, with a visual program IR as the single source of truth and TypeScript shown as read-only "see the code". Validate puzzle play with the first child tester before writing the full curriculum, Game Workshop, or AI features.
 
 Purpose: approve the product direction and the Phase 1 boundary before handing work to coding agents. This is a personal project for a nephew first; it may later be open-sourced or offered online, so the architecture keeps those doors open without building for them now.
 
@@ -19,6 +17,7 @@ Purpose: approve the product direction and the Phase 1 boundary before handing w
 | Source of truth | Annotated TypeScript files with a limited decoder | Visual IR is authoritative through Phase 3; TypeScript is a deterministic read-only projection |
 | Phase 1 execution | Compile and run TypeScript in a Worker | Interpreter over the IR; no TypeScript execution until Phase 2 or later |
 | Runtime boundary | Worker, with a note that it is not a security boundary | Message-passing runtime contract from day one, so a cross-origin sandboxed iframe drops in later |
+| View | 2.5D isometric board | Top-down 2D grid with square tiles; one robot sprite rotated in code for all four facings |
 | Turn commands | Turn left, turn right | Rotate clockwise, rotate counter-clockwise, with on-screen rotation cues |
 | Renderer | Phaser | DOM and SVG board with CSS animation; a canvas layer only if effects need it |
 | Art | Unspecified owner | AI-generated art from a prompt list in this plan, vector style matching the concept sketch |
@@ -34,11 +33,11 @@ Purpose: approve the product direction and the Phase 1 boundary before handing w
 | --- | --- |
 | Product progression | Puzzle Academy, then a modest visual Game Workshop, then AI hints growing into an AI creative partner, then a hybrid TypeScript editor. |
 | First release | An MVP set of sequencing puzzles using Forward, Rotate CW and Rotate CCW. No loops or conditionals. The full curriculum is written only after MVP puzzle play is validated with a child. |
-| Visual standard | Original, polished 2.5D isometric art, robot animation, sound and interaction feedback in the first child-facing build. Art is AI-generated from the prompt list in section 3. |
+| Visual standard | Original, polished top-down 2D art, robot animation, sound and interaction feedback in the first child-facing build. Art is AI-generated from the prompt list in section 3. |
 | Program model | A versioned visual IR is the executable source. TypeScript is a deterministic read-only projection shown as "see the code". Hand-edited TypeScript arrives in Phase 4. |
 | Execution | A deterministic interpreter over the IR produces a bounded trace. No TypeScript compilation or execution in Phase 1. |
 | Runtime contract | Runtimes receive a program and world and emit trace events over message passing. Phase 1 runs in a Worker; later untrusted code runs in a cross-origin sandboxed iframe behind the same contract. |
-| Rendering | DOM and SVG isometric board with CSS animation. No game engine in Phase 1. |
+| Rendering | DOM and SVG top-down grid board with CSS animation. No game engine in Phase 1. |
 | Cross-platform | Browser-based responsive PWA for iPad, Android tablets, Mac, Windows and Chromebook. Local-first, no accounts. |
 | Content model | Logical tiles, actors, themes and lesson constraints defined by data, not hardcoded per level. |
 | Editor interaction | Tap a card, tap a slot. Every essential action works with tap and keyboard. Drag is never required. |
@@ -56,69 +55,75 @@ Purpose: approve the product direction and the Phase 1 boundary before handing w
 
 ## 3. Visual direction, theme system and art pipeline
 
-Aim for a recognisable, kid-friendly adventure-game feel: readable floating isometric tiles, a personable robot with strong orientation cues, subtle world motion, a clear goal marker, and crisp response to every command. The concept sketch's clean flat-vector style is the art direction; it reads well at tablet size and suits SVG delivery.
+The board is a top-down 2D grid of square tiles, seen from directly above. Isometric was dropped because it multiplies the art: every object needs a 2:1 projection, depth sorting, and four facings with a full pose set each. Top-down needs one drawing per object, and the robot is drawn once and rotated in code.
+
+Aim for a recognisable, kid-friendly adventure-game feel: bright readable tiles, a personable robot whose facing is obvious at a glance, subtle world motion, a clear goal marker, and crisp response to every command. The concept sketch's clean flat-vector style still sets the palette and character; it reads well at tablet size and suits SVG delivery.
 
 **Facing and rotation cues**
 
-- Commands are Rotate CW and Rotate CCW, never left or right. The robot shows a curved arrow in the direction of rotation during the turn.
-- The robot carries a permanent forward indicator: a headlamp cone or arrow on the tile ahead. The "next tile" ghost shows where Forward will land.
-- Fixed camera, no rotation, no jumping, no perspective-dependent logic in early puzzles.
-- Fallback: if child testing shows projection confusion that cues do not fix, switch to a top-down three-quarter view. The renderer consumes only the trace, so this is a renderer swap, not a rewrite.
+- Up on the screen is north, and it never changes. Rotate CW turns the robot clockwise on screen, exactly as the word says, which removes the projection confusion isometric risked.
+- The robot is drawn pointing up, with an unmistakable front: a headlamp, a nose arrow, or a visor. Code rotates the same sprite 90 degrees per turn.
+- A curved arrow shows the direction of rotation during the turn. A forward indicator on the tile ahead shows where Forward will land, and turns red when the move is blocked.
+- Fixed camera, no scrolling, no zoom in early puzzles. Every tile is visible at once.
 
 **Theme architecture**
 
 - Separate semantics from presentation. Floor, wall, gap, goal, collectible, hazard, switch and gate are logical elements; each theme maps them to art, sound and effects.
-- Render terrain, overlays, entities, props and transient effects as separate DOM or SVG layers. Collision, pathing and goals never depend on assets.
+- Render terrain, overlays, entities and transient effects as separate DOM or SVG layers. Collision, pathing and goals never depend on assets. With no depth sorting, layer order is fixed: floor, overlays, items, robot, effects.
 - A theme pack holds SVG or PNG assets, a palette, tile variants, effects, ambient sound and animation timing. One fully polished forest theme plus one small frozen-theme proof.
 - Theme swapping preserves the same solution and rule evaluation; animations never change simulation outcomes.
 
 **Asset specification for AI generation**
 
+Every asset is a square, viewed from directly above, on a transparent background, at 256 by 256 px and scaled down in the app. Square top-down tiles are the format image generators handle most reliably.
+
 | Asset | Count | Notes |
 | --- | --- | --- |
-| Floor tile | 3 variants per theme | Isometric diamond, 2:1 ratio, 128 by 64 px base, transparent background |
-| Raised wall block | 2 variants | Same footprint, 128 by 128 px with height |
-| Goal marker | 1 per theme | Flag or beacon, animated glow optional |
-| Collectible | 1 per theme | Gem, acorn, snowflake; small enough to sit on a tile with the robot |
-| Props | 3 to 4 per theme | Trees, rocks, crystals; must not occlude adjacent tiles |
-| Robot, 4 facings | NE, SE, SW, NW | Each facing needs idle, move, rotate, success and error poses |
-| Effects | 3 | Success sparkle, error puff, step dust; simple 4 to 6 frame sheets |
+| Floor tile | 3 variants per theme | Full square, edges tile seamlessly with each other |
+| Wall tile | 2 variants per theme | Fills the square; reads as solid and impassable from above |
+| Gap tile | 1 per theme | Water, chasm or void; clearly not walkable |
+| Goal marker | 1 per theme | Flag or beacon seen from above, centred, about half the tile |
+| Collectible | 1 per theme | Small, centred, readable when the robot is beside it |
+| Props | 3 to 4 per theme | Decoration for wall tiles: tree canopy, boulder, stump |
+| Robot | 1 sprite pointing up, plus 3 expression variants | Neutral, happy and oops faces; rotation and movement are done in code |
+| Effects | 3 | Success sparkle, bump puff, step dust; simple 4 to 6 frame sheets |
 | UI icons | 8 | Forward, Rotate CW, Rotate CCW, Run, Step, Reset, Undo, Hint |
 
-Generate the robot as a single consistent character sheet first, then derive facings and poses from it, so the character stays recognisable. Clean up transparency and align tile pivots manually; AI output rarely lands on an exact grid.
+Generate the robot first, then everything else against it, so the set matches. Expect light cleanup: trim to the square, fix transparency, and check that floor tiles meet without a visible seam.
 
 **Prompt list for ChatGPT image generation**
 
 Use the shared style prefix on every prompt so the set stays consistent.
 
-Style prefix: "Flat vector illustration, clean geometric shapes, soft pastel palette, subtle cel shading, no outlines, no text, no watermark, transparent background, isometric projection at a true 2:1 ratio, children's educational game art, consistent light from the upper left."
+Style prefix: "Flat vector illustration for a children's game, top-down orthographic view seen from directly above, no perspective, clean geometric shapes, soft pastel palette, subtle shading, no outlines, no text, no watermark, transparent background, square 256 by 256 image, subject centred, light from the upper left."
 
-1. Robot character sheet: "[prefix] A small friendly rounded robot with a cylindrical blue body, a dome head with one large round eye, a single antenna with a yellow ball on top, stubby arms, hovering slightly above the ground. Character sheet showing the robot from four isometric directions: facing north-east, south-east, south-west, north-west. Identical design in each view."
-2. Robot poses, one prompt per facing: "[prefix] The same blue rounded robot facing [direction], five poses in a row: idle hover, mid-step forward lean, rotating with a curved motion arrow, celebrating with arms raised, confused with a small spark above the head."
-3. Forest floor tiles: "[prefix] Three isometric diamond grass tiles, 2:1 ratio, each a slightly different shade of fresh green with small flower or pebble details, chunky brown earth edge visible on the two front faces, floating-island feel."
-4. Forest wall blocks: "[prefix] Two isometric raised stone blocks the same footprint as a grass tile, grey rock with moss on top, one slightly taller than the other."
-5. Forest goal marker: "[prefix] A small yellow triangular flag on a wooden pole, planted in a short grass tuft, gently waving, sized to sit on one isometric tile."
-6. Forest collectible: "[prefix] A single shiny golden acorn with a soft glow, small, sized to sit at the centre of one isometric tile."
-7. Forest props: "[prefix] Four separate isometric props: a round-canopy green tree, a tall thin pine, a mossy boulder, a tree stump with mushrooms. Each fits within one tile footprint without overhanging."
-8. Frozen floor tiles: "[prefix] Three isometric diamond ice tiles, 2:1 ratio, pale blue with faint crack lines and a frosted sheen, deep blue ice edge on the two front faces."
-9. Frozen wall blocks: "[prefix] Two isometric raised ice blocks the same footprint as an ice tile, translucent blue-white with a crystalline top."
-10. Frozen goal and collectible: "[prefix] A light-blue flag on a dark pole in a snow tuft, and separately a single glowing snowflake crystal, each sized to one isometric tile."
-11. Frozen props: "[prefix] Four separate isometric props: a tall blue ice crystal, a cluster of three small crystals, a snow-covered rock, a leafless frosted tree."
-12. Effects: "[prefix] Three short sprite sheets on transparent background, six frames each in a horizontal row: golden sparkle burst, small grey puff of smoke, soft dust kick-up at ground level."
-13. UI icons: "[prefix] Eight rounded square app icons in one consistent set: straight arrow (forward), clockwise curved arrow, counter-clockwise curved arrow, play triangle, single-step footprint, circular reset arrow, undo arrow, lightbulb hint. Bold simple shapes readable at 44 pixels."
-14. Level map backdrop: "[prefix] A winding path across a floating forest island seen from above, with twelve evenly spaced round stepping-stone markers along the path, space for stars above each marker, no text."
+1. Robot: "[prefix] A small friendly round robot seen from directly above, pointing straight up toward the top of the image. Blue round body, a lighter blue dome in the centre, a bright yellow headlamp at the front edge so the front is obvious, two small stubby arms on the sides. Symmetrical left to right."
+2. Robot expressions: "[prefix] The same blue round robot seen from directly above, pointing up, three versions side by side: neutral, happy with a sparkle, and oops with a small spark. Only the dome's face and glow change."
+3. Forest floor tiles: "[prefix] Three square grass tiles that tile seamlessly, fresh green with a few small flowers or pebbles, each a slightly different pattern, no border."
+4. Forest wall tiles: "[prefix] Two square tiles filled by mossy grey rock seen from above, clearly solid and raised, with a soft shadow along the bottom and right edges."
+5. Forest gap tile: "[prefix] One square tile of dark blue pond water with a few ripples and a grassy rim, clearly not walkable."
+6. Forest goal marker: "[prefix] A small yellow flag on a pole seen from directly above, the flag cloth spread out to one side, standing on a grass tuft, centred, about half the tile wide."
+7. Forest collectible: "[prefix] A single shiny golden acorn seen from above with a soft glow, small, centred."
+8. Forest props: "[prefix] Four separate square images seen from directly above: a round green tree canopy, a pine tree canopy, a mossy boulder, a tree stump with mushrooms. Each fills most of its square."
+9. Frozen floor tiles: "[prefix] Three square ice tiles that tile seamlessly, pale blue with faint crack lines and a frosted sheen, no border."
+10. Frozen wall and gap tiles: "[prefix] Two square tiles filled by snowy rock seen from above, clearly solid, and separately one square tile of dark icy water, clearly not walkable."
+11. Frozen goal and collectible: "[prefix] A light-blue flag on a pole seen from directly above on a snow tuft, and separately a single glowing snowflake crystal, each centred."
+12. Effects: "[prefix] Three short sprite sheets, six frames each in a horizontal row, seen from above: golden sparkle burst, small grey puff of dust, soft footstep dust ring."
+13. UI icons: "[prefix] Eight rounded square app icons in one consistent set: straight up arrow (forward), clockwise curved arrow, counter-clockwise curved arrow, play triangle, single-step footprint, circular reset arrow, undo arrow, lightbulb hint. Bold simple shapes readable at 44 pixels."
+14. Level map backdrop: "[prefix] A forest island seen from directly above with a winding path and fifteen evenly spaced round stepping stones along it, space beside each stone for stars, no text."
 15. Badge set: "[prefix] Six round achievement badges in one consistent style: a crystal ball (prediction), a wrench (debugging), a compass (navigation), a lightning bolt (efficiency), a map (transfer), a trophy (mastery). Flat vector, gold rim."
 
 **Phase 1 visual-quality gate**
 
 - Robot has expressive idle, move, rotate, success and error states with consistent timing.
-- Tiles, walls and goals are visually distinct at tablet size; occlusion never hides required puzzle information.
+- Its front is obvious at every rotation, at tablet size, without reading any text.
+- Tiles, walls, gaps and goals are visually distinct at tablet size. Floor tiles show no seams.
 - Audio and particles reinforce actions but are never required signals; muted audio and reduced motion are supported.
 - No placeholder art in the child-facing build. A small finished world beats several unfinished worlds.
 
 ## 4. Learning design
 
-The MVP validates one thing: can a novice fourth grader understand, build, repair and predict short sequential programs on an isometric board without verbal coaching. The full curriculum is written after that is answered.
+The MVP validates one thing: can a novice fourth grader understand, build, repair and predict short sequential programs on a grid board without verbal coaching. The full curriculum is written after that is answered.
 
 Use PRIMM (Predict, Run, Investigate, Modify, Make), Parsons-style ordering tasks, and worked examples with gradually removed scaffolding. Apply them as varied activity types, not as five compulsory steps in every level. Evidence for PRIMM exists in secondary settings; primary-school application is promising but less established, so direct usability validation is required.
 
@@ -261,13 +266,13 @@ The editor writes the IR, the IR is printed to TypeScript and sent to whichever 
 | Visual editor | Generic node descriptors, slots, selection, history, parameter controls. | No puzzle-specific assumptions |
 | TS projection | Print IR to TypeScript. | No parsing |
 | Puzzle simulation | Pure grid state transitions, robot API, objective checks, traces. | No rendering code |
-| World renderer | Isometric projection, depth sorting, animation, effects, in DOM and SVG. | Consumes trace only |
+| World renderer | Top-down grid layout, fixed layer order, animation, effects, in DOM and SVG. | Consumes trace only |
 | Lesson service | Level definitions, constraints, prediction, hints, validation, progression. | Data-driven |
 | Meta-loop | Level map, stars, badges, observation log. | Reads progress only |
 
 **Technology**
 
-React, TypeScript and Vite for the responsive PWA. Board rendered with DOM and SVG, CSS transforms for the isometric projection and CSS animation for the robot. A small canvas layer only if particle effects need it. IndexedDB storage with a progress export. No Phaser, no TypeScript compiler in the bundle, no CodeMirror until Phase 4.
+React, TypeScript and Vite for the responsive PWA. Board rendered with DOM and SVG on a square grid, CSS transforms to move and rotate the robot, and CSS or Web Animations for motion. A small canvas layer only if particle effects need it. IndexedDB storage with a progress export. No Phaser, no TypeScript compiler in the bundle, no CodeMirror until Phase 4.
 
 **Safety and performance**
 
@@ -337,11 +342,11 @@ Phase 1a is the only phase approved for build. The three gates are the child tes
 
 Work proceeds vertically: each step ends with something runnable on an iPad. Coding agents build; the art is generated in parallel from section 3 and dropped in at step 5.
 
-1. **Decide before code.** Confirm the three pivots in writing: IR as source with TS projection; isometric view with rotation cues and a three-quarter fallback; AI art from the prompt list. Generate the robot character sheet first, since every later asset must match it.
-2. **Vertical slice.** IR schema with stable node IDs; interpreter with trace events and limits; TS printer with snapshot tests; runtime contract over postMessage with the interpreter in a Worker; DOM and SVG isometric board with one tile set and a temporary vector robot; Forward only; Run and Reset by tap and keyboard. Measure frame rate and load time on a real iPad.
-3. **Editor and rotation.** Rotate CW and CCW with the curved-arrow cue and next-tile ghost; tap-a-card-tap-a-slot for add, move and delete; palette constrained by level; undo and redo; Step and Pause; landscape and portrait layouts; full keyboard parity. Quick facing check with the nephew on two throwaway boards.
+1. **Decide before code.** Confirm the three pivots in writing: IR as source with TS projection; top-down 2D view with rotation cues; AI art from the prompt list. Generate the robot first, since every later asset must match it.
+2. **Vertical slice.** IR schema with stable node IDs; interpreter with trace events and limits; TS printer with snapshot tests; runtime contract over postMessage with the interpreter in a Worker; DOM and SVG board with one tile set and a temporary vector robot; Forward only; Run and Reset by tap and keyboard. Measure frame rate and load time on a real iPad. Built before the switch to 2D, with an isometric board.
+3. **2D board, editor and rotation.** First, replace the isometric renderer with the top-down grid; the IR, simulation, runtime and editor do not change. Then Rotate CW and CCW with the curved-arrow cue and next-tile ghost; tap-a-card-tap-a-slot for add, move and delete; palette constrained by level; undo and redo; Step and Pause; landscape and portrait layouts; full keyboard parity. Quick facing check with the nephew on two throwaway boards.
 4. **Lessons and meta-loop.** Lesson schema and validators in CI; prediction mode; hint ladders; the 15 MVP levels with reference solutions; level map; stars and badges; IndexedDB progress; observation log and export; see-the-code panel.
-5. **Polish.** Final AI art, four-facing robot animation, sound with mute, reduced motion, success and error effects, frozen theme smoke test proving the same trace under both themes, onboarding without words on level 1.
+5. **Polish.** Final AI art, robot movement and rotation animation with expression changes, sound with mute, reduced motion, success and error effects, frozen theme smoke test proving the same trace under both themes, onboarding without words on level 1.
 6. **Child test.** Run the section 11 protocol. Fix usability failures. Re-test the fixed levels.
 7. **After the gate.** Repeat, motivated by the level 15 budget. Then write the full curriculum. Only then define the Workshop scope.
 
@@ -366,7 +371,7 @@ The MVP gate is about usability, not learning efficacy. One or three children ca
 
 - First tester: the nephew, a fourth grader with no coding experience. Add two more children near the target age when possible. The adult observes and does not coach except where the level explicitly expects it.
 - Session length: one sitting until the child stops or finishes. Record the stopping point.
-- The observation log plus written notes capture every mistaken move, and whether it was caused by projection and facing or by program logic.
+- The observation log plus written notes capture every mistaken move, and whether it was caused by facing or by program logic.
 - After the session, ask the child to explain what three programs do, to distinguish understanding from guessing.
 
 **Exit gate for Phase 1a**
@@ -379,7 +384,7 @@ The MVP gate is about usability, not learning efficacy. One or three children ca
 - [ ] The child asks to continue, or returns for a second session unprompted.
 - [ ] No technical check above fails on the iPad build.
 
-If the facing check fails after the cues are fixed, switch the renderer to the top-down three-quarter view and re-test before any curriculum work. Do not expand into Repeat, the curriculum, or the Workshop until every box is ticked.
+If the facing check fails after the cues are fixed, strengthen the robot's front and the rotation cue, then re-test before any curriculum work. Do not expand into Repeat, the curriculum, or the Workshop until every box is ticked.
 
 ## 12. Open decisions and agent handoff contract
 
@@ -393,11 +398,10 @@ If the facing check fails after the cues are fixed, switch the renderer to the t
 | AI provider and placement | Hints only, inside the existing hint ladder, behind a flag | Before Phase 3 |
 | Public release | Open source or hosted; decided only if the MVP is good | After Phase 1b |
 | Sound direction | Subtle feedback, mute and reduced motion from the start; AI-generated or stock library | Step 5 of the build sequence |
-| Three-quarter view fallback | Build only if the facing check fails | After the child test |
 
 **Agent handoff contract**
 
-The first agent task is step 2 of section 10: the smallest vertical slice that proves the architecture and the game feel. It delivers a runnable browser application with one isometric puzzle, a Forward instruction, the IR and its TypeScript projection, a bounded deterministic trace from the Worker interpreter, and working tap and keyboard Run and Reset, measured on an iPad.
+The first agent task is step 2 of section 10: the smallest vertical slice that proves the architecture and the game feel. It delivers a runnable browser application with one puzzle, a Forward instruction, the IR and its TypeScript projection, a bounded deterministic trace from the Worker interpreter, and working tap and keyboard Run and Reset, measured on an iPad.
 
 - Require working code, tests, clear module boundaries matching section 7, and a short design note recording any deviation from this plan.
 - Preserve the separation between logical tile semantics, theme assets, lesson constraints and editor command descriptors.
