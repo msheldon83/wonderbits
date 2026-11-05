@@ -1,9 +1,9 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import type { WorldDefinition } from '../sim/types';
 import { cellKey, initialState, tileAt } from '../sim/world';
-import { Anchored, Collectible, FloorTile, GoalFlag, INDICATOR_BOX, Robot, ROBOT_BOX, Rock, Tree } from './art';
+import { Anchored, ARROW_POINTS, Collectible, FloorTile, GoalFlag, Lip, Robot, ROBOT_BOX, Rock, Tree, Water } from './art';
 import { BoardController, type MotionSettings, type RobotElements } from './controller';
-import { depth, LAYER, layoutFor, toScreen } from './iso';
+import { LAYER, LIP, layoutFor, TILE, toScreen } from './grid';
 import { pick, type Theme } from './themes';
 
 export interface BoardProps {
@@ -64,8 +64,10 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
     for (const c of controllers.current) c.motion = motion;
   }, [motion]);
 
-  const floor: ReactElement[] = [];
-  const objects: ReactElement[] = [];
+  // Terrain is one SVG drawn in a fixed order: floors, lips, then walls.
+  const floors: ReactElement[] = [];
+  const lips: ReactElement[] = [];
+  const walls: ReactElement[] = [];
   const solid = (x: number, y: number) => {
     const t = tileAt(world, { x, y });
     return t === 'floor' || t === 'wall';
@@ -73,27 +75,43 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
   for (let y = 0; y < world.height; y++) {
     for (let x = 0; x < world.width; x++) {
       const tile = world.tiles[y]![x]!;
-      if (tile === 'gap') continue;
       const p = toScreen(layout, { x, y });
-      floor.push(
-        <g key={`f${x},${y}`} transform={`translate(${p.x} ${p.y})`}>
-          <FloorTile theme={theme} x={x} y={y} showLeft={!solid(x, y + 1)} showRight={!solid(x + 1, y)} />
+      const at = `translate(${p.x} ${p.y})`;
+      if (tile === 'gap') {
+        floors.push(
+          <g key={`g${x},${y}`} transform={at}>
+            <Water theme={theme} />
+          </g>,
+        );
+        continue;
+      }
+      floors.push(
+        <g key={`f${x},${y}`} transform={at}>
+          <FloorTile theme={theme} x={x} y={y} />
         </g>,
       );
+      if (!solid(x, y + 1)) {
+        lips.push(
+          <g key={`l${x},${y}`} transform={at}>
+            <Lip theme={theme} />
+          </g>,
+        );
+      }
       if (tile === 'wall') {
         const variant = pick(theme.wallVariants, x, y);
-        objects.push(
-          <Anchored key={`w${x},${y}`} x={p.x} y={p.y} w={128} above={110} below={40} z={depth({ x, y }, LAYER.wall)} className={`wall wall-${variant}`}>
+        walls.push(
+          <g key={`w${x},${y}`} transform={at} className={`wall wall-${variant}`}>
             {variant === 'tree' ? <Tree theme={theme} /> : <Rock theme={theme} />}
-          </Anchored>,
+          </g>,
         );
       }
     }
   }
 
+  const objects: ReactElement[] = [];
   const goal = toScreen(layout, world.goal);
   objects.push(
-    <Anchored key="goal" x={goal.x} y={goal.y} w={160} above={130} below={16} z={depth(world.goal, LAYER.goal)} className="goal" label="Goal flag">
+    <Anchored key="goal" x={goal.x} y={goal.y} size={TILE} z={LAYER.goal} className="goal" label="Goal flag">
       <GoalFlag theme={theme} />
     </Anchored>,
   );
@@ -108,18 +126,17 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
           else gems.current.delete(key);
         }}
         className="collectible-wrap"
-        style={{ position: 'absolute', inset: 0, zIndex: depth(c, LAYER.collectible), pointerEvents: 'none' }}
+        style={{ position: 'absolute', left: p.x - TILE / 2, top: p.y - TILE / 2, width: TILE, height: TILE, zIndex: LAYER.collectible }}
       >
-        <Anchored x={p.x} y={p.y} w={48} above={40} below={12} z={0} label="Collectible">
+        <Anchored x={TILE / 2} y={TILE / 2} size={TILE} z={0} label="Collectible">
           <Collectible theme={theme} />
         </Anchored>
       </div>,
     );
   }
 
-  const cx = layout.originX + ((world.width - world.height) * 64) / 2;
-  const cy = layout.originY + ((world.width + world.height - 2) * 32) / 2;
-  const span = (world.width + world.height) * 64;
+  const boardW = world.width * TILE;
+  const boardH = world.height * TILE;
 
   return (
     <div className="board-viewport" ref={viewport} style={{ background: theme.sky }}>
@@ -131,19 +148,21 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
           style={{ width: layout.stageW, height: layout.stageH, transform: `scale(${scale})` }}
         >
           <svg className="board-floor" width={layout.stageW} height={layout.stageH} aria-hidden="true">
-            <ellipse cx={cx} cy={cy + 70} rx={span * 0.42} ry={span * 0.12} fill={theme.shadow} />
-            {floor}
+            <rect x={layout.originX + 10} y={layout.originY + 16} width={boardW} height={boardH + LIP} rx={14} fill={theme.shadow} />
+            <g>{floors}</g>
+            <g>{lips}</g>
+            <g>{walls}</g>
           </svg>
           {Array.from({ length: robotCount }, (_, i) => (
             <div
               key={`ind${i}`}
               ref={(el) => void (elsFor(i).indicator = el ?? undefined)}
               className="forward-indicator"
-              style={{ width: INDICATOR_BOX.w, height: INDICATOR_BOX.above + INDICATOR_BOX.below }}
+              style={{ width: TILE, height: TILE, zIndex: LAYER.indicator, transformOrigin: 'center' }}
               aria-hidden="true"
             >
-              <svg width={INDICATOR_BOX.w} height={INDICATOR_BOX.above + INDICATOR_BOX.below} viewBox={`${-INDICATOR_BOX.w / 2} ${-INDICATOR_BOX.above} ${INDICATOR_BOX.w} ${INDICATOR_BOX.above + INDICATOR_BOX.below}`}>
-                <polygon ref={(el) => void (elsFor(i).arrow = el ?? undefined)} points="" />
+              <svg width={TILE} height={TILE} viewBox={`${-TILE / 2} ${-TILE / 2} ${TILE} ${TILE}`}>
+                <polygon ref={(el) => void (elsFor(i).arrow = el ?? undefined)} points={ARROW_POINTS} />
               </svg>
             </div>
           ))}
@@ -153,11 +172,12 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
               key={`robot${i}`}
               ref={(el) => void (elsFor(i).root = el ?? undefined)}
               className="robot"
+              data-mood="idle"
               aria-hidden="true"
-              style={{ width: ROBOT_BOX.w, height: ROBOT_BOX.above + ROBOT_BOX.below, transformOrigin: `${ROBOT_BOX.w / 2}px ${ROBOT_BOX.above}px` }}
+              style={{ width: ROBOT_BOX, height: ROBOT_BOX, zIndex: LAYER.robot, transformOrigin: 'center' }}
             >
-              <svg width={ROBOT_BOX.w} height={ROBOT_BOX.above + ROBOT_BOX.below} viewBox={`${-ROBOT_BOX.w / 2} ${-ROBOT_BOX.above} ${ROBOT_BOX.w} ${ROBOT_BOX.above + ROBOT_BOX.below}`} overflow="visible">
-                <Robot flipRef={(el) => void (elsFor(i).flip = el ?? undefined)} />
+              <svg width={ROBOT_BOX} height={ROBOT_BOX} viewBox={`${-ROBOT_BOX / 2} ${-ROBOT_BOX / 2} ${ROBOT_BOX} ${ROBOT_BOX}`} overflow="visible">
+                <Robot />
               </svg>
             </div>
           ))}
@@ -166,4 +186,3 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
     </div>
   );
 }
-

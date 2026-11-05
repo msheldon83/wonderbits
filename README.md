@@ -10,10 +10,9 @@ first child test. Read it before starting new work.
 
 This repository is at **build step 2 of the plan: the vertical slice**. It
 proves the architecture and the game feel with one puzzle, one command, and a
-temporary vector robot. The slice still draws an isometric board; the plan
-has since moved to a top-down 2D board, and swapping the renderer is the
-first task of build step 3. See [docs/design-notes.md](docs/design-notes.md)
-for what is built, what is deliberately not, and any deviations from the plan.
+temporary vector robot on a top-down 2D board. See
+[docs/design-notes.md](docs/design-notes.md) for what is built, what is
+deliberately not, and any deviations from the plan.
 
 ## Run it
 
@@ -60,7 +59,7 @@ src/
   runtime/     Interpreter, runtime contract over postMessage, Worker host
   projection/  IR to read-only TypeScript printer
   lessons/     Level schema, content parser, validator, pack loader
-  render/      Isometric math, DOM and SVG board, animation controller, sequencer
+  render/      Grid math, DOM and SVG board, animation controller, sequencer
   editor/      Tap-a-card-tap-a-slot editor and the code panel
   app/         App shell
   perf/        Performance check page

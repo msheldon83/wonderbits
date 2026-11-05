@@ -13,20 +13,28 @@ full pose set each. Top-down needs one drawing per object, and one robot
 sprite pointing up is rotated in code. Up is always north, so Rotate CW is
 clockwise on screen.
 
-What this means for the code:
+### Renderer swap, done 2026-11-05
 
-- **No change** to the IR, simulation, runtime contract, interpreter, TS
-  projection, lesson schema, validator or editor. They never knew about the
-  projection.
-- **Replace** `src/render/iso.ts`, the floor, wall and robot art in
-  `src/render/art.tsx`, and the projection parts of `src/render/controller.ts`
-  with a square-grid layout. The sequencer, the Board's layer structure and
-  the Web Animations approach stay.
-- **Rotation becomes a transform.** The controller rotates the robot element
-  by 90 degrees per turn instead of swapping front and back views and
-  mirroring.
-- **The level layout rule below no longer applies.** It was specific to
-  isometric overlap.
+Only the render layer changed. The IR, simulation, runtime contract,
+interpreter, TS projection, lesson schema, validator, editor and sequencer
+were untouched, and their tests passed unchanged.
+
+- **`src/render/grid.ts`** replaces the isometric math. Tiles are 96 px
+  squares; up is north. Display angles accumulate across turns, so a
+  clockwise turn from west to north animates +90 degrees, never -270.
+- **One robot sprite, rotated in code.** The controller sets
+  `translate(...) rotate(...)` on the robot element. A turn is a 90 degree
+  rotation with a small lift. The front-and-back views and mirroring are gone.
+- **No depth sorting.** Layers are fixed: terrain SVG (floors, the island's
+  front lip, then walls), forward indicator, goal, collectibles, robot.
+- **Expressions.** The robot's `data-mood` swaps its eyes between idle,
+  happy and oops. The celebration is a full spin with a pop.
+- **Goal marker.** A dashed ring on the ground plus a flag in the tile's
+  top-right corner, so the goal stays visible with the robot standing on it.
+- **Off-board warning.** When Forward would leave the island, the red arrow
+  is drawn smaller on the board's edge instead of on a tile that does not
+  exist, where the viewport clipped it.
+- **Gaps** now draw as pond water, not as a hole.
 
 The plan's prompt list for ChatGPT art is rewritten for top-down square
 assets in section 3.
@@ -53,9 +61,9 @@ assets in section 3.
   a parser that reports every error with its path, and a validator that runs
   in CI. The validator checks the board, proves the reference solution works
   within the limits, and finds the shortest solution by breadth-first search.
-- **Renderer** (`src/render`). DOM and SVG isometric board at a true 2:1
-  ratio, depth ordering by `x + y`, a forward-indicator arrow on the tile
-  ahead (red when the move is blocked), and a temporary vector robot. A
+- **Renderer** (`src/render`). DOM and SVG board, first built isometric and
+  replaced by a top-down grid on 2026-11-05 (see above). A forward-indicator
+  arrow sits on the tile ahead, red when the move is blocked. A
   controller animates trace events with the Web Animations API. A DOM-free
   sequencer guarantees event n+1 never starts before event n settles, and
   supports play, step, pause and reset.
@@ -69,7 +77,7 @@ assets in section 3.
 
 - **Rotation is implemented in the logic layers already.** The simulation,
   interpreter, printer and validator support Rotate CW and CCW, and the
-  controller animates a basic squash-and-swap turn. The slice level only
+  controller animates a 90 degree turn. The slice level only
   allows Forward. The curved-arrow rotation cue and the next-tile ghost polish
   remain in build step 3.
 - **Move and remove are in the slice.** The plan put the full editor in step
@@ -89,20 +97,10 @@ assets in section 3.
 - **Only the forest theme exists.** The theme interface is in place. The
   frozen theme and the identical-trace check across themes come in step 5.
 
-### Level layout rule learned from the first screenshots (isometric only, now obsolete)
-
-A wall directly behind the goal, one tile up and one tile left in grid terms,
-lines up vertically with it on screen. The flag then looks planted on the
-wall. Walls directly in front of a path tile can also hide the robot's feet.
-Keep walls off the screen column of the goal, and off the tile diagonally in
-front of any path tile. The flag is also planted at the back-right of its
-tile, tall enough to clear the robot's head.
-
 ### Open items for step 3
 
-- Replace the isometric renderer with the top-down grid, as described in the
-  plan change above. Do this first; the rest of step 3 builds on it.
-- Measure the `?perf` page on a real iPad and record the numbers here, after
-  the renderer swap.
+- Measure the `?perf` page on a real iPad and record the numbers here. In
+  headless Chromium the top-down board holds 60 frames per second with three
+  robots and no frames over 33 ms.
 - Rotation cue with a curved arrow, and a quick facing check with the tester.
 - Undo and redo, Step and Pause buttons, landscape and portrait polish.

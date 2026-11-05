@@ -1,78 +1,79 @@
 /**
- * Temporary vector art in the concept sketch's flat style. Every piece is
- * drawn with the tile centre at (0, 0) so it can be anchored to a cell.
+ * Temporary top-down vector art in the concept sketch's flat style. Every
+ * piece is drawn with the tile centre at (0, 0), seen from directly above.
  * Final AI-generated art replaces these in build step 5.
  */
-import type { CSSProperties, ReactNode, Ref } from 'react';
-import { SIDE, TILE_H, TILE_W } from './iso';
+import type { CSSProperties, ReactNode } from 'react';
+import { LIP, TILE } from './grid';
 import type { Theme } from './themes';
 
-const HW = TILE_W / 2;
-const HH = TILE_H / 2;
-const pts = (p: [number, number][]) => p.map(([x, y]) => `${x},${y}`).join(' ');
-
-type Point = [number, number];
-export const diamond = (scale = 1, lift = 0): [Point, Point, Point, Point] => [
-  [0, -HH * scale - lift],
-  [HW * scale, -lift],
-  [0, HH * scale - lift],
-  [-HW * scale, -lift],
-];
+const H = TILE / 2;
 
 /** An absolutely positioned SVG whose (0, 0) sits on a screen point. */
 export function Anchored(props: {
   x: number;
   y: number;
-  w: number;
-  above: number;
-  below: number;
+  size: number;
   z: number;
   className?: string;
   style?: CSSProperties;
   label?: string;
   children: ReactNode;
-  dataCell?: string;
 }) {
-  const { x, y, w, above, below, z, className, style, label, children, dataCell } = props;
-  const h = above + below;
+  const { x, y, size, z, className, style, label, children } = props;
   return (
     <div
       className={`anchored ${className ?? ''}`}
-      data-cell={dataCell}
-      style={{ left: x - w / 2, top: y - above, width: w, height: h, zIndex: z, ...style }}
+      style={{ left: x - size / 2, top: y - size / 2, width: size, height: size, zIndex: z, ...style }}
       role={label ? 'img' : undefined}
       aria-label={label}
       aria-hidden={label ? undefined : true}
     >
-      <svg width={w} height={h} viewBox={`${-w / 2} ${-above} ${w} ${h}`} overflow="visible">
+      <svg width={size} height={size} viewBox={`${-size / 2} ${-size / 2} ${size} ${size}`} overflow="visible">
         {children}
       </svg>
     </div>
   );
 }
 
-export function FloorTile({ theme, x, y, showLeft, showRight }: { theme: Theme; x: number; y: number; showLeft: boolean; showRight: boolean }) {
+export function FloorTile({ theme, x, y }: { theme: Theme; x: number; y: number }) {
   const top = theme.floor.tops[Math.abs(x * 7 + y * 13) % theme.floor.tops.length]!;
+  const seed = Math.abs(x * 31 + y * 17);
   return (
     <g>
-      {showLeft && <polygon points={pts([[-HW, 0], [0, HH], [0, HH + SIDE], [-HW, SIDE]])} fill={theme.floor.left} />}
-      {showRight && <polygon points={pts([[0, HH], [HW, 0], [HW, SIDE], [0, HH + SIDE]])} fill={theme.floor.right} />}
-      <polygon points={pts(diamond())} fill={top} stroke={theme.floor.line} strokeWidth={1.5} strokeLinejoin="round" />
+      <rect x={-H} y={-H} width={TILE} height={TILE} fill={top} stroke={theme.floor.line} strokeWidth={1.5} />
+      <circle cx={-22 + (seed % 9) * 3} cy={-18 + (seed % 5) * 6} r={2.5} fill={theme.floor.detail} />
+      <circle cx={14 - (seed % 7) * 2} cy={20 - (seed % 4) * 5} r={2} fill={theme.floor.detail} />
+    </g>
+  );
+}
+
+/** The island's earthy front edge, under a tile with nothing below it. */
+export function Lip({ theme }: { theme: Theme }) {
+  return (
+    <g>
+      <rect x={-H} y={H} width={TILE} height={LIP} fill={theme.floor.lip} />
+      <rect x={-H} y={H + LIP - 4} width={TILE} height={4} fill={theme.floor.lipShade} />
+    </g>
+  );
+}
+
+export function Water({ theme }: { theme: Theme }) {
+  return (
+    <g>
+      <rect x={-H} y={-H} width={TILE} height={TILE} fill={theme.gap.water} />
+      <path d="M-26 -10q8 -6 16 0t16 0M-4 16q8 -6 16 0t16 0" fill="none" stroke={theme.gap.ripple} strokeWidth={3} strokeLinecap="round" />
     </g>
   );
 }
 
 export function Rock({ theme }: { theme: Theme }) {
-  const lift = 40;
-  const s = 0.86;
-  const [t, r, b, l] = diamond(s);
-  const up = (p: [number, number]): [number, number] => [p[0], p[1] - lift];
   return (
     <g>
-      <polygon points={pts([l, b, up(b), up(l)])} fill={theme.rock.left} />
-      <polygon points={pts([b, r, up(r), up(b)])} fill={theme.rock.right} />
-      <polygon points={pts([up(t), up(r), up(b), up(l)])} fill={theme.rock.top} />
-      <polygon points={pts([up(t), [up(r)[0] * 0.55, up(r)[1] - 6], up(b), [up(l)[0] * 0.6, up(l)[1] + 4]])} fill={theme.rock.moss} opacity={0.85} />
+      <rect x={-36} y={-34} width={76} height={76} rx={18} fill={theme.shadow} />
+      <rect x={-40} y={-40} width={76} height={76} rx={18} fill={theme.rock.top} stroke={theme.rock.edge} strokeWidth={3} />
+      <path d="M-34 -18q4 -18 24 -18q14 0 16 8q-10 2 -16 10q-12 4 -24 0z" fill={theme.rock.moss} />
+      <path d="M8 10l10 6l4 12M-12 18l6 -6" fill="none" stroke={theme.rock.edge} strokeWidth={2.5} strokeLinecap="round" />
     </g>
   );
 }
@@ -80,28 +81,26 @@ export function Rock({ theme }: { theme: Theme }) {
 export function Tree({ theme }: { theme: Theme }) {
   return (
     <g>
-      <ellipse cx={0} cy={4} rx={30} ry={13} fill={theme.tree.base} opacity={0.9} />
-      <rect x={-5} y={-34} width={10} height={40} rx={3} fill={theme.tree.trunk} />
-      <circle cx={-15} cy={-50} r={22} fill={theme.tree.canopyShade} />
-      <circle cx={15} cy={-52} r={22} fill={theme.tree.canopy} />
-      <circle cx={0} cy={-70} r={26} fill={theme.tree.canopy} />
-      <circle cx={-8} cy={-78} r={9} fill="#ffffff" opacity={0.18} />
+      <circle cx={5} cy={7} r={38} fill={theme.shadow} />
+      <circle cx={0} cy={0} r={38} fill={theme.tree.canopyShade} />
+      <circle cx={-4} cy={-4} r={32} fill={theme.tree.canopy} />
+      <circle cx={-14} cy={-14} r={13} fill={theme.tree.canopyLight} />
+      <circle cx={14} cy={8} r={7} fill={theme.tree.canopyLight} opacity={0.7} />
     </g>
   );
 }
 
 export function GoalFlag({ theme }: { theme: Theme }) {
-  // Planted at the back-right of its tile and tall enough to clear the
-  // robot's head, so the flag stays readable when the robot stands on it.
-  const px = 30;
-  const py = -8;
+  // A ring on the ground marks the goal tile, and the flag stands in the
+  // top-right corner, so both stay visible when the robot is on the tile.
   return (
     <g>
-      <ellipse cx={px} cy={py + 2} rx={16} ry={7} fill={theme.goal.tuft} />
-      <rect x={px - 2} y={py - 108} width={4} height={110} rx={2} fill={theme.goal.pole} />
-      <circle cx={px} cy={py - 110} r={4} fill={theme.goal.pole} />
+      <circle cx={0} cy={0} r={38} fill={theme.goal.flag} fillOpacity={0.22} stroke={theme.goal.flag} strokeWidth={4} strokeDasharray="10 7" />
+      <ellipse cx={24} cy={-4} rx={9} ry={4} fill={theme.goal.tuft} />
+      <rect x={21.5} y={-44} width={5} height={40} rx={2.5} fill={theme.goal.pole} />
+      <circle cx={24} cy={-45} r={3.5} fill={theme.goal.pole} />
       <g className="flag-cloth">
-        <polygon points={pts([[px + 2, py - 106], [px + 44, py - 93], [px + 2, py - 80]])} fill={theme.goal.flag} />
+        <polygon points="26.5,-44 47,-36 26.5,-28" fill={theme.goal.flag} stroke="#d9a816" strokeWidth={1.5} strokeLinejoin="round" />
       </g>
     </g>
   );
@@ -110,53 +109,48 @@ export function GoalFlag({ theme }: { theme: Theme }) {
 export function Collectible({ theme }: { theme: Theme }) {
   return (
     <g className="collectible-gem">
-      <ellipse cx={0} cy={6} rx={12} ry={5} fill="rgba(0,0,0,0.12)" />
-      <polygon points={pts([[0, -34], [12, -20], [0, -4], [-12, -20]])} fill={theme.collectible.fill} />
-      <polygon points={pts([[0, -34], [5, -20], [0, -4], [-4, -20]])} fill={theme.collectible.shine} opacity={0.6} />
+      <ellipse cx={2} cy={14} rx={12} ry={5} fill="rgba(0,0,0,0.12)" />
+      <polygon points="0,-16 13,-2 0,14 -13,-2" fill={theme.collectible.fill} />
+      <polygon points="0,-16 5,-2 0,14 -4,-2" fill={theme.collectible.shine} opacity={0.6} />
     </g>
   );
 }
 
-/** Size of the robot's drawing box, shared with the controller. */
-export const ROBOT_BOX = { w: 96, above: 124, below: 16 } as const;
+/** The robot's drawing box. Larger than a tile so the headlamp beam fits. */
+export const ROBOT_BOX = 120;
 
 /**
- * Temporary robot. The controller flips `.robot-flip` for left-facing
- * directions and swaps front and back views via the root's data-facing.
+ * Temporary robot, seen from above and pointing up. The controller rotates
+ * the whole element; the root's data-mood swaps the eyes.
  */
-export function Robot({ flipRef }: { flipRef?: Ref<SVGGElement> }) {
+export function Robot() {
   return (
     <g>
-      <ellipse cx={0} cy={4} rx={22} ry={9} fill="rgba(20,40,60,0.22)" />
-      <g className="robot-flip" ref={flipRef}>
-        <g className="robot-body">
-          <rect x={-26} y={-44} width={10} height={22} rx={5} fill="#2b78b5" />
-          <rect x={16} y={-44} width={10} height={22} rx={5} fill="#2b78b5" />
-          <rect x={-19} y={-52} width={38} height={44} rx={13} fill="#3291d6" />
-          <rect x={-19} y={-14} width={38} height={8} rx={4} fill="#2b78b5" />
-          <g className="robot-front">
-            <rect x={-10} y={-40} width={20} height={16} rx={5} fill="#a9d8f7" />
-            <circle cx={-3} cy={-32} r={2.4} fill="#f2c230" />
-            <circle cx={4} cy={-32} r={2.4} fill="#7fd18b" />
-          </g>
-          <g className="robot-back">
-            <rect x={-11} y={-42} width={22} height={22} rx={6} fill="#2b78b5" />
-            <circle cx={-4} cy={-31} r={2.2} fill="#a9d8f7" />
-            <circle cx={4} cy={-31} r={2.2} fill="#a9d8f7" />
-          </g>
-          <ellipse cx={0} cy={-62} rx={21} ry={17} fill="#d6eefc" stroke="#2b78b5" strokeWidth={3} />
-          <g className="robot-front">
-            <circle cx={7} cy={-63} r={7.5} fill="#ffffff" stroke="#1d3557" strokeWidth={1.5} />
-            <circle cx={9.5} cy={-63} r={3.8} fill="#1d3557" />
-            <circle cx={11} cy={-65} r={1.3} fill="#ffffff" />
-          </g>
-          <line x1={0} y1={-79} x2={0} y2={-91} stroke="#2b78b5" strokeWidth={3} strokeLinecap="round" />
-          <circle cx={0} cy={-94} r={5} fill="#f2c230" />
+      <circle cx={3} cy={5} r={31} fill="rgba(20,40,60,0.2)" />
+      <g className="robot-body">
+        <polygon points="-9,-31 9,-31 18,-52 -18,-52" fill="rgba(255, 226, 120, 0.45)" />
+        <rect x={-39} y={-10} width={10} height={24} rx={5} fill="#2b78b5" />
+        <rect x={29} y={-10} width={10} height={24} rx={5} fill="#2b78b5" />
+        <circle cx={0} cy={0} r={29} fill="#3291d6" stroke="#2b78b5" strokeWidth={3} />
+        <ellipse cx={0} cy={-27} rx={10} ry={5.5} fill="#f2c230" stroke="#d9a816" strokeWidth={1.5} />
+        <circle cx={0} cy={0} r={18} fill="#d6eefc" stroke="#2b78b5" strokeWidth={2} />
+        <g className="eyes eyes-idle">
+          <circle cx={-6.5} cy={-6} r={3.8} fill="#1d3557" />
+          <circle cx={6.5} cy={-6} r={3.8} fill="#1d3557" />
+          <circle cx={-5.5} cy={-7.5} r={1.2} fill="#fff" />
+          <circle cx={7.5} cy={-7.5} r={1.2} fill="#fff" />
         </g>
+        <g className="eyes eyes-happy" fill="none" stroke="#1d3557" strokeWidth={2.6} strokeLinecap="round">
+          <path d="M-10 -5q3.5 -5 7 0M3 -5q3.5 -5 7 0" />
+        </g>
+        <g className="eyes eyes-error" fill="none" stroke="#1d3557" strokeWidth={2.6} strokeLinecap="round">
+          <path d="M-10 -9l6 5M-10 -4l6 -5M4 -9l6 5M4 -4l6 -5" />
+        </g>
+        <circle cx={0} cy={8} r={4} fill="#f2c230" />
       </g>
     </g>
   );
 }
 
-/** Arrow on the tile ahead, drawn flat on the ground plane. */
-export const INDICATOR_BOX = { w: TILE_W, above: HH + 4, below: HH + 4 } as const;
+/** Arrow pointing up, drawn on the tile ahead and rotated to the facing. */
+export const ARROW_POINTS = '0,-26 22,-3 9,-3 9,22 -9,22 -9,-3 -22,-3';

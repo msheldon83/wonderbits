@@ -158,18 +158,25 @@ button {
   transition: opacity 160ms ease;
 }
 
-.robot[data-view='front'] .robot-back,
-.robot[data-view='back'] .robot-front {
+.robot .eyes {
   display: none;
 }
 
-.robot-body {
-  animation: hover-bob 2.4s ease-in-out infinite;
+.robot[data-mood='idle'] .eyes-idle,
+.robot[data-mood='happy'] .eyes-happy,
+.robot[data-mood='error'] .eyes-error {
+  display: inline;
 }
 
-@keyframes hover-bob {
+.robot-body {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: hover-breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes hover-breathe {
   50% {
-    transform: translateY(-3px);
+    transform: scale(1.025);
   }
 }
 

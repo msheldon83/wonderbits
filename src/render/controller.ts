@@ -1,14 +1,16 @@
 /**
  * Imperative board controller. React renders the board once; this class owns
- * the robot's transform, z-order and facing, and animates trace events with
- * the Web Animations API. Keeping animation out of React state avoids
- * re-render fights mid-tween.
+ * the robot's transform and animates trace events with the Web Animations API.
+ * Keeping animation out of React state avoids re-render fights mid-tween.
+ *
+ * Top-down: the robot sprite points up and is rotated to its facing. Display
+ * angles accumulate across turns so every turn animates exactly 90 degrees.
  */
 import type { TraceEvent } from '../runtime/contract';
-import type { Facing, RobotState, SimState, WorldDefinition } from '../sim/types';
+import type { Cell, RobotState, SimState, WorldDefinition } from '../sim/types';
 import { ahead, cellKey, tileAt } from '../sim/world';
 import { ROBOT_BOX } from './art';
-import { depth, FACES_SCREEN_RIGHT, FACES_VIEWER, LAYER, orient, projectOffset, toScreen, type BoardLayout } from './iso';
+import { angleFor, toScreen, TILE, turnAngle, type BoardLayout } from './grid';
 import type { Player } from './sequencer';
 
 export interface MotionSettings {
@@ -19,14 +21,13 @@ export interface MotionSettings {
 
 export interface RobotElements {
   root: HTMLElement;
-  flip: SVGGElement;
   indicator: HTMLElement;
   arrow: SVGPolygonElement;
 }
 
-const MOVE_MS = 440;
-const TURN_MS = 360;
-const BUMP_MS = 420;
+const MOVE_MS = 420;
+const TURN_MS = 380;
+const BUMP_MS = 440;
 const REDUCED_PAUSE_MS = 280;
 
 function settle(anim: Animation, signal: AbortSignal): Promise<void> {
@@ -57,12 +58,12 @@ function wait(ms: number, signal: AbortSignal): Promise<void> {
   });
 }
 
-/** Arrow pointing east in grid space, in tile units, centred on the tile. */
-const ARROW: [number, number][] = [
-  [-0.3, -0.11], [0.02, -0.11], [0.02, -0.24], [0.3, 0], [0.02, 0.24], [0.02, 0.11], [-0.3, 0.11],
-];
-
 export class BoardController implements Player {
+  /** Current display angle in degrees; may run past 360 or below 0. */
+  private angle = 0;
+  /** The cell the robot was last placed on. */
+  private cell: Cell = { x: 0, y: 0 };
+
   constructor(
     private world: WorldDefinition,
     private layout: BoardLayout,
@@ -72,24 +73,21 @@ export class BoardController implements Player {
     public motion: MotionSettings,
   ) {}
 
-  private transformFor(robot: Pick<RobotState, 'x' | 'y'>, lift = 0, squash = 1): string {
-    const p = toScreen(this.layout, robot);
-    const base = `translate(${p.x - ROBOT_BOX.w / 2}px, ${p.y - ROBOT_BOX.above - lift}px)`;
-    return squash === 1 ? base : `${base} scaleX(${squash})`;
+  private transformFor(cell: Cell, angle: number, scale = 1): string {
+    const p = toScreen(this.layout, cell);
+    const t = `translate(${p.x - ROBOT_BOX / 2}px, ${p.y - ROBOT_BOX / 2}px) rotate(${angle}deg)`;
+    return scale === 1 ? t : `${t} scale(${scale})`;
   }
 
-  private setFacing(facing: Facing): void {
-    this.robot.root.dataset.facing = facing;
-    this.robot.root.dataset.view = FACES_VIEWER[facing] ? 'front' : 'back';
-    if (FACES_SCREEN_RIGHT[facing]) this.robot.flip.removeAttribute('transform');
-    else this.robot.flip.setAttribute('transform', 'scale(-1, 1)');
+  private place(robot: RobotState, angle = angleFor(robot.facing)): void {
+    this.angle = angle;
+    this.cell = { x: robot.x, y: robot.y };
+    this.robot.root.style.transform = this.transformFor(robot, angle);
+    this.robot.root.dataset.facing = robot.facing;
   }
 
-  private place(robot: RobotState): void {
-    const el = this.robot.root;
-    el.style.transform = this.transformFor(robot);
-    el.style.zIndex = String(depth(robot, LAYER.robot));
-    this.setFacing(robot.facing);
+  private setMood(mood: 'idle' | 'happy' | 'error'): void {
+    this.robot.root.dataset.mood = mood;
   }
 
   private showIndicator(robot: RobotState | null): void {
@@ -99,16 +97,17 @@ export class BoardController implements Player {
       return;
     }
     const target = ahead(robot, robot.facing);
-    const blocked = tileAt(this.world, target) !== 'floor';
-    const p = toScreen(this.layout, target);
-    ind.style.transform = `translate(${p.x - ind.offsetWidth / 2}px, ${p.y - ind.offsetHeight / 2}px)`;
-    ind.style.zIndex = String(depth(target, LAYER.indicator));
+    const tile = tileAt(this.world, target);
+    const blocked = tile !== 'floor';
+    // Off the island there is no tile to draw on, so a smaller arrow sits on
+    // the board's edge instead of being clipped by the viewport.
+    const offBoard = tile === 'outside';
+    const at = offBoard ? { x: (robot.x + target.x) / 2, y: (robot.y + target.y) / 2 } : target;
+    const p = toScreen(this.layout, at);
+    ind.style.transform =
+      `translate(${p.x - TILE / 2}px, ${p.y - TILE / 2}px) rotate(${angleFor(robot.facing)}deg)` + (offBoard ? ' scale(0.6)' : '');
     ind.style.opacity = '1';
     ind.dataset.blocked = String(blocked);
-    this.robot.arrow.setAttribute(
-      'points',
-      ARROW.map(([gx, gy]) => projectOffset(...orient(robot.facing, gx, gy)).join(',')).join(' '),
-    );
     this.robot.arrow.setAttribute('fill', blocked ? this.colors.blocked : this.colors.ok);
   }
 
@@ -119,47 +118,44 @@ export class BoardController implements Player {
       el.getAnimations().forEach((a) => a.cancel());
       el.style.opacity = state.collected.includes(key) ? '0' : '1';
     }
-    this.robot.root.dataset.mood = 'idle';
+    this.setMood('idle');
     this.showIndicator(state.robot);
   }
 
   async playEvent(event: TraceEvent, signal: AbortSignal): Promise<void> {
     const { before, after, result } = event;
     const ms = (n: number) => n / this.motion.speed;
+    const el = this.robot.root;
+    const from = this.angle;
+    const to = turnAngle(from, event.op);
     this.showIndicator(null);
 
     if (this.motion.reducedMotion) {
-      this.place(after.robot);
-      if (result.kind === 'blocked') this.robot.root.dataset.mood = 'error';
+      this.place(after.robot, to);
+      if (result.kind === 'blocked') this.setMood('error');
       if (result.kind === 'ok' && result.collected) this.collectibles.get(cellKey(result.collected))!.style.opacity = '0';
       await wait(ms(REDUCED_PAUSE_MS), signal);
       if (!signal.aborted) this.showIndicator(after.robot);
       return;
     }
 
-    const el = this.robot.root;
     if (event.op === 'forward' && result.kind === 'ok') {
-      const nearer = depth(after.robot, 0) > depth(before.robot, 0);
-      if (nearer) el.style.zIndex = String(depth(after.robot, LAYER.robot));
       const mid = { x: (before.robot.x + after.robot.x) / 2, y: (before.robot.y + after.robot.y) / 2 };
       const anim = el.animate(
         [
-          { transform: this.transformFor(before.robot) },
-          { transform: this.transformFor(mid, 8), offset: 0.5 },
-          { transform: this.transformFor(after.robot) },
+          { transform: this.transformFor(before.robot, from) },
+          { transform: this.transformFor(mid, from, 1.06), offset: 0.5 },
+          { transform: this.transformFor(after.robot, from) },
         ],
         { duration: ms(MOVE_MS), easing: 'ease-in-out', fill: 'forwards' },
       );
       await settle(anim, signal);
       if (signal.aborted) return;
-      this.place(after.robot);
+      this.place(after.robot, from);
       anim.cancel();
       if (result.collected) {
         const gem = this.collectibles.get(cellKey(result.collected))!;
-        const pop = gem.animate([{ opacity: 1, translate: '0 0' }, { opacity: 0, translate: '0 -24px' }], {
-          duration: ms(300),
-          fill: 'forwards',
-        });
+        const pop = gem.animate([{ opacity: 1, scale: '1' }, { opacity: 0, scale: '1.6' }], { duration: ms(300), fill: 'forwards' });
         await settle(pop, signal);
         gem.style.opacity = '0';
       }
@@ -168,54 +164,50 @@ export class BoardController implements Player {
         x: before.robot.x + (result.at.x - before.robot.x) * 0.22,
         y: before.robot.y + (result.at.y - before.robot.y) * 0.22,
       };
-      el.dataset.mood = 'error';
+      this.setMood('error');
       const anim = el.animate(
         [
-          { transform: this.transformFor(before.robot) },
-          { transform: this.transformFor(nudge), offset: 0.35 },
-          { transform: this.transformFor(before.robot), offset: 0.6 },
-          { transform: `${this.transformFor(before.robot)} rotate(-4deg)`, offset: 0.75 },
-          { transform: `${this.transformFor(before.robot)} rotate(4deg)`, offset: 0.9 },
-          { transform: this.transformFor(before.robot) },
+          { transform: this.transformFor(before.robot, from) },
+          { transform: this.transformFor(nudge, from), offset: 0.35 },
+          { transform: this.transformFor(before.robot, from), offset: 0.6 },
+          { transform: this.transformFor(before.robot, from - 7), offset: 0.75 },
+          { transform: this.transformFor(before.robot, from + 7), offset: 0.9 },
+          { transform: this.transformFor(before.robot, from) },
         ],
         { duration: ms(BUMP_MS), easing: 'ease-out' },
       );
       await settle(anim, signal);
       if (signal.aborted) return;
     } else {
-      // Rotation: squash, swap facing at the midpoint, expand.
-      const half = { duration: ms(TURN_MS / 2), easing: 'ease-in', fill: 'forwards' as const };
-      const a = el.animate([{ transform: this.transformFor(before.robot) }, { transform: this.transformFor(before.robot, 4, 0.15) }], half);
-      await settle(a, signal);
+      // Rotation: a literal 90 degree turn on screen, with a small lift.
+      const anim = el.animate(
+        [
+          { transform: this.transformFor(before.robot, from) },
+          { transform: this.transformFor(before.robot, (from + to) / 2, 1.08), offset: 0.5 },
+          { transform: this.transformFor(after.robot, to) },
+        ],
+        { duration: ms(TURN_MS), easing: 'ease-in-out', fill: 'forwards' },
+      );
+      await settle(anim, signal);
       if (signal.aborted) return;
-      this.setFacing(after.robot.facing);
-      const b = el.animate([{ transform: this.transformFor(after.robot, 4, 0.15) }, { transform: this.transformFor(after.robot) }], {
-        ...half,
-        easing: 'ease-out',
-      });
-      a.cancel();
-      await settle(b, signal);
-      if (signal.aborted) return;
-      this.place(after.robot);
-      b.cancel();
+      this.place(after.robot, to);
+      anim.cancel();
     }
     this.showIndicator(after.robot);
   }
 
   async celebrate(signal: AbortSignal): Promise<void> {
-    this.robot.root.dataset.mood = 'happy';
+    this.setMood('happy');
+    this.showIndicator(null);
     if (this.motion.reducedMotion) return;
-    const el = this.robot.root;
-    const base = el.style.transform;
-    const anim = el.animate(
+    const a = this.angle;
+    const anim = this.robot.root.animate(
       [
-        { transform: base },
-        { transform: `${base} translateY(-22px)`, offset: 0.25 },
-        { transform: base, offset: 0.5 },
-        { transform: `${base} translateY(-14px)`, offset: 0.72 },
-        { transform: base },
+        { transform: this.transformFor(this.cell, a) },
+        { transform: this.transformFor(this.cell, a + 180, 1.18), offset: 0.5 },
+        { transform: this.transformFor(this.cell, a + 360) },
       ],
-      { duration: 760 / this.motion.speed, easing: 'ease-in-out' },
+      { duration: 800 / this.motion.speed, easing: 'ease-in-out' },
     );
     await settle(anim, signal);
   }
