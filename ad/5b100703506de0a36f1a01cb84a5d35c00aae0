@@ -1,0 +1,36 @@
+src/projection/printTs.ts
+  s_6cdecbe60fe9ce::t_b0854df3f65c76 16-24,35
+docs/design-notes.md
+  s_6cdecbe60fe9ce::t_b0854df3f65c76 7-21,325
+src/app/Lesson.tsx
+  s_6cdecbe60fe9ce::t_b0854df3f65c76 393-398,415
+  s_6cdecbe60fe9ce::t_1fd2df1a6ac112 328
+src/editor/Editor.test.tsx
+  s_6cdecbe60fe9ce::t_b0854df3f65c76 265-279
+README.md
+  s_6cdecbe60fe9ce::t_b0854df3f65c76 64,77,85-86
+src/projection/printTs.test.ts
+  s_6cdecbe60fe9ce::t_b0854df3f65c76 4,36-40
+  s_6cdecbe60fe9ce::t_c401ecef993165 41-42
+src/styles.css
+  s_6cdecbe60fe9ce::t_b0854df3f65c76 162,607,623-661,1356
+  s_6cdecbe60fe9ce::t_459143f2bc506d 159-161,163,608-622,1415-1416
+src/editor/Editor.tsx
+  s_6cdecbe60fe9ce::t_b0854df3f65c76 25,52-53,87,415,440-443,485-489,542-545,589-594,601-604
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ad5b100703506de0a36f1a01cb84a5d35c00aae0",
+  "prompts": {},
+  "sessions": {
+    "s_6cdecbe60fe9ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f2154704-1f75-466a-a250-70bdb58091a1",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Mike Sheldon <msheldon@redroverk12.com>"
+    }
+  }
+}
