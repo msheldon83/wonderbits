@@ -1,0 +1,19 @@
+src/styles.css
+  s_6cdecbe60fe9ce::t_a2ec8416a2c8ec 185-192
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5739d55db4843415b8f44f6d539a6c51deca6244",
+  "prompts": {},
+  "sessions": {
+    "s_6cdecbe60fe9ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f2154704-1f75-466a-a250-70bdb58091a1",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Mike Sheldon <msheldon@redroverk12.com>"
+    }
+  }
+}
