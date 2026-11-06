@@ -47,7 +47,7 @@ frames per second with few frames over 33 ms.
 
 | Action | Touch or mouse | Keyboard |
 | --- | --- | --- |
-| Add a step | Tap a card; it goes in at the cursor, and the cursor moves past it | Focus a card, Enter |
+| Add a step | Tap an instruction; it goes in at the cursor, and the cursor moves past it | Focus an instruction, Enter |
 | Move the cursor | Tap a block to put it after that block; tap the cursor and then an arrow; or drag the cursor | Enter on the cursor, arrows to pick a gap, Enter |
 | Remove a step | Its trash button | Delete on the step |
 | Move a step | Tap its Move handle, then an arrow; or drag the handle (or the block itself with a mouse) | Enter on Move, arrows to pick a gap, Enter; or Shift+Up and Shift+Down on the step |
@@ -61,7 +61,7 @@ frames per second with few frames over 33 ms.
 | Pause after the current move | Pause button | P |
 | Reset: robot back to the start, program kept | Reset button | R |
 | Start over: erase the program and begin the level again | Start over, in the program header | |
-| See the code | Header button | C |
+| See the code: the program written in TypeScript inside the Program panel, beside the blocks | The code icon in the Program panel's header | C |
 
 ## How it is built
 

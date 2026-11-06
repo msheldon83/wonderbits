@@ -56,7 +56,7 @@ describe('Editor: tap to add, delete and move', () => {
     render(<Harness start={['forward']} onChange={(p) => (last = p)} />);
     fireEvent.click(rotateCard());
     expect(commandsOf(last!)).toEqual(['forward', 'rotateCW']);
-    expect(screen.queryByText('Tap a card to add a step')).toBeNull();
+    expect(screen.queryByText('Tap an instruction to add a step')).toBeNull();
   });
 
   it('shows a Move and a Delete button on every block', () => {
@@ -259,6 +259,20 @@ describe('Editor: drag and drop', () => {
     drag(moveButton(2), { x: 10, y: 10 }, { x: 10, y: -30 }, false);
     expect(onChange).not.toHaveBeenCalled();
     expect(carets()).toHaveLength(0);
+  });
+});
+
+describe('Editor: see the code', () => {
+  it('toggles the code beside the blocks from the program header', () => {
+    const onToggleCode = vi.fn();
+    const base = { program: programFromCommands(['forward'], sequentialIdFactory()), programming: { allowedCommands: ['forward'] as CommandId[], starterProgram: [] as CommandId[] }, locked: false, activeNodeId: null, errorNodeId: null, newId: sequentialIdFactory('t'), onEdit: () => {}, codePanel: <pre>code here</pre>, onToggleCode };
+    const { rerender } = render(<Editor {...base} />);
+    expect(screen.queryByText('code here')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'See code' }));
+    expect(onToggleCode).toHaveBeenCalledTimes(1);
+    rerender(<Editor {...base} showCode />);
+    expect(screen.getByText('code here')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Hide code' }).getAttribute('aria-pressed')).toBe('true');
   });
 });
 

@@ -307,12 +307,12 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   else if (outcome) {
     const base =
       outcome.status === 'incomplete' && countNodes(program) === 0
-        ? { tone: 'problem' as const, text: 'Your program is empty. Tap a card to add a step.' }
+        ? { tone: 'problem' as const, text: 'Your program is empty. Tap an instruction to add a step.' }
         : outcomeMessage(outcome, errorNode ? findNodeIndex(program, errorNode) + 1 : null, shortfall);
     const guess = guessedRight ? 'Your flag was in the right spot! ' : '';
     message = { tone: base.tone, text: guess + base.text };
   } else if (predicting) message = predictionPrompt();
-  else message = { tone: 'info', text: level.intro ?? 'Help the robot reach the flag. Tap a card to add it to your program.' };
+  else message = { tone: 'info', text: level.intro ?? 'Help the robot reach the flag. Tap an instruction to add it to your program.' };
 
   const busy = !runtime || phase === 'running';
   const marks = [
@@ -322,11 +322,11 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   const starSlots: { key: keyof Stars; label: string }[] = [
     { key: 'complete', label: 'Reached the flag' },
     { key: 'noHints', label: 'No hints' },
-    ...(level.stars.budget !== undefined ? [{ key: 'budget' as const, label: `${level.stars.budget} cards or fewer` }] : []),
+    ...(level.stars.budget !== undefined ? [{ key: 'budget' as const, label: `${level.stars.budget} instructions or fewer` }] : []),
   ];
 
   return (
-    <main className="app-main">
+    <main className={`app-main ${showCode ? 'is-showing-code' : ''}`}>
       <div className="stage-col">
         <Board
           world={level.world}
@@ -407,11 +407,10 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           onUndo={onUndo}
           onRedo={onRedo}
           onRestart={restart}
+          codePanel={<CodePanel program={program} activeNodeId={activeNode} />}
+          showCode={showCode}
+          onToggleCode={() => setShowCode((v) => !v)}
         />
-        <button type="button" className="btn btn-quiet btn-code" aria-pressed={showCode} onClick={() => setShowCode((v) => !v)} aria-keyshortcuts="C">
-          {showCode ? 'Hide the code' : 'See the code'}
-        </button>
-        {showCode && <CodePanel program={program} activeNodeId={activeNode} />}
       </div>
 
       {completion && (
