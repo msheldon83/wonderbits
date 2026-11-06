@@ -1,0 +1,23 @@
+index.html
+  s_6cdecbe60fe9ce::t_5614f02aa279dd 8
+.github/workflows/pages.yml
+  s_6cdecbe60fe9ce::t_5614f02aa279dd 1-45
+vite.config.ts
+  s_6cdecbe60fe9ce::t_5614f02aa279dd 6-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "98bd8eed97f286623f09f1ae0d0db0eb2d92452e",
+  "prompts": {},
+  "sessions": {
+    "s_6cdecbe60fe9ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f2154704-1f75-466a-a250-70bdb58091a1",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Mike Sheldon <msheldon@redroverk12.com>"
+    }
+  }
+}
