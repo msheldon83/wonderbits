@@ -12,7 +12,7 @@ together. Two other shapes were tried the same day and rejected: each
 card showing its own line (code interwoven with blocks was confusing),
 and a third column for the code (the code is the program, so it belongs
 in the Program panel). Now "See the code" splits the Program panel in
-two: the blocks on the left, the same program as TypeScript on the right,
+two: the blocks on the left, the same program written in TypeScript on the right,
 with the running line highlighted beside the running block. The toggle
 is in the Program panel's header, with undo, redo and Start over. The side
 column widens in landscape and the board gives up the width; in portrait
