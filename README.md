@@ -61,7 +61,7 @@ frames per second with few frames over 33 ms.
 | Pause after the current move | Pause button | P |
 | Reset: robot back to the start, program kept | Reset button | R |
 | Start over: erase the program and begin the level again | Start over, in the program header | |
-| See the code: the program as TypeScript inside the Program panel, beside the blocks | "See code" in the Program panel's header | C |
+| See the code: the program as TypeScript inside the Program panel, beside the blocks | The code icon in the Program panel's header | C |
 
 ## How it is built
 

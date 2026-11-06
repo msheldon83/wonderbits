@@ -468,11 +468,18 @@ export function Editor({
           </span>
           <span className="program-tools">
             {onToggleCode && (
-              <button type="button" className={`btn btn-small btn-code ${showCode ? 'is-on' : ''}`} aria-pressed={showCode} onClick={onToggleCode} aria-keyshortcuts="C" title="Show the same program as TypeScript beside the blocks">
-                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <button
+                type="button"
+                className={`btn-icon btn-code ${showCode ? 'is-on' : ''}`}
+                aria-pressed={showCode}
+                aria-label={showCode ? 'Hide code' : 'See code'}
+                onClick={onToggleCode}
+                aria-keyshortcuts="C"
+                title={showCode ? 'Hide the code' : 'See the same program as TypeScript beside the blocks'}
+              >
+                <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
                   <path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16" {...stroke} />
                 </svg>
-                {showCode ? 'Hide code' : 'See code'}
               </button>
             )}
             {historyButtons}
