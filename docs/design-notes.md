@@ -4,6 +4,21 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Plan change: the code is shown on the cards (2026-11-06)
+
+The plan's "see the code" panel printed the whole program beside the
+editor. That is only side by side on a wide screen; on an iPad the panel
+sat under the program, so the cards and their code were never in view
+together. Now "See the code" annotates the program in place: every card,
+in the palette and in the program, shows its own line of TypeScript under
+its label, and the list is framed by `export function main(): void {` and
+`}` with a code-style margin. The run highlight lights a card and its line
+together, so the correspondence holds at any screen size. The printer is
+unchanged; the editor asks it for one statement per command and the frame
+lines, so the full text and the inline view can never disagree. The
+separate panel is gone; Phase 4's editable code view will reuse the
+printer, not the panel.
+
 ## Build step 4: lessons and the meta-loop (2026-11-06)
 
 ### What is built
@@ -307,7 +322,7 @@ assets in section 3.
   3. Moving and removing use the same tap-a-card-tap-a-slot code path as
   adding, so building them now cost little. Undo, redo, Step and Pause buttons
   remain for step 3; the sequencer already supports step and pause.
-- **The code panel hides the `@node` comments.** They stay in the projection
+- **The code view hides the `@node` comments.** They stay in the projection
   for tooling and Phase 4, but they are noise for a nine-year-old.
 - **Walls pick a theme variant by tile position.** The level declares only
   "wall"; the forest theme draws it as a rock or a tree, chosen by a

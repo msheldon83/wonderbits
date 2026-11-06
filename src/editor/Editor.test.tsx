@@ -262,6 +262,21 @@ describe('Editor: drag and drop', () => {
   });
 });
 
+describe('Editor: see the code', () => {
+  it('shows each card\'s line of TypeScript inside the function when asked', () => {
+    const props = { programming: { allowedCommands: ['forward', 'rotateCW'] as CommandId[], starterProgram: [] as CommandId[] }, locked: false, activeNodeId: null, errorNodeId: null, newId: sequentialIdFactory('t'), onEdit: () => {} };
+    const program = programFromCommands(['forward', 'rotateCW'], sequentialIdFactory());
+    const { container, rerender } = render(<Editor {...props} program={program} />);
+    expect(container.querySelectorAll('.card-code')).toHaveLength(0);
+    rerender(<Editor {...props} program={program} showCode />);
+    const lines = Array.from(container.querySelectorAll('.program-step .card-code')).map((e) => e.textContent);
+    expect(lines).toEqual(['robot.forward();', 'robot.rotateClockwise();']);
+    expect(container.querySelector('.code-frame-open')?.textContent).toBe('export function main(): void {');
+    expect(container.querySelector('.code-frame-close')?.textContent).toBe('}');
+    expect(container.querySelectorAll('.palette .card-code')).toHaveLength(2);
+  });
+});
+
 describe('Editor: start over', () => {
   it('shows a Start over button only when given one, and not on read-only levels', () => {
     const onRestart = vi.fn();

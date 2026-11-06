@@ -13,6 +13,15 @@ const CALL: Record<CommandId, string> = {
 
 const INDENT = '  ';
 
+/** The statement a card stands for, without the @node comment. Shown on the card itself. */
+export function codeFor(kind: CommandId): string {
+  return CALL[kind];
+}
+
+/** The lines that frame the main procedure's statements in the editor's inline view. */
+export const MAIN_OPEN = 'export function main(): void {';
+export const MAIN_CLOSE = '}';
+
 function printNode(node: IRNode, depth: number): string {
   return `${INDENT.repeat(depth)}${CALL[node.kind]} // @node ${node.id}`;
 }
@@ -23,7 +32,7 @@ export function printProgram(program: ProgramIR): string {
     `import { robot } from 'wonderbits';`,
   ];
   for (const proc of program.procedures) {
-    lines.push('', `export function ${proc.name}(): void {`);
+    lines.push('', proc.name === 'main' ? MAIN_OPEN : `export function ${proc.name}(): void {`);
     if (proc.body.length === 0) lines.push(`${INDENT}// No steps yet.`);
     for (const node of proc.body) lines.push(printNode(node, 1));
     lines.push('}');

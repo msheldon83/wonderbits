@@ -22,6 +22,7 @@ import type { IdFactory } from '../ir/ids';
 import { isNoOpMove, type EditOp } from '../ir/ops';
 import { mainBody } from '../ir/program';
 import type { CommandId, NodeId, ProgramIR } from '../ir/types';
+import { codeFor, MAIN_CLOSE, MAIN_OPEN } from '../projection/printTs';
 import { COMMANDS } from './commands';
 import { gapCentres, slotForY, type RowBox } from './geometry';
 import { paletteFor, type Programming } from './palette';
@@ -48,6 +49,8 @@ export interface EditorProps {
   highlightCommand?: CommandId | null;
   /** A hint is pointing at this step. */
   highlightNodeId?: NodeId | null;
+  /** Show each card's line of TypeScript under its label, with the function around the list. */
+  showCode?: boolean;
 }
 
 /** What is being carried to a gap: a palette card, a program block, or the cursor. */
@@ -81,6 +84,7 @@ export function Editor({
   readOnly = false,
   highlightCommand = null,
   highlightNodeId = null,
+  showCode = false,
 }: EditorProps) {
   const locked = lockedProp || readOnly;
   const body = mainBody(program);
@@ -408,7 +412,7 @@ export function Editor({
   const ghostCommand = drag?.carried.kind === 'palette' ? drag.carried.command : drag?.carried.kind === 'program' ? body.find((n) => n.id === (drag.carried as { id: NodeId }).id)?.kind : undefined;
 
   return (
-    <div className={`editor ${drag ? 'is-dragging' : ''} ${readOnly ? 'is-readonly' : ''}`} ref={root} onKeyDown={onKeyDown}>
+    <div className={`editor ${drag ? 'is-dragging' : ''} ${readOnly ? 'is-readonly' : ''} ${showCode ? 'is-showing-code' : ''}`} ref={root} onKeyDown={onKeyDown}>
       {!readOnly && (
       <section className="palette" aria-label="Command cards">
         <h2 className="panel-title">
@@ -433,7 +437,10 @@ export function Editor({
                 {...dragHandlers({ kind: 'palette', command })}
               >
                 <span className="card-icon">{info.icon}</span>
-                <span className="card-label">{info.label}</span>
+                <span className="card-text">
+                  <span className="card-label">{info.label}</span>
+                  {showCode && <code className="card-code">{codeFor(command)}</code>}
+                </span>
                 {remaining !== null && (
                   <span className="card-count" aria-hidden="true">
                     {remaining}
@@ -474,6 +481,11 @@ export function Editor({
           <p className="program-note" role="status">
             Tap an arrow to put {carriedName} there.
           </p>
+        )}
+        {showCode && (
+          <pre className="code-frame code-frame-open" aria-hidden="true">
+            {MAIN_OPEN}
+          </pre>
         )}
         <ol className={`program-list ${carrying ? 'is-moving' : ''}`} ref={listRef}>
           {body.length === 0 && remaining === null && (
@@ -527,7 +539,10 @@ export function Editor({
                   {...dragHandlers({ kind: 'program', id: node.id }, false)}
                 >
                   <span className="card-icon">{info.icon}</span>
-                  <span className="card-label">{info.label}</span>
+                  <span className="card-text">
+                    <span className="card-label">{info.label}</span>
+                    {showCode && <code className="card-code">{codeFor(node.kind)}</code>}
+                  </span>
                 </button>
                 {!readOnly && (
                 <>
@@ -571,13 +586,22 @@ export function Editor({
           {carets}
           {dropMarker}
         </ol>
+        {showCode && (
+          <pre className="code-frame code-frame-close" aria-hidden="true">
+            {MAIN_CLOSE}
+          </pre>
+        )}
+        {showCode && <p className="code-note">Every card is a real line of TypeScript. Later you can edit it yourself.</p>}
       </section>
 
       {drag && ghostCommand && (
         <div className="drag-ghost" ref={ghostRef} aria-hidden="true">
           <span className={`card card-${ghostCommand}`}>
             <span className="card-icon">{COMMANDS[ghostCommand].icon}</span>
-            <span className="card-label">{COMMANDS[ghostCommand].label}</span>
+            <span className="card-text">
+              <span className="card-label">{COMMANDS[ghostCommand].label}</span>
+              {showCode && <code className="card-code">{codeFor(ghostCommand)}</code>}
+            </span>
           </span>
         </div>
       )}

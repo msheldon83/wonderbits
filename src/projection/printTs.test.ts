@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { sequentialIdFactory } from '../ir/ids';
 import { emptyProgram, programFromCommands } from '../ir/program';
-import { lineNodeIds, printProgram } from './printTs';
+import { codeFor, lineNodeIds, MAIN_OPEN, printProgram } from './printTs';
 
 describe('printProgram', () => {
   it('prints an empty program', () => {
@@ -31,6 +31,13 @@ describe('printProgram', () => {
       }
       "
     `);
+  });
+
+  it('gives each card the same statement the full program prints', () => {
+    const p = programFromCommands(['forward', 'rotateCW', 'rotateCCW'], sequentialIdFactory());
+    const printed = printProgram(p);
+    for (const node of p.procedures[0]!.body) expect(printed).toContain(`  ${codeFor(node.kind)} // @node ${node.id}`);
+    expect(printed).toContain(MAIN_OPEN);
   });
 
   it('is deterministic and lists every node id exactly once', () => {

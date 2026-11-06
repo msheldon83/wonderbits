@@ -156,6 +156,11 @@ a.btn {
   gap: 16px;
 }
 
+/* The code lines need a wider column than the cards alone. */
+.app-main.is-showing-code {
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 470px);
+}
+
 /* min-width 0: a grid item's automatic minimum is its content's width, and
    the board scaler has a fixed pixel width, so without this the column could
    never shrink and the board would never refit on a narrow screen. */
@@ -597,6 +602,61 @@ a.btn {
   font-weight: 800;
   cursor: pointer;
   transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+
+.card-text {
+  display: contents;
+}
+
+/* With the code on, a card is a small grid: icon and label on the first
+   row, the line of code across the whole width beneath them. */
+.is-showing-code .card {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+  justify-items: start;
+  text-align: left;
+  column-gap: 10px;
+  row-gap: 2px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.is-showing-code .card .card-code {
+  grid-column: 1 / -1;
+}
+
+/* The card's own line of TypeScript, shown when the child asks to see the code. */
+.card-code {
+  max-width: 100%;
+  font: 600 13px/1.3 ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  color: var(--blue-deep);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card.is-active .card-code,
+.card.is-error .card-code {
+  color: var(--ink);
+}
+
+.code-frame {
+  margin: 0 0 4px;
+  padding: 2px 0 2px 44px;
+  font: 600 14px/1.5 ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  color: var(--ink-soft);
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.code-frame-close {
+  margin: 4px 0 0;
+}
+
+.is-showing-code .program-list {
+  margin-left: 12px;
+  border-left: 3px solid var(--line);
 }
 
 .card-icon {
@@ -1293,27 +1353,7 @@ a.btn {
   font-size: 16px;
 }
 
-/* ---------- Code panel ---------- */
-
-.code-panel pre {
-  margin: 0;
-  padding: 12px;
-  border-radius: 14px;
-  background: #1f2d3d;
-  color: #e6eef6;
-  font: 14px/1.6 ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  overflow-x: auto;
-}
-
-.code-line {
-  display: block;
-  padding: 0 6px;
-  border-radius: 6px;
-}
-
-.code-line.is-active {
-  background: rgba(242, 194, 48, 0.3);
-}
+/* ---------- Code note ---------- */
 
 .code-note {
   margin: 10px 0 0;
@@ -1372,7 +1412,8 @@ a.btn {
   .app {
     gap: 8px;
   }
-  .app-main {
+  .app-main,
+  .app-main.is-showing-code {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
     gap: 10px;

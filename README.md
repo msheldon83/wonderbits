@@ -61,7 +61,7 @@ frames per second with few frames over 33 ms.
 | Pause after the current move | Pause button | P |
 | Reset: robot back to the start, program kept | Reset button | R |
 | Start over: erase the program and begin the level again | Start over, in the program header | |
-| See the code | Header button | C |
+| See the code: each card shows its line of TypeScript | Button above the cards | C |
 
 ## How it is built
 
@@ -74,7 +74,7 @@ src/
   lessons/     Level schema, content parser, validator, pack loader, hints, prediction
   progress/    Progress, stars, badges, settings and the observation log over IndexedDB
   render/      Grid math, DOM and SVG board, animation controller, sequencer
-  editor/      Program editor (cursor, move handles, drag and drop) and the code panel
+  editor/      Program editor (cursor, move handles, drag and drop, inline code view)
   app/         App shell, routes, level map, settings, lesson flow
   perf/        Performance check page
 content/
@@ -82,7 +82,8 @@ content/
 ```
 
 The editor writes the IR. The IR is printed to TypeScript for the "see the
-code" panel and sent to the runtime over `postMessage`. The runtime returns a
+code" view, which shows each card's line on the card, and sent to the
+runtime over `postMessage`. The runtime returns a
 deterministic trace, and only the trace reaches the renderer.
 
 ## Adding a level
