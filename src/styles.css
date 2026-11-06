@@ -182,6 +182,14 @@ a.btn {
   border-left: 3px solid var(--line);
 }
 
+/* Inside the program panel the code is a plain block, not a card of its own. */
+.program-code .code-panel {
+  padding: 0;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 /* min-width 0: a grid item's automatic minimum is its content's width, and
    the board scaler has a fixed pixel width, so without this the column could
    never shrink and the board would never refit on a narrow screen. */
