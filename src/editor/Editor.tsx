@@ -48,8 +48,11 @@ export interface EditorProps {
   highlightCommand?: CommandId | null;
   /** A hint is pointing at this step. */
   highlightNodeId?: NodeId | null;
-  /** The program as code, shown inside the program panel beside the blocks. */
+  /** The program as code, shown inside the program panel beside the blocks when showCode is on. */
   codePanel?: ReactNode;
+  showCode?: boolean;
+  /** Toggle the code view. The button lives in the program panel's header. */
+  onToggleCode?(): void;
 }
 
 /** What is being carried to a gap: a palette card, a program block, or the cursor. */
@@ -84,6 +87,8 @@ export function Editor({
   highlightCommand = null,
   highlightNodeId = null,
   codePanel,
+  showCode = false,
+  onToggleCode,
 }: EditorProps) {
   const locked = lockedProp || readOnly;
   const body = mainBody(program);
@@ -462,6 +467,14 @@ export function Editor({
             )}
           </span>
           <span className="program-tools">
+            {onToggleCode && (
+              <button type="button" className={`btn btn-small btn-code ${showCode ? 'is-on' : ''}`} aria-pressed={showCode} onClick={onToggleCode} aria-keyshortcuts="C" title="Show the same program as TypeScript beside the blocks">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                  <path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16" {...stroke} />
+                </svg>
+                {showCode ? 'Hide code' : 'See code'}
+              </button>
+            )}
             {historyButtons}
             {onRestart && !readOnly && (
               <button type="button" className="btn btn-small btn-restart" onClick={onRestart} disabled={locked} title="Erase the program and start this level again">
@@ -473,7 +486,7 @@ export function Editor({
             )}
           </span>
         </h2>
-        <div className={`program-body ${codePanel ? 'has-code' : ''}`}>
+        <div className={`program-body ${codePanel && showCode ? 'has-code' : ''}`}>
         <div className="program-blocks">
         {carrying && (
           <p className="program-note" role="status">
@@ -577,7 +590,7 @@ export function Editor({
           {dropMarker}
         </ol>
         </div>
-        {codePanel && <div className="program-code">{codePanel}</div>}
+        {codePanel && showCode && <div className="program-code">{codePanel}</div>}
         </div>
       </section>
 

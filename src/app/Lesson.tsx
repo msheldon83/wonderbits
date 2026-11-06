@@ -391,12 +391,6 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
         </div>
       </div>
       <div className="side-col">
-        <button type="button" className="btn btn-quiet btn-code" aria-pressed={showCode} onClick={() => setShowCode((v) => !v)} aria-keyshortcuts="C" title="Show the program as TypeScript beside the blocks">
-          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-            <path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          {showCode ? 'Hide the code' : 'See the code'}
-        </button>
         <Editor
           program={program}
           programming={level.programming}
@@ -413,7 +407,9 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           onUndo={onUndo}
           onRedo={onRedo}
           onRestart={restart}
-          codePanel={showCode ? <CodePanel program={program} activeNodeId={activeNode} /> : undefined}
+          codePanel={<CodePanel program={program} activeNodeId={activeNode} />}
+          showCode={showCode}
+          onToggleCode={() => setShowCode((v) => !v)}
         />
       </div>
 

@@ -262,6 +262,20 @@ describe('Editor: drag and drop', () => {
   });
 });
 
+describe('Editor: see the code', () => {
+  it('toggles the code beside the blocks from the program header', () => {
+    const onToggleCode = vi.fn();
+    const base = { program: programFromCommands(['forward'], sequentialIdFactory()), programming: { allowedCommands: ['forward'] as CommandId[], starterProgram: [] as CommandId[] }, locked: false, activeNodeId: null, errorNodeId: null, newId: sequentialIdFactory('t'), onEdit: () => {}, codePanel: <pre>code here</pre>, onToggleCode };
+    const { rerender } = render(<Editor {...base} />);
+    expect(screen.queryByText('code here')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'See code' }));
+    expect(onToggleCode).toHaveBeenCalledTimes(1);
+    rerender(<Editor {...base} showCode />);
+    expect(screen.getByText('code here')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Hide code' }).getAttribute('aria-pressed')).toBe('true');
+  });
+});
+
 describe('Editor: start over', () => {
   it('shows a Start over button only when given one, and not on read-only levels', () => {
     const onRestart = vi.fn();
