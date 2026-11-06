@@ -1,0 +1,23 @@
+README.md
+  s_6cdecbe60fe9ce::t_e1dd961ebccf49 64
+docs/design-notes.md
+  s_6cdecbe60fe9ce::t_7f572c2e2deb85 15
+src/editor/Editor.tsx
+  s_6cdecbe60fe9ce::t_d92d203bd8bca2 478
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "97eec080d2ccab63ed1e3170bed3af1231ffcb29",
+  "prompts": {},
+  "sessions": {
+    "s_6cdecbe60fe9ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f2154704-1f75-466a-a250-70bdb58091a1",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Mike Sheldon <msheldon@redroverk12.com>"
+    }
+  }
+}
