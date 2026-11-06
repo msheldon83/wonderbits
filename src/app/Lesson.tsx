@@ -307,12 +307,12 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   else if (outcome) {
     const base =
       outcome.status === 'incomplete' && countNodes(program) === 0
-        ? { tone: 'problem' as const, text: 'Your program is empty. Tap a card to add a step.' }
+        ? { tone: 'problem' as const, text: 'Your program is empty. Tap an instruction to add a step.' }
         : outcomeMessage(outcome, errorNode ? findNodeIndex(program, errorNode) + 1 : null, shortfall);
     const guess = guessedRight ? 'Your flag was in the right spot! ' : '';
     message = { tone: base.tone, text: guess + base.text };
   } else if (predicting) message = predictionPrompt();
-  else message = { tone: 'info', text: level.intro ?? 'Help the robot reach the flag. Tap a card to add it to your program.' };
+  else message = { tone: 'info', text: level.intro ?? 'Help the robot reach the flag. Tap an instruction to add it to your program.' };
 
   const busy = !runtime || phase === 'running';
   const marks = [
@@ -322,7 +322,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   const starSlots: { key: keyof Stars; label: string }[] = [
     { key: 'complete', label: 'Reached the flag' },
     { key: 'noHints', label: 'No hints' },
-    ...(level.stars.budget !== undefined ? [{ key: 'budget' as const, label: `${level.stars.budget} cards or fewer` }] : []),
+    ...(level.stars.budget !== undefined ? [{ key: 'budget' as const, label: `${level.stars.budget} instructions or fewer` }] : []),
   ];
 
   return (
@@ -391,7 +391,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
         </div>
       </div>
       <div className="side-col">
-        <button type="button" className="btn btn-quiet btn-code" aria-pressed={showCode} onClick={() => setShowCode((v) => !v)} aria-keyshortcuts="C" title="Show the program as TypeScript beside the cards">
+        <button type="button" className="btn btn-quiet btn-code" aria-pressed={showCode} onClick={() => setShowCode((v) => !v)} aria-keyshortcuts="C" title="Show the program as TypeScript beside the blocks">
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
             <path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -413,13 +413,9 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           onUndo={onUndo}
           onRedo={onRedo}
           onRestart={restart}
+          codePanel={showCode ? <CodePanel program={program} activeNodeId={activeNode} /> : undefined}
         />
       </div>
-      {showCode && (
-        <aside className="code-col">
-          <CodePanel program={program} activeNodeId={activeNode} />
-        </aside>
-      )}
 
       {completion && (
         <div className="dialog-backdrop" role="presentation">

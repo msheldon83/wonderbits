@@ -56,7 +56,7 @@ describe('Editor: tap to add, delete and move', () => {
     render(<Harness start={['forward']} onChange={(p) => (last = p)} />);
     fireEvent.click(rotateCard());
     expect(commandsOf(last!)).toEqual(['forward', 'rotateCW']);
-    expect(screen.queryByText('Tap a card to add a step')).toBeNull();
+    expect(screen.queryByText('Tap an instruction to add a step')).toBeNull();
   });
 
   it('shows a Move and a Delete button on every block', () => {

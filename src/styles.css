@@ -156,21 +156,30 @@ a.btn {
   gap: 16px;
 }
 
-/* With the code shown, it gets its own column beside the program and the
-   board gives up the room. */
+/* With the code shown, the program panel holds blocks and code side by
+   side, so the side column widens and the board gives up the room. */
 .app-main.is-showing-code {
-  grid-template-columns: minmax(260px, 1fr) minmax(280px, 360px) minmax(240px, 340px);
+  grid-template-columns: minmax(260px, 1fr) minmax(540px, 720px);
 }
 
-.code-col {
+.program-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.program-body.has-code {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 16px;
+}
+
+.program-blocks {
   min-width: 0;
-  min-height: 0;
-  overflow-y: auto;
 }
 
-.code-col .code-panel {
-  position: sticky;
-  top: 0;
+.program-code {
+  min-width: 0;
+  padding-left: 16px;
+  border-left: 3px solid var(--line);
 }
 
 /* min-width 0: a grid item's automatic minimum is its content's width, and
@@ -1316,13 +1325,20 @@ a.btn {
 
 /* ---------- Code panel ---------- */
 
+.code-title {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+
 .code-panel pre {
   margin: 0;
   padding: 12px;
   border-radius: 14px;
   background: #1f2d3d;
   color: #e6eef6;
-  font: 15px/1.7 ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font: 13px/1.7 ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   overflow-x: auto;
 }
 
@@ -1398,20 +1414,13 @@ a.btn {
     grid-template-rows: auto minmax(0, 1fr);
     gap: 10px;
   }
-  /* Code on: the board shrinks to a strip and the cards and the code share
-     the row beneath it. */
+  /* Code on: the board shrinks to a strip so the program panel, with blocks
+     and code side by side, gets the height. */
   .app-main.is-showing-code {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
-  }
-  .app-main.is-showing-code .stage-col {
-    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr);
   }
   .app-main.is-showing-code .board-viewport {
     height: clamp(120px, 22dvh, 300px);
-  }
-  .code-col {
-    overflow-y: auto;
   }
   .board-viewport {
     flex: none;
@@ -1441,20 +1450,18 @@ a.btn {
   }
 }
 
-/* Phones: no room for two columns; the code goes under the cards and the
-   whole main area scrolls. */
+/* Phones: no room for blocks and code side by side; the code goes under
+   the blocks. */
 @media (max-width: 600px) {
-  .app-main.is-showing-code {
+  .program-body.has-code {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
-    overflow-y: auto;
+    row-gap: 12px;
   }
-  .app-main.is-showing-code .stage-col {
-    grid-column: auto;
-  }
-  .app-main.is-showing-code .side-col,
-  .app-main.is-showing-code .code-col {
-    overflow: visible;
+  .program-code {
+    padding-left: 0;
+    border-left: 0;
+    padding-top: 12px;
+    border-top: 3px solid var(--line);
   }
 }
 

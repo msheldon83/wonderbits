@@ -17,7 +17,7 @@
  * arrows walk them; Enter places; Escape cancels. Delete on a block removes
  * it, and Shift plus the up and down arrows move it by one.
  */
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import type { IdFactory } from '../ir/ids';
 import { isNoOpMove, type EditOp } from '../ir/ops';
 import { mainBody } from '../ir/program';
@@ -48,6 +48,8 @@ export interface EditorProps {
   highlightCommand?: CommandId | null;
   /** A hint is pointing at this step. */
   highlightNodeId?: NodeId | null;
+  /** The program as code, shown inside the program panel beside the blocks. */
+  codePanel?: ReactNode;
 }
 
 /** What is being carried to a gap: a palette card, a program block, or the cursor. */
@@ -81,6 +83,7 @@ export function Editor({
   readOnly = false,
   highlightCommand = null,
   highlightNodeId = null,
+  codePanel,
 }: EditorProps) {
   const locked = lockedProp || readOnly;
   const body = mainBody(program);
@@ -410,10 +413,10 @@ export function Editor({
   return (
     <div className={`editor ${drag ? 'is-dragging' : ''} ${readOnly ? 'is-readonly' : ''}`} ref={root} onKeyDown={onKeyDown}>
       {!readOnly && (
-      <section className="palette" aria-label="Command cards">
+      <section className="palette" aria-label="Instructions">
         <h2 className="panel-title">
           <span className="panel-title-text">
-            Cards
+            Instructions
             {body.length > 0 && cursor < body.length && <span className="palette-hint">next goes before step {cursor + 1}</span>}
           </span>
         </h2>
@@ -470,6 +473,8 @@ export function Editor({
             )}
           </span>
         </h2>
+        <div className={`program-body ${codePanel ? 'has-code' : ''}`}>
+        <div className="program-blocks">
         {carrying && (
           <p className="program-note" role="status">
             Tap an arrow to put {carriedName} there.
@@ -478,7 +483,7 @@ export function Editor({
         <ol className={`program-list ${carrying ? 'is-moving' : ''}`} ref={listRef}>
           {body.length === 0 && remaining === null && (
             <li className="slot-empty" aria-hidden="true">
-              <span>{drag ? 'Drop it here' : 'Tap a card to add a step'}</span>
+              <span>{drag ? 'Drop it here' : 'Tap an instruction to add a step'}</span>
             </li>
           )}
           {body.map((node, i) => {
@@ -564,13 +569,16 @@ export function Editor({
             Array.from({ length: remaining }, (_, k) => (
               <li key={`empty-${k}`} className={`program-step is-empty ${budgetTone}`} aria-hidden="true">
                 <span className="step-number">{body.length + k + 1}</span>
-                <span className="empty-step">{body.length === 0 && k === 0 ? (drag ? 'Drop it here' : 'Tap a card to add a step') : ''}</span>
+                <span className="empty-step">{body.length === 0 && k === 0 ? (drag ? 'Drop it here' : 'Tap an instruction to add a step') : ''}</span>
               </li>
             ))}
           {cursorCaret}
           {carets}
           {dropMarker}
         </ol>
+        </div>
+        {codePanel && <div className="program-code">{codePanel}</div>}
+        </div>
       </section>
 
       {drag && ghostCommand && (

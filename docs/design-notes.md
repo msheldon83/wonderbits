@@ -4,17 +4,23 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
-## Plan change: the code panel is a column beside the cards (2026-11-06)
+## Plan change: the code lives inside the Program panel (2026-11-06)
 
 The "see the code" panel used to sit under the program in the side
-column, so on an iPad the cards and their code were never in view
-together. Showing each card's line on the card itself was tried first and
-rejected: code interwoven with the blocks was confusing. Now the panel is
-its own column. In landscape the layout becomes board, cards, code, and
-the board gives up the width. In portrait the board shrinks to a strip
-and the cards and the code share the row beneath it. On a phone the code
-stacks under the cards. The panel is otherwise the step 2 panel: the full
-printed program with the running line highlighted.
+column, so on an iPad the blocks and their code were never in view
+together. Two other shapes were tried the same day and rejected: each
+card showing its own line (code interwoven with blocks was confusing),
+and a third column for the code (the code is the program, so it belongs
+in the Program panel). Now "See the code" splits the Program panel in
+two: the blocks on the left, the same program as TypeScript on the right,
+with the running line highlighted beside the running block. The side
+column widens in landscape and the board gives up the width; in portrait
+the board shrinks to a strip so the panel gets the height; on a phone the
+code goes under the blocks inside the panel.
+
+The palette is titled "Instructions", not "Cards": the panel holds the
+instructions the level allows, which is what they are to the child.
+Level texts still say "card" for the pieces themselves.
 
 ## Build step 4: lessons and the meta-loop (2026-11-06)
 
