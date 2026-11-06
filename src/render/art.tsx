@@ -90,12 +90,13 @@ export function Tree({ theme }: { theme: Theme }) {
   );
 }
 
-export function GoalFlag({ theme }: { theme: Theme }) {
+export function GoalFlag({ theme, ring = true }: { theme: Theme; ring?: boolean }) {
   // A ring on the ground marks the goal tile, and the flag stands in the
   // top-right corner, so both stay visible when the robot is on the tile.
+  // The prediction marker draws its own ring, so it asks for none here.
   return (
     <g>
-      <circle cx={0} cy={0} r={38} fill={theme.goal.flag} fillOpacity={0.22} stroke={theme.goal.flag} strokeWidth={4} strokeDasharray="10 7" />
+      {ring && <circle cx={0} cy={0} r={38} fill={theme.goal.flag} fillOpacity={0.22} stroke={theme.goal.flag} strokeWidth={4} strokeDasharray="10 7" />}
       <ellipse cx={24} cy={-4} rx={9} ry={4} fill={theme.goal.tuft} />
       <rect x={21.5} y={-44} width={5} height={40} rx={2.5} fill={theme.goal.pole} />
       <circle cx={24} cy={-45} r={3.5} fill={theme.goal.pole} />
@@ -154,3 +155,52 @@ export function Robot() {
 
 /** Arrow pointing up, drawn on the tile ahead and rotated to the facing. */
 export const ARROW_POINTS = '0,-26 22,-3 9,-3 9,22 -9,22 -9,-3 -22,-3';
+
+/**
+ * Ghost of the robot on the tile ahead: where Forward will land, facing the
+ * same way. Drawn pointing up; the indicator element is rotated to the facing.
+ */
+export function GhostRobot() {
+  return (
+    <g className="ghost-robot">
+      <circle cx={0} cy={0} r={30} fill="rgba(255,255,255,0.28)" stroke="rgba(255,255,255,0.95)" strokeWidth={4} strokeDasharray="9 7" />
+      <ellipse cx={0} cy={-27} rx={9} ry={5} fill="rgba(242, 194, 48, 0.85)" />
+      <circle cx={0} cy={0} r={16} fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth={2.5} />
+    </g>
+  );
+}
+
+/** The turn cue's drawing box, centred on the robot. */
+export const CUE_BOX = 128;
+
+/**
+ * Curved arrow over the top of the robot, sweeping clockwise and ending in
+ * an arrowhead that points down the right side. Mirror it for counter-clockwise.
+ * Shared by the board cue and the command card icons so they match.
+ */
+export function TurnArrow({ r, stroke, color = 'currentColor' }: { r: number; stroke: number; color?: string }) {
+  const head = stroke * 2.4;
+  return (
+    <g fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
+      <path d={`M ${-r} 0 A ${r} ${r} 0 0 1 ${r} 0`} />
+      <path d={`M ${r - head} ${-head * 0.35} L ${r} ${head} L ${r + head} ${-head * 0.35}`} />
+    </g>
+  );
+}
+
+/** Both turn directions; CSS shows the one the controller asks for. */
+export function TurnCue() {
+  const color = 'rgba(255, 255, 255, 0.95)';
+  return (
+    <g className="turn-cue-art">
+      <g className="turn-cw">
+        <TurnArrow r={50} stroke={9} color="rgba(29, 48, 71, 0.28)" />
+        <TurnArrow r={50} stroke={6} color={color} />
+      </g>
+      <g className="turn-ccw" transform="scale(-1 1)">
+        <TurnArrow r={50} stroke={9} color="rgba(29, 48, 71, 0.28)" />
+        <TurnArrow r={50} stroke={6} color={color} />
+      </g>
+    </g>
+  );
+}

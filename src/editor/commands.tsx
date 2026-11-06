@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import type { CommandId } from '../ir/types';
+import { TurnArrow } from '../render/art';
 
 export interface CommandInfo {
   label: string;
@@ -24,9 +25,10 @@ export const COMMANDS: Record<CommandId, CommandInfo> = {
     label: 'Rotate',
     description: 'Rotate clockwise',
     icon: (
-      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
-        <path d="M24 11a10 10 0 1 0 2 9" {...stroke} />
-        <path d="M25 4v7h-7" {...stroke} />
+      <svg viewBox="-16 -16 32 32" width="28" height="28" aria-hidden="true">
+        <g transform="translate(0 3)">
+          <TurnArrow r={10} stroke={3.2} />
+        </g>
       </svg>
     ),
   },
@@ -34,9 +36,10 @@ export const COMMANDS: Record<CommandId, CommandInfo> = {
     label: 'Rotate',
     description: 'Rotate counter-clockwise',
     icon: (
-      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
-        <path d="M8 11a10 10 0 1 1-2 9" {...stroke} />
-        <path d="M7 4v7h7" {...stroke} />
+      <svg viewBox="-16 -16 32 32" width="28" height="28" aria-hidden="true">
+        <g transform="translate(0 3) scale(-1 1)">
+          <TurnArrow r={10} stroke={3.2} />
+        </g>
       </svg>
     ),
   },

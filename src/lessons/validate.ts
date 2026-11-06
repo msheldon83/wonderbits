@@ -95,6 +95,9 @@ export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
     errors.push(`referenceSolution does not solve the level (outcome: ${ref.outcome.status})`);
   }
 
+  validateActivity(puzzle, errors);
+  validateHints(puzzle, errors);
+
   const shortest = shortestSolution(puzzle);
   const min = shortest?.length ?? null;
   if (min === null) {
@@ -112,4 +115,68 @@ export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
   }
 
   return { errors, warnings, minInstructions: min };
+}
+
+const multiset = (cmds: CommandId[]) => [...cmds].sort().join(',');
+
+/** Each activity makes its own promises about the starter program and cards. */
+function validateActivity(puzzle: PuzzleDefinition, errors: string[]): void {
+  const { programming, referenceSolution, curriculum, prediction } = puzzle;
+  const starter = programming.starterProgram;
+  const solves = (cmds: CommandId[]) =>
+    interpretAll({ program: programFromCommands(cmds, sequentialIdFactory()), world: puzzle.world, objective: puzzle.objective, limits: { maxSteps: 1000 } }).outcome.status === 'success';
+  switch (curriculum.activity) {
+    case 'run':
+    case 'predict':
+      if (!solves(starter)) errors.push(`a ${curriculum.activity} level's starterProgram must already solve the level`);
+      if (!prediction) errors.push(`a ${curriculum.activity} level must set prediction`);
+      break;
+    case 'reorder':
+      if (!programming.suppliedCards) errors.push('a reorder level must list suppliedCards');
+      else if (multiset(programming.suppliedCards) !== multiset(referenceSolution)) {
+        errors.push('suppliedCards must be exactly the cards of referenceSolution, in any order');
+      }
+      if (starter.length > 0) errors.push('a reorder level starts with an empty program');
+      break;
+    case 'debug': {
+      if (starter.length === 0) errors.push('a debug level needs a starterProgram to repair');
+      if (solves(starter)) errors.push('a debug level\'s starterProgram must not already solve the level');
+      const diffs = starter.length === referenceSolution.length ? starter.filter((c, i) => c !== referenceSolution[i]).length : -1;
+      if (diffs !== 1) errors.push('a debug level\'s starterProgram must differ from referenceSolution in exactly one instruction');
+      break;
+    }
+    case 'build':
+      if (solves(starter)) errors.push('a build level\'s starterProgram must not already solve the level');
+      break;
+  }
+  if (prediction && !prediction.askTile) errors.push('prediction must ask for the tile');
+}
+
+/** Hint targets must refer to real tiles, cards and steps. */
+function validateHints(puzzle: PuzzleDefinition, errors: string[]): void {
+  const { hints, world, programming, referenceSolution } = puzzle;
+  const kinds = hints.map((h) => h.kind);
+  if (kinds[0] !== 'region') errors.push('hints[0] must orient attention: kind "region"');
+  if (kinds[1] !== 'card' && kinds[1] !== 'step') errors.push('hints[1] must identify a card or a step: kind "card" or "step"');
+  if (kinds[2] !== 'fill') errors.push('hints[2] must fill one slot: kind "fill"');
+  hints.forEach((h, i) => {
+    switch (h.kind) {
+      case 'region':
+        h.cells.forEach((c) => {
+          if (tileAt(world, c) === 'outside') errors.push(`hints[${i}] points at ${cellKey(c)}, which is off the board`);
+        });
+        break;
+      case 'card':
+        if (!programming.allowedCommands.includes(h.command)) errors.push(`hints[${i}] names ${h.command}, which this level does not allow`);
+        break;
+      case 'step':
+        if (h.index >= programming.starterProgram.length) errors.push(`hints[${i}] points at step ${h.index + 1}, but the starter program has ${programming.starterProgram.length} steps`);
+        break;
+      case 'fill':
+        if (referenceSolution[h.slot] !== h.command) {
+          errors.push(`hints[${i}] fills slot ${h.slot} with ${h.command}, but the reference solution has ${referenceSolution[h.slot] ?? 'nothing'} there`);
+        }
+        break;
+    }
+  });
 }

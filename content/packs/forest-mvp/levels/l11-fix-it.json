@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "id": "l11-fix-it",
+  "title": "Fix it",
+  "intro": "This program has one wrong card. Run it, watch, then fix it.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...",
+      "...",
+      "###"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 1
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "sequencing",
+    "activity": "debug"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": [
+      "forward",
+      "forward",
+      "rotateCCW",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 1
+        }
+      ],
+      "text": "At the corner the robot should turn down toward the flag."
+    },
+    {
+      "kind": "step",
+      "index": 2,
+      "text": "Watch which way this Rotate turns the robot."
+    },
+    {
+      "kind": "fill",
+      "slot": 2,
+      "command": "rotateCW",
+      "text": "Down from looking right is a clockwise turn."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward",
+    "rotateCW",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 4
+  }
+}

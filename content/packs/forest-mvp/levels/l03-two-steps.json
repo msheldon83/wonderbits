@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "id": "l03-two-steps",
+  "title": "Two steps",
+  "intro": "One Forward is not enough. Add another to reach the flag.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....",
+      ".##."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "sequencing",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward"
+    ],
+    "maxInstructions": 2,
+    "starterProgram": [
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "text": "Count the tiles between the robot and the flag."
+    },
+    {
+      "kind": "card",
+      "command": "forward",
+      "text": "Each Forward is one tile. Two tiles need two Forwards."
+    },
+    {
+      "kind": "fill",
+      "slot": 1,
+      "command": "forward",
+      "text": "A second Forward goes here."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 2
+  }
+}

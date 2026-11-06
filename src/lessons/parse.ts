@@ -4,7 +4,7 @@
  */
 import { isCommandId, type CommandId } from '../ir/types';
 import { FACINGS, type Cell, type Facing, type TileKind } from '../sim/types';
-import { CONTENT_SCHEMA_VERSION, type Activity, type PackManifest, type PuzzleDefinition } from './types';
+import { CONTENT_SCHEMA_VERSION, type Activity, type HintStep, type PackManifest, type PuzzleDefinition } from './types';
 
 export class ContentError extends Error {
   constructor(
@@ -66,6 +66,32 @@ class Reader {
     if (v !== CONTENT_SCHEMA_VERSION) this.fail(path, `expected schema version ${CONTENT_SCHEMA_VERSION}`);
     return CONTENT_SCHEMA_VERSION;
   }
+  command(v: unknown, path: string): CommandId {
+    if (isCommandId(v)) return v;
+    this.fail(path, `unknown command ${JSON.stringify(v)}`);
+    return 'forward';
+  }
+  hint(v: unknown, path: string): HintStep {
+    const o = this.obj(v, path);
+    const text = this.str(o.text, `${path}.text`);
+    switch (o.kind) {
+      case 'region':
+        return {
+          kind: 'region',
+          cells: Array.isArray(o.cells) && o.cells.length > 0 ? o.cells.map((c, i) => this.cell(c, `${path}.cells[${i}]`)) : (this.fail(`${path}.cells`, 'expected at least one cell'), []),
+          text,
+        };
+      case 'card':
+        return { kind: 'card', command: this.command(o.command, `${path}.command`), text };
+      case 'step':
+        return { kind: 'step', index: this.int(o.index, `${path}.index`), text };
+      case 'fill':
+        return { kind: 'fill', slot: this.int(o.slot, `${path}.slot`), command: this.command(o.command, `${path}.command`), text };
+      default:
+        this.fail(`${path}.kind`, 'expected region, card, step or fill');
+        return { kind: 'region', cells: [], text };
+    }
+  }
 }
 
 export function parsePuzzle(json: unknown, source: string): PuzzleDefinition {
@@ -98,6 +124,14 @@ export function parsePuzzle(json: unknown, source: string): PuzzleDefinition {
   if (!ACTIVITIES.includes(activity)) r.fail('curriculum.activity', `expected one of ${ACTIVITIES.join(', ')}`);
   const programming = r.obj(root.programming, 'programming');
   const stars = r.obj(root.stars, 'stars');
+  const hintsRaw = Array.isArray(root.hints) ? root.hints : (r.fail('hints', 'expected an array of three hints'), []);
+  if (hintsRaw.length !== 3) r.fail('hints', `expected exactly three hints, got ${hintsRaw.length}`);
+  const hints = [0, 1, 2].map((i) => r.hint(hintsRaw[i] ?? {}, `hints[${i}]`)) as [HintStep, HintStep, HintStep];
+  let prediction: PuzzleDefinition['prediction'];
+  if (root.prediction !== undefined) {
+    const o = r.obj(root.prediction, 'prediction');
+    prediction = { askTile: r.bool(o.askTile, 'prediction.askTile') };
+  }
 
   let maxPerCommand: Partial<Record<CommandId, number>> | undefined;
   if (programming.maxPerCommand !== undefined) {
@@ -113,6 +147,7 @@ export function parsePuzzle(json: unknown, source: string): PuzzleDefinition {
     schemaVersion: r.version(root.schemaVersion, 'schemaVersion'),
     id: r.str(root.id, 'id'),
     title: r.str(root.title, 'title'),
+    ...(root.intro !== undefined && { intro: r.str(root.intro, 'intro') }),
     themeId: r.str(root.themeId, 'themeId'),
     world: {
       width,
@@ -140,6 +175,8 @@ export function parsePuzzle(json: unknown, source: string): PuzzleDefinition {
         suppliedCards: r.commands(programming.suppliedCards, 'programming.suppliedCards'),
       }),
     },
+    ...(prediction && { prediction }),
+    hints,
     referenceSolution: r.commands(root.referenceSolution, 'referenceSolution'),
     stars: {
       noHints: r.bool(stars.noHints, 'stars.noHints'),

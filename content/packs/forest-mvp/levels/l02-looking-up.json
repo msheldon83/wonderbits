@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "id": "l02-looking-up",
+  "title": "Looking up",
+  "intro": "Now the robot is looking up the screen. Place the flag where it will end up, then Run.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..",
+      "..",
+      ".."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 2,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 0,
+      "y": 1
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "execution",
+    "activity": "run"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward"
+    ],
+    "maxInstructions": 1,
+    "starterProgram": [
+      "forward"
+    ]
+  },
+  "prediction": {
+    "askTile": true
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 1
+        }
+      ],
+      "text": "Up on the screen is where the headlamp points."
+    },
+    {
+      "kind": "card",
+      "command": "forward",
+      "text": "Forward always goes the way the robot is looking."
+    },
+    {
+      "kind": "fill",
+      "slot": 0,
+      "command": "forward",
+      "text": "This program has one Forward."
+    }
+  ],
+  "referenceSolution": [
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

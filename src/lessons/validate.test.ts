@@ -16,6 +16,11 @@ const base = {
   objective: { reachGoal: true, collectAll: false },
   curriculum: { concept: 'sequencing', activity: 'build' },
   programming: { allowedCommands: ['forward'], maxInstructions: 4, starterProgram: ['forward'] },
+  hints: [
+    { kind: 'region', cells: [{ x: 3, y: 1 }], text: 'Look at the flag.' },
+    { kind: 'card', command: 'forward', text: 'Forward moves one tile.' },
+    { kind: 'fill', slot: 1, command: 'forward', text: 'Another Forward goes here.' },
+  ],
   referenceSolution: ['forward', 'forward', 'forward'],
   stars: { noHints: true, budget: 3 },
 };

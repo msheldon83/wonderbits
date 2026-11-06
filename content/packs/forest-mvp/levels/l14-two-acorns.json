@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "id": "l14-two-acorns",
+  "title": "Two acorns",
+  "intro": "Collect both acorns and reach the flag. Build the whole program yourself.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...",
+      ".#.",
+      "..."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 2,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 0,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 2,
+        "y": 2
+      },
+      {
+        "x": 2,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "sequencing",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 12,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "text": "Right, then up, then left: a loop around the rock."
+    },
+    {
+      "kind": "card",
+      "command": "rotateCCW",
+      "text": "Both corners turn against the clock."
+    },
+    {
+      "kind": "fill",
+      "slot": 2,
+      "command": "rotateCCW",
+      "text": "After two Forwards, Rotate against the clock."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward",
+    "rotateCCW",
+    "forward",
+    "forward",
+    "rotateCCW",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 8
+  }
+}

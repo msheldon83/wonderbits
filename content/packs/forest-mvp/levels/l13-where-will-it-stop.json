@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "id": "l13-where-will-it-stop",
+  "title": "Where will it end up?",
+  "intro": "Read the program carefully. Place the flag where the robot will end up, then Run.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "_....",
+      "..#..",
+      ".#...",
+      "...._"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 3,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 1,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "transfer",
+    "activity": "predict"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 6,
+    "starterProgram": [
+      "forward",
+      "forward",
+      "rotateCW",
+      "forward",
+      "rotateCCW",
+      "forward"
+    ]
+  },
+  "prediction": {
+    "askTile": true
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 0
+        }
+      ],
+      "text": "Follow the steps one tile at a time."
+    },
+    {
+      "kind": "card",
+      "command": "rotateCW",
+      "text": "Each Rotate changes where the headlamp points, not where the robot is."
+    },
+    {
+      "kind": "fill",
+      "slot": 0,
+      "command": "forward",
+      "text": "The first card moves up one tile."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward",
+    "rotateCW",
+    "forward",
+    "rotateCCW",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

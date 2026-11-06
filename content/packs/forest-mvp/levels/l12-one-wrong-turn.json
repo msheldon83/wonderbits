@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "id": "l12-one-wrong-turn",
+  "title": "One wrong turn",
+  "intro": "One card sends the robot the wrong way. Find it and swap it.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...",
+      ".#.",
+      "..."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 2,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 2,
+      "y": 1
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "sequencing",
+    "activity": "debug"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 5,
+    "starterProgram": [
+      "rotateCW",
+      "forward",
+      "forward",
+      "rotateCW",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 1
+        }
+      ],
+      "text": "At the far corner the robot should turn up toward the flag."
+    },
+    {
+      "kind": "step",
+      "index": 3,
+      "text": "Which way does this Rotate turn the robot?"
+    },
+    {
+      "kind": "fill",
+      "slot": 3,
+      "command": "rotateCCW",
+      "text": "Up from looking right is a turn against the clock."
+    }
+  ],
+  "referenceSolution": [
+    "rotateCW",
+    "forward",
+    "forward",
+    "rotateCCW",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 5
+  }
+}

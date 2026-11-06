@@ -1,0 +1,464 @@
+/**
+ * One level: the board, the run controls, prediction, hints, the editor,
+ * the code panel and the completion dialog. Keyed by level id in App, so
+ * switching levels starts fresh. Everything the child does is recorded in
+ * the observation log through the progress store.
+ */
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CodePanel } from '../editor/CodePanel';
+import { Editor } from '../editor/Editor';
+import { paletteFor } from '../editor/palette';
+import { canRedo, canUndo, createHistory, push, redo, undo, type History } from '../ir/history';
+import { randomIdFactory } from '../ir/ids';
+import { applyOp, type EditOp } from '../ir/ops';
+import { countNodes, findNodeIndex, programFromCommands } from '../ir/program';
+import type { NodeId, ProgramIR } from '../ir/types';
+import { hintEffect, type HintEffect } from '../lessons/hints';
+import { predictionCorrect } from '../lessons/prediction';
+import type { Prediction, PuzzleDefinition } from '../lessons/types';
+import type { ProgressStore } from '../progress/store';
+import type { BadgeId, Settings, Stars } from '../progress/types';
+import { Board } from '../render/Board';
+import type { BoardController } from '../render/controller';
+import { Sequencer } from '../render/sequencer';
+import { themeFor } from '../render/themes';
+import { DEFAULT_LIMITS, type RunOutcome, type RunResult, type Runtime } from '../runtime/contract';
+import type { Cell, Facing } from '../sim/types';
+import { initialState } from '../sim/world';
+import { useMotion } from './hooks';
+import { BADGE_INFO, BadgeIcon, Star } from './icons';
+import { hashFor } from './levels';
+import { outcomeMessage, type Shortfall, type Tone } from './messages';
+
+/**
+ * editing: the child is building the program (or predicting).
+ * running: the trace is playing; editing is locked.
+ * paused: playback stopped between steps; Run continues, Step plays one.
+ * done: the trace finished; the outcome is shown.
+ */
+type Phase = 'editing' | 'running' | 'paused' | 'done';
+const FACING_WORDS: Record<Facing, string> = { N: 'up', E: 'right', S: 'down', W: 'left' };
+
+function describeBoard(level: PuzzleDefinition): string {
+  const { world } = level;
+  const extras = world.collectibles.length ? ` ${world.collectibles.length} acorn${world.collectibles.length > 1 ? 's' : ''} to collect.` : '';
+  return (
+    `Island ${world.width} tiles wide and ${world.height} tiles deep. ` +
+    `Robot at column ${world.robot.x + 1}, row ${world.robot.y + 1}, looking ${FACING_WORDS[world.robot.facing]}. ` +
+    `Flag at column ${world.goal.x + 1}, row ${world.goal.y + 1}.${extras}`
+  );
+}
+
+const isTypingTarget = (t: EventTarget | null) =>
+  t instanceof HTMLElement && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+
+export interface LessonProps {
+  level: PuzzleDefinition;
+  runtime: Runtime | null;
+  store: ProgressStore;
+  settings: Settings;
+  nextLevelId: string | null;
+  onGoTo(hash: string): void;
+}
+
+interface Completion {
+  stars: Stars;
+  newBadges: BadgeId[];
+}
+
+export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }: LessonProps) {
+  const theme = themeFor(level.themeId);
+  const newId = useMemo(() => randomIdFactory(), []);
+  const [history, setHistory] = useState<History>(() => createHistory(programFromCommands(level.programming.starterProgram, newId)));
+  const program = history.present;
+  const [phase, setPhase] = useState<Phase>('editing');
+  const [outcome, setOutcome] = useState<RunOutcome | null>(null);
+  const [shortfall, setShortfall] = useState<Shortfall | undefined>(undefined);
+  const [activeNode, setActiveNode] = useState<NodeId | null>(null);
+  const [position, setPosition] = useState(0);
+  const [showCode, setShowCode] = useState(false);
+  const [prediction, setPrediction] = useState<Prediction | null>(null);
+  /** True once the flag was placed on the right tile; the run then plays. */
+  const [guessedRight, setGuessedRight] = useState(false);
+  /** Tiles guessed wrong so far, marked on the board until a fresh start. */
+  const [wrongGuesses, setWrongGuesses] = useState<Cell[]>([]);
+  const [hintsUsed, setHintsUsed] = useState(0);
+  const [hint, setHint] = useState<HintEffect | null>(null);
+  const [completion, setCompletion] = useState<Completion | null>(null);
+  const motion = useMotion(1, settings.reducedMotion);
+
+  const controller = useRef<BoardController | null>(null);
+  const sequencer = useRef<Sequencer | null>(null);
+  const runToken = useRef(0);
+  const celebration = useRef<AbortController | null>(null);
+  /** The trace for the current program, computed once per edit. */
+  const cache = useRef<{ program: ProgramIR; result: RunResult } | null>(null);
+  const phaseRef = useRef<Phase>('editing');
+  phaseRef.current = phase;
+  const completedRef = useRef(false);
+
+  const activity = level.curriculum.activity;
+  const readOnly = activity === 'run' || activity === 'predict';
+  /** Prediction mode: the run only plays once the flag is on the right tile. */
+  const predicting = level.prediction !== undefined && !guessedRight;
+  const predictionOk = !predicting || prediction !== null;
+
+  // The log: opened on mount, abandoned on unmount unless completed.
+  useEffect(() => {
+    store.record({ levelId: level.id, kind: 'level-opened' });
+    return () => {
+      if (!completedRef.current) store.record({ levelId: level.id, kind: 'level-abandoned' });
+    };
+  }, [store, level.id]);
+
+  const onControllers = useCallback((cs: BoardController[] | null) => {
+    controller.current = cs?.[0] ?? null;
+    sequencer.current = controller.current
+      ? new Sequencer(controller.current, { onEvent: (e) => setActiveNode(e?.nodeId ?? null) })
+      : null;
+  }, []);
+
+  const reset = useCallback(() => {
+    runToken.current++;
+    celebration.current?.abort();
+    sequencer.current?.reset();
+    setPhase('editing');
+    setOutcome(null);
+    setActiveNode(null);
+    setPosition(0);
+    setCompletion(null);
+    // A fresh go means a fresh guess: the placed flag, its result and the wrong marks go too.
+    setPrediction(null);
+    setGuessedRight(false);
+    setWrongGuesses([]);
+  }, []);
+
+  /** Start the level afresh: starter program, no hints used, no guess, robot at the start. */
+  const restart = useCallback(() => {
+    reset();
+    cache.current = null;
+    setHistory(createHistory(programFromCommands(level.programming.starterProgram, newId)));
+    setHintsUsed(0);
+    setHint(null);
+    store.record({ levelId: level.id, kind: 'level-restarted' });
+  }, [reset, level, newId, store]);
+
+  const ensureResult = useCallback(async (): Promise<RunResult | null> => {
+    if (cache.current?.program === program) return cache.current.result;
+    if (!runtime) return null;
+    const result = await runtime.run({ program, world: level.world, objective: level.objective, limits: DEFAULT_LIMITS });
+    cache.current = { program, result };
+    return result;
+  }, [runtime, program, level]);
+
+  /** Run plays to the end; Step plays one event. Both continue from a pause. */
+  const start = useCallback(
+    async (mode: 'play' | 'step') => {
+      const seq = sequencer.current;
+      if (!seq || !runtime || phase === 'running' || !predictionOk) return;
+      const token = ++runToken.current;
+      celebration.current?.abort();
+      const resuming = phase === 'paused';
+      setPhase('running');
+      setOutcome(null);
+      setHint(null);
+      setCompletion(null);
+      if (!resuming) store.record({ levelId: level.id, kind: 'run-started', steps: countNodes(program) });
+      const result = await ensureResult();
+      if (!result || token !== runToken.current) return;
+      // A wrong flag does not get a run: mark the tile and ask again.
+      if (predicting && prediction) {
+        const end = result.final ?? result.trace.at(-1)?.after ?? initialState(level.world);
+        const correct = predictionCorrect(prediction, end.robot);
+        store.record({ levelId: level.id, kind: 'prediction-made', cell: prediction.cell, correct });
+        if (!correct) {
+          setWrongGuesses((w) => [...w, prediction.cell]);
+          setPrediction(null);
+          setPhase('editing');
+          return;
+        }
+        setGuessedRight(true);
+      }
+      if (!resuming) seq.load(result.trace, initialState(level.world));
+      if (mode === 'play') await seq.play();
+      else await seq.step();
+      if (token !== runToken.current) return;
+      setPosition(seq.position);
+      if (seq.state === 'paused') {
+        setPhase('paused');
+        return;
+      }
+      if (seq.state !== 'finished') return;
+      setOutcome(result.outcome);
+      setPhase('done');
+      const end = result.final ?? result.trace.at(-1)?.after ?? initialState(level.world);
+      setShortfall({ onGoal: end.robot.x === level.world.goal.x && end.robot.y === level.world.goal.y, missing: level.world.collectibles.length - end.collected.length });
+
+      if (result.outcome.status === 'blocked') {
+        store.record({ levelId: level.id, kind: 'trace-halted', nodeId: result.outcome.nodeId, reason: result.outcome.reason });
+      }
+      if (result.outcome.status === 'success') {
+        setActiveNode(null);
+        const before = store.getSnapshot().progress.badges;
+        const stars = store.complete({ levelId: level.id, usedHints: hintsUsed > 0, steps: countNodes(program), budget: level.stars.budget });
+        const after = store.getSnapshot().progress.badges;
+        completedRef.current = true;
+        const ac = new AbortController();
+        celebration.current = ac;
+        await controller.current?.celebrate(ac.signal);
+        if (token !== runToken.current) return;
+        setCompletion({ stars, newBadges: after.filter((b) => !before.includes(b)) });
+      }
+    },
+    [runtime, phase, ensureResult, level, store, program, prediction, predicting, predictionOk, hintsUsed],
+  );
+
+  const run = useCallback(() => void start('play'), [start]);
+  const stepOnce = useCallback(() => void start('step'), [start]);
+  const pause = useCallback(() => {
+    if (phaseRef.current === 'running') sequencer.current?.pause();
+  }, []);
+
+  /** Any change to the program after a run puts the robot back at the start. */
+  const change = useCallback(
+    (update: (h: History) => History) => {
+      if (phaseRef.current === 'running') return;
+      if (phaseRef.current !== 'editing') reset();
+      setHistory(update);
+    },
+    [reset],
+  );
+  const applyEdit = useCallback(
+    (op: EditOp) => {
+      change((h) => push(h, applyOp(h.present, op)));
+      if (op.op === 'insert') store.record({ levelId: level.id, kind: 'card-placed', command: op.node.kind, slot: op.slot });
+      else if (op.op === 'move') store.record({ levelId: level.id, kind: 'card-moved', nodeId: op.id, slot: op.slot });
+      else store.record({ levelId: level.id, kind: 'card-removed', nodeId: op.id });
+    },
+    [change, store, level.id],
+  );
+  const onEdit = useCallback(
+    (op: EditOp) => {
+      setHint(null);
+      applyEdit(op);
+    },
+    [applyEdit],
+  );
+  const onUndo = useCallback(() => {
+    setHint(null);
+    change(undo);
+  }, [change]);
+  const onRedo = useCallback(() => {
+    setHint(null);
+    change(redo);
+  }, [change]);
+
+  /** The next rung of the hint ladder. The solution is never given. */
+  const openHint = useCallback(() => {
+    if (hintsUsed >= 3 || phaseRef.current === 'running') return;
+    const rung = hintsUsed as 0 | 1 | 2;
+    const effect = hintEffect(level, rung, program, newId, paletteFor(level.programming, program).full);
+    setHintsUsed(rung + 1);
+    store.record({ levelId: level.id, kind: 'hint-opened', rung });
+    if (effect.edit && !readOnly) applyEdit(effect.edit);
+    setHint(effect);
+  }, [hintsUsed, level, program, newId, store, applyEdit, readOnly]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || isTypingTarget(e.target)) return;
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key === 'Enter') {
+        e.preventDefault();
+        run();
+      } else if (mod && !e.altKey && (e.key === 'z' || e.key === 'Z')) {
+        e.preventDefault();
+        if (e.shiftKey) onRedo();
+        else onUndo();
+      } else if (mod && !e.altKey && (e.key === 'y' || e.key === 'Y')) {
+        e.preventDefault();
+        onRedo();
+      } else if (!mod && !e.altKey) {
+        const key = e.key.toLowerCase();
+        if (key === 'r') reset();
+        if (key === 's') stepOnce();
+        if (key === 'p') pause();
+        if (key === 'h') openHint();
+        if (key === 'c') setShowCode((v) => !v);
+        if (e.key === 'Escape' && completion) setCompletion(null);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [run, reset, stepOnce, pause, onUndo, onRedo, openHint, completion]);
+
+  // ----- Message line -----
+
+  const errorNode = outcome?.status === 'blocked' ? outcome.nodeId : null;
+  const predictionPrompt = (): { tone: Tone; text: string } => {
+    if (prediction) return { tone: 'info', text: 'Flag placed. Press Run to see if the robot gets there.' };
+    if (wrongGuesses.length > 0) return { tone: 'problem', text: 'Not there. The robot would not end up on that tile. Place the flag somewhere else.' };
+    return { tone: 'info', text: 'Place the flag where the robot will end up: tap that tile.' };
+  };
+  let message: { tone: Tone | 'hint'; text: string };
+  if (hint) message = { tone: 'hint', text: hint.text };
+  else if (phase === 'running') message = { tone: 'info', text: 'Running…' };
+  else if (phase === 'paused') message = { tone: 'info', text: `Paused after step ${position}. Step plays one more. Run keeps going.` };
+  else if (outcome) {
+    const base =
+      outcome.status === 'incomplete' && countNodes(program) === 0
+        ? { tone: 'problem' as const, text: 'Your program is empty. Tap a card to add a step.' }
+        : outcomeMessage(outcome, errorNode ? findNodeIndex(program, errorNode) + 1 : null, shortfall);
+    const guess = guessedRight ? 'Your flag was in the right spot! ' : '';
+    message = { tone: base.tone, text: guess + base.text };
+  } else if (predicting) message = predictionPrompt();
+  else message = { tone: 'info', text: level.intro ?? 'Help the robot reach the flag. Tap a card to add it to your program.' };
+
+  const busy = !runtime || phase === 'running';
+  const marks = [
+    ...wrongGuesses.map((cell) => ({ cell, state: 'wrong' as const })),
+    ...(prediction ? [{ cell: prediction.cell, state: guessedRight ? ('right' as const) : ('pending' as const) }] : []),
+  ];
+  const starSlots: { key: keyof Stars; label: string }[] = [
+    { key: 'complete', label: 'Reached the flag' },
+    { key: 'noHints', label: 'No hints' },
+    ...(level.stars.budget !== undefined ? [{ key: 'budget' as const, label: `${level.stars.budget} cards or fewer` }] : []),
+  ];
+
+  return (
+    <main className="app-main">
+      <div className="stage-col">
+        <Board
+          world={level.world}
+          theme={theme}
+          motion={motion}
+          label={describeBoard(level)}
+          onControllers={onControllers}
+          onTileTap={predicting && phase === 'editing' ? (cell) => setPrediction({ cell }) : undefined}
+          marks={marks}
+          highlightCells={hint?.cells}
+          hideIndicator={predicting}
+          hideGoal={predicting}
+        />
+        <div className="toolbar" role="toolbar" aria-label="Run controls">
+          <button
+            type="button"
+            className="btn btn-run"
+            onClick={run}
+            disabled={busy || !predictionOk}
+            aria-keyshortcuts="Control+Enter Meta+Enter"
+            title={!predictionOk ? 'Place the flag on the board first' : undefined}
+          >
+            <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+              <path d="M7 4.5v15l12-7.5z" fill="currentColor" />
+            </svg>
+            {phase === 'paused' ? 'Continue' : !predictionOk ? 'Place the flag' : 'Run'}
+          </button>
+          <button type="button" className="btn btn-step" onClick={stepOnce} disabled={busy || !predictionOk} aria-keyshortcuts="S" title="Play one step">
+            <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+              <path d="M6 5v14l9-7z" fill="currentColor" />
+              <rect x="17" y="5" width="3" height="14" rx="1.2" fill="currentColor" />
+            </svg>
+            Step
+          </button>
+          <button type="button" className="btn btn-pause" onClick={pause} disabled={phase !== 'running'} aria-keyshortcuts="P">
+            <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+              <rect x="6" y="5" width="4.5" height="14" rx="1.4" fill="currentColor" />
+              <rect x="13.5" y="5" width="4.5" height="14" rx="1.4" fill="currentColor" />
+            </svg>
+            Pause
+          </button>
+          <button type="button" className="btn btn-reset" onClick={reset} aria-keyshortcuts="R" title="Put the robot back at the start. Your program stays.">
+            <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+              <path d="M5 12a7 7 0 1 0 2.2-5.1M5 4v4h4" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Reset
+          </button>
+          <button type="button" className="btn btn-hint" onClick={openHint} disabled={hintsUsed >= 3 || phase === 'running'} aria-keyshortcuts="H" aria-label={`Hint, ${3 - hintsUsed} left`}>
+            <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+              <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.7.6 1 1.3 1 2.1h5c0-.8.3-1.5 1-2.1A6 6 0 0 0 12 3z" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Hint
+            <span className="hint-dots" aria-hidden="true">
+              {[0, 1, 2].map((i) => (
+                <span key={i} className={`hint-dot ${i < 3 - hintsUsed ? 'is-left' : ''}`} />
+              ))}
+            </span>
+          </button>
+          <p className={`message tone-${message.tone}`} role="status" aria-live="polite">
+            {message.text}
+          </p>
+        </div>
+      </div>
+      <div className="side-col">
+        <Editor
+          program={program}
+          programming={level.programming}
+          locked={phase === 'running'}
+          readOnly={readOnly}
+          activeNodeId={activeNode}
+          errorNodeId={errorNode}
+          highlightCommand={hint?.command ?? null}
+          highlightNodeId={hint?.nodeId ?? null}
+          newId={newId}
+          onEdit={onEdit}
+          canUndo={canUndo(history)}
+          canRedo={canRedo(history)}
+          onUndo={onUndo}
+          onRedo={onRedo}
+          onRestart={restart}
+        />
+        <button type="button" className="btn btn-quiet btn-code" aria-pressed={showCode} onClick={() => setShowCode((v) => !v)} aria-keyshortcuts="C">
+          {showCode ? 'Hide the code' : 'See the code'}
+        </button>
+        {showCode && <CodePanel program={program} activeNodeId={activeNode} />}
+      </div>
+
+      {completion && (
+        <div className="dialog-backdrop" role="presentation">
+          <section className="dialog" role="dialog" aria-modal="true" aria-labelledby="done-title">
+            <h2 id="done-title" className="dialog-title">
+              You did it!
+            </h2>
+            <ul className="star-row" aria-label="Stars">
+              {starSlots.map(({ key, label }) => (
+                <li key={key} className={`star-slot ${completion.stars[key] ? 'is-earned' : ''}`}>
+                  <Star earned={completion.stars[key] === true} size={44} />
+                  <span>{label}</span>
+                  <span className="visually-hidden">{completion.stars[key] ? ', earned' : ', not yet'}</span>
+                </li>
+              ))}
+            </ul>
+            {completion.newBadges.length > 0 && (
+              <ul className="new-badges" aria-label="New badges">
+                {completion.newBadges.map((b) => (
+                  <li key={b} className="new-badge">
+                    <span className="badge-icon">
+                      <BadgeIcon id={b} />
+                    </span>
+                    <span>
+                      New badge: <strong>{BADGE_INFO[b].name}</strong>. {BADGE_INFO[b].how}.
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="dialog-actions">
+              {nextLevelId && store.isUnlocked(nextLevelId) && (
+                <button type="button" className="btn btn-run" autoFocus onClick={() => onGoTo(hashFor({ screen: 'level', id: nextLevelId }))}>
+                  Next level
+                </button>
+              )}
+              <button type="button" className="btn btn-quiet" onClick={restart}>
+                Play again
+              </button>
+              <a className="btn btn-quiet" href={hashFor({ screen: 'map' })}>
+                Map
+              </a>
+            </div>
+          </section>
+        </div>
+      )}
+    </main>
+  );
+}

@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "id": "l01-first-step",
+  "title": "First step",
+  "intro": "Place the flag where the robot will end up, then press Run.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 1,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "execution",
+    "activity": "run"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward"
+    ],
+    "maxInstructions": 1,
+    "starterProgram": [
+      "forward"
+    ]
+  },
+  "prediction": {
+    "askTile": true
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        }
+      ],
+      "text": "The robot is looking right. Forward moves it one tile that way."
+    },
+    {
+      "kind": "card",
+      "command": "forward",
+      "text": "Forward: one tile ahead."
+    },
+    {
+      "kind": "fill",
+      "slot": 0,
+      "command": "forward",
+      "text": "This program has one Forward."
+    }
+  ],
+  "referenceSolution": [
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

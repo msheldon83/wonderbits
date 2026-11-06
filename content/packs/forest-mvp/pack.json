@@ -3,5 +3,21 @@
   "id": "forest-mvp",
   "title": "Forest",
   "themeId": "forest",
-  "levels": ["slice-01"]
+  "levels": [
+    "l01-first-step",
+    "l02-looking-up",
+    "l03-two-steps",
+    "l04-up-the-path",
+    "l05-turn-first",
+    "l06-the-other-way",
+    "l07-in-order",
+    "l08-order-matters",
+    "l09-the-acorn",
+    "l10-around-the-pond",
+    "l11-fix-it",
+    "l12-one-wrong-turn",
+    "l13-where-will-it-stop",
+    "l14-two-acorns",
+    "l15-the-short-way"
+  ]
 }

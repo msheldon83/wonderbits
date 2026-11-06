@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "id": "facing-01",
+  "title": "Turn, then go",
+  "intro": "The robot is looking up. Rotate it, then move to the flag.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....",
+      ".##.",
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 3,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "facing",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 6,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "The flag is to the right."
+    },
+    {
+      "kind": "card",
+      "command": "rotateCW",
+      "text": "Rotate like a clock hand to look right."
+    },
+    {
+      "kind": "fill",
+      "slot": 0,
+      "command": "rotateCW",
+      "text": "Rotate first."
+    }
+  ],
+  "referenceSolution": [
+    "rotateCW",
+    "forward",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 4
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "id": "l07-in-order",
+  "title": "In order",
+  "intro": "These three cards are the whole program. Put them in the right order.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...",
+      "...",
+      "#.#"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 1,
+      "y": 1
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "sequencing",
+    "activity": "reorder"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 3,
+    "starterProgram": [],
+    "suppliedCards": [
+      "rotateCW",
+      "forward",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ],
+      "text": "Right one tile, then down one tile."
+    },
+    {
+      "kind": "card",
+      "command": "rotateCW",
+      "text": "To go down from looking right, Rotate like a clock hand."
+    },
+    {
+      "kind": "fill",
+      "slot": 0,
+      "command": "forward",
+      "text": "Start by moving right."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "rotateCW",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 3
+  }
+}

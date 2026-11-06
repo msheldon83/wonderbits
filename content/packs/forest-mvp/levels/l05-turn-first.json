@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "id": "l05-turn-first",
+  "title": "Turn first",
+  "intro": "The robot is looking up, but the flag is to the right. Rotate it, then move.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...",
+      "###"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 2,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "sequencing",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "text": "The headlamp points up. The flag is to the right."
+    },
+    {
+      "kind": "card",
+      "command": "rotateCW",
+      "text": "This Rotate turns the robot the way a clock hand goes: up becomes right."
+    },
+    {
+      "kind": "fill",
+      "slot": 0,
+      "command": "rotateCW",
+      "text": "Rotate first, then move."
+    }
+  ],
+  "referenceSolution": [
+    "rotateCW",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 3
+  }
+}

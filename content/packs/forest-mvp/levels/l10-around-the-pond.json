@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "id": "l10-around-the-pond",
+  "title": "Around the pond",
+  "intro": "Collect the acorn, then get round the pond to the flag.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....",
+      ".__.",
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 3,
+      "y": 2
+    },
+    "collectibles": [
+      {
+        "x": 3,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "sequencing",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 8,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 2
+        }
+      ],
+      "text": "Along the top to the acorn, then down the side."
+    },
+    {
+      "kind": "card",
+      "command": "rotateCW",
+      "text": "At the corner, Rotate like a clock hand: right becomes down."
+    },
+    {
+      "kind": "fill",
+      "slot": 3,
+      "command": "rotateCW",
+      "text": "The turn goes after three Forwards."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward",
+    "forward",
+    "rotateCW",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 6
+  }
+}

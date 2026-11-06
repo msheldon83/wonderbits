@@ -2,13 +2,28 @@ import type { RunOutcome } from '../runtime/contract';
 
 export type Tone = 'info' | 'success' | 'problem';
 
+/** Why an incomplete run fell short. */
+export interface Shortfall {
+  onGoal: boolean;
+  /** Collectibles still on the board when the run ended. */
+  missing: number;
+}
+
+const acorns = (n: number) => (n === 1 ? 'an acorn' : `${n} acorns`);
+
 /** One short sentence per outcome, in words a nine-year-old reads easily. */
-export function outcomeMessage(outcome: RunOutcome, stepNumber: number | null): { tone: Tone; text: string } {
+export function outcomeMessage(outcome: RunOutcome, stepNumber: number | null, shortfall?: Shortfall): { tone: Tone; text: string } {
   const at = stepNumber ? ` at step ${stepNumber}` : '';
   switch (outcome.status) {
     case 'success':
       return { tone: 'success', text: 'You did it! The robot reached the flag.' };
     case 'incomplete':
+      if (shortfall?.onGoal && shortfall.missing > 0) {
+        return { tone: 'problem', text: `The robot is at the flag, but it left ${acorns(shortfall.missing)} behind. Pick up every acorn, then reach the flag.` };
+      }
+      if (shortfall && shortfall.missing > 0) {
+        return { tone: 'problem', text: `The robot stopped before the flag and left ${acorns(shortfall.missing)} behind.` };
+      }
       return { tone: 'problem', text: 'The robot stopped before the flag. Does it need more steps?' };
     case 'blocked':
       switch (outcome.reason) {

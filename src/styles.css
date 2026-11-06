@@ -13,6 +13,9 @@
   --gold-wash: #fff6d6;
   --red: #d6503c;
   --red-wash: #fdecea;
+  --amber: #e9a23b;
+  --amber-deep: #b8701a;
+  --amber-wash: #fff3df;
   --radius: 18px;
   --tap: 48px;
   font-family: 'Nunito', ui-rounded, 'SF Pro Rounded', 'Segoe UI', system-ui, sans-serif;
@@ -62,8 +65,9 @@ button {
 
 .app-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
+  gap: 10px 16px;
 }
 
 .brand {
@@ -72,14 +76,77 @@ button {
   font-weight: 800;
   letter-spacing: 0.01em;
   color: var(--blue-deep);
+  text-decoration: none;
 }
 
 .level-title {
   margin: 0;
   flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 18px;
   font-weight: 700;
   color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.level-number {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.header-spacer {
+  flex: 1;
+}
+
+a.btn {
+  text-decoration: none;
+}
+
+.loading {
+  margin: 40px auto;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.level-picker {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+.level-picker select {
+  max-width: 100%;
+  min-height: var(--tap);
+  padding: 0 14px;
+  border: 3px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .app-main {
@@ -89,8 +156,12 @@ button {
   gap: 16px;
 }
 
+/* min-width 0: a grid item's automatic minimum is its content's width, and
+   the board scaler has a fixed pixel width, so without this the column could
+   never shrink and the board would never refit on a narrow screen. */
 .stage-col,
 .side-col {
+  min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -99,16 +170,6 @@ button {
 
 .side-col {
   overflow-y: auto;
-}
-
-@media (orientation: portrait), (max-width: 760px) {
-  .app-main {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(260px, 1fr) auto;
-  }
-  .side-col {
-    overflow: visible;
-  }
 }
 
 /* ---------- Board ---------- */
@@ -142,7 +203,8 @@ button {
 
 .anchored,
 .robot,
-.forward-indicator {
+.forward-indicator,
+.turn-cue {
   position: absolute;
   left: 0;
   top: 0;
@@ -150,12 +212,110 @@ button {
 }
 
 .robot,
-.forward-indicator {
+.forward-indicator,
+.turn-cue {
   will-change: transform;
 }
 
 .forward-indicator {
   transition: opacity 160ms ease;
+}
+
+/* A clear move shows the ghost; a blocked one shows only the red arrow. */
+.forward-indicator[data-blocked='true'] .ghost-robot {
+  display: none;
+}
+
+.turn-cue .turn-cw,
+.turn-cue .turn-ccw {
+  display: none;
+}
+
+/* Prediction: every tile is a button while the child chooses. */
+.tile-button {
+  position: absolute;
+  border: 0;
+  background: transparent;
+  border-radius: 14px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.tile-button:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Tiles the child can pick: a quiet dashed outline, stronger on hover. */
+.tile-button.is-choice {
+  outline: 3px dashed rgba(255, 255, 255, 0.7);
+  outline-offset: -8px;
+}
+
+.tile-button.is-choice:hover {
+  outline-color: var(--blue);
+  background: rgba(50, 145, 214, 0.14);
+}
+
+.tile-button:focus-visible {
+  outline: 5px solid var(--gold);
+  outline-offset: -6px;
+}
+
+.prediction-marker {
+  color: var(--blue-deep);
+  stroke: var(--blue-deep);
+}
+
+.prediction-marker.is-right {
+  color: var(--green-deep);
+  stroke: var(--green-deep);
+}
+
+.prediction-marker.is-wrong {
+  color: var(--red);
+  stroke: var(--red);
+}
+
+.prediction-marker.is-wrong {
+  animation: mark-wrong 360ms ease-out;
+}
+
+@keyframes mark-wrong {
+  0% {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+}
+
+.cell-highlight {
+  animation: highlight-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes highlight-pulse {
+  50% {
+    transform: scale(0.94);
+    opacity: 0.75;
+  }
+}
+
+.card.is-hinted {
+  border-color: var(--gold);
+  background: var(--gold-wash);
+  box-shadow: 0 4px 0 var(--gold), 0 0 0 4px rgba(242, 194, 48, 0.35);
+  animation: hint-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes hint-pulse {
+  50% {
+    box-shadow: 0 4px 0 var(--gold), 0 0 0 9px rgba(242, 194, 48, 0);
+  }
+}
+
+.turn-cue[data-dir='cw'] .turn-cw,
+.turn-cue[data-dir='ccw'] .turn-ccw {
+  display: inline;
 }
 
 .robot .eyes {
@@ -235,9 +395,56 @@ button {
   box-shadow: 0 4px 0 var(--green-deep);
 }
 
-.btn-reset {
+.btn-reset,
+.btn-step,
+.btn-pause {
   background: var(--paper);
   box-shadow: 0 4px 0 var(--line);
+}
+
+.btn-step {
+  color: var(--blue-deep);
+}
+
+.btn-icon {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 2px var(--line);
+  color: var(--blue-deep);
+  cursor: pointer;
+}
+
+.btn-icon:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.history-buttons {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.program-tools {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.btn-restart {
+  min-height: 40px;
+  padding: 0 10px;
+  font-size: 14px;
+  background: var(--paper);
+  color: var(--ink-soft);
+  box-shadow: inset 0 0 0 2px var(--line);
 }
 
 .btn-quiet {
@@ -263,6 +470,36 @@ button {
   font-size: 18px;
   font-weight: 700;
   line-height: 1.3;
+}
+
+.btn-hint {
+  background: var(--gold-wash);
+  color: #7a5a06;
+  box-shadow: 0 4px 0 var(--gold);
+  gap: 6px;
+}
+
+.hint-dots {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 2px;
+}
+
+.hint-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(122, 90, 6, 0.25);
+}
+
+.hint-dot.is-left {
+  background: var(--gold);
+  box-shadow: 0 0 0 1px #d9a816;
+}
+
+.message.tone-hint {
+  background: var(--gold-wash);
+  color: #7a5a06;
 }
 
 .message.tone-success {
@@ -294,8 +531,10 @@ button {
 
 .panel-title {
   margin: 0 0 10px;
+  min-height: 44px;
   display: flex;
-  align-items: baseline;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
   font-size: 16px;
@@ -305,6 +544,13 @@ button {
   color: var(--ink-soft);
 }
 
+.panel-title-text {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .capacity {
   font-size: 15px;
   font-weight: 700;
@@ -312,8 +558,16 @@ button {
   letter-spacing: 0;
 }
 
+.capacity.is-low {
+  color: var(--amber-deep);
+}
+
 .capacity.is-full {
   color: var(--red);
+}
+
+.capacity-left {
+  font-weight: 800;
 }
 
 .palette-cards {
@@ -356,8 +610,30 @@ button {
   background: var(--blue);
 }
 
-.card-remove .card-icon {
-  background: var(--red);
+.card {
+  position: relative;
+}
+
+.card-count {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 7px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--gold);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: 0 2px 0 #d9a816;
+}
+
+.card:disabled .card-count {
+  background: var(--line);
+  box-shadow: none;
 }
 
 .card.is-selected {
@@ -387,25 +663,115 @@ button {
 }
 
 .program-list {
+  position: relative;
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
+  row-gap: 8px;
 }
 
 .program-step {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  animation: card-in 220ms ease-out;
+  transition: opacity 140ms ease;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.96);
+  }
 }
 
 .program-step .card {
   flex: 1;
+  min-width: 0;
+}
+
+/* The block that was just added pops and glows so the eye lands on it. */
+.program-step .card.is-new {
+  animation: card-added 700ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+@keyframes card-added {
+  0% {
+    transform: scale(0.8);
+    border-color: var(--gold);
+    background: var(--gold-wash);
+    box-shadow: 0 0 0 0 rgba(242, 194, 48, 0.9), 0 4px 0 var(--gold);
+  }
+  35% {
+    transform: scale(1.08);
+    border-color: var(--gold);
+    background: var(--gold-wash);
+    box-shadow: 0 0 0 10px rgba(242, 194, 48, 0), 0 4px 0 var(--gold);
+  }
+  70% {
+    transform: scale(1);
+    border-color: var(--gold);
+    background: var(--gold-wash);
+    box-shadow: 0 0 0 10px rgba(242, 194, 48, 0), 0 4px 0 var(--gold);
+  }
+}
+
+/* The row a drag started from: a placeholder until the drop. */
+.program-step.is-lifted {
+  opacity: 0.4;
+}
+
+/* Unused steps under the budget: empty dashed rows the blocks fill up. */
+.program-step.is-empty {
+  animation: none;
+}
+
+.program-step.is-empty .step-number {
+  opacity: 0.45;
+}
+
+.empty-step {
+  flex: 1;
+  min-height: 56px;
+  display: grid;
+  place-items: center;
+  border: 3px dashed var(--line);
+  border-radius: var(--radius);
+  color: var(--ink-soft);
+  font-weight: 700;
+  /* Leaves room where the Move and Delete buttons sit on a real row. */
+  margin-right: 104px;
+  transition: border-color 200ms ease, background 200ms ease;
+}
+
+.program-step.is-empty.is-low .empty-step {
+  border-color: var(--amber);
+  background: var(--amber-wash);
+}
+
+.is-dragging .program-step.is-empty .empty-step {
+  border-color: var(--green);
+  color: var(--green-deep);
+}
+
+/* The block or card being carried by tap: raised, blue and clearly "in hand". */
+.card.is-carried,
+.card.is-carried:disabled {
+  transform: translateY(-4px) scale(1.02);
+  border-color: var(--blue);
+  background: var(--blue-wash);
+  box-shadow: 0 10px 18px rgba(43, 120, 181, 0.3), 0 0 0 3px rgba(50, 145, 214, 0.25);
+}
+
+.program-step.is-moving .step-number {
+  opacity: 1;
+  color: var(--blue-deep);
 }
 
 .step-number {
-  width: 28px;
+  width: 36px;
   flex: none;
   text-align: right;
   font-size: 16px;
@@ -413,12 +779,103 @@ button {
   color: var(--ink-soft);
 }
 
-.slot {
-  margin-left: 38px;
+/* The Move handle is also the drag handle: no native panning starts on it. */
+.step-move {
+  touch-action: none;
 }
 
-.slot-idle {
-  height: 8px;
+.step-move.is-on {
+  background: var(--blue);
+  color: #fff;
+  box-shadow: inset 0 0 0 2px var(--blue-deep);
+}
+
+.step-delete {
+  color: var(--red);
+}
+
+/* Carets float in the number gutter, one per gap, without changing the
+   list's height. */
+.caret {
+  position: absolute;
+  left: -4px;
+  width: 44px;
+  height: 44px;
+  margin-top: -22px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(43, 120, 181, 0.4);
+  cursor: pointer;
+  z-index: 2;
+  animation: caret-in 180ms ease-out, caret-nudge 1.2s ease-in-out 180ms infinite;
+}
+
+.caret.is-target {
+  background: var(--green);
+  box-shadow: 0 3px 8px rgba(47, 140, 70, 0.4);
+  animation: caret-in 120ms ease-out;
+}
+
+@keyframes caret-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+}
+
+@keyframes caret-nudge {
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+.program-list.is-moving .step-number {
+  opacity: 0;
+}
+
+/* Room for a caret at the first and last gap. */
+.program-list {
+  padding-top: 16px;
+  padding-bottom: 14px;
+}
+
+/* The cursor: where the next card goes. Outlined so it reads differently
+   from the solid "choose a gap" carets. */
+.caret.cursor {
+  background: var(--paper);
+  color: var(--blue-deep);
+  box-shadow: inset 0 0 0 3px var(--blue), 0 3px 8px rgba(43, 120, 181, 0.25);
+  animation: caret-in 180ms ease-out;
+  touch-action: none;
+  transition: top 160ms ease;
+}
+
+.caret.cursor.is-hidden {
+  display: none;
+}
+
+.caret.cursor.is-ghost {
+  position: static;
+  margin: 0;
+}
+
+.palette-hint {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--blue-deep);
+}
+
+.program-note {
+  margin: -4px 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--blue-deep);
 }
 
 .slot-empty {
@@ -431,26 +888,409 @@ button {
   font-weight: 700;
 }
 
-.slot-open {
-  padding: 4px 0;
+.is-dragging .slot-empty {
+  border-color: var(--green);
+  color: var(--green-deep);
 }
 
-.slot-open button {
-  width: 100%;
-  min-height: var(--tap);
-  border: 3px dashed var(--blue);
-  border-radius: var(--radius);
-  background: var(--blue-wash);
-  color: var(--blue-deep);
-  font-weight: 800;
-  cursor: pointer;
-  animation: slot-glow 1.4s ease-in-out infinite;
+/* Palette cards drag vertically into the program; sideways still pans the
+   drawer on narrow screens. Program blocks scroll the column on touch and
+   drag by their handle; with a mouse they drag from anywhere. */
+.palette .card {
+  touch-action: pan-x;
 }
 
-@keyframes slot-glow {
-  50% {
-    background: rgba(50, 145, 214, 0.2);
+.program-step .card {
+  touch-action: pan-y;
+}
+
+.palette .card.is-lifted {
+  opacity: 0.5;
+}
+
+.drag-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 100;
+  pointer-events: none;
+  transform: translate(-1000px, -1000px);
+}
+
+.drag-ghost .card {
+  box-shadow: 0 12px 24px rgba(29, 48, 71, 0.3);
+  transform: scale(1.04) rotate(-2deg);
+}
+
+.is-dragging,
+.is-dragging * {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.is-readonly .program-step .card {
+  cursor: default;
+}
+
+.btn-code {
+  align-self: flex-start;
+}
+
+/* ---------- Completion dialog ---------- */
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(29, 48, 71, 0.35);
+  animation: fade-in 180ms ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
   }
+}
+
+.dialog {
+  width: min(520px, 100%);
+  padding: 24px 24px 20px;
+  border-radius: 28px;
+  background: var(--paper);
+  box-shadow: 0 20px 50px rgba(29, 48, 71, 0.3);
+  animation: dialog-in 260ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+@keyframes dialog-in {
+  from {
+    transform: translateY(20px) scale(0.95);
+    opacity: 0;
+  }
+}
+
+.dialog-title {
+  margin: 0 0 14px;
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--green-deep);
+  text-align: center;
+}
+
+.star-row {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+}
+
+.star-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 120px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.star-slot.is-earned {
+  color: var(--ink);
+}
+
+.star-slot .star {
+  color: var(--line);
+}
+
+.star-slot.is-earned .star {
+  animation: star-pop 500ms cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+
+@keyframes star-pop {
+  from {
+    transform: scale(0.3) rotate(-30deg);
+  }
+}
+
+.new-badges {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.new-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: var(--gold-wash);
+  font-size: 16px;
+}
+
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* ---------- Level map ---------- */
+
+.map {
+  overflow-y: auto;
+  min-height: 0;
+  padding-bottom: 24px;
+}
+
+.map-title {
+  margin: 8px 0 6px;
+  font-size: 16px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+}
+
+.map-trail {
+  position: relative;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.map-path {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.map-stones {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.map-stone-wrap {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 150px;
+}
+
+.map-stone {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #cfd8c4;
+  color: var(--ink);
+  box-shadow: 0 5px 0 #a9b59c, 0 8px 14px rgba(40, 70, 60, 0.18);
+  font-size: 24px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 120ms ease;
+}
+
+.map-stone:not(.is-locked):hover {
+  transform: translateY(-2px);
+}
+
+.map-stone.is-done {
+  background: var(--green);
+  color: #fff;
+  box-shadow: 0 5px 0 var(--green-deep), 0 8px 14px rgba(40, 70, 60, 0.18);
+}
+
+.map-stone.is-current {
+  background: var(--gold);
+  box-shadow: 0 5px 0 #d9a816, 0 0 0 6px rgba(242, 194, 48, 0.35);
+  animation: stone-glow 1.6s ease-in-out infinite;
+}
+
+@keyframes stone-glow {
+  50% {
+    box-shadow: 0 5px 0 #d9a816, 0 0 0 12px rgba(242, 194, 48, 0);
+  }
+}
+
+.map-stone.is-locked {
+  background: #e3e8e0;
+  color: #9aa69a;
+  box-shadow: 0 5px 0 #c6cfc2;
+  cursor: default;
+}
+
+.map-stone-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.map-stars {
+  display: flex;
+  gap: 1px;
+  color: var(--line);
+}
+
+.badge-shelf {
+  max-width: 640px;
+  margin: 12px auto 0;
+}
+
+.badge-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  border-radius: 20px;
+  background: var(--paper);
+  box-shadow: 0 2px 0 var(--line);
+  color: #b3bdb6;
+  text-align: center;
+}
+
+.badge-icon {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #eef1ec;
+}
+
+.badge.is-earned {
+  color: var(--ink);
+}
+
+.badge.is-earned .badge-icon {
+  background: var(--gold-wash);
+  color: #b8860b;
+  box-shadow: inset 0 0 0 3px var(--gold);
+}
+
+.new-badge .badge-icon {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  background: var(--paper);
+  color: #b8860b;
+  box-shadow: inset 0 0 0 3px var(--gold);
+}
+
+.badge-name {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.badge-how {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ---------- Settings ---------- */
+
+.settings {
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.settings-group {
+  background: var(--paper);
+  border-radius: 24px;
+  padding: 14px 16px 16px;
+  box-shadow: 0 2px 0 var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.setting {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  align-items: center;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.setting input[type='checkbox'] {
+  width: 26px;
+  height: 26px;
+  accent-color: var(--blue);
+}
+
+.setting small {
+  grid-column: 2;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.setting > .btn,
+.setting > .choice-row,
+.setting > span:first-child {
+  grid-column: 1 / -1;
+}
+
+.setting > .btn + small,
+.setting > .choice-row + small {
+  grid-column: 1 / -1;
+}
+
+.choice-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn-choice {
+  font-size: 16px;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 2px var(--line);
+}
+
+.btn-choice.is-on {
+  background: var(--blue);
+  color: #fff;
+  box-shadow: inset 0 0 0 2px var(--blue-deep);
+}
+
+.btn-danger {
+  background: var(--red);
+  color: #fff;
+  box-shadow: 0 4px 0 #a33a29;
+  font-size: 16px;
 }
 
 /* ---------- Code panel ---------- */
@@ -524,13 +1364,85 @@ button {
   margin: 0;
 }
 
+/* ---------- Portrait and narrow screens ---------- */
+
+/* Portrait tablets stack the board over the editor. The board and the run
+   controls stay put; the editor column scrolls underneath them. */
+@media (orientation: portrait), (max-width: 760px) {
+  .app {
+    gap: 8px;
+  }
+  .app-main {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 10px;
+  }
+  .board-viewport {
+    flex: none;
+    height: clamp(200px, 42dvh, 560px);
+    min-height: 0;
+  }
+  .side-col {
+    overflow-y: auto;
+    padding-bottom: 8px;
+  }
+  .palette-cards {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 6px 2px;
+    scrollbar-width: thin;
+  }
+  .palette-cards .card {
+    flex: none;
+  }
+  .toolbar {
+    gap: 8px;
+  }
+  .message {
+    flex-basis: 100%;
+    min-height: 40px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 420px) {
+  .btn-step,
+  .btn-pause,
+  .btn-reset {
+    padding: 0 12px;
+    font-size: 16px;
+  }
+}
+
 /* ---------- Reduced motion ---------- */
 
 @media (prefers-reduced-motion: reduce) {
   .robot-body,
   .flag-cloth,
-  .slot-open button {
+  .program-step,
+  .caret,
+  .cell-highlight,
+  .card.is-hinted,
+  .map-stone.is-current,
+  .star-slot.is-earned .star,
+  .dialog,
+  .dialog-backdrop {
     animation: none;
+  }
+  .caret.cursor {
+    transition: none;
+  }
+  /* Keep the colour flash, drop the movement. */
+  .program-step .card.is-new {
+    animation: card-added-still 600ms ease-out;
+  }
+  @keyframes card-added-still {
+    0%,
+    70% {
+      border-color: var(--gold);
+      background: var(--gold-wash);
+      box-shadow: 0 4px 0 var(--gold);
+    }
   }
   .card,
   .btn,

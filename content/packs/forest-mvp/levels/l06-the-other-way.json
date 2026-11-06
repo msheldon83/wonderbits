@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "id": "l06-the-other-way",
+  "title": "The other way",
+  "intro": "This time the flag is to the left. Which Rotate turns that way?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "###",
+      "..."
+    ],
+    "robot": {
+      "x": 2,
+      "y": 1,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 0,
+      "y": 1
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "sequencing",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 1
+        }
+      ],
+      "text": "The headlamp points up. The flag is to the left."
+    },
+    {
+      "kind": "card",
+      "command": "rotateCCW",
+      "text": "This Rotate turns against the clock: up becomes left."
+    },
+    {
+      "kind": "fill",
+      "slot": 0,
+      "command": "rotateCCW",
+      "text": "Rotate first, then move."
+    }
+  ],
+  "referenceSolution": [
+    "rotateCCW",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 3
+  }
+}

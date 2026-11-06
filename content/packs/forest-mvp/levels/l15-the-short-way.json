@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "id": "l15-the-short-way",
+  "title": "The short way",
+  "intro": "Same island, but only eight cards fit. Make every card count.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...",
+      ".#.",
+      "..."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 2,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 0,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 2,
+        "y": 2
+      },
+      {
+        "x": 2,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "efficiency",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 8,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "text": "Right, up, left. No wasted moves."
+    },
+    {
+      "kind": "card",
+      "command": "rotateCCW",
+      "text": "Two turns are enough. Every other card is a Forward."
+    },
+    {
+      "kind": "fill",
+      "slot": 2,
+      "command": "rotateCCW",
+      "text": "The first turn comes after two Forwards."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward",
+    "rotateCCW",
+    "forward",
+    "forward",
+    "rotateCCW",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 8
+  }
+}

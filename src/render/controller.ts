@@ -9,7 +9,7 @@
 import type { TraceEvent } from '../runtime/contract';
 import type { Cell, RobotState, SimState, WorldDefinition } from '../sim/types';
 import { ahead, cellKey, tileAt } from '../sim/world';
-import { ROBOT_BOX } from './art';
+import { CUE_BOX, ROBOT_BOX } from './art';
 import { angleFor, toScreen, TILE, turnAngle, type BoardLayout } from './grid';
 import type { Player } from './sequencer';
 
@@ -21,12 +21,17 @@ export interface MotionSettings {
 
 export interface RobotElements {
   root: HTMLElement;
+  /** Ghost and arrow on the tile ahead. */
   indicator: HTMLElement;
   arrow: SVGPolygonElement;
+  /** Curved arrow around the robot, shown while it turns. */
+  turnCue: HTMLElement;
 }
 
 const MOVE_MS = 420;
 const TURN_MS = 380;
+/** The turn cue lingers a little after the robot has settled. */
+const CUE_TAIL_MS = 140;
 const BUMP_MS = 440;
 const REDUCED_PAUSE_MS = 280;
 
@@ -63,6 +68,9 @@ export class BoardController implements Player {
   private angle = 0;
   /** The cell the robot was last placed on. */
   private cell: Cell = { x: 0, y: 0 };
+  private lastRobot: RobotState | null = null;
+  /** False while the child is predicting: the next-tile ghost would give the answer away. */
+  private indicatorVisible = true;
 
   constructor(
     private world: WorldDefinition,
@@ -90,9 +98,15 @@ export class BoardController implements Player {
     this.robot.root.dataset.mood = mood;
   }
 
+  setIndicatorVisible(visible: boolean): void {
+    this.indicatorVisible = visible;
+    this.showIndicator(this.lastRobot);
+  }
+
   private showIndicator(robot: RobotState | null): void {
     const ind = this.robot.indicator;
-    if (!robot) {
+    this.lastRobot = robot;
+    if (!robot || !this.indicatorVisible) {
       ind.style.opacity = '0';
       return;
     }
@@ -108,11 +122,42 @@ export class BoardController implements Player {
       `translate(${p.x - TILE / 2}px, ${p.y - TILE / 2}px) rotate(${angleFor(robot.facing)}deg)` + (offBoard ? ' scale(0.6)' : '');
     ind.style.opacity = '1';
     ind.dataset.blocked = String(blocked);
+    // A clear move shows a ghost of the robot with a small arrow inside it; a
+    // blocked move shows only the big red arrow.
     this.robot.arrow.setAttribute('fill', blocked ? this.colors.blocked : this.colors.ok);
+    this.robot.arrow.setAttribute('transform', blocked ? '' : 'scale(0.45)');
+  }
+
+  /** Curved arrow around the robot showing which way it is turning. */
+  private showTurnCue(robot: RobotState, op: 'rotateCW' | 'rotateCCW', durationMs: number, signal: AbortSignal): Promise<void> {
+    const cue = this.robot.turnCue;
+    const p = toScreen(this.layout, robot);
+    const base = `translate(${p.x - CUE_BOX / 2}px, ${p.y - CUE_BOX / 2}px)`;
+    const sign = op === 'rotateCW' ? 1 : -1;
+    cue.dataset.dir = op === 'rotateCW' ? 'cw' : 'ccw';
+    if (this.motion.reducedMotion) {
+      cue.style.transform = base;
+      cue.style.opacity = '1';
+      return wait(durationMs, signal).then(() => {
+        cue.style.opacity = '0';
+      });
+    }
+    const anim = cue.animate(
+      [
+        { opacity: 0, transform: `${base} rotate(${-25 * sign}deg) scale(0.9)` },
+        { opacity: 1, transform: `${base} rotate(0deg) scale(1)`, offset: 0.25 },
+        { opacity: 1, transform: `${base} rotate(${55 * sign}deg) scale(1)`, offset: 0.8 },
+        { opacity: 0, transform: `${base} rotate(${80 * sign}deg) scale(1.05)` },
+      ],
+      { duration: durationMs, easing: 'ease-in-out' },
+    );
+    return settle(anim, signal);
   }
 
   showState(state: SimState): void {
     this.robot.root.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+    this.robot.turnCue.getAnimations().forEach((a) => a.cancel());
+    this.robot.turnCue.style.opacity = '0';
     this.place(state.robot);
     for (const [key, el] of this.collectibles) {
       el.getAnimations().forEach((a) => a.cancel());
@@ -134,7 +179,8 @@ export class BoardController implements Player {
       this.place(after.robot, to);
       if (result.kind === 'blocked') this.setMood('error');
       if (result.kind === 'ok' && result.collected) this.collectibles.get(cellKey(result.collected))!.style.opacity = '0';
-      await wait(ms(REDUCED_PAUSE_MS), signal);
+      if (event.op === 'forward') await wait(ms(REDUCED_PAUSE_MS), signal);
+      else await this.showTurnCue(after.robot, event.op, ms(REDUCED_PAUSE_MS * 2), signal);
       if (!signal.aborted) this.showIndicator(after.robot);
       return;
     }
@@ -178,8 +224,9 @@ export class BoardController implements Player {
       );
       await settle(anim, signal);
       if (signal.aborted) return;
-    } else {
-      // Rotation: a literal 90 degree turn on screen, with a small lift.
+    } else if (event.op === 'rotateCW' || event.op === 'rotateCCW') {
+      // Rotation: a literal 90 degree turn on screen, with a small lift, and a
+      // curved arrow sweeping the same way so the direction is unmistakable.
       const anim = el.animate(
         [
           { transform: this.transformFor(before.robot, from) },
@@ -188,10 +235,13 @@ export class BoardController implements Player {
         ],
         { duration: ms(TURN_MS), easing: 'ease-in-out', fill: 'forwards' },
       );
+      const cue = this.showTurnCue(before.robot, event.op, ms(TURN_MS + CUE_TAIL_MS), signal);
       await settle(anim, signal);
       if (signal.aborted) return;
       this.place(after.robot, to);
       anim.cancel();
+      await cue;
+      if (signal.aborted) return;
     }
     this.showIndicator(after.robot);
   }
