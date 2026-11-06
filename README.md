@@ -61,7 +61,7 @@ frames per second with few frames over 33 ms.
 | Pause after the current move | Pause button | P |
 | Reset: robot back to the start, program kept | Reset button | R |
 | Start over: erase the program and begin the level again | Start over, in the program header | |
-| See the code | Header button | C |
+| See the code: the program as TypeScript in a column beside the cards | Button above the cards | C |
 
 ## How it is built
 

@@ -4,6 +4,18 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Plan change: the code panel is a column beside the cards (2026-11-06)
+
+The "see the code" panel used to sit under the program in the side
+column, so on an iPad the cards and their code were never in view
+together. Showing each card's line on the card itself was tried first and
+rejected: code interwoven with the blocks was confusing. Now the panel is
+its own column. In landscape the layout becomes board, cards, code, and
+the board gives up the width. In portrait the board shrinks to a strip
+and the cards and the code share the row beneath it. On a phone the code
+stacks under the cards. The panel is otherwise the step 2 panel: the full
+printed program with the running line highlighted.
+
 ## Build step 4: lessons and the meta-loop (2026-11-06)
 
 ### What is built

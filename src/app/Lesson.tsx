@@ -326,7 +326,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   ];
 
   return (
-    <main className="app-main">
+    <main className={`app-main ${showCode ? 'is-showing-code' : ''}`}>
       <div className="stage-col">
         <Board
           world={level.world}
@@ -391,6 +391,12 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
         </div>
       </div>
       <div className="side-col">
+        <button type="button" className="btn btn-quiet btn-code" aria-pressed={showCode} onClick={() => setShowCode((v) => !v)} aria-keyshortcuts="C" title="Show the program as TypeScript beside the cards">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          {showCode ? 'Hide the code' : 'See the code'}
+        </button>
         <Editor
           program={program}
           programming={level.programming}
@@ -408,11 +414,12 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           onRedo={onRedo}
           onRestart={restart}
         />
-        <button type="button" className="btn btn-quiet btn-code" aria-pressed={showCode} onClick={() => setShowCode((v) => !v)} aria-keyshortcuts="C">
-          {showCode ? 'Hide the code' : 'See the code'}
-        </button>
-        {showCode && <CodePanel program={program} activeNodeId={activeNode} />}
       </div>
+      {showCode && (
+        <aside className="code-col">
+          <CodePanel program={program} activeNodeId={activeNode} />
+        </aside>
+      )}
 
       {completion && (
         <div className="dialog-backdrop" role="presentation">
