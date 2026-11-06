@@ -1,0 +1,29 @@
+README.md
+  s_6cdecbe60fe9ce::t_80ef9b0f36c253 64
+docs/design-notes.md
+  s_6cdecbe60fe9ce::t_ef63323f41dc52 16-17
+src/app/Lesson.tsx
+  s_6cdecbe60fe9ce::t_56afc4d684724e 410-412
+src/editor/Editor.test.tsx
+  s_6cdecbe60fe9ce::t_71b61239462192 265-278
+src/editor/Editor.tsx
+  s_6cdecbe60fe9ce::t_4aa6853f3889a7 51,53-55,90-91,470-477,489,593
+src/styles.css
+  s_6cdecbe60fe9ce::t_072de2e675be3d 205-208,975-978
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cfddf4d5db1b625caac07fafe52e735730c2261f",
+  "prompts": {},
+  "sessions": {
+    "s_6cdecbe60fe9ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f2154704-1f75-466a-a250-70bdb58091a1",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Mike Sheldon <msheldon@redroverk12.com>"
+    }
+  }
+}
