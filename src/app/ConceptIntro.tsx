@@ -20,9 +20,11 @@ import type { BoardController } from '../render/controller';
 import { Sequencer } from '../render/sequencer';
 import { themeFor } from '../render/themes';
 import { DEFAULT_LIMITS, type Runtime, type TraceEvent } from '../runtime/contract';
-import { initialState } from '../sim/world';
+import type { SimState } from '../sim/types';
+import { gatesOf, initialState } from '../sim/world';
 import { useMotion } from './hooks';
 import { hashFor } from './levels';
+import { MemoryCard } from './MemoryCard';
 
 /** Pauses between runs, so the eye can rest on the end and the start. */
 const BEFORE_RUN_MS = 700;
@@ -67,6 +69,8 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
   const [folding, setFolding] = useState(false);
   const [activeNode, setActiveNode] = useState<NodeId | null>(null);
   const [activeEvent, setActiveEvent] = useState<TraceEvent | null>(null);
+  /** What the memory card shows: the state after the last event, or the start. */
+  const [shownState, setShownState] = useState<SimState | null>(null);
   const [round, setRound] = useState(0);
   const sequencer = useRef<Sequencer | null>(null);
   const [ready, setReady] = useState(false);
@@ -85,7 +89,9 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
           onEvent: (e) => {
             setActiveNode(e?.nodeId ?? null);
             setActiveEvent(e);
+            if (!e) setShownState(null);
           },
+          onPlayed: (e) => setShownState(e.after),
         })
       : null;
     setReady(c !== null);
@@ -136,6 +142,7 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
         <div className={`intro-demo ${folding ? 'is-folding' : ''}`}>
           <div className="intro-board">
             <Board world={demo.world} theme={theme} motion={motion} label={label} onControllers={onControllers} maxScale={1.3} />
+            {gatesOf(demo.world).length > 0 && <MemoryCard world={demo.world} state={shownState ?? initialState(demo.world)} />}
             {caption && (
               <p className="intro-caption" role="status" aria-live="polite">
                 {caption}

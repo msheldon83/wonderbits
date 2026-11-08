@@ -297,6 +297,64 @@ describe('validate: functions', () => {
   });
 });
 
+describe('validate: switches, gates and the model activity', () => {
+  /** A gate between the robot and the flag, its switch on the way: . S G . */
+  const gated = (over: (j: Json) => void = () => {}) =>
+    parsed((j) => {
+      j.curriculum.concept = 'worldState';
+      j.world.gates = [{ id: 'a', x: 2, y: 0 }];
+      j.world.switches = [{ x: 1, y: 0, toggles: ['a'] }];
+      j.world.goal = { x: 3, y: 0 };
+      j.programming.maxInstructions = 3;
+      j.referenceSolution = ['forward', 'forward', 'forward'];
+      j.stars.budget = 3;
+      over(j);
+    });
+
+  it('reads gates and switches, with gates shut unless they say open', () => {
+    const p = gated((j) => j.world.gates.push({ id: 'b', x: 0, y: 0, open: true }));
+    expect(p.world.gates).toEqual([
+      { id: 'a', x: 2, y: 0, open: false },
+      { id: 'b', x: 0, y: 0, open: true },
+    ]);
+    expect(p.world.switches).toEqual([{ x: 1, y: 0, toggles: ['a'] }]);
+    expect(validatePuzzle(gated()).errors).toEqual([]);
+  });
+
+  it('reports bad gates and switches by path', () => {
+    expect(() => gated((j) => (j.world.gates[0].id = 'Gate'))).toThrow(/world\.gates\[0\]\.id: expected one lower case letter/);
+    expect(() => gated((j) => (j.world.switches[0].toggles = [1]))).toThrow(/world\.switches\[0\]\.toggles\[0\]/);
+  });
+
+  it('checks that switches flip real gates, gates have switches, and nothing shares a tile', () => {
+    const errs = (over: (j: Json) => void) => validatePuzzle(gated(over)).errors.join('\n');
+    expect(errs((j) => (j.world.switches[0].toggles = ['b']))).toMatch(/flips gate b, which is not on the board/);
+    expect(errs((j) => (j.world.switches[0].toggles = ['b']))).toMatch(/gate a has no switch/);
+    expect(errs((j) => (j.world.gates[0].x = 3))).toMatch(/gate a at 3,0 shares a tile with the goal/);
+    expect(errs((j) => (j.world.switches[0].x = 0))).toMatch(/shares a tile with the robot/);
+    expect(errs((j) => (j.world.switches[0].toggles = []))).toMatch(/must flip at least one gate/);
+  });
+
+  it('proves a shut gate with no switch on the way is not solvable', () => {
+    const r = validatePuzzle(gated((j) => (j.world.switches = [{ x: 0, y: 0, toggles: ['a'] }])));
+    expect(r.errors.join('\n')).toMatch(/does not solve/);
+  });
+
+  it('asks a model level for memory card fields that the board has', () => {
+    const model = (ask: unknown) =>
+      gated((j) => {
+        j.curriculum.activity = 'model';
+        j.programming.starterProgram = ['forward', 'forward', 'forward'];
+        j.prediction = { askTile: false, askMemory: ask };
+      });
+    expect(validatePuzzle(model(['gate:a', 'facing'])).errors).toEqual([]);
+    expect(validatePuzzle(model([])).errors.join('\n')).toMatch(/at least one memory card field/);
+    expect(validatePuzzle(model(['gate:b'])).errors.join('\n')).toMatch(/asks for gate:b, which this board's memory card does not have/);
+    expect(validatePuzzle(model(['acorns'])).errors.join('\n')).toMatch(/asks for acorns/);
+    expect(() => model(['color'])).toThrow(/prediction\.askMemory\[0\]/);
+  });
+});
+
 describe('prediction', () => {
   it('is correct only on the tile the robot ends up on', () => {
     expect(predictionCorrect({ cell: { x: 2, y: 0 } }, { x: 2, y: 0 })).toBe(true);

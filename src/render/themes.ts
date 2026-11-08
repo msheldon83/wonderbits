@@ -45,3 +45,10 @@ export function pick<T>(items: readonly T[], x: number, y: number): T {
   const h = Math.abs((x * 73856093) ^ (y * 19349663));
   return items[h % items.length]!;
 }
+
+/** Each gate and its switches share a colour, by the gate's place in the board's list. */
+const GATE_COLORS = ['#e9862b', '#8a5cc7', '#d6503c', '#2b8fb5'];
+export function gateColor(gateIds: readonly string[], id: string): string {
+  const i = gateIds.indexOf(id);
+  return GATE_COLORS[(i < 0 ? 0 : i) % GATE_COLORS.length]!;
+}

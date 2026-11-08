@@ -2107,3 +2107,137 @@ button.function-head {
     transition: none;
   }
 }
+
+/* ---------- Gates and switches ---------- */
+
+/* An open gate slides its bars into the posts and fades them, so the tile reads as a way through. */
+.gate-wrap .gate-bars {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 300ms ease-in-out, opacity 300ms ease-in-out;
+}
+
+.gate-wrap[data-open='true'] .gate-bars {
+  transform: scaleX(0.08);
+  opacity: 0.25;
+}
+
+.switch-wrap {
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gate-wrap .gate-bars {
+    transition: none;
+  }
+}
+
+/* ---------- Memory card ---------- */
+
+.memory-card {
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+
+.memory-title {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.memory-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.memory-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 4px 12px 4px 6px;
+  border-radius: 12px;
+  background: var(--page);
+  font-weight: 700;
+}
+
+.memory-kind {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--blue-deep);
+}
+
+.memory-line.kind-yesNo .memory-kind {
+  color: var(--gate, var(--green-deep));
+}
+
+.memory-label {
+  color: var(--ink-soft);
+}
+
+.memory-value {
+  color: var(--ink);
+}
+
+.memory-line.is-asked {
+  background: var(--gold-wash);
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+
+.memory-line.is-wrong {
+  background: var(--red-wash);
+  box-shadow: inset 0 0 0 2px var(--red);
+}
+
+.memory-question,
+.memory-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.memory-choice {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 18px;
+  font-weight: 800;
+  box-shadow: 0 2px 0 var(--line);
+  cursor: pointer;
+}
+
+.memory-choice.is-on {
+  background: var(--blue);
+  color: #fff;
+  box-shadow: 0 2px 0 var(--blue-deep);
+}
+
+.memory-choice:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.memory-number {
+  min-width: 28px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 800;
+}

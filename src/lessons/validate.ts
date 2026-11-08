@@ -5,9 +5,10 @@
 import { sequentialIdFactory } from '../ir/ids';
 import { programFromSpec } from '../ir/program';
 import { callsOfSpec, cardsOfSpec, conditionsOfSpec, countSpec, depthOfSpec, specDiff, splitSpec, type NodeSpec } from '../ir/spec';
-import { CONDITION_IDS, isBlockId, isCommandId, type CardId, type CommandId } from '../ir/types';
+import { BASIC_CONDITIONS, isBlockId, isCommandId, type CardId, type CommandId } from '../ir/types';
 import { interpretAll } from '../runtime/interpreter';
-import { cellKey, objectiveMet, step, tileAt } from '../sim/world';
+import { cellKey, gatesOf, initialState, objectiveMet, stateKey, step, switchesOf, tileAt } from '../sim/world';
+import { hasField } from './memory';
 import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 import { cardsTeaching } from './concepts';
 import { cardOfSpec, resolveSpecPath } from './paths';
@@ -26,8 +27,8 @@ const SEARCH_CAP = 64;
 export function shortestSolution(puzzle: PuzzleDefinition, cap = SEARCH_CAP): CommandId[] | null {
   const { world, objective, programming } = puzzle;
   const commands = programming.allowedCommands.filter(isCommandId);
-  const keyOf = (s: SimState) => `${s.robot.x},${s.robot.y},${s.robot.facing}|${[...s.collected].sort().join(';')}`;
-  const start: SimState = { robot: { ...world.robot }, collected: [] };
+  const keyOf = stateKey;
+  const start = initialState(world);
   if (objectiveMet(world, objective, start)) return [];
   let frontier: { state: SimState; path: CommandId[] }[] = [{ state: start, path: [] }];
   const seen = new Set([keyOf(start)]);
@@ -72,6 +73,31 @@ function validateWorld(world: WorldDefinition, objective: ObjectiveDefinition, e
     if (tileAt(world, c) !== 'floor') errors.push(`collectible at ${cellKey(c)} must be on a floor tile`);
   });
   if (!objective.reachGoal && !objective.collectAll) errors.push('objective must ask for something');
+
+  // World state: gates on floor, switches that flip real gates, and one thing per tile.
+  const gates = gatesOf(world);
+  const ids = gates.map((g) => g.id);
+  if (new Set(ids).size !== ids.length) errors.push('gate ids must not repeat');
+  const taken = new Map<string, string>([[cellKey(world.robot), 'the robot'], [cellKey(world.goal), 'the goal']]);
+  world.collectibles.forEach((c) => taken.set(cellKey(c), 'an acorn'));
+  const place = (cell: { x: number; y: number }, what: string) => {
+    const key = cellKey(cell);
+    if (tileAt(world, cell) !== 'floor') errors.push(`${what} at ${key} must be on a floor tile`);
+    const there = taken.get(key);
+    if (there) errors.push(`${what} at ${key} shares a tile with ${there}`);
+    taken.set(key, what);
+  };
+  gates.forEach((g) => place(g, `gate ${g.id}`));
+  switchesOf(world).forEach((sw) => {
+    place(sw, 'a switch');
+    if (sw.toggles.length === 0) errors.push(`the switch at ${cellKey(sw)} must flip at least one gate`);
+    sw.toggles.forEach((id) => {
+      if (!ids.includes(id)) errors.push(`the switch at ${cellKey(sw)} flips gate ${id}, which is not on the board`);
+    });
+  });
+  gates.forEach((g) => {
+    if (!switchesOf(world).some((sw) => sw.toggles.includes(g.id))) errors.push(`gate ${g.id} has no switch to flip it`);
+  });
 }
 
 export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
@@ -83,7 +109,7 @@ export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
 
   if (programming.allowedCommands.length === 0) errors.push('allowedCommands must not be empty');
   const allowed = new Set<string>(programming.allowedCommands);
-  const conditions = new Set<string>(programming.allowedConditions ?? CONDITION_IDS);
+  const conditions = new Set<string>(programming.allowedConditions ?? BASIC_CONDITIONS);
   const usesConditions = programming.allowedCommands.some((c) => c === 'if' || c === 'ifElse' || c === 'until');
   if (usesConditions && conditions.size === 0) errors.push('allowedConditions must not be empty when If or Repeat until is allowed');
   if (!usesConditions && programming.allowedConditions) warnings.push('allowedConditions is set, but no card here senses anything');
@@ -196,8 +222,11 @@ function validateActivity(puzzle: PuzzleDefinition, errors: string[]): void {
   switch (curriculum.activity) {
     case 'run':
     case 'predict':
+    case 'model':
       if (!solves(puzzle, starter)) errors.push(`a ${curriculum.activity} level's starterProgram must already solve the level`);
       if (!prediction) errors.push(`a ${curriculum.activity} level must set prediction`);
+      if (curriculum.activity === 'model' && !prediction?.askMemory?.length) errors.push('a model level must ask for at least one memory card field');
+      if (curriculum.activity === 'predict' && prediction && !prediction.askTile) errors.push('a predict level must ask for the tile');
       break;
     case 'reorder':
       if (!programming.suppliedCards) errors.push('a reorder level must list suppliedCards');
@@ -217,7 +246,12 @@ function validateActivity(puzzle: PuzzleDefinition, errors: string[]): void {
       if (solves(puzzle, starter)) errors.push("a build level's starterProgram must not already solve the level");
       break;
   }
-  if (prediction && !prediction.askTile) errors.push('prediction must ask for the tile');
+  if (prediction && !prediction.askTile && !prediction.askMemory?.length) errors.push('prediction must ask for the tile or a memory card field');
+  const asked = prediction?.askMemory ?? [];
+  if (new Set(asked).size !== asked.length) errors.push('prediction.askMemory must not repeat a field');
+  asked.forEach((f) => {
+    if (!hasField(puzzle.world, f)) errors.push(`prediction asks for ${f}, which this board's memory card does not have`);
+  });
 }
 
 /** Hint targets must refer to real tiles, cards and steps. */
@@ -297,6 +331,11 @@ export function validateIntroduction(intro: ConceptIntroduction, errors: string[
   if (before) {
     if (!solvesOn(world, objective, before)) errors.push('introduction.demo.before must reach the flag on its board too, the old way');
     if (countSpec(before) <= countSpec(program)) errors.push('introduction.demo.before should be the longer, old way; it has no more cards than the program');
+  }
+  // World state has no card of its own: its demo must show a switch flipping a gate.
+  if (intro.concept === 'worldState') {
+    const run = interpretAll({ program: programFromSpec(program, sequentialIdFactory()), world, objective, limits: { maxSteps: 1000 } });
+    if (!run.trace.some((e) => e.result.kind === 'ok' && e.result.toggled)) errors.push('introduction.demo.program never steps on a switch, so it does not show "worldState"');
   }
   const teaching = cardsTeaching(intro.concept);
   if (teaching && !cardsOfSpec(program).some((c) => teaching.includes(c as CardId))) {

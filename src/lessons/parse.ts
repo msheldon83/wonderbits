@@ -4,8 +4,8 @@
  */
 import type { NodeSpec } from '../ir/spec';
 import { FUNCTION_NAME, isCardId, isCommandId, isConditionId, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, type CardId, type ConditionId } from '../ir/types';
-import { FACINGS, type Cell, type Facing, type TileKind, type WorldDefinition } from '../sim/types';
-import { CONTENT_SCHEMA_VERSION, type Activity, type ConceptIntroduction, type HintPath, type HintStep, type PackManifest, type PuzzleDefinition } from './types';
+import { FACINGS, type Cell, type Facing, type Gate, type Switch, type TileKind, type WorldDefinition } from '../sim/types';
+import { CONTENT_SCHEMA_VERSION, type MemoryField, type Activity, type ConceptIntroduction, type HintPath, type HintStep, type PackManifest, type PuzzleDefinition } from './types';
 
 export class ContentError extends Error {
   constructor(
@@ -18,7 +18,8 @@ export class ContentError extends Error {
 }
 
 const TILE_CHARS: Record<string, TileKind> = { '.': 'floor', '#': 'wall', _: 'gap' };
-const ACTIVITIES: readonly Activity[] = ['run', 'build', 'reorder', 'debug', 'predict'];
+const ACTIVITIES: readonly Activity[] = ['run', 'build', 'reorder', 'debug', 'predict', 'model'];
+const GATE_ID = /^[a-z]$/;
 
 type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -150,7 +151,11 @@ class Reader {
     const robotRaw = this.obj(world.robot, `${path}.robot`);
     const facing = robotRaw.facing as Facing;
     if (!FACINGS.includes(facing)) this.fail(`${path}.robot.facing`, 'expected N, E, S or W');
+    const gates = world.gates === undefined ? undefined : this.list(world.gates, `${path}.gates`, (g, at) => this.gate(g, at));
+    const switches = world.switches === undefined ? undefined : this.list(world.switches, `${path}.switches`, (w, at) => this.switch(w, at));
     return {
+      ...(gates && { gates }),
+      ...(switches && { switches }),
       width,
       height: rows.length,
       tiles,
@@ -163,6 +168,31 @@ class Reader {
             ? world.collectibles.map((c, i) => this.cell(c, `${path}.collectibles[${i}]`))
             : (this.fail(`${path}.collectibles`, 'expected an array'), []),
     };
+  }
+  list<T>(v: unknown, path: string, item: (x: unknown, at: string) => T): T[] {
+    if (!Array.isArray(v)) {
+      this.fail(path, 'expected an array');
+      return [];
+    }
+    return v.map((x, i) => item(x, `${path}[${i}]`));
+  }
+  /** A gate: { "id": "a", "x": 2, "y": 0, "open": false }. It starts closed unless open is true. */
+  gate(v: unknown, path: string): Gate {
+    const o = this.obj(v, path);
+    const id = typeof o.id === 'string' && GATE_ID.test(o.id) ? o.id : (this.fail(`${path}.id`, 'expected one lower case letter'), 'a');
+    return { id, ...this.cell(o, path), open: o.open === undefined ? false : this.bool(o.open, `${path}.open`) };
+  }
+  /** A switch: { "x": 1, "y": 0, "toggles": ["a"] }. */
+  switch(v: unknown, path: string): Switch {
+    const o = this.obj(v, path);
+    const toggles = this.list(o.toggles, `${path}.toggles`, (id, at) => (typeof id === 'string' && GATE_ID.test(id) ? id : (this.fail(at, 'expected a gate id'), 'a')));
+    return { ...this.cell(o, path), toggles };
+  }
+  memoryField(v: unknown, path: string): MemoryField {
+    if (v === 'facing' || v === 'acorns') return v;
+    if (typeof v === 'string' && /^gate:[a-z]$/.test(v)) return v as MemoryField;
+    this.fail(path, `expected "facing", "acorns" or "gate:<id>", got ${JSON.stringify(v)}`);
+    return 'facing';
   }
   /** A list of ids: concepts a pack teaches, or packs it needs first. */
   ids(v: unknown, path: string): string[] {
@@ -259,7 +289,10 @@ export function parsePuzzle(json: unknown, source: string): PuzzleDefinition {
   let prediction: PuzzleDefinition['prediction'];
   if (root.prediction !== undefined) {
     const o = r.obj(root.prediction, 'prediction');
-    prediction = { askTile: r.bool(o.askTile, 'prediction.askTile') };
+    prediction = {
+      askTile: r.bool(o.askTile, 'prediction.askTile'),
+      ...(o.askMemory !== undefined && { askMemory: r.list(o.askMemory, 'prediction.askMemory', (f, at) => r.memoryField(f, at)) }),
+    };
   }
 
   let maxPerCommand: Partial<Record<CardId, number>> | undefined;

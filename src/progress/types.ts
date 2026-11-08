@@ -4,6 +4,7 @@
  * adult exports it.
  */
 import type { ConditionId, NodeId, Place } from '../ir/types';
+import type { MemoryField, MemoryValue } from '../lessons/types';
 import type { Cell } from '../sim/types';
 
 export const PROGRESS_VERSION = 1 as const;
@@ -66,7 +67,7 @@ export type ObservationEvent = { t: number; levelId: string } & (
   | { kind: 'card-changed'; nodeId: NodeId; count?: number; condition?: ConditionId }
   | { kind: 'run-started'; steps: number }
   | { kind: 'trace-halted'; nodeId: NodeId; reason: string }
-  | { kind: 'prediction-made'; cell: Cell; correct: boolean }
+  | { kind: 'prediction-made'; cell?: Cell; memory?: Partial<Record<MemoryField, MemoryValue>>; wrongFields?: MemoryField[]; correct: boolean }
   | { kind: 'hint-opened'; rung: number }
   | { kind: 'level-completed'; stars: Stars; steps: number }
   | { kind: 'level-abandoned' }

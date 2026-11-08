@@ -14,8 +14,9 @@ import { applyOp, type EditOp } from '../ir/ops';
 import { countNodes, programFromSpec, stepNumber } from '../ir/program';
 import type { NodeId, ProgramIR } from '../ir/types';
 import { hintEffect, type HintEffect } from '../lessons/hints';
-import { predictionCorrect } from '../lessons/prediction';
-import type { Prediction, PuzzleDefinition } from '../lessons/types';
+import { gateLabel, gateOfField } from '../lessons/memory';
+import { checkPrediction, predictionComplete } from '../lessons/prediction';
+import type { MemoryField, MemoryValue, Prediction, PuzzleDefinition } from '../lessons/types';
 import type { ProgressStore } from '../progress/store';
 import type { BadgeId, Settings, Stars } from '../progress/types';
 import { Board } from '../render/Board';
@@ -23,11 +24,12 @@ import type { BoardController } from '../render/controller';
 import { Sequencer } from '../render/sequencer';
 import { themeFor } from '../render/themes';
 import { DEFAULT_LIMITS, type RunOutcome, type RunResult, type Runtime, type TraceEvent } from '../runtime/contract';
-import type { Cell, Facing } from '../sim/types';
-import { initialState } from '../sim/world';
+import type { Cell, Facing, SimState } from '../sim/types';
+import { gatesOf, initialState } from '../sim/world';
 import { useMotion } from './hooks';
 import { BADGE_INFO, BadgeIcon, Star } from './icons';
 import { hashFor } from './levels';
+import { MemoryCard } from './MemoryCard';
 import { outcomeMessage, type Shortfall, type Tone } from './messages';
 
 /**
@@ -84,6 +86,10 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   const [guessedRight, setGuessedRight] = useState(false);
   /** Tiles guessed wrong so far, marked on the board until a fresh start. */
   const [wrongGuesses, setWrongGuesses] = useState<Cell[]>([]);
+  /** Memory card fields guessed wrong last time, marked until answered again. */
+  const [wrongFields, setWrongFields] = useState<MemoryField[]>([]);
+  /** The state the memory card shows: after the last event played, or the start. */
+  const [shownState, setShownState] = useState<SimState | null>(null);
   const [hintsUsed, setHintsUsed] = useState(0);
   const [hint, setHint] = useState<HintEffect | null>(null);
   const [completion, setCompletion] = useState<Completion | null>(null);
@@ -100,10 +106,15 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   const completedRef = useRef(false);
 
   const activity = level.curriculum.activity;
-  const readOnly = activity === 'run' || activity === 'predict';
-  /** Prediction mode: the run only plays once the flag is on the right tile. */
-  const predicting = level.prediction !== undefined && !guessedRight;
-  const predictionOk = !predicting || prediction !== null;
+  const readOnly = activity === 'run' || activity === 'predict' || activity === 'model';
+  const asking = level.prediction;
+  /** Prediction mode: the run only plays once the flag and the memory card answers are right. */
+  const predicting = asking !== undefined && !guessedRight;
+  const predictionOk = !predicting || predictionComplete(prediction, asking!);
+  const asksTile = asking?.askTile ?? false;
+  const askedFields = asking?.askMemory ?? [];
+  /** The memory card shows from the switch pack on: wherever there are gates, or the level asks about memory. */
+  const showMemory = gatesOf(level.world).length > 0 || askedFields.length > 0;
 
   // The log: opened on mount, abandoned on unmount unless completed.
   useEffect(() => {
@@ -120,7 +131,9 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           onEvent: (e) => {
             setActiveNode(e?.nodeId ?? null);
             setActiveEvent(e);
+            if (!e) setShownState(null);
           },
+          onPlayed: (e) => setShownState(e.after),
         })
       : null;
   }, []);
@@ -139,6 +152,8 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
     setPrediction(null);
     setGuessedRight(false);
     setWrongGuesses([]);
+    setWrongFields([]);
+    setShownState(null);
   }, []);
 
   /** Start the level afresh: starter program, no hints used, no guess, robot at the start. */
@@ -175,13 +190,25 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
       const result = await ensureResult();
       if (!result || token !== runToken.current) return;
       // A wrong flag does not get a run: mark the tile and ask again.
-      if (predicting && prediction) {
+      if (predicting && prediction && asking) {
         const end = result.final ?? result.trace.at(-1)?.after ?? initialState(level.world);
-        const correct = predictionCorrect(prediction, end.robot);
-        store.record({ levelId: level.id, kind: 'prediction-made', cell: prediction.cell, correct });
-        if (!correct) {
-          setWrongGuesses((w) => [...w, prediction.cell]);
-          setPrediction(null);
+        const check = checkPrediction(prediction, asking, end);
+        store.record({
+          levelId: level.id,
+          kind: 'prediction-made',
+          ...(prediction.cell && { cell: prediction.cell }),
+          ...(prediction.memory && { memory: prediction.memory }),
+          ...(check.wrongFields.length > 0 && { wrongFields: check.wrongFields }),
+          correct: check.correct,
+        });
+        if (!check.correct) {
+          // Keep what was right; clear what was wrong and mark it.
+          const wrongCell = check.tileRight === false ? prediction.cell : undefined;
+          if (wrongCell) setWrongGuesses((w) => [...w, wrongCell]);
+          setWrongFields(check.wrongFields);
+          const memory = { ...prediction.memory };
+          for (const f of check.wrongFields) delete memory[f];
+          setPrediction({ ...(check.tileRight !== false && prediction.cell && { cell: prediction.cell }), memory });
           setPhase('editing');
           return;
         }
@@ -219,7 +246,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
         setCompletion({ stars, newBadges: after.filter((b) => !before.includes(b)) });
       }
     },
-    [runtime, phase, ensureResult, level, store, program, prediction, predicting, predictionOk, hintsUsed],
+    [runtime, phase, ensureResult, level, store, program, prediction, predicting, predictionOk, hintsUsed, asking],
   );
 
   const run = useCallback(() => void start('play'), [start]);
@@ -306,8 +333,14 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
 
   const errorNode = outcome?.status === 'blocked' ? outcome.nodeId : null;
   const predictionPrompt = (): { tone: Tone; text: string } => {
-    if (prediction) return { tone: 'info', text: 'Flag placed. Press Run to see if the robot gets there.' };
-    if (wrongGuesses.length > 0) return { tone: 'problem', text: 'Not there. The robot would not end up on that tile. Place the flag somewhere else.' };
+    const names = (fields: readonly MemoryField[]) => fields.map((f) => (gateOfField(f) ? gateLabel(gateOfField(f)!) : f === 'facing' ? 'which way it faces' : 'the acorns')).join(' and ');
+    const tileMissing = asksTile && !prediction?.cell;
+    const missing = askedFields.filter((f) => prediction?.memory?.[f] === undefined);
+    if (wrongFields.length > 0 && missing.length > 0) return { tone: 'problem', text: `Not quite: look again at ${names(wrongFields)}. Follow the cards one at a time.` };
+    if (wrongGuesses.length > 0 && tileMissing) return { tone: 'problem', text: 'Not there. The robot would not end up on that tile. Place the flag somewhere else.' };
+    if (!tileMissing && missing.length === 0) return { tone: 'info', text: asksTile ? 'Ready. Press Run to see if you were right.' : 'Memory card filled in. Press Run to see if you were right.' };
+    if (tileMissing && missing.length > 0) return { tone: 'info', text: 'Fill in the memory card for the end of the run, and place the flag where the robot will end up.' };
+    if (missing.length > 0) return { tone: 'info', text: 'What will the memory card say when the run ends? Fill in the yellow lines.' };
     return { tone: 'info', text: 'Place the flag where the robot will end up: tap that tile.' };
   };
   let message: { tone: Tone | 'hint'; text: string };
@@ -319,7 +352,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
       outcome.status === 'incomplete' && countNodes(program) === 0
         ? { tone: 'problem' as const, text: 'Your program is empty. Tap an instruction to add a step.' }
         : outcomeMessage(outcome, errorNode ? stepNumber(program, errorNode) : null, shortfall);
-    const guess = guessedRight ? 'Your flag was in the right spot! ' : '';
+    const guess = !guessedRight ? '' : asksTile && askedFields.length > 0 ? 'Your flag and your memory card were right! ' : asksTile ? 'Your flag was in the right spot! ' : 'Your memory card was right! ';
     message = { tone: base.tone, text: guess + base.text };
   } else if (predicting) message = predictionPrompt();
   else message = { tone: 'info', text: level.intro ?? 'Help the robot reach the flag. Tap an instruction to add it to your program.' };
@@ -327,7 +360,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   const busy = !runtime || phase === 'running';
   const marks = [
     ...wrongGuesses.map((cell) => ({ cell, state: 'wrong' as const })),
-    ...(prediction ? [{ cell: prediction.cell, state: guessedRight ? ('right' as const) : ('pending' as const) }] : []),
+    ...(prediction?.cell ? [{ cell: prediction.cell, state: guessedRight ? ('right' as const) : ('pending' as const) }] : []),
   ];
   const starSlots: { key: keyof Stars; label: string }[] = [
     { key: 'complete', label: 'Reached the flag' },
@@ -344,11 +377,11 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           motion={motion}
           label={describeBoard(level)}
           onControllers={onControllers}
-          onTileTap={predicting && phase === 'editing' ? (cell) => setPrediction({ cell }) : undefined}
+          onTileTap={predicting && asksTile && phase === 'editing' ? (cell) => setPrediction((p) => ({ ...p, cell })) : undefined}
           marks={marks}
           highlightCells={hint?.cells}
           hideIndicator={predicting}
-          hideGoal={predicting}
+          hideGoal={predicting && asksTile}
         />
         <div className="toolbar" role="toolbar" aria-label="Run controls">
           <button
@@ -357,12 +390,12 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
             onClick={run}
             disabled={busy || !predictionOk}
             aria-keyshortcuts="Control+Enter Meta+Enter"
-            title={!predictionOk ? 'Place the flag on the board first' : undefined}
+            title={!predictionOk ? (asksTile && !prediction?.cell ? 'Place the flag on the board first' : 'Fill in the memory card first') : undefined}
           >
             <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
               <path d="M7 4.5v15l12-7.5z" fill="currentColor" />
             </svg>
-            {phase === 'paused' ? 'Continue' : !predictionOk ? 'Place the flag' : 'Run'}
+            {phase === 'paused' ? 'Continue' : !predictionOk ? (asksTile && !prediction?.cell ? 'Place the flag' : 'Fill in the card') : 'Run'}
           </button>
           <button type="button" className="btn btn-step" onClick={stepOnce} disabled={busy || !predictionOk} aria-keyshortcuts="S" title="Play one step">
             <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
@@ -399,6 +432,20 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
             {message.text}
           </p>
         </div>
+        {showMemory && (
+          <MemoryCard
+            world={level.world}
+            state={shownState ?? initialState(level.world)}
+            asking={predicting ? askedFields : []}
+            answers={prediction?.memory}
+            wrong={wrongFields}
+            disabled={phase !== 'editing'}
+            onAnswer={(field: MemoryField, value: MemoryValue) => {
+              setPrediction((p) => ({ ...p, memory: { ...p?.memory, [field]: value } }));
+              setWrongFields((w) => w.filter((f) => f !== field));
+            }}
+          />
+        )}
       </div>
       <div className="side-col">
         <Editor

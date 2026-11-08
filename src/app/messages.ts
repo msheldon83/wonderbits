@@ -33,6 +33,8 @@ export function outcomeMessage(outcome: RunOutcome, stepNumber: number | null, s
           return { tone: 'problem', text: `Whoa! There is a gap${at}. The robot stopped just in time.` };
         case 'edge':
           return { tone: 'problem', text: `The robot cannot leave the island${at}.` };
+        case 'gate':
+          return { tone: 'problem', text: `Clunk! The gate is shut${at}. Which switch opens it?` };
       }
       break;
     case 'halted':

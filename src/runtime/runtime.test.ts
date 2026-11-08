@@ -186,3 +186,50 @@ describe('runtime contract over postMessage', () => {
     expect(messages[0]).toMatchObject({ type: 'done', outcome: { status: 'error' } });
   });
 });
+
+describe('interpreter: switches and gates', () => {
+  // . S     the robot at (0,0) facing E, the switch at (1,0) flips gate a at (1,1) below it
+  // # G     the flag is on the gate's tile
+  const gated: WorldDefinition = {
+    width: 2,
+    height: 2,
+    tiles: [
+      ['floor', 'floor'],
+      ['wall', 'floor'],
+    ],
+    robot: { x: 0, y: 0, facing: 'E' },
+    goal: { x: 1, y: 1 },
+    collectibles: [],
+    gates: [{ id: 'a', x: 1, y: 1, open: false }],
+    switches: [{ x: 1, y: 0, toggles: ['a'] }],
+  };
+  const go = (spec: NodeSpec[], w: WorldDefinition = gated) => interpretAll({ program: programFromSpec(spec, sequentialIdFactory()), world: w, objective, limits: { maxSteps: 100 } });
+
+  it('records the gates a switch flips and lets the robot through', () => {
+    const r = go(['forward', 'rotateCW', 'forward']);
+    expect(r.outcome).toEqual({ status: 'success' });
+    expect(r.trace[0]!.result).toEqual({ kind: 'ok', toggled: ['a'] });
+    expect(r.final.open).toEqual(['a']);
+  });
+
+  it('stops at a shut gate', () => {
+    expect(go(['rotateCW', 'forward'], { ...gated, robot: { x: 1, y: 0, facing: 'E' } }).outcome).toEqual({ status: 'blocked', nodeId: 'n2', reason: 'gate' });
+  });
+
+  it('counts a flipped gate as a new state, so pacing on a switch is not called a forever loop', () => {
+    // R S G: stepping on the switch shuts the open gate; off and back on opens it again.
+    // Both checks happen on the switch facing the gate, so only the gate tells them apart.
+    const row: WorldDefinition = {
+      width: 3,
+      height: 1,
+      tiles: [['floor', 'floor', 'floor']],
+      robot: { x: 0, y: 0, facing: 'E' },
+      goal: { x: 2, y: 0 },
+      collectibles: [],
+      gates: [{ id: 'a', x: 2, y: 0, open: true }],
+      switches: [{ x: 1, y: 0, toggles: ['a'] }],
+    };
+    const pace: NodeSpec[] = ['forward', { until: 'pathAhead', do: ['rotateCW', 'rotateCW', 'forward', 'rotateCW', 'rotateCW', 'forward'] }, 'forward'];
+    expect(go(pace, row).outcome).toEqual({ status: 'success' });
+  });
+});

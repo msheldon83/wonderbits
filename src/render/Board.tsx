@@ -1,10 +1,10 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import type { Cell, WorldDefinition } from '../sim/types';
-import { cellKey, initialState, tileAt } from '../sim/world';
-import { Anchored, ARROW_POINTS, Collectible, CUE_BOX, FloorTile, GhostRobot, GoalFlag, Lip, Robot, ROBOT_BOX, Rock, Tree, TurnCue, Water } from './art';
+import { cellKey, gatesOf, initialState, switchesOf, tileAt } from '../sim/world';
+import { Anchored, ARROW_POINTS, Collectible, CUE_BOX, FloorTile, GateArt, GhostRobot, GoalFlag, Lip, Robot, ROBOT_BOX, Rock, SwitchArt, Tree, TurnCue, Water } from './art';
 import { BoardController, type MotionSettings, type RobotElements } from './controller';
 import { LAYER, LIP, layoutFor, TILE, toScreen } from './grid';
-import { pick, type Theme } from './themes';
+import { gateColor, pick, type Theme } from './themes';
 
 export interface BoardProps {
   world: WorldDefinition;
@@ -34,6 +34,8 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
   const viewport = useRef<HTMLDivElement>(null);
   const robotEls = useRef<Partial<RobotElements>[]>([]);
   const gems = useRef(new Map<string, HTMLElement>());
+  const gateEls = useRef(new Map<string, HTMLElement>());
+  const switchEls = useRef(new Map<string, HTMLElement>());
   const controllers = useRef<BoardController[]>([]);
   const elsFor = (i: number) => (robotEls.current[i] ??= {});
   const [scale, setScale] = useState(1);
@@ -56,7 +58,7 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
   useLayoutEffect(() => {
     const cs = Array.from({ length: robotCount }, (_, i) => {
       const els = robotEls.current[i] as RobotElements;
-      const c = new BoardController(world, layout, els, i === 0 ? gems.current : new Map(), theme.indicator, motion);
+      const c = new BoardController(world, layout, els, i === 0 ? gems.current : new Map(), theme.indicator, motion, i === 0 ? { gates: gateEls.current, switches: switchEls.current } : undefined);
       c.showState(initialState(world));
       return c;
     });
@@ -146,6 +148,49 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
       >
         <Anchored x={TILE / 2} y={TILE / 2} size={TILE} z={0} label="Collectible">
           <Collectible theme={theme} />
+        </Anchored>
+      </div>,
+    );
+  }
+
+  // World state: switch plates under everything, gates at the robot's level so a shut one reads as a wall.
+  const gateIds = gatesOf(world).map((g) => g.id);
+  for (const sw of switchesOf(world)) {
+    const p = toScreen(layout, sw);
+    const key = cellKey(sw);
+    const id = sw.toggles[0] ?? '';
+    const letters = sw.toggles.map((t) => t.toUpperCase()).join('');
+    objects.push(
+      <div
+        key={`s${key}`}
+        ref={(el) => {
+          if (el) switchEls.current.set(key, el);
+          else switchEls.current.delete(key);
+        }}
+        className="switch-wrap"
+        style={{ position: 'absolute', left: p.x - TILE / 2, top: p.y - TILE / 2, width: TILE, height: TILE, zIndex: LAYER.goal - 1 }}
+      >
+        <Anchored x={TILE / 2} y={TILE / 2} size={TILE} z={0} label={`Switch for gate ${letters}`}>
+          <SwitchArt color={gateColor(gateIds, id)} letter={letters} />
+        </Anchored>
+      </div>,
+    );
+  }
+  for (const g of gatesOf(world)) {
+    const p = toScreen(layout, g);
+    objects.push(
+      <div
+        key={`gate${g.id}`}
+        ref={(el) => {
+          if (el) gateEls.current.set(g.id, el);
+          else gateEls.current.delete(g.id);
+        }}
+        className="gate-wrap"
+        data-open={String(g.open)}
+        style={{ position: 'absolute', left: p.x - TILE / 2, top: p.y - TILE / 2, width: TILE, height: TILE, zIndex: LAYER.collectible + 1 }}
+      >
+        <Anchored x={TILE / 2} y={TILE / 2} size={TILE} z={0} label={`Gate ${g.id.toUpperCase()}`}>
+          <GateArt color={gateColor(gateIds, g.id)} letter={g.id.toUpperCase()} />
         </Anchored>
       </div>,
     );

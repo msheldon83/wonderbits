@@ -1,6 +1,6 @@
 import type { NodeSpec } from '../ir/spec';
 import type { CardId, ConditionId } from '../ir/types';
-import type { Cell, ObjectiveDefinition, WorldDefinition } from '../sim/types';
+import type { Cell, Facing, ObjectiveDefinition, WorldDefinition } from '../sim/types';
 
 export const CONTENT_SCHEMA_VERSION = 1 as const;
 
@@ -10,8 +10,18 @@ export const CONTENT_SCHEMA_VERSION = 1 as const;
  * reorder: the child orders a fixed set of supplied cards (Parsons).
  * debug: a pre-filled program has one wrong instruction to repair.
  * predict: the program is given and locked; the child predicts tile and facing.
+ * model: the program is given and locked; the child fills in the memory card
+ *   as it will be at the end of the run, field by field, then runs it.
  */
-export type Activity = 'run' | 'build' | 'reorder' | 'debug' | 'predict';
+export type Activity = 'run' | 'build' | 'reorder' | 'debug' | 'predict' | 'model';
+
+/**
+ * A line of the memory card the child can be asked to predict: which way the
+ * robot faces, how many acorns it holds, or whether a gate is open.
+ */
+export type MemoryField = 'facing' | 'acorns' | `gate:${string}`;
+/** A memory card value: a direction, a number, or a yes/no. */
+export type MemoryValue = Facing | number | boolean;
 
 /**
  * Where inside a program a hint points. Each number enters that card's body;
@@ -33,9 +43,11 @@ export type HintStep =
   | { kind: 'step'; path: HintPath; index: number; text: string }
   | { kind: 'fill'; path: HintPath; slot: number; command: CardId; text: string };
 
-/** Prediction asks where the robot will end up. Kept as an object so later levels can ask more. */
+/** Prediction asks where the robot will end up, and on later levels what its memory card will say. */
 export interface PredictionSettings {
   askTile: boolean;
+  /** Memory card fields to fill in before the run. */
+  askMemory?: MemoryField[];
 }
 
 export interface PuzzleDefinition {
@@ -110,7 +122,8 @@ export interface PackManifest {
   introduction?: ConceptIntroduction;
 }
 
-/** What the child predicted before a run. */
+/** What the child predicted before a run: the tile, and any memory card fields asked. */
 export interface Prediction {
-  cell: Cell;
+  cell?: Cell;
+  memory?: Partial<Record<MemoryField, MemoryValue>>;
 }

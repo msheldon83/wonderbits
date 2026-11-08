@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "id": "s09-where-will-it-stop",
+  "title": "Where will it stop?",
+  "intro": "The robot paces on and off the switch. Count every press, then place the flag.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..",
+      "#.",
+      "#."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 1,
+      "y": 2
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 1,
+        "y": 1,
+        "open": false
+      }
+    ],
+    "switches": [
+      {
+        "x": 1,
+        "y": 0,
+        "toggles": [
+          "a"
+        ]
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "transfer",
+    "activity": "predict"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "repeat"
+    ],
+    "maxInstructions": 11,
+    "starterProgram": [
+      {
+        "repeat": 2,
+        "do": [
+          "forward",
+          "rotateCW",
+          "rotateCW",
+          "forward",
+          "rotateCW",
+          "rotateCW"
+        ]
+      },
+      "forward",
+      "rotateCW",
+      "forward",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ],
+      "text": "Each go round the Repeat steps on the switch once."
+    },
+    {
+      "kind": "card",
+      "command": "repeat",
+      "text": "Two goes, then one more Forward: that is three presses. Open, shut, open."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "repeat",
+      "text": "The Repeat comes first."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "repeat": 2,
+      "do": [
+        "forward",
+        "rotateCW",
+        "rotateCW",
+        "forward",
+        "rotateCW",
+        "rotateCW"
+      ]
+    },
+    "forward",
+    "rotateCW",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true
+  }
+}

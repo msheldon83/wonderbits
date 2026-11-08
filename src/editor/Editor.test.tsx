@@ -354,7 +354,7 @@ describe('Editor: blocks', () => {
   it('shows what a running block is doing', () => {
     const program = programFromSpec([{ repeat: 3, do: ['forward'] }], sequentialIdFactory('s'));
     const base = { program, programming: { allowedCommands: ['forward', 'repeat'] as CardId[], starterProgram: [] as NodeSpec[] }, locked: true, errorNodeId: null, newId: sequentialIdFactory('t'), onEdit: () => {} };
-    const state = { robot: { x: 0, y: 0, facing: 'N' as const }, collected: [] };
+    const state = { robot: { x: 0, y: 0, facing: 'N' as const }, collected: [], open: [] };
     const { rerender } = render(<Editor {...base} activeNodeId="s1" activeEvent={{ index: 0, nodeId: 's1', op: 'loop', iteration: 2, count: 3, before: state, after: state, result: { kind: 'ok' } }} />);
     expect(step(1).textContent).toContain('2 of 3');
     expect(step(1).className).toContain('is-active');

@@ -16,6 +16,8 @@ export const SENSE: Record<ConditionId, string> = {
   blockedAhead: 'robot.blockedAhead()',
   acornAhead: 'robot.acornAhead()',
   atFlag: 'robot.atFlag()',
+  gateClosedAhead: 'robot.gateClosedAhead()',
+  onSwitch: 'robot.onSwitch()',
 };
 
 const INDENT = '  ';
