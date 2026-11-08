@@ -1,6 +1,6 @@
 import type { IdFactory } from './ids';
 import { buildNodes, specOf, splitSpec, type NodeSpec } from './spec';
-import { functionContainerId, functionOfContainer, IR_VERSION, MAIN, type Branch, type CommandId, type IRNode, type NodeId, type Place, type Procedure, type ProgramIR } from './types';
+import { functionContainerId, functionOfContainer, handlerContainerId, handlerOfContainer, IR_VERSION, MAIN, type Branch, type CommandId, type EventHandler, type IRNode, type NodeId, type Place, type Procedure, type ProgramIR } from './types';
 
 export function emptyProgram(): ProgramIR {
   return { version: IR_VERSION, procedures: [{ name: MAIN, body: [] }], handlers: [] };
@@ -10,19 +10,31 @@ export function programFromCommands(commands: readonly CommandId[], newId: IdFac
   return programFromSpec(commands, newId);
 }
 
-/** A program from a spec: main's cards, and a procedure for each "define" in the order listed. */
+/** A program from a spec: main's cards, a procedure for each "define" and a handler for each "on", in the order listed. */
 export function programFromSpec(spec: readonly NodeSpec[], newId: IdFactory): ProgramIR {
-  const { main, functions } = splitSpec(spec);
+  const { main, functions, handlers } = splitSpec(spec);
   const program = emptyProgram();
   program.procedures[0]!.body = buildNodes(main, newId);
   for (const f of functions) program.procedures.push({ name: f.name, body: buildNodes(f.body, newId) });
+  for (const h of handlers) program.handlers.push({ event: h.event, body: buildNodes(h.body, newId) });
   return program;
 }
 
-/** The program back as a spec: main's cards, then each function as a "define". */
+/** The program back as a spec: main's cards, then each function as a "define", then each When card as an "on". */
 export function programSpec(program: ProgramIR): NodeSpec[] {
-  return [...specOf(mainBody(program)), ...functionsOf(program).map((f): NodeSpec => ({ define: f.name, do: specOf(f.body) }))];
+  return [
+    ...specOf(mainBody(program)),
+    ...functionsOf(program).map((f): NodeSpec => ({ define: f.name, do: specOf(f.body) })),
+    ...program.handlers.map((h): NodeSpec => ({ on: h.event, do: specOf(h.body) })),
+  ];
 }
+
+/** The cards of the When card for an event, or undefined when the program has none. */
+export function handlerBody(program: ProgramIR, event: string): readonly IRNode[] | undefined {
+  return program.handlers.find((h) => h.event === event)?.body;
+}
+
+export const handlersOf = (program: ProgramIR): readonly EventHandler[] => program.handlers;
 
 export function mainBody(program: ProgramIR): readonly IRNode[] {
   const main = program.procedures.find((p) => p.name === MAIN);
@@ -77,7 +89,7 @@ export interface Visit {
   depth: number;
   /** 1-based position in document order, blocks included: the step number the child sees. */
   number: number;
-  /** The procedure the node belongs to: main, or a function's name. */
+  /** The procedure the node belongs to: main, a function's name, or a When card's container id (`on:<event>`). */
   procedure: string;
 }
 
@@ -97,6 +109,7 @@ export function* walk(program: ProgramIR): Generator<Visit> {
   }
   yield* visit(mainBody(program), null, 'body', 0, MAIN);
   for (const f of functionsOf(program)) yield* visit(f.body, functionContainerId(f.name), 'body', 0, f.name);
+  for (const h of program.handlers) yield* visit(h.body, handlerContainerId(h.event), 'body', 0, handlerContainerId(h.event));
 }
 
 /** Number of program nodes, blocks included, which is what instruction budgets count. */
@@ -133,6 +146,8 @@ export function containerAt(program: ProgramIR, place: Pick<Place, 'parent' | 'b
   if (place.parent === null) return place.branch === 'body' ? mainBody(program) : undefined;
   const fn = functionOfContainer(place.parent);
   if (fn !== null) return place.branch === 'body' ? functionBody(program, fn) : undefined;
+  const event = handlerOfContainer(place.parent);
+  if (event !== null) return place.branch === 'body' ? handlerBody(program, event) : undefined;
   const node = findNode(program, place.parent);
   return node ? branchBody(node, place.branch) : undefined;
 }
@@ -150,6 +165,7 @@ export function isWithin(program: ProgramIR, id: NodeId, ancestor: NodeId): bool
 /** The procedure a gap belongs to: main, or a function's name. Undefined when the place does not exist. */
 export function procedureOfPlace(program: ProgramIR, place: Pick<Place, 'parent'>): string | undefined {
   if (place.parent === null) return MAIN;
+  if (handlerOfContainer(place.parent) !== null) return place.parent;
   return functionOfContainer(place.parent) ?? locate(program, place.parent)?.procedure;
 }
 
@@ -157,7 +173,7 @@ export function procedureOfPlace(program: ProgramIR, place: Pick<Place, 'parent'
 export function ancestorsOf(program: ProgramIR, id: NodeId): NodeId[] {
   const out: NodeId[] = [];
   let current = locate(program, id)?.parent ?? null;
-  while (current !== null && functionOfContainer(current) === null) {
+  while (current !== null && functionOfContainer(current) === null && handlerOfContainer(current) === null) {
     out.push(current);
     current = locate(program, current)?.parent ?? null;
   }

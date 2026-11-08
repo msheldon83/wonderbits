@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "id": "k08-the-down-key",
+  "title": "The Down key",
+  "intro": "Down does not move the robot here. It opens the gate.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "#.#",
+      "#.#",
+      "#.#",
+      "#.#"
+    ],
+    "robot": {
+      "x": 1,
+      "y": 3,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 1,
+      "y": 0
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 1,
+        "y": 1,
+        "open": false
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "input",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "openGate"
+    ],
+    "maxInstructions": 3,
+    "starterProgram": [
+      {
+        "on": "key:up",
+        "do": []
+      },
+      {
+        "on": "key:down",
+        "do": []
+      }
+    ]
+  },
+  "inputScript": [
+    "up",
+    "down",
+    "up",
+    "up"
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 1
+        }
+      ],
+      "text": "Gate A is two tiles up."
+    },
+    {
+      "kind": "card",
+      "command": "openGate",
+      "text": "Put Open gate A in the When card for Down."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:key:down"
+      ],
+      "slot": 0,
+      "command": "openGate",
+      "text": "Down opens gate A."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "on": "key:up",
+      "do": [
+        "forward"
+      ]
+    },
+    {
+      "on": "key:down",
+      "do": [
+        {
+          "open": "a"
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

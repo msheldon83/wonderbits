@@ -9,6 +9,7 @@ const CALL: Record<CommandId, string> = {
   forward: 'robot.forward();',
   rotateCW: 'robot.rotateClockwise();',
   rotateCCW: 'robot.rotateCounterClockwise();',
+  wait: 'robot.wait();',
 };
 
 export const SENSE: Record<ConditionId, string> = {
@@ -56,9 +57,24 @@ function printNode(node: IRNode, depth: number, lines: string[]): void {
     case 'call':
       lines.push(`${pad}${node.name}(); ${tag}`);
       return;
+    case 'openGate':
+      lines.push(`${pad}robot.openGate('${node.gate}'); ${tag}`);
+      return;
+    case 'closeGate':
+      lines.push(`${pad}robot.closeGate('${node.gate}'); ${tag}`);
+      return;
     default:
       lines.push(`${pad}${CALL[node.kind]} ${tag}`);
   }
+}
+
+/** 'stepOn:1' prints as 'steppedOn', 1; 'key:up' as 'keyPressed', 'up'; 'acorn' and 'tick' as themselves. */
+function eventArgs(event: string): string {
+  const [kind, arg] = event.split(':');
+  if (kind === 'stepOn') return `'steppedOn', ${arg}`;
+  if (kind === 'key') return `'keyPressed', '${arg}'`;
+  if (kind === 'acorn') return `'acornPicked'`;
+  return `'${kind}'`;
 }
 
 export function printProgram(program: ProgramIR): string {
@@ -73,8 +89,10 @@ export function printProgram(program: ProgramIR): string {
     for (const node of proc.body) printNode(node, 1, lines);
     lines.push('}');
   }
+  // Each When card prints as a handler: the event as the robot names it, and its cards inside.
   for (const handler of program.handlers) {
-    lines.push('', `robot.on('${handler.event}', () => {`);
+    lines.push('', `robot.on(${eventArgs(handler.event)}, () => { // @node on:${handler.event}`);
+    if (handler.body.length === 0) lines.push(`${INDENT}// No steps yet.`);
     for (const node of handler.body) printNode(node, 1, lines);
     lines.push('});');
   }

@@ -4,15 +4,15 @@
  * and the check after the run all read the same values.
  */
 import type { Facing, SimState, WorldDefinition } from '../sim/types';
-import { gatesOf } from '../sim/world';
+import { gatesOf, moversOf } from '../sim/world';
 import type { MemoryField, MemoryValue } from './types';
 
 /** The kinds of value a memory line can hold, each with its own icon. */
 export type MemoryKind = 'position' | 'direction' | 'number' | 'yesNo';
 
 export interface MemoryLine {
-  /** The field id, or "position" for the robot's tile, which is asked by placing the flag. */
-  field: MemoryField | 'position';
+  /** The field id; "position" (asked by placing the flag) and "tick" (on boards where things move) are shown, never asked. */
+  field: MemoryField | 'position' | 'tick';
   label: string;
   kind: MemoryKind;
 }
@@ -31,6 +31,7 @@ export function memoryLines(world: WorldDefinition): MemoryLine[] {
     { field: 'facing', label: 'Facing', kind: 'direction' },
     ...(world.collectibles.length > 0 ? [{ field: 'acorns' as const, label: 'Acorns', kind: 'number' as const }] : []),
     ...gatesOf(world).map((g) => ({ field: gateField(g.id), label: `${gateLabel(g.id)} open`, kind: 'yesNo' as const })),
+    ...(moversOf(world).length > 0 ? [{ field: 'tick' as const, label: 'Tick', kind: 'number' as const }] : []),
   ];
 }
 

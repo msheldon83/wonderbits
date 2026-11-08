@@ -33,17 +33,19 @@ architecture, and the exit gate for the first child test. Read it before
 starting new work.
 
 The first child test passed on 2026-11-08, and this repository is at
-**build step 10 of the plan: world state and the memory card**. It has 55
-levels in six packs (Forest, five levels that teach the game; Forest trails,
-ten sequencing levels; Around and around, Repeat; Look before you leap, If,
+**build step 11 of the plan: events, input and time**. It has 85 levels in
+nine packs (Forest, five levels that teach the game; Forest trails, ten
+sequencing levels; Around and around, Repeat; Look before you leap, If,
 If / else and Repeat until; Same trick, new place, functions; Flip the
-switch, switches and gates), a show-first introduction before each new
-concept, a card book to watch them again, a memory card under the board
-wherever the world can change, prediction of the tile and of the memory
-card, validators in CI, three-rung hint ladders, the level map with stars
-and badges, progress in IndexedDB, and an observation log the grown-up can
-export. The next concept is events, in a pack called "When it happens",
-which needs `on` handlers in the IR. See [docs/design-notes.md](docs/design-notes.md) for what is built, what
+switch, switches and gates; When it happens, When cards for plates and
+acorns; Remote control, key scripts; Tick tock, logs, beetles and the
+Every tick card), a show-first introduction before each new concept, a card
+book to watch them again, a memory card under the board wherever the world
+can change, prediction of the tile and of the memory card, validators in
+CI, three-rung hint ladders, the level map with stars and badges, progress
+in IndexedDB, and an observation log the grown-up can export. The next
+concepts are representation and kinds of values, in a pack called "Two
+things to remember", which needs a memory budget and typed memory slots. See [docs/design-notes.md](docs/design-notes.md) for what is built, what
 is deliberately not, and any deviations from the plan.
 
 ## Run it

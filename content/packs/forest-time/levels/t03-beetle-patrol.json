@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "id": "t03-beetle-patrol",
+  "title": "Beetle patrol",
+  "intro": "A beetle walks into the path and out again. Let it pass.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      ".....",
+      "##.##"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": [],
+    "movers": [
+      {
+        "id": "b1",
+        "kind": "beetle",
+        "path": [
+          {
+            "x": 2,
+            "y": 1
+          },
+          {
+            "x": 2,
+            "y": 0
+          },
+          {
+            "x": 2,
+            "y": 0
+          },
+          {
+            "x": 2,
+            "y": 1
+          }
+        ]
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "time",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "wait"
+    ],
+    "maxInstructions": 8,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 1
+        }
+      ],
+      "text": "The beetle stands in the path for two ticks, then steps back."
+    },
+    {
+      "kind": "card",
+      "command": "wait",
+      "text": "Wait next to the beetle until it leaves."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 1,
+      "command": "wait",
+      "text": "After one step, wait."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "wait",
+    "wait",
+    "forward",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

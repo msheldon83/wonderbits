@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "id": "t01-wait-for-it",
+  "title": "Wait for it",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "._.",
+      "._.",
+      "._."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 1
+    },
+    "collectibles": [],
+    "movers": [
+      {
+        "id": "log1",
+        "kind": "log",
+        "path": [
+          {
+            "x": 1,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 0
+          },
+          {
+            "x": 1,
+            "y": 1
+          }
+        ]
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "time",
+    "activity": "run"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "wait"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": [
+      "wait",
+      "wait",
+      "forward",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 2
+        }
+      ],
+      "text": "The log drifts up and down the river, one tile a tick."
+    },
+    {
+      "kind": "card",
+      "command": "wait",
+      "text": "Every card is one tick. Wait lets a tick pass without moving."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "wait",
+      "text": "First, wait for the log."
+    }
+  ],
+  "referenceSolution": [
+    "wait",
+    "wait",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true
+  }
+}

@@ -30,6 +30,24 @@ export interface Switch extends Cell {
   toggles: string[];
 }
 
+/** A pressure plate does nothing by itself: stepping onto it fires the event its When card waits for. */
+export interface Plate extends Cell {
+  /** A digit, such as "1", so plates read differently from gates. */
+  id: string;
+}
+
+/**
+ * Something that moves on its own, one step per tick, round and round its
+ * path. A log floats on water and carries the robot; a beetle walks on floor
+ * and catches it. A patrol that goes back and forth lists the way back too.
+ */
+export interface Mover {
+  id: string;
+  kind: 'log' | 'beetle';
+  /** Where it is on tick 0, 1, 2 and so on, then round again. */
+  path: Cell[];
+}
+
 export interface WorldDefinition {
   width: number;
   height: number;
@@ -41,6 +59,10 @@ export interface WorldDefinition {
   /** World state: gates and the switches that flip them. Absent on boards without any. */
   gates?: Gate[];
   switches?: Switch[];
+  /** Events: pressure plates that fire When cards. */
+  plates?: Plate[];
+  /** Time: logs and beetles that move one step per tick. */
+  movers?: Mover[];
 }
 
 export interface ObjectiveDefinition {
@@ -57,4 +79,6 @@ export interface SimState {
   collected: string[];
   /** Ids of the gates open right now, sorted. */
   open: string[];
+  /** Ticks gone by. Only boards with movers or an every-tick card count them. */
+  tick: number;
 }

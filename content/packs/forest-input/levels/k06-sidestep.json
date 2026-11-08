@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "id": "k06-sidestep",
+  "title": "Sidestep",
+  "intro": "The robot should always face up. Right steps one tile right and turns back up.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "##...",
+      "##.##",
+      "...##"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 2,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "input",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 6,
+    "starterProgram": [
+      {
+        "on": "key:up",
+        "do": []
+      },
+      {
+        "on": "key:right",
+        "do": []
+      }
+    ]
+  },
+  "inputScript": [
+    "right",
+    "right",
+    "up",
+    "up",
+    "right",
+    "right"
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 2
+        }
+      ],
+      "text": "Right moves one tile right without leaving the robot turned."
+    },
+    {
+      "kind": "card",
+      "command": "rotateCW",
+      "text": "Right: turn right, step, turn back."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:key:right"
+      ],
+      "slot": 2,
+      "command": "rotateCCW",
+      "text": "Right ends by turning back to face up."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "on": "key:up",
+      "do": [
+        "forward"
+      ]
+    },
+    {
+      "on": "key:right",
+      "do": [
+        "rotateCW",
+        "forward",
+        "rotateCCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

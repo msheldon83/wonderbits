@@ -6,6 +6,10 @@
  *   [{ "if": "blockedAhead", "do": ["rotateCW"], "else": ["forward"] }]
  *   [{ "until": "atFlag", "do": ["forward"] }]
  *   [{ "call": "hop" }, "forward", { "call": "hop" }, { "define": "hop", "do": ["forward", "rotateCW"] }]
+ *   ["forward", { "on": "stepOn:1", "do": [{ "open": "a" }] }]
+ *
+ * An "on" is a When card: like a define it sits only at the top and becomes
+ * a handler of its own. "open" and "close" act on a gate by its letter.
  *
  * An "if" with an "else" is an ifElse node. A "define" gives a function its
  * cards; it may only sit at the top of a program spec, and it becomes a
@@ -22,28 +26,37 @@ export type NodeSpec =
   | { if: ConditionId; do: NodeSpec[]; else?: NodeSpec[] }
   | { until: ConditionId; do: NodeSpec[] }
   | { call: string }
-  | { define: string; do: NodeSpec[] };
+  | { open: string }
+  | { close: string }
+  | { define: string; do: NodeSpec[] }
+  | { on: string; do: NodeSpec[] };
 
 export type DefineSpec = Extract<NodeSpec, { define: string }>;
+export type OnSpec = Extract<NodeSpec, { on: string }>;
 
-/** A spec split into main's cards and the functions it defines, in the order listed. */
-export function splitSpec(spec: readonly NodeSpec[]): { main: NodeSpec[]; functions: { name: string; body: NodeSpec[] }[] } {
+/** A spec split into main's cards, the functions it defines and its When cards, each in the order listed. */
+export function splitSpec(spec: readonly NodeSpec[]): { main: NodeSpec[]; functions: { name: string; body: NodeSpec[] }[]; handlers: { event: string; body: NodeSpec[] }[] } {
   const main: NodeSpec[] = [];
   const functions: { name: string; body: NodeSpec[] }[] = [];
+  const handlers: { event: string; body: NodeSpec[] }[] = [];
   for (const s of spec) {
     if (typeof s !== 'string' && 'define' in s) functions.push({ name: s.define, body: s.do });
+    else if (typeof s !== 'string' && 'on' in s) handlers.push({ event: s.on, body: s.do });
     else main.push(s);
   }
-  return { main, functions };
+  return { main, functions, handlers };
 }
 
 export function buildNodes(spec: readonly NodeSpec[], newId: IdFactory): IRNode[] {
   return spec.map((s): IRNode => {
     if (typeof s === 'string') return { id: newId(), kind: s };
     if ('define' in s) throw new Error(`"define ${s.define}" can only sit at the top of a program`);
+    if ('on' in s) throw new Error(`"on ${s.on}" can only sit at the top of a program`);
     // Ids are minted in document order so sequential factories read naturally.
     const id = newId();
     if ('call' in s) return { id, kind: 'call', name: s.call };
+    if ('open' in s) return { id, kind: 'openGate', gate: s.open };
+    if ('close' in s) return { id, kind: 'closeGate', gate: s.close };
     if ('repeat' in s) return { id, kind: 'repeat', count: s.repeat, body: buildNodes(s.do, newId) };
     if ('until' in s) return { id, kind: 'until', condition: s.until, body: buildNodes(s.do, newId) };
     const body = buildNodes(s.do, newId);
@@ -65,6 +78,10 @@ export function specOf(nodes: readonly IRNode[]): NodeSpec[] {
         return { until: n.condition, do: specOf(n.body) };
       case 'call':
         return { call: n.name };
+      case 'openGate':
+        return { open: n.gate };
+      case 'closeGate':
+        return { close: n.gate };
       default:
         return n.kind;
     }
@@ -79,7 +96,9 @@ export function cardsOfSpec(spec: readonly NodeSpec[]): string[] {
   return spec.flatMap((s) => {
     if (typeof s === 'string') return [s];
     if ('call' in s) return ['call'];
-    if ('define' in s) return cardsOfSpec(s.do);
+    if ('open' in s) return ['openGate'];
+    if ('close' in s) return ['closeGate'];
+    if ('define' in s || 'on' in s) return cardsOfSpec(s.do);
     if ('repeat' in s) return ['repeat', ...cardsOfSpec(s.do)];
     if ('until' in s) return ['until', ...cardsOfSpec(s.do)];
     return [s.else ? 'ifElse' : 'if', ...cardsOfSpec(s.do), ...cardsOfSpec(s.else ?? [])];
@@ -95,8 +114,8 @@ export function countSpec(spec: readonly NodeSpec[]): number {
 export function depthOfSpec(spec: readonly NodeSpec[]): number {
   let depth = 0;
   for (const s of spec) {
-    if (typeof s === 'string' || 'call' in s) continue;
-    if ('define' in s) {
+    if (typeof s === 'string' || 'call' in s || 'open' in s || 'close' in s) continue;
+    if ('define' in s || 'on' in s) {
       depth = Math.max(depth, depthOfSpec(s.do));
       continue;
     }
@@ -109,8 +128,8 @@ export function depthOfSpec(spec: readonly NodeSpec[]): number {
 /** Conditions a spec senses, for the validator. */
 export function conditionsOfSpec(spec: readonly NodeSpec[]): ConditionId[] {
   return spec.flatMap((s) => {
-    if (typeof s === 'string' || 'call' in s) return [];
-    if ('repeat' in s || 'define' in s) return conditionsOfSpec(s.do);
+    if (typeof s === 'string' || 'call' in s || 'open' in s || 'close' in s) return [];
+    if ('repeat' in s || 'define' in s || 'on' in s) return conditionsOfSpec(s.do);
     if ('until' in s) return [s.until, ...conditionsOfSpec(s.do)];
     return [s.if, ...conditionsOfSpec(s.do), ...conditionsOfSpec(s.else ?? [])];
   });
@@ -119,10 +138,21 @@ export function conditionsOfSpec(spec: readonly NodeSpec[]): ConditionId[] {
 /** The names a spec calls, in document order, repeats included. */
 export function callsOfSpec(spec: readonly NodeSpec[]): string[] {
   return spec.flatMap((s): string[] => {
-    if (typeof s === 'string') return [];
+    if (typeof s === 'string' || 'open' in s || 'close' in s) return [];
     if ('call' in s) return [s.call];
     if ('if' in s) return [...callsOfSpec(s.do), ...callsOfSpec(s.else ?? [])];
     return callsOfSpec(s.do);
+  });
+}
+
+/** The gates a spec opens or shuts, for the validator. */
+export function gatesOfSpec(spec: readonly NodeSpec[]): string[] {
+  return spec.flatMap((s): string[] => {
+    if (typeof s === 'string' || 'call' in s) return [];
+    if ('open' in s) return [s.open];
+    if ('close' in s) return [s.close];
+    if ('if' in s) return [...gatesOfSpec(s.do), ...gatesOfSpec(s.else ?? [])];
+    return gatesOfSpec(s.do);
   });
 }
 
@@ -143,10 +173,23 @@ export function specDiff(a: readonly NodeSpec[], b: readonly NodeSpec[]): number
       continue;
     }
     const kindOf = (s: Exclude<NodeSpec, string>) =>
-      'call' in s ? 'call' : 'define' in s ? 'define' : 'repeat' in s ? 'repeat' : 'until' in s ? 'until' : s.else ? 'ifElse' : 'if';
+      'call' in s ? 'call' : 'open' in s ? 'open' : 'close' in s ? 'close' : 'define' in s ? 'define' : 'on' in s ? 'on' : 'repeat' in s ? 'repeat' : 'until' in s ? 'until' : s.else ? 'ifElse' : 'if';
+    // Opening a gate where the solution shuts it is one wrong card, like Rotate the wrong way.
+    const gateOf = (s: Exclude<NodeSpec, string>) => ('open' in s ? s.open : 'close' in s ? s.close : null);
+    if (gateOf(x) !== null && gateOf(y) !== null) {
+      if (kindOf(x) !== kindOf(y) || gateOf(x) !== gateOf(y)) diffs++;
+      continue;
+    }
     if (kindOf(x) !== kindOf(y)) return -1;
     if ('call' in x) {
       if (x.call !== (y as { call: string }).call) diffs++;
+      continue;
+    }
+    if ('on' in x) {
+      if (x.on !== (y as OnSpec).on) return -1;
+      const inner = specDiff(x.do, (y as OnSpec).do);
+      if (inner < 0) return -1;
+      diffs += inner;
       continue;
     }
     if ('define' in x) {
@@ -157,13 +200,14 @@ export function specDiff(a: readonly NodeSpec[], b: readonly NodeSpec[]): number
       diffs += inner;
       continue;
     }
-    const param = 'repeat' in x ? x.repeat : 'until' in x ? x.until : x.if;
+    if (!('do' in x) || 'define' in x || 'on' in x) continue;
+    const param = 'repeat' in x ? x.repeat : 'until' in x ? x.until : (x as { if: ConditionId }).if;
     const paramY = 'repeat' in y ? y.repeat : 'until' in y ? y.until : (y as { if: ConditionId }).if;
     if (param !== paramY) diffs++;
     const inner = specDiff(x.do, (y as { do: NodeSpec[] }).do);
     if (inner < 0) return -1;
     diffs += inner;
-    if ('if' in x && x.else) {
+    if ('if' in x && 'else' in x && x.else) {
       const elseDiff = specDiff(x.else, (y as { else?: NodeSpec[] }).else ?? []);
       if (elseDiff < 0) return -1;
       diffs += elseDiff;

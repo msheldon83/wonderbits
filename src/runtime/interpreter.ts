@@ -8,9 +8,18 @@
  * answer it got. A call emits a `call` event, then runs its function's
  * cards, each tagged with the calls it runs inside. Those events change
  * nothing on the board.
+ *
+ * Events: when a step lands on a plate or picks up an acorn, a `when` event
+ * and that When card's cards run right after the step, before the next card.
+ * On a timed board every robot action (Forward, a turn, Wait) is followed by
+ * a `tick` event: the movers step, a robot on a log rides along, and then the
+ * Every tick card runs. Cards inside the Every tick card do not tick again.
+ * On input levels the key script plays after main, one `press` event per key,
+ * each followed by that key's When card.
  */
-import { functionBody, mainBody } from '../ir/program';
-import { initialState, evaluate, objectiveMet, stateKey, step } from '../sim/world';
+import { functionBody, handlerBody, mainBody } from '../ir/program';
+import { handlerContainerId, type Key } from '../ir/types';
+import { advance, initialState, evaluate, isTimed, objectiveMet, period, setGate, stateKey, step, type WorldEvent } from '../sim/world';
 import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 import type { IRNode, ProgramIR } from '../ir/types';
 import type { RunLimits, RunOutcome, TraceEvent } from './contract';
@@ -20,6 +29,7 @@ export interface InterpretInput {
   world: WorldDefinition;
   objective: ObjectiveDefinition;
   limits: Pick<RunLimits, 'maxSteps'>;
+  input?: readonly Key[];
 }
 
 export interface InterpretSummary {
@@ -38,6 +48,10 @@ const MAX_CALL_DEPTH = 16;
 export function* interpret(input: InterpretInput): Generator<TraceEvent, InterpretSummary, void> {
   const { program, world, objective, limits } = input;
   let state = initialState(world);
+  const timed = isTimed(world, handlerBody(program, 'tick') !== undefined);
+  const worldPeriod = period(world);
+  /** True while the Every tick card runs, so its own actions do not tick again. */
+  let ticking = false;
   let executed = 0;
   /** Set once something ends the run early. */
   let stop: RunOutcome | null = null;
@@ -62,7 +76,8 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
       switch (node.kind) {
         case 'forward':
         case 'rotateCW':
-        case 'rotateCCW': {
+        case 'rotateCCW':
+        case 'wait': {
           const result = step(world, state, node.kind);
           const ok = yield* emit({
             nodeId: node.id,
@@ -80,6 +95,15 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
             return;
           }
           state = result.state;
+          yield* afterAction(node.id, result.events ?? []);
+          break;
+        }
+        case 'openGate':
+        case 'closeGate': {
+          const after = setGate(state, node.gate, node.kind === 'openGate');
+          const ok = yield* emit({ nodeId: node.id, op: node.kind, gate: node.gate, before: state, after, result: { kind: 'ok' } });
+          if (!ok) return;
+          state = after;
           break;
         }
         case 'repeat': {
@@ -129,7 +153,7 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
             const ok = yield* emit({ nodeId: node.id, op: 'check', condition: node.condition, value, before: state, after: state, result: { kind: 'ok' } });
             if (!ok) return;
             if (value) break;
-            const key = stateKey(state);
+            const key = stateKey(state, worldPeriod);
             if (seen.has(key)) {
               stop = { status: 'halted', reason: 'forever' };
               return;
@@ -144,7 +168,58 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
     }
   }
 
+  /** Run the When card waiting for an event, if there is one. */
+  function* fire(event: string): Generator<TraceEvent, void, void> {
+    const body = handlerBody(program, event);
+    if (!body || stop) return;
+    if (calls.length >= MAX_CALL_DEPTH) {
+      stop = { status: 'halted', reason: 'forever' };
+      return;
+    }
+    const container = handlerContainerId(event);
+    const ok = yield* emit({ nodeId: container, op: 'when', event, before: state, after: state, result: { kind: 'ok' } });
+    if (!ok) return;
+    calls.push(container);
+    yield* run(body);
+    calls.pop();
+  }
+
+  /** After a robot action: the When cards it set off, then, on a timed board, one tick. */
+  function* afterAction(nodeId: string, events: readonly WorldEvent[]): Generator<TraceEvent, void, void> {
+    for (const event of events) yield* fire(event);
+    if (stop || !timed || ticking) return;
+    const t = advance(world, state);
+    const ok = yield* emit({
+      nodeId,
+      op: 'tick',
+      before: state,
+      after: t.state,
+      result: t.kind === 'ok' ? { kind: 'ok', ...(t.rode && { rode: true }) } : { kind: 'blocked', reason: t.reason, at: t.at },
+    });
+    if (!ok) return;
+    state = t.state;
+    if (t.kind === 'hazard') {
+      stop = { status: 'blocked', nodeId, reason: t.reason };
+      return;
+    }
+    ticking = true;
+    yield* fire('tick');
+    ticking = false;
+  }
+
   yield* run(mainBody(program));
+  // Input levels: the key script plays after main.
+  for (const [index, key] of (input.input ?? []).entries()) {
+    if (stop) break;
+    const event = `key:${key}`;
+    const body = handlerBody(program, event);
+    const container = body ? handlerContainerId(event) : 'input';
+    const ok = yield* emit({ nodeId: container, op: 'press', key, press: index, before: state, after: state, result: { kind: 'ok' } });
+    if (!ok || !body) continue;
+    calls.push(container);
+    yield* run(body);
+    calls.pop();
+  }
   if (stop) return { outcome: stop, final: state, executedSteps: executed };
   const outcome: RunOutcome = objectiveMet(world, objective, state) ? { status: 'success' } : { status: 'incomplete' };
   return { outcome, final: state, executedSteps: executed };

@@ -14,7 +14,7 @@ export function handleRequest(request: RunRequest, post: Post): void {
       type: 'done',
       requestId,
       outcome: { status: 'error', message: `Unsupported contract version ${String(request.contract)}` },
-      final: { robot: request.world.robot, collected: [], open: [] },
+      final: { robot: request.world.robot, collected: [], open: [], tick: 0 },
       executedSteps: 0,
     });
     return;
@@ -34,7 +34,7 @@ export function handleRequest(request: RunRequest, post: Post): void {
       type: 'done',
       requestId,
       outcome: { status: 'error', message: err instanceof Error ? err.message : String(err) },
-      final: { robot: request.world.robot, collected: [], open: [] },
+      final: { robot: request.world.robot, collected: [], open: [], tick: 0 },
       executedSteps: 0,
     });
   }

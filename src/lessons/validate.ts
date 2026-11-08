@@ -4,10 +4,10 @@
  */
 import { sequentialIdFactory } from '../ir/ids';
 import { programFromSpec } from '../ir/program';
-import { callsOfSpec, cardsOfSpec, conditionsOfSpec, countSpec, depthOfSpec, specDiff, splitSpec, type NodeSpec } from '../ir/spec';
-import { BASIC_CONDITIONS, isBlockId, isCommandId, type CardId, type CommandId } from '../ir/types';
+import { callsOfSpec, cardsOfSpec, conditionsOfSpec, countSpec, depthOfSpec, gatesOfSpec, specDiff, splitSpec, type NodeSpec } from '../ir/spec';
+import { BASIC_CONDITIONS, isBlockId, isCommandId, isGateActionId, type CardId, type CommandId, type Key } from '../ir/types';
 import { interpretAll } from '../runtime/interpreter';
-import { cellKey, gatesOf, initialState, objectiveMet, stateKey, step, switchesOf, tileAt } from '../sim/world';
+import { advance, cellKey, gatesOf, initialState, isTimed, moverCell, moversOf, objectiveMet, period, platesOf, stateKey, step, switchesOf, tileAt } from '../sim/world';
 import { hasField } from './memory';
 import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 import { cardsTeaching } from './concepts';
@@ -27,7 +27,17 @@ const SEARCH_CAP = 64;
 export function shortestSolution(puzzle: PuzzleDefinition, cap = SEARCH_CAP): CommandId[] | null {
   const { world, objective, programming } = puzzle;
   const commands = programming.allowedCommands.filter(isCommandId);
-  const keyOf = stateKey;
+  const worldPeriod = period(world);
+  const keyOf = (s: SimState) => stateKey(s, worldPeriod);
+  // On a timed board the world ticks after every command, as the interpreter does.
+  const timed = isTimed(world);
+  const act = (state: SimState, cmd: CommandId): SimState | null => {
+    const r = step(world, state, cmd);
+    if (r.kind !== 'ok') return null;
+    if (!timed) return r.state;
+    const t = advance(world, r.state);
+    return t.kind === 'ok' ? t.state : null;
+  };
   const start = initialState(world);
   if (objectiveMet(world, objective, start)) return [];
   let frontier: { state: SimState; path: CommandId[] }[] = [{ state: start, path: [] }];
@@ -36,14 +46,14 @@ export function shortestSolution(puzzle: PuzzleDefinition, cap = SEARCH_CAP): Co
     const next: typeof frontier = [];
     for (const { state, path } of frontier) {
       for (const cmd of commands) {
-        const r = step(world, state, cmd);
-        if (r.kind !== 'ok') continue;
-        const k = keyOf(r.state);
+        const after = act(state, cmd);
+        if (!after) continue;
+        const k = keyOf(after);
         if (seen.has(k)) continue;
         seen.add(k);
         const p = [...path, cmd];
-        if (objectiveMet(world, objective, r.state)) return p;
-        next.push({ state: r.state, path: p });
+        if (objectiveMet(world, objective, after)) return p;
+        next.push({ state: after, path: p });
       }
     }
     frontier = next;
@@ -55,12 +65,13 @@ function countOf(cards: readonly string[], c: string): number {
   return cards.filter((x) => x === c).length;
 }
 
-const solvesOn = (world: WorldDefinition, objective: ObjectiveDefinition, spec: NodeSpec[]) =>
-  interpretAll({ program: programFromSpec(spec, sequentialIdFactory()), world, objective, limits: { maxSteps: 1000 } }).outcome.status === 'success';
-const solves = (puzzle: PuzzleDefinition, spec: NodeSpec[]) => solvesOn(puzzle.world, puzzle.objective, spec);
+const runOn = (world: WorldDefinition, objective: ObjectiveDefinition, spec: NodeSpec[], input?: readonly Key[]) =>
+  interpretAll({ program: programFromSpec(spec, sequentialIdFactory()), world, objective, limits: { maxSteps: 1000 }, ...(input && { input }) });
+const solvesOn = (world: WorldDefinition, objective: ObjectiveDefinition, spec: NodeSpec[], input?: readonly Key[]) => runOn(world, objective, spec, input).outcome.status === 'success';
+const solves = (puzzle: PuzzleDefinition, spec: NodeSpec[]) => solvesOn(puzzle.world, puzzle.objective, spec, puzzle.inputScript);
 
 /** The board itself: size, and the robot, goal and acorns on floor tiles. Shared by levels and demos. */
-function validateWorld(world: WorldDefinition, objective: ObjectiveDefinition, errors: string[]): void {
+function validateWorld(world: WorldDefinition, objective: ObjectiveDefinition, errors: string[], gateCards = false): void {
   if (world.width < 1 || world.width > 16 || world.height < 1 || world.height > 16) {
     errors.push(`board must be 1..16 tiles on each side, got ${world.width}x${world.height}`);
   }
@@ -95,9 +106,30 @@ function validateWorld(world: WorldDefinition, objective: ObjectiveDefinition, e
       if (!ids.includes(id)) errors.push(`the switch at ${cellKey(sw)} flips gate ${id}, which is not on the board`);
     });
   });
-  gates.forEach((g) => {
-    if (!switchesOf(world).some((sw) => sw.toggles.includes(g.id))) errors.push(`gate ${g.id} has no switch to flip it`);
-  });
+  // A gate opened by gate cards needs no switch.
+  if (!gateCards) {
+    gates.forEach((g) => {
+      if (!switchesOf(world).some((sw) => sw.toggles.includes(g.id))) errors.push(`gate ${g.id} has no switch to flip it`);
+    });
+  }
+  const plates = platesOf(world);
+  const plateIds = plates.map((p) => p.id);
+  if (new Set(plateIds).size !== plateIds.length) errors.push('plate ids must not repeat');
+  plates.forEach((p) => place(p, `plate ${p.id}`));
+
+  // Movers: logs float on water, beetles walk on floor, one tile per tick, and round again.
+  const moverIds = moversOf(world).map((m) => m.id);
+  if (new Set(moverIds).size !== moverIds.length) errors.push('mover ids must not repeat');
+  for (const m of moversOf(world)) {
+    m.path.forEach((c, i) => {
+      const tile = tileAt(world, c);
+      if (m.kind === 'log' && tile !== 'gap') errors.push(`log ${m.id} at ${cellKey(c)} (path[${i}]) must float on water`);
+      if (m.kind === 'beetle' && tile !== 'floor') errors.push(`beetle ${m.id} at ${cellKey(c)} (path[${i}]) must walk on floor`);
+      const next = m.path[(i + 1) % m.path.length]!;
+      if (Math.abs(next.x - c.x) + Math.abs(next.y - c.y) > 1) errors.push(`${m.kind} ${m.id} jumps from ${cellKey(c)} to ${cellKey(next)}; a path moves one tile at a time, and back to its start`);
+    });
+    if (m.kind === 'beetle' && cellKey(moverCell(m, 0)) === cellKey(world.robot)) errors.push(`beetle ${m.id} starts on the robot`);
+  }
 }
 
 export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
@@ -105,7 +137,7 @@ export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
   const warnings: string[] = [];
   const { world, programming, referenceSolution, stars } = puzzle;
 
-  validateWorld(world, puzzle.objective, errors);
+  validateWorld(world, puzzle.objective, errors, programming.allowedCommands.some(isGateActionId));
 
   if (programming.allowedCommands.length === 0) errors.push('allowedCommands must not be empty');
   const allowed = new Set<string>(programming.allowedCommands);
@@ -139,23 +171,26 @@ export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
   if (programming.suppliedCards) checkCards('suppliedCards', programming.suppliedCards);
 
   if (!solves(puzzle, referenceSolution)) {
-    const outcome = interpretAll({ program: programFromSpec(referenceSolution, sequentialIdFactory()), world, objective: puzzle.objective, limits: { maxSteps: 1000 } }).outcome;
+    const outcome = runOn(world, puzzle.objective, referenceSolution, puzzle.inputScript).outcome;
     errors.push(`referenceSolution does not solve the level (outcome: ${outcome.status})`);
   }
 
   validateFunctions(puzzle, errors);
+  validateHandlers(puzzle, errors);
   validateActivity(puzzle, errors);
   validateHints(puzzle, errors);
 
-  const structured = programming.allowedCommands.some((c) => isBlockId(c) || c === 'call');
+  /** Levels that need more than a flat list: blocks, functions, When cards, gate cards or a key script. */
+  const structured =
+    programming.allowedCommands.some((c) => isBlockId(c) || c === 'call' || isGateActionId(c)) || splitSpec(referenceSolution).handlers.length > 0 || puzzle.inputScript !== undefined;
   /** Levels where the child writes the program; elsewhere a shorter flat program is no concern. */
   const open = puzzle.curriculum.activity === 'build' || puzzle.curriculum.activity === 'reorder';
   const refCount = countSpec(referenceSolution);
   const shortest = shortestSolution(puzzle);
   const min = shortest?.length ?? null;
-  if (min === null) {
+  if (min === null && !structured) {
     errors.push(`no solution of ${SEARCH_CAP} commands or fewer exists`);
-  } else if (!structured) {
+  } else if (min !== null && !structured) {
     if (programming.maxInstructions !== undefined && programming.maxInstructions < min) {
       errors.push(`maxInstructions ${programming.maxInstructions} is below the minimum solution of ${min}`);
     }
@@ -170,10 +205,10 @@ export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
     if (stars.budget !== undefined && stars.budget < refCount) {
       errors.push(`stars.budget ${stars.budget} is below the referenceSolution's ${refCount} cards, so nothing proves it can be met`);
     }
-    if (open && programming.maxInstructions !== undefined && programming.maxInstructions >= min) {
+    if (min !== null && open && programming.maxInstructions !== undefined && programming.maxInstructions >= min) {
       warnings.push(`a flat program of ${min} commands fits under maxInstructions ${programming.maxInstructions}, so blocks are optional here`);
     }
-    if (open && stars.budget !== undefined && stars.budget >= min) {
+    if (min !== null && open && stars.budget !== undefined && stars.budget >= min) {
       warnings.push(`stars.budget ${stars.budget} can be met by a flat program of ${min} commands, so the star does not need a block`);
     }
   }
@@ -210,6 +245,32 @@ function validateFunctions(puzzle: PuzzleDefinition, errors: string[]): void {
   }
   if (callAllowed && puzzle.curriculum.activity !== 'run' && puzzle.curriculum.activity !== 'predict' && callsOfSpec(reference.main).length === 0) {
     errors.push('referenceSolution never calls its function');
+  }
+}
+
+/**
+ * When cards are the level's to choose, like functions: the starter program
+ * lists them (empty on a build level) and the solution fills the same ones
+ * in. Each waits for something this board can do: a plate on it, an acorn
+ * on it, a key in its script, or ticks. Gate cards name gates on the board.
+ */
+function validateHandlers(puzzle: PuzzleDefinition, errors: string[]): void {
+  const { programming, referenceSolution, world, inputScript } = puzzle;
+  const events = splitSpec(programming.starterProgram).handlers.map((h) => h.event);
+  const refEvents = splitSpec(referenceSolution).handlers.map((h) => h.event);
+  if (events.join(',') !== refEvents.join(',')) {
+    errors.push(`starterProgram has When cards for ${events.join(', ') || 'nothing'} but referenceSolution for ${refEvents.join(', ') || 'nothing'}; they must match, in the same order`);
+  }
+  for (const event of events) {
+    const [kind, arg] = event.split(':');
+    if (kind === 'stepOn' && !platesOf(world).some((p) => p.id === arg)) errors.push(`a When card waits for plate ${arg}, which is not on the board`);
+    if (kind === 'acorn' && world.collectibles.length === 0) errors.push('a When card waits for an acorn, but the board has none');
+    if (kind === 'key' && !inputScript?.includes(arg as Key)) errors.push(`a When card waits for the ${arg} key, which the inputScript never presses`);
+  }
+  if (inputScript !== undefined && inputScript.length === 0) errors.push('inputScript must press at least one key');
+  const gates = new Set(gatesOf(world).map((g) => g.id));
+  for (const [label, spec] of [['starterProgram', programming.starterProgram], ['referenceSolution', referenceSolution]] as const) {
+    for (const g of gatesOfSpec(spec)) if (!gates.has(g)) errors.push(`${label} opens or shuts gate ${g}, which is not on the board`);
   }
 }
 
@@ -323,20 +384,25 @@ export function validatePack(pack: PackManifest, all: readonly PackManifest[]): 
 
 /** The demo must reach the flag and must use a card that belongs to the concept it introduces. */
 export function validateIntroduction(intro: ConceptIntroduction, errors: string[]): void {
-  const { world, program, before } = intro.demo;
+  const { world, program, before, input } = intro.demo;
   const objective: ObjectiveDefinition = { reachGoal: true, collectAll: world.collectibles.length > 0 };
-  validateWorld(world, objective, errors);
+  validateWorld(world, objective, errors, cardsOfSpec(program).some(isGateActionId));
   if (program.length === 0) errors.push('introduction.demo.program must not be empty');
-  if (!solvesOn(world, objective, program)) errors.push('introduction.demo.program must reach the flag (and collect every acorn) on its board');
+  if (!solvesOn(world, objective, program, input)) errors.push('introduction.demo.program must reach the flag (and collect every acorn) on its board');
   if (before) {
-    if (!solvesOn(world, objective, before)) errors.push('introduction.demo.before must reach the flag on its board too, the old way');
+    if (!solvesOn(world, objective, before, input)) errors.push('introduction.demo.before must reach the flag on its board too, the old way');
     if (countSpec(before) <= countSpec(program)) errors.push('introduction.demo.before should be the longer, old way; it has no more cards than the program');
   }
-  // World state has no card of its own: its demo must show a switch flipping a gate.
-  if (intro.concept === 'worldState') {
-    const run = interpretAll({ program: programFromSpec(program, sequentialIdFactory()), world, objective, limits: { maxSteps: 1000 } });
-    if (!run.trace.some((e) => e.result.kind === 'ok' && e.result.toggled)) errors.push('introduction.demo.program never steps on a switch, so it does not show "worldState"');
-  }
+  // Concepts without a card of their own must show their idea in the run itself.
+  const trace = runOn(world, objective, program, input).trace;
+  const shows: Record<string, [boolean, string]> = {
+    worldState: [trace.some((e) => e.result.kind === 'ok' && e.result.toggled), 'never steps on a switch'],
+    events: [trace.some((e) => e.op === 'when' && !e.event.startsWith('key:') && e.event !== 'tick'), 'never sets off a When card'],
+    input: [trace.some((e) => e.op === 'press' && e.nodeId !== 'input'), 'never presses a key that a When card waits for'],
+    time: [trace.some((e) => e.op === 'tick' && e.before.tick !== e.after.tick) && moversOf(world).length > 0, 'never lets anything move with the ticks'],
+  };
+  const check = shows[intro.concept];
+  if (check && !check[0]) errors.push(`introduction.demo.program ${check[1]}, so it does not show "${intro.concept}"`);
   const teaching = cardsTeaching(intro.concept);
   if (teaching && !cardsOfSpec(program).some((c) => teaching.includes(c as CardId))) {
     errors.push(`introduction.demo.program never uses a ${teaching.join(' or ')} card, so it does not show "${intro.concept}"`);

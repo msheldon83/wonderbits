@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "id": "e02-fill-the-when",
+  "title": "Fill in the When",
+  "intro": "The program walks to the gate, but the When card for plate 1 is empty. What should happen when the plate is pressed?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 3,
+        "y": 0,
+        "open": false
+      }
+    ],
+    "plates": [
+      {
+        "id": "1",
+        "x": 1,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "events",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "openGate"
+    ],
+    "maxInstructions": 5,
+    "starterProgram": [
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      {
+        "on": "stepOn:1",
+        "do": []
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "The plate comes before the gate."
+    },
+    {
+      "kind": "card",
+      "command": "openGate",
+      "text": "An Open gate card inside the When card opens the gate the moment the plate is pressed."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:stepOn:1"
+      ],
+      "slot": 0,
+      "command": "openGate",
+      "text": "The When card opens gate A."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    {
+      "on": "stepOn:1",
+      "do": [
+        {
+          "open": "a"
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

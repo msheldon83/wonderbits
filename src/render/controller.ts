@@ -6,10 +6,11 @@
  * Top-down: the robot sprite points up and is rotated to its facing. Display
  * angles accumulate across turns so every turn animates exactly 90 degrees.
  */
+import { eventShort } from '../editor/commands';
 import { functionLabel } from '../ir/types';
 import type { TraceEvent } from '../runtime/contract';
 import type { Cell, RobotState, SimState, WorldDefinition } from '../sim/types';
-import { ahead, cellKey, gateAt, tileAt } from '../sim/world';
+import { ahead, cellKey, moverCell, moversOf, passable, tileAt } from '../sim/world';
 import { CUE_BOX, ROBOT_BOX } from './art';
 import { angleFor, toScreen, TILE, turnAngle, type BoardLayout } from './grid';
 import type { Player } from './sequencer';
@@ -32,6 +33,7 @@ export interface RobotElements {
 }
 
 const MOVE_MS = 420;
+const KEY_ARROW = { up: '↑', down: '↓', left: '←', right: '→' } as const;
 const TURN_MS = 380;
 /** The turn cue lingers a little after the robot has settled. */
 const CUE_TAIL_MS = 140;
@@ -76,8 +78,8 @@ export class BoardController implements Player {
   private lastRobot: RobotState | null = null;
   /** False while the child is predicting: the next-tile ghost would give the answer away. */
   private indicatorVisible = true;
-  /** Gates open on screen right now. */
-  private open: string[] = [];
+  /** The world state on screen right now: which gates are open, and the tick the movers are on. */
+  private shown: SimState = { robot: { x: 0, y: 0, facing: 'N' }, collected: [], open: [], tick: 0 };
 
   constructor(
     private world: WorldDefinition,
@@ -86,12 +88,43 @@ export class BoardController implements Player {
     private collectibles: Map<string, HTMLElement>,
     private colors: { ok: string; blocked: string },
     public motion: MotionSettings,
-    /** Gate elements by id and switch plates by cell key, when the board has them. */
-    private worldEls: { gates: Map<string, HTMLElement>; switches: Map<string, HTMLElement> } = { gates: new Map(), switches: new Map() },
+    /** Gate elements by id, switch plates by cell key and movers by id, when the board has them. */
+    private worldEls: { gates: Map<string, HTMLElement>; switches: Map<string, HTMLElement>; movers?: Map<string, HTMLElement> } = { gates: new Map(), switches: new Map() },
   ) {}
 
+  private moverTransform(cell: Cell): string {
+    const p = toScreen(this.layout, cell);
+    return `translate(${p.x - TILE / 2}px, ${p.y - TILE / 2}px)`;
+  }
+
+  /** Put every mover where it is on a tick, without animation. */
+  private placeMovers(tick: number): void {
+    this.shown = { ...this.shown, tick };
+    for (const m of moversOf(this.world)) {
+      const el = this.worldEls.movers?.get(m.id);
+      if (el) el.style.transform = this.moverTransform(moverCell(m, tick));
+    }
+  }
+
+  /** One tick: every mover glides one step, and a robot on a log rides with it. */
+  private async playTick(before: SimState, after: SimState, durationMs: number, signal: AbortSignal): Promise<void> {
+    const anims: Animation[] = [];
+    for (const m of moversOf(this.world)) {
+      const el = this.worldEls.movers?.get(m.id);
+      if (!el) continue;
+      anims.push(el.animate([{ transform: this.moverTransform(moverCell(m, before.tick)) }, { transform: this.moverTransform(moverCell(m, after.tick)) }], { duration: durationMs, easing: 'ease-in-out', fill: 'forwards' }));
+    }
+    const moved = before.robot.x !== after.robot.x || before.robot.y !== after.robot.y;
+    if (moved) anims.push(this.robot.root.animate([{ transform: this.transformFor(before.robot, this.angle) }, { transform: this.transformFor(after.robot, this.angle) }], { duration: durationMs, easing: 'ease-in-out', fill: 'forwards' }));
+    await Promise.all(anims.map((a) => settle(a, signal)));
+    if (signal.aborted) return;
+    this.placeMovers(after.tick);
+    anims.forEach((a) => a.cancel());
+    if (moved) this.place(after.robot, this.angle);
+  }
+
   private showGates(open: readonly string[]): void {
-    this.open = [...open];
+    this.shown = { ...this.shown, open: [...open] };
     for (const [id, el] of this.worldEls.gates) el.dataset.open = String(open.includes(id));
   }
 
@@ -138,8 +171,7 @@ export class BoardController implements Player {
     }
     const target = ahead(robot, robot.facing);
     const tile = tileAt(this.world, target);
-    const gate = gateAt(this.world, target);
-    const blocked = tile !== 'floor' || (gate !== undefined && !this.open.includes(gate.id));
+    const blocked = !passable(this.world, { ...this.shown, robot }, target);
     // Off the island there is no tile to draw on, so a smaller arrow sits on
     // the board's edge instead of being clipped by the viewport.
     const offBoard = tile === 'outside';
@@ -182,7 +214,7 @@ export class BoardController implements Player {
   }
 
   /** The bubble over the robot while it thinks: "yes", "no", "2 of 3", or the name of the function it hands over to. */
-  private showBubble(robot: RobotState, text: string, tone: 'yes' | 'no' | 'loop' | 'call', durationMs: number, signal: AbortSignal): Promise<void> {
+  private showBubble(robot: RobotState, text: string, tone: 'yes' | 'no' | 'loop' | 'call' | 'event', durationMs: number, signal: AbortSignal): Promise<void> {
     const bubble = this.robot.bubble;
     const p = toScreen(this.layout, robot);
     bubble.textContent = text;
@@ -215,6 +247,7 @@ export class BoardController implements Player {
     this.robot.bubble.style.opacity = '0';
     this.place(state.robot);
     this.showGates(state.open);
+    this.placeMovers(state.tick);
     for (const [key, el] of this.collectibles) {
       el.getAnimations().forEach((a) => a.cancel());
       el.style.opacity = state.collected.includes(key) ? '0' : '1';
@@ -235,6 +268,35 @@ export class BoardController implements Player {
       const text = event.op === 'check' ? (event.value ? 'yes' : 'no') : event.op === 'call' ? functionLabel(event.name) : `${event.iteration} of ${event.count}`;
       const tone = event.op === 'loop' ? 'loop' : event.op === 'call' ? 'call' : event.value ? 'yes' : 'no';
       await this.showBubble(before.robot, text, tone, ms(THINK_MS), signal);
+      return;
+    }
+    // Something happened that a When card waits for, or the next key press.
+    if (event.op === 'when' || event.op === 'press') {
+      const text = event.op === 'when' ? eventShort(event.event) : `${KEY_ARROW[event.key]} ${eventShort(`key:${event.key}`)}`;
+      await this.showBubble(before.robot, text, 'event', ms(THINK_MS), signal);
+      return;
+    }
+    // A gate card: the gate swings, nothing else moves.
+    if (event.op === 'openGate' || event.op === 'closeGate') {
+      this.showGates(after.open);
+      await wait(ms(this.motion.reducedMotion ? REDUCED_PAUSE_MS : 340), signal);
+      return;
+    }
+    if (event.op === 'wait') {
+      await this.showBubble(before.robot, '…', 'loop', ms(THINK_MS), signal);
+      return;
+    }
+    if (event.op === 'tick') {
+      if (this.motion.reducedMotion) {
+        this.placeMovers(after.tick);
+        this.place(after.robot, this.angle);
+        await wait(ms(REDUCED_PAUSE_MS), signal);
+      } else {
+        await this.playTick(before, after, ms(MOVE_MS), signal);
+      }
+      if (signal.aborted) return;
+      if (result.kind === 'blocked') this.setMood('error');
+      this.showIndicator(after.robot);
       return;
     }
     this.showIndicator(null);

@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "id": "t04-ride-the-log",
+  "title": "Ride the log",
+  "intro": "The robot steps onto a log and rides it down the river. Where does it get off?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "._#",
+      "._#",
+      "._#",
+      "._."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 3
+    },
+    "collectibles": [],
+    "movers": [
+      {
+        "id": "log1",
+        "kind": "log",
+        "path": [
+          {
+            "x": 1,
+            "y": 0
+          },
+          {
+            "x": 1,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 3
+          },
+          {
+            "x": 1,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 1
+          }
+        ]
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "time",
+    "activity": "run"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "wait"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": [
+      "forward",
+      "wait",
+      "wait",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 3
+        }
+      ],
+      "text": "The log carries the robot one tile down every tick."
+    },
+    {
+      "kind": "card",
+      "command": "wait",
+      "text": "While the robot waits on the log, it rides."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "forward",
+      "text": "Step onto the log first."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "wait",
+    "wait",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true
+  }
+}

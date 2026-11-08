@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "id": "e07-cards-in-order",
+  "title": "Cards in order",
+  "intro": "Put each card in its place: the walk in the program, the opening in the When card.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..#",
+      "#..",
+      "##."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 2
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 2,
+        "y": 1,
+        "open": false
+      }
+    ],
+    "plates": [
+      {
+        "id": "1",
+        "x": 1,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "events",
+    "activity": "reorder"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "openGate",
+      "closeGate"
+    ],
+    "starterProgram": [
+      {
+        "on": "stepOn:1",
+        "do": []
+      }
+    ],
+    "suppliedCards": [
+      "forward",
+      "rotateCW",
+      "forward",
+      "rotateCCW",
+      "forward",
+      "rotateCW",
+      "forward",
+      "openGate"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 1
+        }
+      ],
+      "text": "The plate is on the first step; the gate is two turns later."
+    },
+    {
+      "kind": "card",
+      "command": "openGate",
+      "text": "The Open gate card belongs in the When card, not in the program."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:stepOn:1"
+      ],
+      "slot": 0,
+      "command": "openGate",
+      "text": "The When card opens gate A."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "rotateCW",
+    "forward",
+    "rotateCCW",
+    "forward",
+    "rotateCW",
+    "forward",
+    {
+      "on": "stepOn:1",
+      "do": [
+        {
+          "open": "a"
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "id": "forest-time",
+  "title": "Tick tock",
+  "themeId": "forest",
+  "order": 8,
+  "concepts": [
+    "time"
+  ],
+  "prerequisites": [
+    "forest-input"
+  ],
+  "introduction": {
+    "concept": "time",
+    "title": "Ticks",
+    "explanation": "The world moves one tick at a time, and Every tick cards run on each tick.",
+    "demo": {
+      "world": {
+        "rows": [
+          "._.",
+          "._."
+        ],
+        "robot": {
+          "x": 0,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 2,
+          "y": 1
+        },
+        "movers": [
+          {
+            "id": "log1",
+            "kind": "log",
+            "path": [
+              {
+                "x": 1,
+                "y": 1
+              },
+              {
+                "x": 1,
+                "y": 0
+              }
+            ]
+          }
+        ]
+      },
+      "program": [
+        "wait",
+        "forward",
+        "forward"
+      ]
+    }
+  },
+  "levels": [
+    "t01-wait-for-it",
+    "t02-two-rivers",
+    "t03-beetle-patrol",
+    "t04-ride-the-log",
+    "t05-fix-the-timing",
+    "t06-every-tick",
+    "t07-cards-in-order",
+    "t08-two-beetles",
+    "t09-where-will-it-stop",
+    "t10-three-lanes"
+  ]
+}

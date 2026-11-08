@@ -21,9 +21,10 @@ import { Sequencer } from '../render/sequencer';
 import { themeFor } from '../render/themes';
 import { DEFAULT_LIMITS, type Runtime, type TraceEvent } from '../runtime/contract';
 import type { SimState } from '../sim/types';
-import { gatesOf, initialState } from '../sim/world';
+import { gatesOf, initialState, moversOf } from '../sim/world';
 import { useMotion } from './hooks';
 import { hashFor } from './levels';
+import { KeyScript } from './KeyScript';
 import { MemoryCard } from './MemoryCard';
 
 /** Pauses between runs, so the eye can rest on the end and the start. */
@@ -105,7 +106,7 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
     const { signal } = ac;
     const objective = { reachGoal: true, collectAll: demo.world.collectibles.length > 0 };
     void (async () => {
-      const results = await Promise.all(stages.map((p) => runtime.run({ program: p, world: demo.world, objective, limits: DEFAULT_LIMITS })));
+      const results = await Promise.all(stages.map((p) => runtime.run({ program: p, world: demo.world, objective, limits: DEFAULT_LIMITS, ...(demo.input && { input: demo.input }) })));
       while (!signal.aborted) {
         for (let i = 0; i < stages.length && !signal.aborted; i++) {
           setStage(i);
@@ -142,7 +143,8 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
         <div className={`intro-demo ${folding ? 'is-folding' : ''}`}>
           <div className="intro-board">
             <Board world={demo.world} theme={theme} motion={motion} label={label} onControllers={onControllers} maxScale={1.3} />
-            {gatesOf(demo.world).length > 0 && <MemoryCard world={demo.world} state={shownState ?? initialState(demo.world)} />}
+            {demo.input && <KeyScript keys={demo.input} event={activeEvent} />}
+            {(gatesOf(demo.world).length > 0 || moversOf(demo.world).length > 0) && <MemoryCard world={demo.world} state={shownState ?? initialState(demo.world)} />}
             {caption && (
               <p className="intro-caption" role="status" aria-live="polite">
                 {caption}
@@ -162,6 +164,7 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
               newId={newId}
               onEdit={() => undefined}
               codePanel={<CodePanel program={program} activeNodeId={activeNode} />}
+              gates={gatesOf(demo.world).map((g) => g.id)}
               showCode
             />
           </div>

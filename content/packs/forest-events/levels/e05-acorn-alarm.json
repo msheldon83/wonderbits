@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "id": "e05-acorn-alarm",
+  "title": "Acorn alarm",
+  "intro": "There is no plate here. Picking up the acorn can open the gate, if you write a When card for it.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 2,
+        "y": 0
+      }
+    ],
+    "gates": [
+      {
+        "id": "a",
+        "x": 3,
+        "y": 0,
+        "open": false
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "events",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "openGate"
+    ],
+    "maxInstructions": 5,
+    "starterProgram": [
+      {
+        "on": "acorn",
+        "do": []
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "The acorn sits just before the gate."
+    },
+    {
+      "kind": "card",
+      "command": "openGate",
+      "text": "When an acorn is picked up, open gate A."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:acorn"
+      ],
+      "slot": 0,
+      "command": "openGate",
+      "text": "The acorn When card opens the gate."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "open": "a"
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

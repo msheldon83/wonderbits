@@ -6,7 +6,7 @@
  * cross-origin sandboxed iframe behind the same messages without the app
  * changing. Keep every message structured-clone safe: plain data only.
  */
-import type { CommandId, ConditionId, NodeId, ProgramIR } from '../ir/types';
+import type { CommandId, ConditionId, GateActionId, Key, NodeId, ProgramIR } from '../ir/types';
 import type { BlockReason } from '../sim/world';
 import type { Cell, ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 
@@ -29,11 +29,13 @@ export interface RunRequest {
   world: WorldDefinition;
   objective: ObjectiveDefinition;
   limits: RunLimits;
+  /** Key presses played after main, in order, on input levels. */
+  input?: Key[];
 }
 
 export type TraceResult =
-  /** toggled: the gates a switch just flipped, by id. */
-  | { kind: 'ok'; collected?: Cell; toggled?: string[] }
+  /** toggled: the gates a switch just flipped, by id. rode: the robot was carried by a log on a tick. */
+  | { kind: 'ok'; collected?: Cell; toggled?: string[]; rode?: boolean }
   | { kind: 'blocked'; reason: BlockReason; at: Cell };
 
 interface TraceBase {
@@ -74,7 +76,39 @@ export interface CallEvent extends TraceBase {
   name: string;
 }
 
-export type TraceEvent = ActionEvent | CheckEvent | LoopEvent | CallEvent;
+/** A gate card opened or shut a gate. */
+export interface GateEvent extends TraceBase {
+  op: GateActionId;
+  gate: string;
+}
+
+/**
+ * Something happened that a When card waits for, and its cards run next.
+ * The node id is the When card's container, `on:<event>`.
+ */
+export interface WhenEvent extends TraceBase {
+  op: 'when';
+  event: string;
+}
+
+/** The next key in the level's script. The node id is its When card's container, or "input" when no card waits for that key. */
+export interface PressEvent extends TraceBase {
+  op: 'press';
+  key: Key;
+  /** Which press in the script, from 0. */
+  press: number;
+}
+
+/**
+ * The world moved on one tick after a robot action: movers stepped, and a
+ * robot on a log rode along. The node id is the action's. A blocked result
+ * means the robot fell in the water or a beetle caught it.
+ */
+export interface TickEvent extends TraceBase {
+  op: 'tick';
+}
+
+export type TraceEvent = ActionEvent | CheckEvent | LoopEvent | CallEvent | GateEvent | WhenEvent | PressEvent | TickEvent;
 
 export type RunOutcome =
   | { status: 'success' }

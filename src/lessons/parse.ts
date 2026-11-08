@@ -3,8 +3,8 @@
  * contributors may write by hand, so errors name the exact path at fault.
  */
 import type { NodeSpec } from '../ir/spec';
-import { FUNCTION_NAME, isCardId, isCommandId, isConditionId, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, type CardId, type ConditionId } from '../ir/types';
-import { FACINGS, type Cell, type Facing, type Gate, type Switch, type TileKind, type WorldDefinition } from '../sim/types';
+import { FUNCTION_NAME, isCardId, isCommandId, isConditionId, isEventId, KEYS, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, type CardId, type ConditionId, type Key } from '../ir/types';
+import { FACINGS, type Cell, type Facing, type Gate, type Mover, type Plate, type Switch, type TileKind, type WorldDefinition } from '../sim/types';
 import { CONTENT_SCHEMA_VERSION, type MemoryField, type Activity, type ConceptIntroduction, type HintPath, type HintStep, type PackManifest, type PuzzleDefinition } from './types';
 
 export class ContentError extends Error {
@@ -108,6 +108,15 @@ class Reader {
         return [];
       }
       if ('call' in s) return [{ call: this.functionName(s.call, `${at}.call`) }];
+      if ('open' in s) return [{ open: this.gateId(s.open, `${at}.open`) }];
+      if ('close' in s) return [{ close: this.gateId(s.close, `${at}.close`) }];
+      if ('on' in s) {
+        if (!top) this.fail(at, 'a When card can only sit at the top of a program');
+        const event = isEventId(s.on) ? s.on : (this.fail(`${at}.on`, `unknown event ${JSON.stringify(s.on)}; use "stepOn:1", "acorn", "key:up" or "tick"`), 'tick');
+        if (defined.has(`on:${event}`)) this.fail(`${at}.on`, `there are two When cards for ${event}`);
+        defined.add(`on:${event}`);
+        return [{ on: event, do: this.spec(s.do, `${at}.do`, false) }];
+      }
       if ('define' in s) {
         if (!top) this.fail(at, 'a function can only be defined at the top of a program');
         const name = this.functionName(s.define, `${at}.define`);
@@ -127,7 +136,7 @@ class Reader {
         if (s.else !== undefined) node.else = this.spec(s.else, `${at}.else`, false);
         return [node];
       }
-      this.fail(at, 'a block needs "repeat", "if", "until", "call" or "define"');
+      this.fail(at, 'a block needs "repeat", "if", "until", "call", "open", "close", "define" or "on"');
       return [];
     });
   }
@@ -153,9 +162,13 @@ class Reader {
     if (!FACINGS.includes(facing)) this.fail(`${path}.robot.facing`, 'expected N, E, S or W');
     const gates = world.gates === undefined ? undefined : this.list(world.gates, `${path}.gates`, (g, at) => this.gate(g, at));
     const switches = world.switches === undefined ? undefined : this.list(world.switches, `${path}.switches`, (w, at) => this.switch(w, at));
+    const plates = world.plates === undefined ? undefined : this.list(world.plates, `${path}.plates`, (p, at) => this.plate(p, at));
+    const movers = world.movers === undefined ? undefined : this.list(world.movers, `${path}.movers`, (m, at) => this.mover(m, at));
     return {
       ...(gates && { gates }),
       ...(switches && { switches }),
+      ...(plates && { plates }),
+      ...(movers && { movers }),
       width,
       height: rows.length,
       tiles,
@@ -188,6 +201,28 @@ class Reader {
     const toggles = this.list(o.toggles, `${path}.toggles`, (id, at) => (typeof id === 'string' && GATE_ID.test(id) ? id : (this.fail(at, 'expected a gate id'), 'a')));
     return { ...this.cell(o, path), toggles };
   }
+  gateId(v: unknown, path: string): string {
+    if (typeof v === 'string' && GATE_ID.test(v)) return v;
+    this.fail(path, 'expected a gate letter');
+    return 'a';
+  }
+  /** A plate: { "id": "1", "x": 2, "y": 0 }. */
+  plate(v: unknown, path: string): Plate {
+    const o = this.obj(v, path);
+    const id = typeof o.id === 'string' && /^[1-9]$/.test(o.id) ? o.id : (this.fail(`${path}.id`, 'expected one digit, 1 to 9, as a string'), '1');
+    return { id, ...this.cell(o, path) };
+  }
+  /** A mover: { "id": "log1", "kind": "log", "path": [{ "x": 2, "y": 0 }, ...] }. */
+  mover(v: unknown, path: string): Mover {
+    const o = this.obj(v, path);
+    const kind = o.kind === 'log' || o.kind === 'beetle' ? o.kind : (this.fail(`${path}.kind`, 'expected "log" or "beetle"'), 'log');
+    const cells = this.list(o.path, `${path}.path`, (c, at) => this.cell(c, at));
+    if (cells.length === 0) this.fail(`${path}.path`, 'expected at least one cell');
+    return { id: this.str(o.id, `${path}.id`), kind, path: cells };
+  }
+  keys(v: unknown, path: string): Key[] {
+    return this.list(v, path, (k, at) => ((KEYS as readonly unknown[]).includes(k) ? (k as Key) : (this.fail(at, 'expected "up", "down", "left" or "right"'), 'up')));
+  }
   memoryField(v: unknown, path: string): MemoryField {
     if (v === 'facing' || v === 'acorns') return v;
     if (typeof v === 'string' && /^gate:[a-z]$/.test(v)) return v as MemoryField;
@@ -214,6 +249,7 @@ class Reader {
         world: this.world(demo.world, `${path}.demo.world`),
         program: this.spec(demo.program, `${path}.demo.program`),
         ...(demo.before !== undefined && { before: this.spec(demo.before, `${path}.demo.before`) }),
+        ...(demo.input !== undefined && { input: this.keys(demo.input, `${path}.demo.input`) }),
       },
     };
   }
@@ -235,7 +271,8 @@ class Reader {
     return v.flatMap((p, i): HintPath => {
       if (Number.isInteger(p) && (p as number) >= 0) return [p as number];
       if (i === 0 && typeof p === 'string' && p !== 'else') {
-        if (!FUNCTION_NAME.test(p)) this.fail(`${path}[0]`, `expected a function name, got ${JSON.stringify(p)}`);
+        const ok = FUNCTION_NAME.test(p) || (p.startsWith('on:') && isEventId(p.slice(3)));
+        if (!ok) this.fail(`${path}[0]`, `expected a function name or "on:<event>", got ${JSON.stringify(p)}`);
         return [p];
       }
       if (p === 'else') {
@@ -335,6 +372,7 @@ export function parsePuzzle(json: unknown, source: string): PuzzleDefinition {
       }),
     },
     ...(prediction && { prediction }),
+    ...(root.inputScript !== undefined && { inputScript: r.keys(root.inputScript, 'inputScript') }),
     hints,
     referenceSolution: r.spec(root.referenceSolution, 'referenceSolution'),
     stars: {

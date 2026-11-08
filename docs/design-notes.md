@@ -4,6 +4,90 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Build step 11: events, input and time (2026-11-08)
+
+Three islands at once, because they share one mechanism: **When it
+happens**, **Remote control** and **Tick tock**, ten levels each, each with
+its own introduction. A When card is a container of cards that runs when
+something happens, kept in the IR's `handlers`, which has been in the
+program's shape since step 2.
+
+### What is built
+
+- **When cards** (`src/ir`). A handler waits for `stepOn:<plate>`, `acorn`,
+  `key:<up|down|left|right>` or `tick`. Its cards sit in a container whose
+  parent is `on:<event>`, so every edit operation, the cursor, carets and
+  drags work in it as they do in a function. Specs write it as
+  `{ "on": "stepOn:1", "do": [...] }` at the top of a program. The level
+  supplies its When cards, empty on a build level, as it does functions.
+  Calls may sit in a When card (not in a function).
+- **New cards.** Open gate and Shut gate act on a gate by letter, with a
+  picker on the card like a Repeat's count; they print as
+  `robot.openGate('a')`. Wait lets one tick pass, printed `robot.wait()`.
+- **Plates** (`world.plates`, ids 1 to 9) do nothing on their own: stepping
+  onto one fires its event. Picking up an acorn fires `acorn`.
+- **Movers** (`world.movers`): logs on water and beetles on floor, each with
+  a path it walks one tile per tick, round and round (a pause is the same
+  tile twice). The robot may step onto water where a log floats now, and
+  rides it while it stays; a beetle blocks a step onto it (`beetle`) and
+  catches a robot it walks onto. `SimState.tick` counts ticks; loop checks
+  and the validator's search key ticks by the movers' common period.
+- **Order of things in a run** (`interpreter.ts`). A When card runs right
+  after the step that set it off (a `when` event, then its cards, tagged
+  with `via`), before the next card. On a timed board, a board with movers
+  or an Every tick card, each robot action (Forward, a turn, Wait) is then
+  followed by a `tick` event: movers step, a robot on a log rides, a robot
+  caught or fallen in stops the run, and the Every tick card runs. Cards
+  inside the Every tick card do not tick again. Gate cards take no tick.
+- **Key scripts.** A level's `inputScript` plays after main: one `press`
+  event per key, then that key's When card. The runtime contract carries
+  the script as `input`. A strip of key caps under the board lights the
+  press playing now and fades the ones played.
+- **On the board:** plates as numbered stone pads; logs glide and carry the
+  robot; beetles patrol; the bubble says "plate 1!", "acorn!" or the key;
+  the When card's heading glows while its cards run. The memory card adds a
+  Tick line on boards with movers.
+- **Validator.** When cards in the starter and the solution match; each
+  waits for something the board can do (a plate on it, an acorn, a key in
+  the script). Gate cards name real gates, and a gate that gate cards can
+  open needs no switch. Logs float, beetles walk, paths move one tile at a
+  time and back to the start, and no beetle starts on the robot. Levels
+  with When cards, gate cards or a key script are proved by their reference
+  solution, like levels with blocks. The introductions must show their
+  idea: a When card going off, a key with a When card, things moving.
+- **The packs.** When it happens: The plate, Fill in the When, Two gates,
+  Shut behind (model), Acorn alarm, Fix the When (debug), Cards in order,
+  Turntables (plates that turn the robot while one Repeat until walks),
+  Who goes first? (predict the tile, a gate and the facing) and Plate maze
+  (budget). Remote control: Press Up, What Up does, A turning key, Left and
+  right, Fix the key, Sidestep, Cards in order, The Down key, Where will it
+  stop? and Two keys only (budget). Tick tock: Wait for it, Two rivers,
+  Beetle patrol, Ride the log, Fix the timing, Every tick, Cards in order,
+  Two beetles, Where will it stop? and Three lanes (budget). The timed
+  boards' solutions come from the validator's own search, which ticks the
+  world like the interpreter, so they are the shortest there are.
+
+### Deviations and choices
+
+- **Interleaved, not queued.** The plan's open question on how the trace
+  shows events is answered by running each When card at once, between the
+  step that set it off and the next card, so the child sees cause and
+  effect next to each other.
+- **The level names the events.** As with functions, the child fills When
+  cards in; adding a new one waits for creation mode.
+- **No ride-off-the-edge, no drowning by tick.** A log's path stays on
+  water and next to itself, so a riding robot always stays on its log; the
+  fall-in check guards boards that break that rule.
+- **Remote control keeps main.** The program list is there on input levels
+  but empty; the limits leave no room to skip the keys and walk in main.
+  The closer has no prediction: hiding the flag would hide what the keys
+  must reach, so prediction stays on Where will it stop?.
+- **Every tick is introduced simply.** Its level opens a gate every tick.
+  The plan's blinking gates and Frogger lanes use movers instead; the Every
+  tick card waits for the game loop of creation mode to matter more.
+- **New senses still unused.** Gate shut ahead and on a switch are still
+  not taught; nothing in these packs needs an If.
+
 ## Build step 10: world state and the memory card (2026-11-08)
 
 The sixth island, **Flip the switch**, makes the world itself change. Its

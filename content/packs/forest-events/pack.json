@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "id": "forest-events",
+  "title": "When it happens",
+  "themeId": "forest",
+  "order": 6,
+  "concepts": [
+    "events"
+  ],
+  "prerequisites": [
+    "forest-switches"
+  ],
+  "introduction": {
+    "concept": "events",
+    "title": "When cards",
+    "explanation": "A When card waits for something to happen, then runs its cards.",
+    "demo": {
+      "world": {
+        "rows": [
+          "....."
+        ],
+        "robot": {
+          "x": 0,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 4,
+          "y": 0
+        },
+        "gates": [
+          {
+            "id": "a",
+            "x": 3,
+            "y": 0
+          }
+        ],
+        "plates": [
+          {
+            "id": "1",
+            "x": 1,
+            "y": 0
+          }
+        ]
+      },
+      "program": [
+        "forward",
+        "forward",
+        "forward",
+        "forward",
+        {
+          "on": "stepOn:1",
+          "do": [
+            {
+              "open": "a"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "levels": [
+    "e01-the-plate",
+    "e02-fill-the-when",
+    "e03-two-gates",
+    "e04-shut-behind",
+    "e05-acorn-alarm",
+    "e06-fix-the-when",
+    "e07-cards-in-order",
+    "e08-turntables",
+    "e09-who-goes-first",
+    "e10-plate-maze"
+  ]
+}

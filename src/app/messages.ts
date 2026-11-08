@@ -30,11 +30,13 @@ export function outcomeMessage(outcome: RunOutcome, stepNumber: number | null, s
         case 'wall':
           return { tone: 'problem', text: `Bump! Something is in the way${at}.` };
         case 'gap':
-          return { tone: 'problem', text: `Whoa! There is a gap${at}. The robot stopped just in time.` };
+          return { tone: 'problem', text: `Splash! There is water${at}, and no log to stand on.` };
         case 'edge':
           return { tone: 'problem', text: `The robot cannot leave the island${at}.` };
         case 'gate':
-          return { tone: 'problem', text: `Clunk! The gate is shut${at}. Which switch opens it?` };
+          return { tone: 'problem', text: `Clunk! The gate is shut${at}. What opens it?` };
+        case 'beetle':
+          return { tone: 'problem', text: `A beetle got in the way${at}. Can the robot wait for it to pass?` };
       }
       break;
     case 'halted':

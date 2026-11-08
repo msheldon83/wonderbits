@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "id": "k04-left-and-right",
+  "title": "Left and right",
+  "intro": "Three keys: Up, Left and Right. Give each its card.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "#.#",
+      "...",
+      "##."
+    ],
+    "robot": {
+      "x": 2,
+      "y": 2,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 1,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "input",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": [
+      {
+        "on": "key:up",
+        "do": []
+      },
+      {
+        "on": "key:left",
+        "do": []
+      },
+      {
+        "on": "key:right",
+        "do": []
+      }
+    ]
+  },
+  "inputScript": [
+    "up",
+    "left",
+    "up",
+    "right",
+    "up"
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ],
+      "text": "Up, then left along the middle row, then up again."
+    },
+    {
+      "kind": "card",
+      "command": "rotateCCW",
+      "text": "Left turns counter-clockwise, Right turns clockwise."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:key:left"
+      ],
+      "slot": 0,
+      "command": "rotateCCW",
+      "text": "Left is a counter-clockwise turn."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "on": "key:up",
+      "do": [
+        "forward"
+      ]
+    },
+    {
+      "on": "key:left",
+      "do": [
+        "rotateCCW"
+      ]
+    },
+    {
+      "on": "key:right",
+      "do": [
+        "rotateCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "id": "k01-press-up",
+  "title": "Press Up",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "#.#",
+      "#.#",
+      "#.#",
+      "#.#"
+    ],
+    "robot": {
+      "x": 1,
+      "y": 3,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 1,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "input",
+    "activity": "run"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward"
+    ],
+    "maxInstructions": 1,
+    "starterProgram": [
+      {
+        "on": "key:up",
+        "do": [
+          "forward"
+        ]
+      }
+    ]
+  },
+  "inputScript": [
+    "up",
+    "up",
+    "up"
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 3
+        }
+      ],
+      "text": "Three Up presses, one Forward each."
+    },
+    {
+      "kind": "card",
+      "command": "forward",
+      "text": "Each Up press runs the When card for Up."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:key:up"
+      ],
+      "slot": 0,
+      "command": "forward",
+      "text": "Up moves the robot forward."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "on": "key:up",
+      "do": [
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true
+  }
+}

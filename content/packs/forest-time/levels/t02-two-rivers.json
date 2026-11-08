@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "id": "t02-two-rivers",
+  "title": "Two rivers",
+  "intro": "Two rivers, two logs. Wait for each one, then hop across.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "._._.",
+      "._._.",
+      "._._."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 1,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 1
+    },
+    "collectibles": [],
+    "movers": [
+      {
+        "id": "log1",
+        "kind": "log",
+        "path": [
+          {
+            "x": 1,
+            "y": 0
+          },
+          {
+            "x": 1,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "log2",
+        "kind": "log",
+        "path": [
+          {
+            "x": 3,
+            "y": 2
+          },
+          {
+            "x": 3,
+            "y": 1
+          },
+          {
+            "x": 3,
+            "y": 0
+          },
+          {
+            "x": 3,
+            "y": 1
+          }
+        ]
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "time",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "wait"
+    ],
+    "maxInstructions": 8,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 3,
+          "y": 1
+        }
+      ],
+      "text": "Each log passes the middle row every other tick."
+    },
+    {
+      "kind": "card",
+      "command": "wait",
+      "text": "Wait when the log is not in front of you."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "wait",
+      "text": "Start by waiting one tick."
+    }
+  ],
+  "referenceSolution": [
+    "wait",
+    "forward",
+    "forward",
+    "wait",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

@@ -7,30 +7,37 @@
  * after the last node. The top of a function is a container too, so the same
  * operations edit main and every function alike.
  *
- * A function cannot use a function yet: a call may sit anywhere in main but
- * never inside a function, which also rules out a function calling itself.
+ * A function cannot use a function yet: a call may sit anywhere in main or
+ * in a When card but never inside a function, which also rules out a
+ * function calling itself.
  */
 import { branchBody, containerAt, functionNames, isWithin, locate, procedureOfPlace, samePlaceContainer } from './program';
-import { functionOfContainer, MAIN, REPEAT_MAX, REPEAT_MIN, type Branch, type ConditionId, type IRNode, type NodeId, type Place, type ProgramIR } from './types';
+import { functionOfContainer, handlerOfContainer, MAIN, REPEAT_MAX, REPEAT_MIN, type Branch, type ConditionId, type IRNode, type NodeId, type Place, type ProgramIR } from './types';
 
 export type EditOp =
   | { op: 'insert'; at: Place; node: IRNode }
   | { op: 'move'; id: NodeId; to: Place }
   | { op: 'delete'; id: NodeId }
   /** Change a block's parameter: a Repeat's count or an If's or Until's condition. */
-  | { op: 'set'; id: NodeId; count?: number; condition?: ConditionId };
+  | { op: 'set'; id: NodeId; count?: number; condition?: ConditionId; gate?: string };
 
-/** Rebuild every procedure's body. */
+/** Rebuild every procedure's and every When card's body. Handlers are named `on:<event>` here. */
 function mapBodies(program: ProgramIR, update: (body: readonly IRNode[], name: string) => IRNode[]): ProgramIR {
-  return { ...program, procedures: program.procedures.map((p) => ({ ...p, body: update(p.body, p.name) })) };
+  return {
+    ...program,
+    procedures: program.procedures.map((p) => ({ ...p, body: update(p.body, p.name) })),
+    handlers: program.handlers.map((h) => ({ ...h, body: update(h.body, `on:${h.event}`) })),
+  };
 }
 
 /** Rebuild the program with one container's cards replaced, wherever it is. */
 function updateIn(program: ProgramIR, parent: NodeId | null, branch: Branch, update: (cards: IRNode[]) => IRNode[]): ProgramIR {
   const fn = functionOfContainer(parent);
+  const event = handlerOfContainer(parent);
   return mapBodies(program, (body, name) => {
     if (parent === null) return name === MAIN ? update([...body]) : [...body];
     if (fn !== null) return name === fn ? update([...body]) : [...body];
+    if (event !== null) return name === parent ? update([...body]) : [...body];
     return updateContainer(body, parent, branch, update);
   });
 }
@@ -42,7 +49,8 @@ function hasCall(nodes: readonly IRNode[]): boolean {
 /** Calls belong in main for now, and each must name one of the program's functions. */
 function checkCalls(program: ProgramIR, node: IRNode, at: Pick<Place, 'parent'>): void {
   if (!hasCall([node])) return;
-  if (procedureOfPlace(program, at) !== MAIN) throw new Error('A function cannot use a function');
+  const procedure = procedureOfPlace(program, at);
+  if (procedure !== MAIN && !procedure?.startsWith('on:')) throw new Error('A function cannot use a function');
   const names = new Set(functionNames(program));
   const check = (n: IRNode) => {
     if (n.kind === 'call' && !names.has(n.name)) throw new Error(`No function named ${n.name}`);
@@ -114,7 +122,7 @@ export function applyOp(program: ProgramIR, edit: EditOp): ProgramIR {
       if (!container) throw new Error(`No container at ${edit.at.parent}/${edit.at.branch}`);
       assertIndex(edit.at.index, container.length);
       const existing = new Set<NodeId>();
-      for (const p of program.procedures) idsIn(p.body, existing);
+      for (const p of [...program.procedures, ...program.handlers]) idsIn(p.body, existing);
       for (const id of idsIn([edit.node])) {
         if (existing.has(id)) throw new Error(`Node id ${id} already exists`);
       }
@@ -153,8 +161,10 @@ export function applyOp(program: ProgramIR, edit: EditOp): ProgramIR {
       if (edit.condition !== undefined && node.kind !== 'if' && node.kind !== 'ifElse' && node.kind !== 'until') {
         throw new Error(`Node ${edit.id} has no condition`);
       }
+      if (edit.gate !== undefined && node.kind !== 'openGate' && node.kind !== 'closeGate') throw new Error(`Node ${edit.id} has no gate`);
       const patch = (n: IRNode): IRNode => {
         if (n.id !== edit.id) return n;
+        if ((n.kind === 'openGate' || n.kind === 'closeGate') && edit.gate !== undefined) return { ...n, gate: edit.gate };
         if (n.kind === 'repeat' && edit.count !== undefined) return { ...n, count: edit.count };
         if ((n.kind === 'if' || n.kind === 'ifElse' || n.kind === 'until') && edit.condition !== undefined) return { ...n, condition: edit.condition };
         return n;

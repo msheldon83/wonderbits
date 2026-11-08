@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "id": "k05-fix-the-key",
+  "title": "Fix the key",
+  "intro": "The keys are mixed up: one card turns the wrong way.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "#.#",
+      "...",
+      "##."
+    ],
+    "robot": {
+      "x": 2,
+      "y": 2,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 1,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "input",
+    "activity": "debug"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": [
+      {
+        "on": "key:up",
+        "do": [
+          "forward"
+        ]
+      },
+      {
+        "on": "key:left",
+        "do": [
+          "rotateCCW"
+        ]
+      },
+      {
+        "on": "key:right",
+        "do": [
+          "rotateCCW"
+        ]
+      }
+    ]
+  },
+  "inputScript": [
+    "up",
+    "left",
+    "up",
+    "right",
+    "up"
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 0
+        }
+      ],
+      "text": "After Left and Up, Right should face the robot up again."
+    },
+    {
+      "kind": "step",
+      "path": [
+        "on:key:right"
+      ],
+      "index": 0,
+      "text": "Which way does Right turn the robot?"
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:key:right"
+      ],
+      "slot": 0,
+      "command": "rotateCW",
+      "text": "Right turns clockwise."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "on": "key:up",
+      "do": [
+        "forward"
+      ]
+    },
+    {
+      "on": "key:left",
+      "do": [
+        "rotateCCW"
+      ]
+    },
+    {
+      "on": "key:right",
+      "do": [
+        "rotateCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

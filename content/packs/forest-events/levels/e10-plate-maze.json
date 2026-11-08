@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "id": "e10-plate-maze",
+  "title": "Plate maze",
+  "intro": "Three plates, one gate, and only a few cards. Let the When cards steer and open the way.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "###....",
+      "###.##.",
+      "....##.",
+      "######."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 2,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 6,
+      "y": 3
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 5,
+        "y": 0,
+        "open": false
+      }
+    ],
+    "plates": [
+      {
+        "id": "1",
+        "x": 3,
+        "y": 2
+      },
+      {
+        "id": "2",
+        "x": 3,
+        "y": 0
+      },
+      {
+        "id": "3",
+        "x": 6,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "events",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "until",
+      "openGate"
+    ],
+    "allowedConditions": [
+      "atFlag"
+    ],
+    "maxInstructions": 7,
+    "starterProgram": [
+      {
+        "on": "stepOn:1",
+        "do": []
+      },
+      {
+        "on": "stepOn:2",
+        "do": []
+      },
+      {
+        "on": "stepOn:3",
+        "do": []
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 2
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 6,
+          "y": 0
+        }
+      ],
+      "text": "A plate on every corner, and gate A between the second and third."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "Walk with Repeat until at the flag; turn and open in the When cards."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:stepOn:2"
+      ],
+      "slot": 1,
+      "command": "openGate",
+      "text": "Plate 2 also opens gate A."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "until": "atFlag",
+      "do": [
+        "forward"
+      ]
+    },
+    {
+      "on": "stepOn:1",
+      "do": [
+        "rotateCCW"
+      ]
+    },
+    {
+      "on": "stepOn:2",
+      "do": [
+        "rotateCW",
+        {
+          "open": "a"
+        }
+      ]
+    },
+    {
+      "on": "stepOn:3",
+      "do": [
+        "rotateCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 6
+  }
+}

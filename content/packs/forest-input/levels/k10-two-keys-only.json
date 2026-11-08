@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "id": "k10-two-keys-only",
+  "title": "Two keys only",
+  "intro": "A long way with only two keys. Each key has to do more than one move.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "#####",
+      "##...",
+      "##.##",
+      "...##",
+      ".####",
+      ".####"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 5,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 4,
+      "y": 1
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "input",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 8,
+    "starterProgram": [
+      {
+        "on": "key:up",
+        "do": []
+      },
+      {
+        "on": "key:right",
+        "do": []
+      }
+    ]
+  },
+  "inputScript": [
+    "up",
+    "right",
+    "up",
+    "right"
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 3
+        },
+        {
+          "x": 2,
+          "y": 4
+        }
+      ],
+      "text": "Every Up climbs two tiles; every Right goes two tiles across."
+    },
+    {
+      "kind": "card",
+      "command": "forward",
+      "text": "Up is two Forwards. Right turns, takes two steps, and turns back."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:key:up"
+      ],
+      "slot": 1,
+      "command": "forward",
+      "text": "Up takes two steps."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "on": "key:up",
+      "do": [
+        "forward",
+        "forward"
+      ]
+    },
+    {
+      "on": "key:right",
+      "do": [
+        "rotateCW",
+        "forward",
+        "forward",
+        "rotateCCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 6
+  }
+}

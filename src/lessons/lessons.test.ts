@@ -225,7 +225,7 @@ describe('validate: blocks', () => {
 
   it('parses block specs and reports bad ones by path', () => {
     expect(() => parsed((j) => (j.referenceSolution = [{ repeat: 1, do: [] }]))).toThrow(/referenceSolution\[0\]\.repeat/);
-    expect(() => parsed((j) => (j.referenceSolution = [{ loop: 3, do: [] }]))).toThrow(/needs "repeat", "if", "until", "call" or "define"/);
+    expect(() => parsed((j) => (j.referenceSolution = [{ loop: 3, do: [] }]))).toThrow(/needs "repeat", "if", "until", "call", "open", "close", "define" or "on"/);
     expect(() => parsed((j) => (j.referenceSolution = [{ if: 'sunny', do: [] }]))).toThrow(/referenceSolution\[0\]\.if: unknown condition/);
     expect(() => parsed((j) => (j.hints[2] = { kind: 'fill', path: ['else'], slot: 0, command: 'forward', text: 't' }))).toThrow(/"else" must follow a card index/);
   });
@@ -352,6 +352,57 @@ describe('validate: switches, gates and the model activity', () => {
     expect(validatePuzzle(model(['gate:b'])).errors.join('\n')).toMatch(/asks for gate:b, which this board's memory card does not have/);
     expect(validatePuzzle(model(['acorns'])).errors.join('\n')).toMatch(/asks for acorns/);
     expect(() => model(['color'])).toThrow(/prediction\.askMemory\[0\]/);
+  });
+});
+
+describe('validate: When cards, keys and movers', () => {
+  /** . 1 . G .  plate 1, gate a, the flag at the end; the When card opens the gate. */
+  const events = (over: (j: Json) => void = () => {}) =>
+    parsed((j) => {
+      j.curriculum.concept = 'events';
+      j.world.rows = ['.....'];
+      j.world.goal = { x: 4, y: 0 };
+      j.world.gates = [{ id: 'a', x: 3, y: 0 }];
+      j.world.plates = [{ id: '1', x: 1, y: 0 }];
+      j.programming.allowedCommands = ['forward', 'openGate'];
+      j.programming.maxInstructions = 5;
+      j.programming.starterProgram = [{ on: 'stepOn:1', do: [] }];
+      j.referenceSolution = ['forward', 'forward', 'forward', 'forward', { on: 'stepOn:1', do: [{ open: 'a' }] }];
+      j.hints[2] = { kind: 'fill', path: ['on:stepOn:1'], slot: 0, command: 'openGate', text: 'Open the gate.' };
+      j.stars.budget = 5;
+      over(j);
+    });
+
+  it('accepts a gate with no switch when gate cards can open it', () => {
+    expect(validatePuzzle(events()).errors).toEqual([]);
+  });
+
+  it('requires matching When cards for things the board can do', () => {
+    const errs = (over: (j: Json) => void) => validatePuzzle(events(over)).errors.join('\n');
+    expect(errs((j) => (j.programming.starterProgram = []))).toMatch(/they must match/);
+    expect(errs((j) => (j.world.plates = []))).toMatch(/plate 1, which is not on the board/);
+    expect(errs((j) => (j.referenceSolution[4].do = [{ open: 'b' }]))).toMatch(/gate b, which is not on the board/);
+    const keys = (over: (j: Json) => void) =>
+      events((j) => {
+        j.programming.starterProgram = [{ on: 'key:up', do: [] }];
+        j.referenceSolution = [{ on: 'key:up', do: ['forward'] }];
+        over(j);
+      });
+    expect(validatePuzzle(keys(() => {})).errors.join('\n')).toMatch(/up key, which the inputScript never presses/);
+  });
+
+  it('parses events, keys and movers, and reports bad ones by path', () => {
+    expect(() => events((j) => (j.referenceSolution[4].on = 'jump'))).toThrow(/unknown event "jump"/);
+    expect(() => events((j) => (j.inputScript = ['up', 'sideways']))).toThrow(/inputScript\[1\]/);
+    expect(() => events((j) => (j.world.movers = [{ id: 'b', kind: 'bear', path: [{ x: 0, y: 0 }] }]))).toThrow(/movers\[0\]\.kind/);
+    expect(() => events((j) => (j.referenceSolution = [{ repeat: 2, do: [{ on: 'tick', do: [] }] }]))).toThrow(/only sit at the top/);
+  });
+
+  it('checks that logs float, beetles walk, and every path moves one tile at a time', () => {
+    const errs = (movers: unknown) => validatePuzzle(events((j) => (j.world.movers = movers))).errors.join('\n');
+    expect(errs([{ id: 'l', kind: 'log', path: [{ x: 2, y: 0 }] }])).toMatch(/must float on water/);
+    expect(errs([{ id: 'b', kind: 'beetle', path: [{ x: 2, y: 0 }, { x: 4, y: 0 }] }])).toMatch(/jumps from 2,0 to 4,0/);
+    expect(errs([{ id: 'b', kind: 'beetle', path: [{ x: 0, y: 0 }] }])).toMatch(/starts on the robot/);
   });
 });
 

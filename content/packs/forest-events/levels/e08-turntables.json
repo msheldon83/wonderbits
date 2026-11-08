@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "id": "e08-turntables",
+  "title": "Turntables",
+  "intro": "These plates turn the robot. The program only walks until the flag; the When cards do the turning.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....##",
+      "###.##",
+      "###.##",
+      "###..."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 3
+    },
+    "collectibles": [],
+    "plates": [
+      {
+        "id": "1",
+        "x": 3,
+        "y": 0
+      },
+      {
+        "id": "2",
+        "x": 3,
+        "y": 3
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "events",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "until"
+    ],
+    "allowedConditions": [
+      "atFlag"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": [
+      {
+        "on": "stepOn:1",
+        "do": []
+      },
+      {
+        "on": "stepOn:2",
+        "do": []
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 3
+        }
+      ],
+      "text": "Each plate sits on a corner."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "One Repeat until with a Forward walks the whole way, if the plates turn the robot."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:stepOn:1"
+      ],
+      "slot": 0,
+      "command": "rotateCW",
+      "text": "At plate 1 the path turns down: clockwise."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "until": "atFlag",
+      "do": [
+        "forward"
+      ]
+    },
+    {
+      "on": "stepOn:1",
+      "do": [
+        "rotateCW"
+      ]
+    },
+    {
+      "on": "stepOn:2",
+      "do": [
+        "rotateCCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

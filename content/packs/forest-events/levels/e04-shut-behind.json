@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "id": "e04-shut-behind",
+  "title": "Shut behind",
+  "intro": "Plate 1 opens the gate. Plate 2 has its own When card. Is the gate open at the end?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 0
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 3,
+        "y": 0,
+        "open": false
+      }
+    ],
+    "plates": [
+      {
+        "id": "1",
+        "x": 1,
+        "y": 0
+      },
+      {
+        "id": "2",
+        "x": 4,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "events",
+    "activity": "model"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "openGate",
+      "closeGate"
+    ],
+    "maxInstructions": 7,
+    "starterProgram": [
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      {
+        "on": "stepOn:1",
+        "do": [
+          {
+            "open": "a"
+          }
+        ]
+      },
+      {
+        "on": "stepOn:2",
+        "do": [
+          {
+            "close": "a"
+          }
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "text": "The robot steps on both plates."
+    },
+    {
+      "kind": "card",
+      "command": "closeGate",
+      "text": "Plate 2 shuts the gate after the robot has gone through."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "forward",
+      "text": "Follow the Forwards: which plate comes last?"
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    {
+      "on": "stepOn:1",
+      "do": [
+        {
+          "open": "a"
+        }
+      ]
+    },
+    {
+      "on": "stepOn:2",
+      "do": [
+        {
+          "close": "a"
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": false,
+    "askMemory": [
+      "gate:a"
+    ]
+  }
+}

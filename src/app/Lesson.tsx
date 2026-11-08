@@ -25,10 +25,11 @@ import { Sequencer } from '../render/sequencer';
 import { themeFor } from '../render/themes';
 import { DEFAULT_LIMITS, type RunOutcome, type RunResult, type Runtime, type TraceEvent } from '../runtime/contract';
 import type { Cell, Facing, SimState } from '../sim/types';
-import { gatesOf, initialState } from '../sim/world';
+import { gatesOf, initialState, moversOf } from '../sim/world';
 import { useMotion } from './hooks';
 import { BADGE_INFO, BadgeIcon, Star } from './icons';
 import { hashFor } from './levels';
+import { KeyScript } from './KeyScript';
 import { MemoryCard } from './MemoryCard';
 import { outcomeMessage, type Shortfall, type Tone } from './messages';
 
@@ -114,7 +115,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   const asksTile = asking?.askTile ?? false;
   const askedFields = asking?.askMemory ?? [];
   /** The memory card shows from the switch pack on: wherever there are gates, or the level asks about memory. */
-  const showMemory = gatesOf(level.world).length > 0 || askedFields.length > 0;
+  const showMemory = gatesOf(level.world).length > 0 || moversOf(level.world).length > 0 || askedFields.length > 0;
 
   // The log: opened on mount, abandoned on unmount unless completed.
   useEffect(() => {
@@ -169,7 +170,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   const ensureResult = useCallback(async (): Promise<RunResult | null> => {
     if (cache.current?.program === program) return cache.current.result;
     if (!runtime) return null;
-    const result = await runtime.run({ program, world: level.world, objective: level.objective, limits: DEFAULT_LIMITS });
+    const result = await runtime.run({ program, world: level.world, objective: level.objective, limits: DEFAULT_LIMITS, ...(level.inputScript && { input: level.inputScript }) });
     cache.current = { program, result };
     return result;
   }, [runtime, program, level]);
@@ -432,6 +433,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
             {message.text}
           </p>
         </div>
+        {level.inputScript && <KeyScript keys={level.inputScript} event={activeEvent} played={phase === 'done'} />}
         {showMemory && (
           <MemoryCard
             world={level.world}
@@ -466,6 +468,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           onRedo={onRedo}
           onRestart={restart}
           codePanel={<CodePanel program={program} activeNodeId={activeNode} />}
+          gates={gatesOf(level.world).map((g) => g.id)}
           showCode={showCode}
           onToggleCode={() => setShowCode((v) => !v)}
         />

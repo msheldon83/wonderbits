@@ -216,3 +216,38 @@ describe('functions', () => {
     expect(functionLabel('turnAround')).toBe('Turn around');
   });
 });
+
+describe('When cards', () => {
+  const spec: NodeSpec[] = ['forward', { on: 'key:up', do: ['forward'] }, { define: 'hop', do: [] }, { on: 'stepOn:1', do: [{ open: 'a' }] }];
+  const make = () => programFromSpec(spec, sequentialIdFactory());
+  const when = (event: string, index: number): Place => ({ parent: `on:${event}`, branch: 'body', index });
+
+  it('builds a handler per "on", walks it after the functions and prints it back', () => {
+    const p = make();
+    expect(p.handlers.map((h) => h.event)).toEqual(['key:up', 'stepOn:1']);
+    expect([...walk(p)].map((v) => [v.node.id, v.parent, v.number])).toEqual([
+      ['n1', null, 1],
+      ['n2', 'on:key:up', 2],
+      ['n3', 'on:stepOn:1', 3],
+    ]);
+    expect(programSpec(p)).toEqual(['forward', { define: 'hop', do: [] }, { on: 'key:up', do: ['forward'] }, { on: 'stepOn:1', do: [{ open: 'a' }] }]);
+    expect(cardsOfSpec(spec)).toEqual(['forward', 'forward', 'openGate']);
+  });
+
+  it('edits inside a When card, lets a call in, and changes a gate card\'s gate', () => {
+    const p = make();
+    const q = applyOp(p, { op: 'insert', at: when('key:up', 1), node: { id: 'x1', kind: 'call', name: 'hop' } });
+    expect(specOf(q.handlers[0]!.body)).toEqual(['forward', { call: 'hop' }]);
+    expect(() => applyOp(p, { op: 'insert', at: { parent: 'fn:hop', branch: 'body', index: 0 }, node: { id: 'x2', kind: 'call', name: 'hop' } })).toThrow(/cannot use a function/);
+    expect(specOf(applyOp(p, { op: 'set', id: 'n3', gate: 'b' }).handlers[1]!.body)).toEqual([{ open: 'b' }]);
+    expect(() => applyOp(p, { op: 'set', id: 'n1', gate: 'b' })).toThrow(/no gate/);
+    expect(specOf(mainBody(applyOp(p, { op: 'move', id: 'n2', to: main(0) })))).toEqual(['forward', 'forward']);
+    expect(countNodes(applyOp(p, { op: 'delete', id: 'n3' }))).toBe(2);
+  });
+
+  it('counts a gate card swapped for the other kind as one difference', () => {
+    expect(specDiff([{ open: 'a' }], [{ close: 'a' }])).toBe(1);
+    expect(specDiff([{ open: 'a' }], [{ open: 'b' }])).toBe(1);
+    expect(specDiff([{ on: 'tick', do: [] }], [{ on: 'acorn', do: [] }])).toBe(-1);
+  });
+});
