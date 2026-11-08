@@ -82,6 +82,13 @@ export class ProgressStore {
     void this.storage.set('progress', this.snapshot.progress);
   }
 
+  /** The level the child opened most recently, or null before any level was opened. */
+  lastOpenedLevelId(): string | null {
+    const log = this.snapshot.log;
+    for (let i = log.length - 1; i >= 0; i--) if (log[i]!.kind === 'level-opened') return log[i]!.levelId;
+    return null;
+  }
+
   levelProgress(levelId: string): LevelProgress {
     return this.snapshot.progress.levels[levelId] ?? emptyLevelProgress(levelId);
   }

@@ -152,7 +152,7 @@ a.btn {
 .app-main {
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 460px);
   gap: 16px;
 }
 
@@ -576,9 +576,26 @@ a.btn {
   box-shadow: 0 2px 0 var(--line);
 }
 
+/* The palette stays in view at the top of the side column while a long
+   program scrolls underneath it, so the cards and the program are always
+   on screen together. */
+.palette {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding: 10px 14px 12px;
+  box-shadow: 0 2px 0 var(--line), 0 10px 14px -10px rgba(29, 48, 71, 0.35);
+}
+
+.palette .panel-title {
+  min-height: 36px;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
 .panel-title {
-  margin: 0 0 10px;
-  min-height: 44px;
+  margin: 0 0 8px;
+  min-height: 40px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -620,7 +637,27 @@ a.btn {
 .palette-cards {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
+}
+
+/* Palette cards are compact: the program's blocks are the big ones. */
+.palette .card {
+  min-height: 48px;
+  min-width: 0;
+  padding: 4px 12px 4px 7px;
+  gap: 8px;
+  font-size: 17px;
+  box-shadow: 0 3px 0 var(--line);
+}
+
+.palette .card-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.palette .card-icon svg {
+  width: 24px;
+  height: 24px;
 }
 
 .palette-note {
@@ -1684,7 +1721,7 @@ a.btn {
   }
   .board-viewport {
     flex: none;
-    height: clamp(200px, 42dvh, 560px);
+    height: clamp(180px, 36dvh, 520px);
     min-height: 0;
   }
   .side-col {

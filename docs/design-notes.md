@@ -80,6 +80,14 @@ and a prediction that acorns are used to steer, not to collect.
   say whether the single-board If levels already land.
 - **The observation log** records a card's place (container and gap) and
   a `card-changed` event for counts and conditions.
+- **The palette is compact and sticky** (same day, after the first iPad
+  look). With blocks the program grew taller than the side column, and
+  the palette pushed it off the screen. Now the palette's cards are
+  smaller, it sticks to the top of the side column, and the program
+  scrolls under it, so the cards and the program stay on screen together.
+  The side column may grow to 460 px, and in portrait the board takes a
+  little less height. The map also scrolls to the level that was opened
+  most recently when the child returns to it.
 
 ## Plan change: the code lives inside the Program panel (2026-11-06)
 

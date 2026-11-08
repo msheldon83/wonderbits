@@ -3,6 +3,7 @@
  * winding path, stars under each, the next open level glowing, and the
  * badge shelf. Reads progress only.
  */
+import { useEffect, useRef } from 'react';
 import { BADGE_IDS } from '../progress/types';
 import type { ProgressStore } from '../progress/store';
 import { BADGE_INFO, BadgeIcon, Star } from './icons';
@@ -16,6 +17,15 @@ export function MapScreen({ choices, store, badges }: { choices: LevelChoice[]; 
   const packs = new Map<string, LevelChoice[]>();
   for (const c of choices) packs.set(c.packTitle, [...(packs.get(c.packTitle) ?? []), c]);
   const current = choices.find((c) => store.isUnlocked(c.level.id) && !store.levelProgress(c.level.id).stars.complete)?.level.id;
+  /** The stone to bring into view: the level opened most recently, or the next one to play. */
+  const lastPlayed = store.lastOpenedLevelId();
+  const focus = choices.some((c) => c.level.id === lastPlayed) ? lastPlayed : current;
+  const stones = useRef(new Map<string, HTMLElement>());
+  useEffect(() => {
+    if (focus) stones.current.get(focus)?.scrollIntoView({ block: 'center' });
+    // Only on arrival: the map should not jump about while the child looks at it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="map">
@@ -39,7 +49,15 @@ export function MapScreen({ choices, store, badges }: { choices: LevelChoice[]; 
                   const starCount = c.level.stars.budget === undefined ? 2 : 3;
                   const label = `Level ${c.number}: ${c.level.title}${unlocked ? '' : ', locked'}${p.stars.complete ? `, ${stars.filter(Boolean).length} of ${starCount} stars` : ''}`;
                   return (
-                    <li key={c.level.id} className="map-stone-wrap" style={{ left: `${points[i]!.x}%`, top: points[i]!.y }}>
+                    <li
+                      key={c.level.id}
+                      ref={(el) => {
+                        if (el) stones.current.set(c.level.id, el);
+                        else stones.current.delete(c.level.id);
+                      }}
+                      className="map-stone-wrap"
+                      style={{ left: `${points[i]!.x}%`, top: points[i]!.y }}
+                    >
                       <a
                         className={`map-stone ${unlocked ? '' : 'is-locked'} ${isCurrent ? 'is-current' : ''} ${p.stars.complete ? 'is-done' : ''}`}
                         href={unlocked ? hashFor({ screen: 'level', id: c.level.id }) : undefined}

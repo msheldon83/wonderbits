@@ -89,6 +89,19 @@ describe('ProgressStore', () => {
     expect(store.getSnapshot().log.map((e) => e.kind)).toEqual(['level-opened', 'card-placed', 'level-abandoned']);
   });
 
+  it('remembers the level opened most recently', async () => {
+    const { store } = await make();
+    expect(store.lastOpenedLevelId()).toBeNull();
+    store.record({ levelId: 'l1', kind: 'level-opened' });
+    store.record({ levelId: 'l1', kind: 'run-started', steps: 1 });
+    store.record({ levelId: 'l2', kind: 'level-opened' });
+    store.record({ levelId: 'l2', kind: 'level-abandoned' });
+    expect(store.lastOpenedLevelId()).toBe('l1');
+    store.record({ levelId: 'l3', kind: 'level-opened' });
+    store.record({ levelId: 'l3', kind: 'card-removed', nodeId: 'n' });
+    expect(store.lastOpenedLevelId()).toBe('l3');
+  });
+
   it('awards stars that only accumulate, and remembers a first-run solve', async () => {
     const { store } = await make();
     store.record({ levelId: 'l3', kind: 'run-started', steps: 4 });
