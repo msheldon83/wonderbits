@@ -16,6 +16,8 @@ export function cardsTeaching(concept: string): readonly CardId[] | null {
       return ['repeat'];
     case 'conditionals':
       return BLOCK_IDS.filter((b) => b !== 'repeat');
+    case 'functions':
+      return ['call'];
     default:
       return null;
   }

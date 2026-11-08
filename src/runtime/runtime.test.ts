@@ -104,6 +104,33 @@ describe('interpreter', () => {
     const cmds: CommandId[] = ['forward', 'rotateCW', 'forward', 'rotateCCW', 'forward', 'forward'];
     expect(JSON.stringify(run(cmds))).toBe(JSON.stringify(run(cmds)));
   });
+
+  it('runs a function at each call, tagging its events with the call', () => {
+    // Row 1 is open: Hop is two Forwards, called once, then one Forward more.
+    const spec: NodeSpec[] = [{ call: 'hop' }, 'forward', { define: 'hop', do: ['forward', 'forward'] }];
+    const r = interpretAll({ program: programFromSpec(spec, sequentialIdFactory()), world, objective, limits: { maxSteps: 100 } });
+    expect(r.outcome).toEqual({ status: 'success' });
+    expect(r.trace.map((e) => [e.op, e.nodeId, e.via ?? null])).toEqual([
+      ['call', 'n1', null],
+      ['forward', 'n3', ['n1']],
+      ['forward', 'n4', ['n1']],
+      ['forward', 'n2', null],
+    ]);
+    expect(r.trace[0]).toMatchObject({ op: 'call', name: 'hop' });
+    expect(r.trace[0]!.after).toEqual(r.trace[0]!.before);
+  });
+
+  it('stops with an error when a call names no function', () => {
+    const p = programFromSpec([{ call: 'hop' }], sequentialIdFactory());
+    expect(interpretAll({ program: p, world, objective, limits: { maxSteps: 100 } }).outcome).toEqual({ status: 'error', message: 'No function named hop' });
+  });
+
+  it('halts a function that reaches itself instead of running out of stack', () => {
+    // Content and edits never build this, so the interpreter guards it on its own.
+    const p = programFromSpec([{ call: 'hop' }, { define: 'hop', do: [] }], sequentialIdFactory());
+    p.procedures[1]!.body = [{ id: 'r1', kind: 'call', name: 'hop' }];
+    expect(interpretAll({ program: p, world, objective, limits: { maxSteps: 100 } }).outcome).toEqual({ status: 'halted', reason: 'forever' });
+  });
 });
 
 /** An in-memory endpoint wired to the real host over a MessageChannel. */

@@ -4,6 +4,86 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Build step 9: functions (2026-11-08)
+
+Functions follow conditionals on the spine. The fifth island, **Same trick,
+new place**, teaches them in ten levels, opening with its own introduction:
+eight flat cards for two hops fold into two Hop cards and a Hop function.
+
+### What is built
+
+- **`call` in the IR** (`src/ir/types.ts`). A `call` node names a function;
+  each function is a procedure beside `main`, which the IR has carried
+  since step 2. A function's own cards sit in a container whose parent is
+  `fn:<name>`, so a `Place` points at the top of a function the same way it
+  points into a block, and every edit operation (`insert`, `move`,
+  `delete`, `set`) works inside functions unchanged. `walk` visits main,
+  then each function, and step numbers run straight on, so "step 7" means
+  one card wherever it is. Budgets count every card, the function's
+  included, and each call counts as one: that is what makes naming a route
+  pay off.
+- **Specs** gain `{ "call": "hop" }` and, at the top of a program only,
+  `{ "define": "hop", "do": [...] }`. A define becomes a procedure, not a
+  card of main, wherever it is listed. The define heading is not a card.
+- **Interpreter.** A call emits a `call` event (nothing on the board
+  changes), then runs the function's cards. Every event inside a function
+  carries `via`, the call cards it runs inside, so the running Hop card
+  glows while its cards play. A call to a missing function ends the run
+  with an error; a stack 16 calls deep halts as `forever`.
+- **Printer.** A function prints as `function hop(): void { ... }` after
+  `export function main()`, and a call as `hop();`, tagged like any other
+  line so the running line highlights.
+- **Editor.** Each function sits under the program: a purple heading with
+  its name, and its own list on a purple spine, with the same cursor,
+  carets, drags and keyboard as the program. Tapping the heading puts the
+  insert point at the end of the function. The palette has one card per
+  function, labelled with its name; while the insert point is inside a
+  function the call cards rest, and carets and drops never offer a gap in a
+  function to a call. With functions, an empty program shows a spot to tap
+  so cards can come back to it, and the spare budget rows give way to the
+  count in the header so the functions stay in view.
+- **Thought bubble.** On a call the robot's bubble says the function's
+  name, in purple.
+- **Validator.** The starter program defines the level's functions (empty
+  on a build or reorder level) and the reference solution fills in the
+  same ones. Calls must name a defined function and sit in main, `call`
+  must be allowed exactly when there is a function, and outside run and
+  predict levels the reference solution must call it. Function names are
+  short lower camel case words that are not reserved. Hint paths may start
+  with a function's name (`["hop"]`); the fill rung places a call to the
+  function the solution calls there.
+- **The pack** (`content/packs/forest-functions`), built from the
+  reference programs so every board is exactly its route: Hop (run and
+  predict), Fill in the hop (the program is given, Hop is empty), Name it
+  once (build both under a budget), Cards in order (reorder into the
+  program and into Hop), Fix the hop (one wrong card inside Hop breaks
+  every hop), Turn and hop (the same hop downhill, then uphill after a
+  turn), Where will it stop? (the transfer prediction), Around the rocks (a
+  new function, Detour), Two tricks (Hop and Detour on one path) and Four
+  spots (Detour on all four sides of a pond, each facing a new way, under a
+  tight budget). Every build level's limit is below the shortest flat
+  program, so the function is needed, not optional.
+
+### Deviations and choices
+
+- **The level names the function.** "Give a set of moves a name" is shown
+  by the introduction and the card name; typing a name needs a keyboard on
+  an iPad and a rule for bad names, which belongs with creation mode. The
+  child fills a function in; the level supplies Hop or Detour, empty.
+- **A function cannot use a function yet.** Calls live in main only, which
+  also rules out recursion. Ops, the editor and the validator all enforce
+  it; the interpreter still guards its own stack.
+- **No Repeat in this pack.** The plan's mechanic is a route that shows up
+  where Repeat cannot reach, so every board places the trick at irregular
+  spots. Mixing Repeat with functions is left to later packs.
+- **The pack opens with three hops, not two.** The plan opens with "one
+  L-shaped hop twice"; the introduction shows exactly that, so the first
+  level runs three to give the prediction something to follow. Name it
+  once (level 3) is the plan's two-hop level, built from scratch.
+- **The run highlights the call, not a stack.** The trace carries the call
+  path (`via`), and the editor lights the calls and the function's
+  heading. A stack panel waits until functions can call functions.
+
 ## Build step 8: concept introductions and the card book (2026-11-08)
 
 The child test passed on 2026-11-08: every box of the plan's exit gate is

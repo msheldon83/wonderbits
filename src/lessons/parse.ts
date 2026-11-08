@@ -3,7 +3,7 @@
  * contributors may write by hand, so errors name the exact path at fault.
  */
 import type { NodeSpec } from '../ir/spec';
-import { isCardId, isCommandId, isConditionId, REPEAT_MAX, REPEAT_MIN, type CardId, type ConditionId } from '../ir/types';
+import { FUNCTION_NAME, isCardId, isCommandId, isConditionId, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, type CardId, type ConditionId } from '../ir/types';
 import { FACINGS, type Cell, type Facing, type TileKind, type WorldDefinition } from '../sim/types';
 import { CONTENT_SCHEMA_VERSION, type Activity, type ConceptIntroduction, type HintPath, type HintStep, type PackManifest, type PuzzleDefinition } from './types';
 
@@ -79,12 +79,22 @@ class Reader {
     this.fail(path, `unknown condition ${JSON.stringify(v)}`);
     return 'blockedAhead';
   }
-  /** A program spec: commands as strings, blocks as objects with a "do" list. */
-  spec(v: unknown, path: string): NodeSpec[] {
+  functionName(v: unknown, path: string): string {
+    if (typeof v === 'string' && FUNCTION_NAME.test(v) && !RESERVED_NAMES.has(v)) return v;
+    this.fail(path, `expected a function name: a short lower camel case word that is not a reserved word, got ${JSON.stringify(v)}`);
+    return 'f';
+  }
+  /**
+   * A program spec: commands as strings, blocks as objects with a "do" list,
+   * calls as { "call": name }, and at the top only, functions as
+   * { "define": name, "do": [...] }.
+   */
+  spec(v: unknown, path: string, top = true): NodeSpec[] {
     if (!Array.isArray(v)) {
       this.fail(path, 'expected an array of commands and blocks');
       return [];
     }
+    const defined = new Set<string>();
     return v.flatMap((s, i): NodeSpec[] => {
       const at = `${path}[${i}]`;
       if (typeof s === 'string') {
@@ -96,7 +106,15 @@ class Reader {
         this.fail(at, 'expected a command name or a block object');
         return [];
       }
-      const body = this.spec(s.do, `${at}.do`);
+      if ('call' in s) return [{ call: this.functionName(s.call, `${at}.call`) }];
+      if ('define' in s) {
+        if (!top) this.fail(at, 'a function can only be defined at the top of a program');
+        const name = this.functionName(s.define, `${at}.define`);
+        if (defined.has(name)) this.fail(`${at}.define`, `function ${name} is defined twice`);
+        defined.add(name);
+        return [{ define: name, do: this.spec(s.do, `${at}.do`, false) }];
+      }
+      const body = this.spec(s.do, `${at}.do`, false);
       if ('repeat' in s) {
         const count = this.int(s.repeat, `${at}.repeat`, REPEAT_MIN);
         if (count > REPEAT_MAX) this.fail(`${at}.repeat`, `expected a count of at most ${REPEAT_MAX}`);
@@ -105,10 +123,10 @@ class Reader {
       if ('until' in s) return [{ until: this.condition(s.until, `${at}.until`), do: body }];
       if ('if' in s) {
         const node: NodeSpec = { if: this.condition(s.if, `${at}.if`), do: body };
-        if (s.else !== undefined) node.else = this.spec(s.else, `${at}.else`);
+        if (s.else !== undefined) node.else = this.spec(s.else, `${at}.else`, false);
         return [node];
       }
-      this.fail(at, 'a block needs "repeat", "if" or "until"');
+      this.fail(at, 'a block needs "repeat", "if", "until", "call" or "define"');
       return [];
     });
   }
@@ -186,11 +204,15 @@ class Reader {
     }
     return v.flatMap((p, i): HintPath => {
       if (Number.isInteger(p) && (p as number) >= 0) return [p as number];
+      if (i === 0 && typeof p === 'string' && p !== 'else') {
+        if (!FUNCTION_NAME.test(p)) this.fail(`${path}[0]`, `expected a function name, got ${JSON.stringify(p)}`);
+        return [p];
+      }
       if (p === 'else') {
         if (i === 0 || typeof v[i - 1] !== 'number') this.fail(`${path}[${i}]`, '"else" must follow a card index');
         return ['else'];
       }
-      this.fail(`${path}[${i}]`, 'expected a card index or "else"');
+      this.fail(`${path}[${i}]`, 'expected a card index, "else", or a function name first');
       return [];
     });
   }

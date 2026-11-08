@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "id": "f09-two-tricks",
+  "title": "Two tricks",
+  "intro": "Two tricks this time: Hop down a step, and Detour around a rock.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...######",
+      ".#..#...#",
+      "###...#..",
+      "########."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 1,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 8,
+      "y": 3
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "functions",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "call"
+    ],
+    "maxInstructions": 18,
+    "starterProgram": [
+      {
+        "define": "hop",
+        "do": []
+      },
+      {
+        "define": "detour",
+        "do": []
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "text": "Around a rock, then one step down. Both happen twice.",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 3,
+          "y": 1
+        },
+        {
+          "x": 3,
+          "y": 2
+        }
+      ]
+    },
+    {
+      "kind": "card",
+      "command": "call",
+      "text": "There is one card for Hop and one for Detour. Fill both in, then use each where it fits."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "hop"
+      ],
+      "slot": 0,
+      "command": "forward",
+      "text": "Hop starts with a Forward."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "call": "detour"
+    },
+    {
+      "call": "hop"
+    },
+    "forward",
+    "forward",
+    {
+      "call": "detour"
+    },
+    {
+      "call": "hop"
+    },
+    {
+      "define": "hop",
+      "do": [
+        "forward",
+        "rotateCW",
+        "forward",
+        "rotateCCW"
+      ]
+    },
+    {
+      "define": "detour",
+      "do": [
+        "rotateCCW",
+        "forward",
+        "rotateCW",
+        "forward",
+        "forward",
+        "rotateCW",
+        "forward",
+        "rotateCCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

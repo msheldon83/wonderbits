@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { sequentialIdFactory } from '../ir/ids';
-import { programFromCommands } from '../ir/program';
+import { programFromCommands, programFromSpec } from '../ir/program';
 import type { CommandId } from '../ir/types';
 import { paletteFor, type Programming } from './palette';
 
@@ -47,4 +47,15 @@ describe('paletteFor', () => {
     const done = paletteFor(programming, prog(['forward', 'rotateCW', 'forward']));
     expect(done.full).toBe(true);
   });
+
+  it('offers one call card per function, sharing the call quota', () => {
+    const program = programFromSpec([{ call: 'hop' }, { define: 'hop', do: [] }, { define: 'jump', do: [] }], sequentialIdFactory());
+    const p = paletteFor({ allowedCommands: ['forward', 'call'], maxPerCommand: { call: 2 }, starterProgram: [] }, program);
+    expect(p.entries.map((e) => [e.command, e.name ?? null, e.remaining])).toEqual([
+      ['forward', null, null],
+      ['call', 'hop', 1],
+      ['call', 'jump', 1],
+    ]);
+  });
 });
+

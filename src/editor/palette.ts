@@ -7,7 +7,7 @@
  * come from the supplied cards: each card can be used exactly once. Blocks
  * count like any other card, and so does everything inside them.
  */
-import { cardCounts, countNodes } from '../ir/program';
+import { cardCounts, countNodes, functionNames } from '../ir/program';
 import { CONDITION_IDS, DEFAULT_CONDITION, type BlockId, type CardId, type ConditionId, type ProgramIR } from '../ir/types';
 import type { PuzzleDefinition } from '../lessons/types';
 
@@ -15,6 +15,8 @@ export type Programming = PuzzleDefinition['programming'];
 
 export interface PaletteEntry {
   command: CardId;
+  /** For a call: the function it runs. The palette has one call card per function. */
+  name?: string;
   /** Cards of this kind still available, or null when the level sets no quota. */
   remaining: number | null;
   /** False when the quota or the total budget is used up. */
@@ -46,15 +48,21 @@ export function paletteFor(programming: Programming, program: ProgramIR): Palett
   const quotas = quotasFor(programming);
   const counts = cardCounts(program);
 
+  const names = functionNames(program);
   const entries = programming.allowedCommands.flatMap((command): PaletteEntry[] => {
     const quota = quotas?.[command];
+    let entry: Omit<PaletteEntry, 'name'>;
     if (quotas && quota === undefined) {
       // Reorder levels hand out a fixed set of cards; anything else stays hidden.
       if (programming.suppliedCards) return [];
-      return [{ command, remaining: null, available: !full }];
+      entry = { command, remaining: null, available: !full };
+    } else {
+      const remaining = quota === undefined ? null : Math.max(0, quota - (counts.get(command) ?? 0));
+      entry = { command, remaining, available: !full && remaining !== 0 };
     }
-    const remaining = quota === undefined ? null : Math.max(0, quota - (counts.get(command) ?? 0));
-    return [{ command, remaining, available: !full && remaining !== 0 }];
+    // One call card per function, sharing the call quota.
+    if (command === 'call') return names.map((name) => ({ ...entry, name }));
+    return [entry];
   });
 
   return { entries, used, max, full };

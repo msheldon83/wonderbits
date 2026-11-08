@@ -1,6 +1,6 @@
 import type { IdFactory } from './ids';
-import { buildNodes, type NodeSpec } from './spec';
-import { IR_VERSION, MAIN, type Branch, type CommandId, type IRNode, type NodeId, type Place, type ProgramIR } from './types';
+import { buildNodes, specOf, splitSpec, type NodeSpec } from './spec';
+import { functionContainerId, functionOfContainer, IR_VERSION, MAIN, type Branch, type CommandId, type IRNode, type NodeId, type Place, type Procedure, type ProgramIR } from './types';
 
 export function emptyProgram(): ProgramIR {
   return { version: IR_VERSION, procedures: [{ name: MAIN, body: [] }], handlers: [] };
@@ -10,16 +10,38 @@ export function programFromCommands(commands: readonly CommandId[], newId: IdFac
   return programFromSpec(commands, newId);
 }
 
+/** A program from a spec: main's cards, and a procedure for each "define" in the order listed. */
 export function programFromSpec(spec: readonly NodeSpec[], newId: IdFactory): ProgramIR {
+  const { main, functions } = splitSpec(spec);
   const program = emptyProgram();
-  program.procedures[0]!.body = buildNodes(spec, newId);
+  program.procedures[0]!.body = buildNodes(main, newId);
+  for (const f of functions) program.procedures.push({ name: f.name, body: buildNodes(f.body, newId) });
   return program;
+}
+
+/** The program back as a spec: main's cards, then each function as a "define". */
+export function programSpec(program: ProgramIR): NodeSpec[] {
+  return [...specOf(mainBody(program)), ...functionsOf(program).map((f): NodeSpec => ({ define: f.name, do: specOf(f.body) }))];
 }
 
 export function mainBody(program: ProgramIR): readonly IRNode[] {
   const main = program.procedures.find((p) => p.name === MAIN);
   if (!main) throw new Error('Program has no main procedure');
   return main.body;
+}
+
+/** The program's functions: every procedure but main, in order. */
+export function functionsOf(program: ProgramIR): readonly Procedure[] {
+  return program.procedures.filter((p) => p.name !== MAIN);
+}
+
+export function functionNames(program: ProgramIR): string[] {
+  return functionsOf(program).map((p) => p.name);
+}
+
+/** The cards of a function, or undefined when the program has no function by that name. */
+export function functionBody(program: ProgramIR, name: string): readonly IRNode[] | undefined {
+  return name === MAIN ? undefined : program.procedures.find((p) => p.name === name)?.body;
 }
 
 /** The top-level kinds, for flat programs and tests. */
@@ -55,19 +77,26 @@ export interface Visit {
   depth: number;
   /** 1-based position in document order, blocks included: the step number the child sees. */
   number: number;
+  /** The procedure the node belongs to: main, or a function's name. */
+  procedure: string;
 }
 
-/** Every node in document order, with where it sits. */
+/**
+ * Every node in document order, with where it sits: main first, then each
+ * function. Step numbers run straight on from main into the functions, so
+ * "step 7" means one card wherever it is.
+ */
 export function* walk(program: ProgramIR): Generator<Visit> {
   let number = 0;
-  function* visit(nodes: readonly IRNode[], parent: NodeId | null, branch: Branch, depth: number): Generator<Visit> {
+  function* visit(nodes: readonly IRNode[], parent: NodeId | null, branch: Branch, depth: number, procedure: string): Generator<Visit> {
     for (let index = 0; index < nodes.length; index++) {
       const node = nodes[index]!;
-      yield { node, parent, branch, index, depth, number: ++number };
-      for (const b of branchesOf(node)) yield* visit(branchBody(node, b)!, node.id, b, depth + 1);
+      yield { node, parent, branch, index, depth, number: ++number, procedure };
+      for (const b of branchesOf(node)) yield* visit(branchBody(node, b)!, node.id, b, depth + 1, procedure);
     }
   }
-  yield* visit(mainBody(program), null, 'body', 0);
+  yield* visit(mainBody(program), null, 'body', 0, MAIN);
+  for (const f of functionsOf(program)) yield* visit(f.body, functionContainerId(f.name), 'body', 0, f.name);
 }
 
 /** Number of program nodes, blocks included, which is what instruction budgets count. */
@@ -102,6 +131,8 @@ export function stepNumber(program: ProgramIR, id: NodeId): number | null {
 /** The cards in a container, or undefined when the place does not exist. */
 export function containerAt(program: ProgramIR, place: Pick<Place, 'parent' | 'branch'>): readonly IRNode[] | undefined {
   if (place.parent === null) return place.branch === 'body' ? mainBody(program) : undefined;
+  const fn = functionOfContainer(place.parent);
+  if (fn !== null) return place.branch === 'body' ? functionBody(program, fn) : undefined;
   const node = findNode(program, place.parent);
   return node ? branchBody(node, place.branch) : undefined;
 }
@@ -116,11 +147,17 @@ export function isWithin(program: ProgramIR, id: NodeId, ancestor: NodeId): bool
   return false;
 }
 
-/** The ids of the blocks enclosing a node, innermost first. */
+/** The procedure a gap belongs to: main, or a function's name. Undefined when the place does not exist. */
+export function procedureOfPlace(program: ProgramIR, place: Pick<Place, 'parent'>): string | undefined {
+  if (place.parent === null) return MAIN;
+  return functionOfContainer(place.parent) ?? locate(program, place.parent)?.procedure;
+}
+
+/** The ids of the blocks enclosing a node, innermost first. A function's own container is not a block. */
 export function ancestorsOf(program: ProgramIR, id: NodeId): NodeId[] {
   const out: NodeId[] = [];
   let current = locate(program, id)?.parent ?? null;
-  while (current !== null) {
+  while (current !== null && functionOfContainer(current) === null) {
     out.push(current);
     current = locate(program, current)?.parent ?? null;
   }

@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "forest-functions",
+  "title": "Same trick, new place",
+  "themeId": "forest",
+  "order": 4,
+  "concepts": ["functions"],
+  "prerequisites": ["forest-ifs"],
+  "introduction": {
+    "concept": "functions",
+    "title": "Functions",
+    "explanation": "Give a set of moves a name, then use the name anywhere.",
+    "demo": {
+      "world": {
+        "rows": ["..#", "#..", "##."],
+        "robot": { "x": 0, "y": 0, "facing": "E" },
+        "goal": { "x": 2, "y": 2 }
+      },
+      "before": ["forward", "rotateCW", "forward", "rotateCCW", "forward", "rotateCW", "forward", "rotateCCW"],
+      "program": [
+        { "call": "hop" },
+        { "call": "hop" },
+        { "define": "hop", "do": ["forward", "rotateCW", "forward", "rotateCCW"] }
+      ]
+    }
+  },
+  "levels": [
+    "f01-hop",
+    "f02-fill-the-hop",
+    "f03-name-it-once",
+    "f04-cards-in-order",
+    "f05-fix-the-hop",
+    "f06-turn-and-hop",
+    "f07-where-will-it-stop",
+    "f08-around-the-rocks",
+    "f09-two-tricks",
+    "f10-four-spots"
+  ]
+}

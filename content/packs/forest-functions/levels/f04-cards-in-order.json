@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "id": "f04-cards-in-order",
+  "title": "Cards in order",
+  "intro": "Put every card in its place: some go in the program, some go inside Hop.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..##",
+      "#...",
+      "###."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 3,
+      "y": 2
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "functions",
+    "activity": "reorder"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "call"
+    ],
+    "starterProgram": [
+      {
+        "define": "hop",
+        "do": []
+      }
+    ],
+    "suppliedCards": [
+      "call",
+      "forward",
+      "call",
+      "forward",
+      "rotateCW",
+      "forward",
+      "rotateCCW"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "text": "Two hops down, with one step right between them.",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 3,
+          "y": 1
+        },
+        {
+          "x": 3,
+          "y": 2
+        }
+      ]
+    },
+    {
+      "kind": "card",
+      "command": "call",
+      "text": "Both Hop cards go in the program. The turns go inside Hop."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "hop"
+      ],
+      "slot": 1,
+      "command": "rotateCW",
+      "text": "Inside Hop, the turn comes after the first Forward."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "call": "hop"
+    },
+    "forward",
+    {
+      "call": "hop"
+    },
+    {
+      "define": "hop",
+      "do": [
+        "forward",
+        "rotateCW",
+        "forward",
+        "rotateCCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

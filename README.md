@@ -33,16 +33,16 @@ architecture, and the exit gate for the first child test. Read it before
 starting new work.
 
 The first child test passed on 2026-11-08, and this repository is at
-**build step 8 of the plan: concept introductions and the card book**. It
-has 35 levels in four packs (Forest, five levels that teach the game; Forest
-trails, ten sequencing levels; Around and around, Repeat; Look before you
-leap, If, If / else and Repeat until), a show-first introduction before each
-new concept, a card book to watch them again, validators in CI, prediction
-mode, three-rung hint ladders, the level map with stars and badges, progress
-in IndexedDB, and an observation log the grown-up can export. The next
-concept is functions, in a pack called "Same trick, new place", which needs
-a `call` node in the IR; the memory card panel and switches and gates follow
-it. See [docs/design-notes.md](docs/design-notes.md) for what is built, what
+**build step 9 of the plan: functions**. It has 45 levels in five packs
+(Forest, five levels that teach the game; Forest trails, ten sequencing
+levels; Around and around, Repeat; Look before you leap, If, If / else and
+Repeat until; Same trick, new place, functions), a show-first introduction
+before each new concept, a card book to watch them again, validators in CI,
+prediction mode, three-rung hint ladders, the level map with stars and
+badges, progress in IndexedDB, and an observation log the grown-up can
+export. The next concept is world state, in a pack called "Flip the
+switch", which needs switches and gates in the simulation and the memory
+card panel. See [docs/design-notes.md](docs/design-notes.md) for what is built, what
 is deliberately not, and any deviations from the plan.
 
 ## Run it

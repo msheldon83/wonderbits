@@ -6,6 +6,7 @@
  * Top-down: the robot sprite points up and is rotated to its facing. Display
  * angles accumulate across turns so every turn animates exactly 90 degrees.
  */
+import { functionLabel } from '../ir/types';
 import type { TraceEvent } from '../runtime/contract';
 import type { Cell, RobotState, SimState, WorldDefinition } from '../sim/types';
 import { ahead, cellKey, tileAt } from '../sim/world';
@@ -158,8 +159,8 @@ export class BoardController implements Player {
     return settle(anim, signal);
   }
 
-  /** The bubble over the robot while it thinks: "yes", "no", or "2 of 3". */
-  private showBubble(robot: RobotState, text: string, tone: 'yes' | 'no' | 'loop', durationMs: number, signal: AbortSignal): Promise<void> {
+  /** The bubble over the robot while it thinks: "yes", "no", "2 of 3", or the name of the function it hands over to. */
+  private showBubble(robot: RobotState, text: string, tone: 'yes' | 'no' | 'loop' | 'call', durationMs: number, signal: AbortSignal): Promise<void> {
     const bubble = this.robot.bubble;
     const p = toScreen(this.layout, robot);
     bubble.textContent = text;
@@ -207,9 +208,9 @@ export class BoardController implements Player {
     const to = turnAngle(from, event.op);
 
     // A block thinking: nothing moves, a bubble says what it decided.
-    if (event.op === 'check' || event.op === 'loop') {
-      const text = event.op === 'check' ? (event.value ? 'yes' : 'no') : `${event.iteration} of ${event.count}`;
-      const tone = event.op === 'loop' ? 'loop' : event.value ? 'yes' : 'no';
+    if (event.op === 'check' || event.op === 'loop' || event.op === 'call') {
+      const text = event.op === 'check' ? (event.value ? 'yes' : 'no') : event.op === 'call' ? functionLabel(event.name) : `${event.iteration} of ${event.count}`;
+      const tone = event.op === 'loop' ? 'loop' : event.op === 'call' ? 'call' : event.value ? 'yes' : 'no';
       await this.showBubble(before.robot, text, tone, ms(THINK_MS), signal);
       return;
     }

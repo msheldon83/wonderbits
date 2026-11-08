@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "id": "f07-where-will-it-stop",
+  "title": "Where will it stop?",
+  "intro": "Hop is a little zigzag. Follow every hop and every turn, then place the flag.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "#..###",
+      "......",
+      "###..#"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 1,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 1
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "transfer",
+    "activity": "predict"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "call"
+    ],
+    "maxInstructions": 10,
+    "starterProgram": [
+      {
+        "call": "hop"
+      },
+      "rotateCW",
+      {
+        "call": "hop"
+      },
+      "rotateCCW",
+      {
+        "call": "hop"
+      },
+      {
+        "define": "hop",
+        "do": [
+          "forward",
+          "rotateCCW",
+          "forward",
+          "rotateCW",
+          "forward"
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "text": "One hop: forward, jog to the left, forward again.",
+      "cells": [
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "kind": "card",
+      "command": "call",
+      "text": "Each Hop runs the five cards inside Hop, facing whichever way the robot faces."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "call",
+      "text": "The program starts with a Hop to the right."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "call": "hop"
+    },
+    "rotateCW",
+    {
+      "call": "hop"
+    },
+    "rotateCCW",
+    {
+      "call": "hop"
+    },
+    {
+      "define": "hop",
+      "do": [
+        "forward",
+        "rotateCCW",
+        "forward",
+        "rotateCW",
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true
+  }
+}

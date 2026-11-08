@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "id": "f08-around-the-rocks",
+  "title": "Around the rocks",
+  "intro": "Rocks block the path in three places. Teach Detour the way around one rock.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "#...#.....#",
+      "..#...#.#.."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 1,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 10,
+      "y": 1
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "functions",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "call"
+    ],
+    "maxInstructions": 15,
+    "starterProgram": [
+      {
+        "define": "detour",
+        "do": []
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "text": "Around a rock: up, two across, and back down.",
+      "cells": [
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "kind": "card",
+      "command": "call",
+      "text": "Write the way around one rock inside Detour, then use Detour at every rock."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "detour"
+      ],
+      "slot": 0,
+      "command": "rotateCCW",
+      "text": "Detour starts by turning to face up."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    {
+      "call": "detour"
+    },
+    "forward",
+    "forward",
+    {
+      "call": "detour"
+    },
+    {
+      "call": "detour"
+    },
+    "forward",
+    {
+      "define": "detour",
+      "do": [
+        "rotateCCW",
+        "forward",
+        "rotateCW",
+        "forward",
+        "forward",
+        "rotateCW",
+        "forward",
+        "rotateCCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

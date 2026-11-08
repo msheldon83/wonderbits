@@ -181,14 +181,14 @@ Each level authors a deterministic three-rung ladder: orient attention (highligh
 
 **Curriculum: the concept spine**
 
-Repeat was motivated by the instruction budget the child felt on level 15, and the Repeat and If packs are built. The spine continues from there to data. Functions come next after conditionals. Switches then introduce world state on its own, and events follow right after, so the world can react to the robot. Input and the game loop follow events, and lists, grids and randomness follow variables, because the target game types depend on them. Types run as a thread from Representation onward, and Robot team adds objects at the end. A construct is introduced only after a concrete puzzle makes the previous approach cumbersome.
+Repeat was motivated by the instruction budget the child felt on level 15, and the Repeat, If and functions packs are built. The spine continues from there to data. Functions came next after conditionals. Switches then introduce world state on its own, and events follow right after, so the world can react to the robot. Input and the game loop follow events, and lists, grids and randomness follow variables, because the target game types depend on them. Types run as a thread from Representation onward, and Robot team adds objects at the end. A construct is introduced only after a concrete puzzle makes the previous approach cumbersome.
 
 | # | Concept | Pack | Status |
 | --- | --- | --- | --- |
 | 1 | Sequencing | Forest and Forest trails, consolidating to 15 | Built |
 | 2 | Loops | Around and around | Built |
 | 3 | Conditionals | Look before you leap | Built |
-| 4 | Functions | Same trick, new place | Proposed |
+| 4 | Functions | Same trick, new place | Built |
 | 5 | World state | Flip the switch | Proposed |
 | 6 | Events | When it happens | Proposed |
 | 7 | Player input | Remote control | Proposed |
@@ -288,7 +288,7 @@ Every new concept opens with a short introduction that shows before it tells, th
 | Records and shapes | A record is a thing with named parts, and every crate has the same parts. | A crate opens to show its label, colour and contents. |
 | Objects | A blueprint makes robots, and each robot keeps its own memory. | One blueprint stamps out two robots that walk off in different directions. |
 
-Explanations stay short enough for a 9-year-old to read, and the demo carries the rest. In creation mode, the AI's explanations link to the same card book page. The three built packs have theirs, replacing the single `intro` sentence their first levels used to carry (built 2026-11-08; see design-notes.md).
+Explanations stay short enough for a 9-year-old to read, and the demo carries the rest. In creation mode, the AI's explanations link to the same card book page. The three packs built before step 8 have theirs, replacing the single `intro` sentence their first levels used to carry, and Same trick, new place shipped with its own (built 2026-11-08; see design-notes.md).
 
 A pack's introduction lives in its `pack.json` beside `concepts` and `prerequisites`: a `title`, one `explanation` sentence, and a `demo` with a small board and the `program` the robot plays on it, plus an optional `before` program that shows the old way first and folds into the new one. The code shown is printed from the demo program by the same projection as the see-the-code panel, so the three parts of the introduction can never disagree. The validator proves the demo reaches the flag, that the old way is the longer one, and that the program uses a card of the concept it introduces.
 
@@ -373,7 +373,7 @@ The editor writes the IR, the IR is printed to TypeScript and sent to whichever 
 **Program IR**
 
 - A versioned JSON document: a list of named procedures and event handlers, each a tree of nodes with stable IDs. Phase 1 shows only `main`, but the shape is there so Game Workshop events need no migration.
-- Node kinds today: `forward`, `rotateCW`, `rotateCCW`, `repeat`, `if`, `ifElse` and `until`. Next, in spine order: `call` for functions, `on` handlers for events and player input, every-tick handlers for the game loop, `set` and a named, typed memory-slot list per level for variables, and blueprints and instances for Robot team.
+- Node kinds today: `forward`, `rotateCW`, `rotateCCW`, `repeat`, `if`, `ifElse`, `until` and `call`, which runs one of the program's functions; each function is a procedure beside `main`. Next, in spine order: `on` handlers for events and player input, every-tick handlers for the game loop, `set` and a named, typed memory-slot list per level for variables, and blueprints and instances for Robot team.
 - Every edit is an operation on the IR, which gives undo, redo, and later AI operations the same path.
 
 **TypeScript projection**
@@ -408,7 +408,7 @@ Most of the 2026-11-08 additions extend modules that already exist, and the IR-a
 | Area | Change | Builds on |
 | --- | --- | --- |
 | Simulation | Switches and gates as mutable world state; senses for gate open and switch on; hazards that move on a tick; seeded randomness so every trace stays reproducible | `sim/world.ts`, the theme's logical elements (switch and gate are already named) |
-| IR | `call` for functions, `on` handlers for events, `set` for variables; a named, typed memory-slot list per level; blueprints and instances for Robot team | The planned `call`, `on` and `set` kinds; `ir/ops.ts` edit operations |
+| IR | `call` for functions (built), `on` handlers for events, `set` for variables; a named, typed memory-slot list per level; blueprints and instances for Robot team | The planned `call`, `on` and `set` kinds; `ir/ops.ts` edit operations |
 | Memory card | A panel rendering the world and robot state from trace events, with each field's kind; the code panel prints shapes as TypeScript interfaces | Trace before and after state |
 | Prediction | Predict the memory card, field by field | `lessons/prediction.ts` |
 | Lesson schema | `model` activity; `maxMemory` budget; `persistAcross` for two-run levels; `inputScript` of key presses for input levels | `PuzzleDefinition`, validators in CI |
@@ -554,7 +554,7 @@ Work proceeds vertically: each step ends with something runnable on an iPad. Cod
 6. **Child test.** Run the section 11 protocol. Fix usability failures. Re-test the fixed levels.
 7. **After the gate.** Repeat, motivated by the level 15 budget, then If. Started early: the first testers finished the 15 levels and asked for more, so the Forest trails, Around and around and Look before you leap packs exist (design-notes.md). The child test in step 6 passed on 2026-11-08.
 8. **Concept introductions and the card book.** Show, name it, peek at the code, first try, save it to the card book. The three built packs get theirs, replacing the `intro` sentence on their first levels. Concepts, prerequisites and the introduction go into each `pack.json`. Sequencing consolidates to 5 intro levels plus 10. Built 2026-11-08 (design-notes.md).
-9. **Functions.** `call` in the IR, the printer and the interpreter; the Same trick, new place pack with its introduction.
+9. **Functions.** `call` in the IR, the printer and the interpreter; the Same trick, new place pack with its introduction. Built 2026-11-08 (design-notes.md).
 10. **World state and the memory card.** Switches and gates in the simulation with their senses; the memory card panel rendered from trace state; the Flip the switch pack; the `model` activity and state prediction with their validator rules.
 11. **Events, input and time.** `on` handlers and When it happens; `inputScript` and Remote control; ticks, every-tick handlers, moving hazards and Tick tock.
 12. **Data.** The memory budget and kinds of values (Two things to remember); `set` and variables (Into the dark); lists (In a row); 2D grids (Reading the map); seeded randomness (Never the same twice); stored vs. derived (Two scoreboards); the backpack and persistence (Overnight); records (The notebook); blueprints and instances (Robot team).
@@ -626,7 +626,7 @@ Repeat and If were built before this gate because the first testers asked for mo
 
 **Next steps (2026-11-08)**
 
-- [ ] Add `call` to the IR and write the Same trick, new place pack
+- [x] Add `call` to the IR and write the Same trick, new place pack (2026-11-08)
 - [ ] Build the memory card panel from trace state
 - [ ] Add switches and gates to the simulation, then write Flip the switch
 - [ ] Draft the `model` activity schema and its validator rule

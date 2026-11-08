@@ -17,9 +17,10 @@ export type Activity = 'run' | 'build' | 'reorder' | 'debug' | 'predict';
  * Where inside a program a hint points. Each number enters that card's body;
  * "else" right after a number enters its else branch instead. Empty means
  * the main program. For example [1, "else", 0] is the body of the first card
- * inside the else branch of the second card.
+ * inside the else branch of the second card. A function's name first starts
+ * in that function instead: ["hop"] is the top of Hop.
  */
-export type HintPath = (number | 'else')[];
+export type HintPath = (number | string)[];
 
 /**
  * A deterministic three-rung hint ladder: orient attention on the board,
