@@ -61,7 +61,7 @@ export function angleFor(facing: Facing): number {
  * Next display angle after a turn. Angles accumulate rather than wrap, so a
  * clockwise turn from west to north animates +90 degrees, not -270.
  */
-export function turnAngle(angle: number, op: CommandId): number {
+export function turnAngle(angle: number, op: CommandId | string): number {
   if (op === 'rotateCW') return angle + 90;
   if (op === 'rotateCCW') return angle - 90;
   return angle;

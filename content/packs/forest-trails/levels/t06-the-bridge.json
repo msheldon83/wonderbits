@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "id": "t06-the-bridge",
+  "title": "The bridge",
+  "intro": "Water everywhere. Pick up the acorn and reach the flag without getting wet.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      ".....",
+      "._._.",
+      ".....",
+      "__.__"
+    ],
+    "robot": {
+      "x": 2,
+      "y": 3,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 0,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "sequencing",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 14,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "text": "Up one, left along the middle, up to the acorn, then along the top."
+    },
+    {
+      "kind": "card",
+      "command": "rotateCCW",
+      "text": "At the first corner the robot turns to look left."
+    },
+    {
+      "kind": "fill",
+      "slot": 1,
+      "command": "rotateCCW",
+      "text": "Turn left after the first Forward."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "rotateCCW",
+    "forward",
+    "forward",
+    "rotateCW",
+    "forward",
+    "forward",
+    "rotateCW",
+    "forward",
+    "forward",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 12
+  }
+}

@@ -4,17 +4,18 @@ import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { sequentialIdFactory } from '../ir/ids';
 import { applyOp } from '../ir/ops';
-import { commandsOf, mainBody, programFromCommands } from '../ir/program';
-import type { CommandId, ProgramIR } from '../ir/types';
+import { commandsOf, mainBody, programFromCommands, programFromSpec } from '../ir/program';
+import { specOf, type NodeSpec } from '../ir/spec';
+import type { CardId, CommandId, ProgramIR } from '../ir/types';
 import { Editor, type EditorProps } from './Editor';
 import type { Programming } from './palette';
 
 afterEach(cleanup);
 
 interface HarnessProps {
-  start: CommandId[];
+  start: NodeSpec[];
   max?: number;
-  allowed?: CommandId[];
+  allowed?: CardId[];
   programming?: Partial<Programming>;
   history?: Pick<EditorProps, 'canUndo' | 'canRedo' | 'onUndo' | 'onRedo'>;
   onChange?: (p: ProgramIR) => void;
@@ -22,7 +23,7 @@ interface HarnessProps {
 
 function Harness({ start, max, allowed = ['forward', 'rotateCW'], programming, history, onChange }: HarnessProps) {
   const [newId] = useState(() => sequentialIdFactory('t'));
-  const [program, setProgram] = useState(() => programFromCommands(start, sequentialIdFactory('s')));
+  const [program, setProgram] = useState(() => programFromSpec(start, sequentialIdFactory('s')));
   return (
     <Editor
       program={program}
@@ -259,6 +260,107 @@ describe('Editor: drag and drop', () => {
     drag(moveButton(2), { x: 10, y: 10 }, { x: 10, y: -30 }, false);
     expect(onChange).not.toHaveBeenCalled();
     expect(carets()).toHaveLength(0);
+  });
+});
+
+describe('Editor: blocks', () => {
+  const repeatCard = () => screen.getByRole('button', { name: /^Add Repeat the cards inside a number/ });
+  const spec = (p: ProgramIR) => specOf(mainBody(p));
+
+  it('adds a Repeat with a default count and an empty body, and numbers steps through blocks', () => {
+    let last: ProgramIR | null = null;
+    render(<Harness start={['forward']} allowed={['forward', 'repeat']} onChange={(p) => (last = p)} />);
+    fireEvent.click(repeatCard());
+    expect(spec(last!)).toEqual(['forward', { repeat: 3, do: [] }]);
+    expect(step(2).getAttribute('aria-label')).toBe('Step 2: Repeat 3 times');
+    expect(screen.getByText('Put cards here')).toBeTruthy();
+    expect(screen.getByText('3 times')).toBeTruthy();
+  });
+
+  it('changes the count with minus and plus, within the range', () => {
+    let last: ProgramIR | null = null;
+    render(<Harness start={[{ repeat: 2, do: ['forward'] }]} allowed={['forward', 'repeat']} onChange={(p) => (last = p)} />);
+    expect(screen.getByRole('button', { name: 'Fewer times, step 1' })).toHaveProperty('disabled', true);
+    fireEvent.click(screen.getByRole('button', { name: 'More times, step 1' }));
+    expect(spec(last!)).toEqual([{ repeat: 3, do: ['forward'] }]);
+    expect(step(2).getAttribute('aria-label')).toBe('Step 2: Move forward one tile');
+  });
+
+  it('puts the cursor inside a block after tapping it or a step inside it, and new cards follow', () => {
+    let last: ProgramIR | null = null;
+    render(<Harness start={[{ repeat: 2, do: ['forward'] }, 'rotateCW']} allowed={['forward', 'rotateCW', 'repeat']} onChange={(p) => (last = p)} />);
+    fireEvent.click(step(2));
+    expect(screen.getByRole('button', { name: /^New cards go/ }).getAttribute('aria-label')).toBe('New cards go inside step 1 at the end. Tap to choose another spot');
+    fireEvent.click(rotateCard());
+    expect(spec(last!)).toEqual([{ repeat: 2, do: ['forward', 'rotateCW'] }, 'rotateCW']);
+    expect(screen.getByText('next goes inside step 1 at the end')).toBeTruthy();
+    fireEvent.click(step(4));
+    expect(screen.getByRole('button', { name: /^New cards go/ }).getAttribute('aria-label')).toBe('New cards go at the end. Tap to choose another spot');
+    fireEvent.click(step(1));
+    expect(screen.getByRole('button', { name: /^New cards go/ }).getAttribute('aria-label')).toBe('New cards go inside step 1 at the end. Tap to choose another spot');
+  });
+
+  it('opens an empty block or an else part with a tap on its placeholder', () => {
+    let last: ProgramIR | null = null;
+    render(<Harness start={[{ if: 'pathAhead', do: [], else: [] }]} allowed={['forward', 'ifElse']} onChange={(p) => (last = p)} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Nothing in the else part of step 1. Tap to put the insert point here' }));
+    fireEvent.click(forwardCard());
+    expect(spec(last!)).toEqual([{ if: 'pathAhead', do: [], else: ['forward'] }]);
+    fireEvent.click(screen.getByRole('button', { name: 'Nothing inside step 1. Tap to put the insert point here' }));
+    fireEvent.click(forwardCard());
+    expect(spec(last!)).toEqual([{ if: 'pathAhead', do: ['forward'], else: ['forward'] }]);
+    fireEvent.click(screen.getByRole('button', { name: /^Else part of step 1/ }));
+    fireEvent.click(forwardCard());
+    expect(spec(last!)).toEqual([{ if: 'pathAhead', do: ['forward'], else: ['forward', 'forward'] }]);
+  });
+
+  it('offers carets inside blocks when moving, but never inside the block being moved', () => {
+    let last: ProgramIR | null = null;
+    render(<Harness start={['forward', { repeat: 2, do: ['rotateCW'] }]} allowed={['forward', 'rotateCW', 'repeat']} onChange={(p) => (last = p)} />);
+    fireEvent.click(moveButton(1));
+    expect(carets().map((c) => c.getAttribute('aria-label'))).toEqual(['Put Forward at the end', 'Put Forward inside step 2 before step 3', 'Put Forward inside step 2 at the end']);
+    fireEvent.click(screen.getByRole('button', { name: 'Put Forward inside step 2 at the end' }));
+    expect(spec(last!)).toEqual([{ repeat: 2, do: ['rotateCW', 'forward'] }]);
+    fireEvent.click(moveButton(1));
+    expect(carets().map((c) => c.getAttribute('aria-label'))).toEqual([]);
+  });
+
+  it('shows an else part with its own list, and a check to choose on an If', () => {
+    let last: ProgramIR | null = null;
+    render(<Harness start={[{ if: 'pathAhead', do: ['forward'], else: [] }]} allowed={['forward', 'ifElse']} programming={{ allowedConditions: ['pathAhead', 'blockedAhead'] }} onChange={(p) => (last = p)} />);
+    expect(step(1).getAttribute('aria-label')).toBe('Step 1: If path ahead, else');
+    expect(screen.getByText('else')).toBeTruthy();
+    const select = screen.getByRole('combobox', { name: 'What to check, step 1' }) as HTMLSelectElement;
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(['pathAhead', 'blockedAhead']);
+    fireEvent.change(select, { target: { value: 'blockedAhead' } });
+    expect(spec(last!)).toEqual([{ if: 'blockedAhead', do: ['forward'], else: [] }]);
+    fireEvent.click(screen.getByRole('button', { name: /^New cards go/ }));
+    expect(carets().map((c) => c.getAttribute('aria-label'))).toEqual([
+      'Put the insert point before step 1',
+      'Put the insert point inside step 1 before step 2',
+      'Put the insert point inside step 1 at the end',
+      'Put the insert point in the else part of step 1 at the end',
+    ]);
+  });
+
+  it('removes a block with everything inside it and counts blocks against the budget', () => {
+    let last: ProgramIR | null = null;
+    render(<Harness start={[{ repeat: 2, do: ['forward', 'forward'] }]} allowed={['forward', 'repeat']} max={4} onChange={(p) => (last = p)} />);
+    expect(screen.getByRole('status').textContent).toBe('3 of 4 steps · 1 left');
+    fireEvent.click(screen.getByRole('button', { name: 'Remove step 1' }));
+    expect(spec(last!)).toEqual([]);
+  });
+
+  it('shows what a running block is doing', () => {
+    const program = programFromSpec([{ repeat: 3, do: ['forward'] }], sequentialIdFactory('s'));
+    const base = { program, programming: { allowedCommands: ['forward', 'repeat'] as CardId[], starterProgram: [] as NodeSpec[] }, locked: true, errorNodeId: null, newId: sequentialIdFactory('t'), onEdit: () => {} };
+    const state = { robot: { x: 0, y: 0, facing: 'N' as const }, collected: [] };
+    const { rerender } = render(<Editor {...base} activeNodeId="s1" activeEvent={{ index: 0, nodeId: 's1', op: 'loop', iteration: 2, count: 3, before: state, after: state, result: { kind: 'ok' } }} />);
+    expect(step(1).textContent).toContain('2 of 3');
+    expect(step(1).className).toContain('is-active');
+    rerender(<Editor {...base} activeNodeId="s2" activeEvent={{ index: 1, nodeId: 's2', op: 'forward', before: state, after: state, result: { kind: 'ok' } }} />);
+    expect(step(1).className).toContain('is-running');
+    expect(step(2).className).toContain('is-active');
   });
 });
 

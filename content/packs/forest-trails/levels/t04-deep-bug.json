@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "id": "t04-deep-bug",
+  "title": "Deep bug",
+  "intro": "Ten cards, one of them wrong. Watch where the robot goes astray.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      ".....",
+      "####.",
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 2
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "debugging",
+    "activity": "debug"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 10,
+    "starterProgram": [
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      "rotateCW",
+      "forward",
+      "forward",
+      "rotateCCW",
+      "forward",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 4,
+          "y": 2
+        },
+        {
+          "x": 3,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 2
+        }
+      ],
+      "text": "At the bottom corner the robot should turn to face the flag."
+    },
+    {
+      "kind": "step",
+      "index": 7,
+      "text": "Watch this turn. Which way does the robot need to look next?"
+    },
+    {
+      "kind": "fill",
+      "slot": 7,
+      "command": "rotateCW",
+      "text": "Facing down, a clockwise turn looks left, toward the flag."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    "rotateCW",
+    "forward",
+    "forward",
+    "rotateCW",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 10
+  }
+}

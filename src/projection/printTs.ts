@@ -3,7 +3,7 @@
  * readable TypeScript. Read-only through Phase 3; Phase 4 adds a parser that
  * lifts hand-edited code back into the IR using the @node comments.
  */
-import type { CommandId, IRNode, ProgramIR } from '../ir/types';
+import type { CommandId, ConditionId, IRNode, ProgramIR } from '../ir/types';
 
 const CALL: Record<CommandId, string> = {
   forward: 'robot.forward();',
@@ -11,10 +11,49 @@ const CALL: Record<CommandId, string> = {
   rotateCCW: 'robot.rotateCounterClockwise();',
 };
 
+export const SENSE: Record<ConditionId, string> = {
+  pathAhead: 'robot.pathAhead()',
+  blockedAhead: 'robot.blockedAhead()',
+  acornAhead: 'robot.acornAhead()',
+  atFlag: 'robot.atFlag()',
+};
+
 const INDENT = '  ';
 
-function printNode(node: IRNode, depth: number): string {
-  return `${INDENT.repeat(depth)}${CALL[node.kind]} // @node ${node.id}`;
+function printBody(nodes: readonly IRNode[], depth: number, lines: string[]): void {
+  if (nodes.length === 0) lines.push(`${INDENT.repeat(depth)}// Nothing inside yet.`);
+  for (const node of nodes) printNode(node, depth, lines);
+}
+
+function printNode(node: IRNode, depth: number, lines: string[]): void {
+  const pad = INDENT.repeat(depth);
+  const tag = `// @node ${node.id}`;
+  switch (node.kind) {
+    case 'repeat':
+      lines.push(`${pad}for (let i = 0; i < ${node.count}; i++) { ${tag}`);
+      printBody(node.body, depth + 1, lines);
+      lines.push(`${pad}}`);
+      return;
+    case 'if':
+      lines.push(`${pad}if (${SENSE[node.condition]}) { ${tag}`);
+      printBody(node.body, depth + 1, lines);
+      lines.push(`${pad}}`);
+      return;
+    case 'ifElse':
+      lines.push(`${pad}if (${SENSE[node.condition]}) { ${tag}`);
+      printBody(node.body, depth + 1, lines);
+      lines.push(`${pad}} else {`);
+      printBody(node.elseBody, depth + 1, lines);
+      lines.push(`${pad}}`);
+      return;
+    case 'until':
+      lines.push(`${pad}while (!${SENSE[node.condition]}) { ${tag}`);
+      printBody(node.body, depth + 1, lines);
+      lines.push(`${pad}}`);
+      return;
+    default:
+      lines.push(`${pad}${CALL[node.kind]} ${tag}`);
+  }
 }
 
 export function printProgram(program: ProgramIR): string {
@@ -25,12 +64,12 @@ export function printProgram(program: ProgramIR): string {
   for (const proc of program.procedures) {
     lines.push('', `export function ${proc.name}(): void {`);
     if (proc.body.length === 0) lines.push(`${INDENT}// No steps yet.`);
-    for (const node of proc.body) lines.push(printNode(node, 1));
+    for (const node of proc.body) printNode(node, 1, lines);
     lines.push('}');
   }
   for (const handler of program.handlers) {
     lines.push('', `robot.on('${handler.event}', () => {`);
-    for (const node of handler.body) lines.push(printNode(node, 1));
+    for (const node of handler.body) printNode(node, 1, lines);
     lines.push('});');
   }
   return lines.join('\n') + '\n';

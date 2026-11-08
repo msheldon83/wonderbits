@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "id": "t10-the-big-square",
+  "title": "The big square",
+  "intro": "Twenty-two cards. Phew! There has to be a shorter way, and the next island has one.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......",
+      ".____.",
+      ".____.",
+      ".____.",
+      ".____.",
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 5,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 1,
+      "y": 5
+    },
+    "collectibles": [
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 5,
+        "y": 0
+      },
+      {
+        "x": 5,
+        "y": 5
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "efficiency",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 22,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 5
+        },
+        {
+          "x": 1,
+          "y": 5
+        }
+      ],
+      "text": "Round the whole island: five up, five right, five down, four left."
+    },
+    {
+      "kind": "card",
+      "command": "forward",
+      "text": "Five Forwards on each side. That is a lot of the same card."
+    },
+    {
+      "kind": "fill",
+      "slot": 5,
+      "command": "rotateCW",
+      "text": "After five Forwards, turn clockwise."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    "rotateCW",
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    "rotateCW",
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    "rotateCW",
+    "forward",
+    "forward",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 22
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "id": "r08-loop-in-a-loop",
+  "title": "Loop in a loop",
+  "intro": "A Repeat can go inside a Repeat. Five Forwards and a turn, three times, in just four cards.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......",
+      ".____.",
+      ".____.",
+      ".____.",
+      ".____.",
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 5,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 5,
+      "y": 5
+    },
+    "collectibles": [
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 5,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "loops",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "repeat"
+    ],
+    "maxInstructions": 7,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 5
+        }
+      ],
+      "text": "Five up, turn, five right, turn, five down. The same thing three times."
+    },
+    {
+      "kind": "card",
+      "command": "repeat",
+      "text": "Repeat 3 times: a Repeat 5 of Forward, then a Rotate."
+    },
+    {
+      "kind": "fill",
+      "slot": 0,
+      "command": "repeat",
+      "text": "Inside the outer Repeat, the first card is another Repeat.",
+      "path": [
+        0
+      ]
+    }
+  ],
+  "referenceSolution": [
+    {
+      "repeat": 3,
+      "do": [
+        {
+          "repeat": 5,
+          "do": [
+            "forward"
+          ]
+        },
+        "rotateCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 4
+  }
+}

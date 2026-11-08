@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "id": "r05-loop-in-order",
+  "title": "Loop in order",
+  "intro": "Six cards make this program. Five of them go inside the Repeat, in the right order.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..##",
+      "#.##",
+      "#..#",
+      "##.#",
+      "##..",
+      "###.",
+      "###."
+    ],
+    "robot": {
+      "x": 3,
+      "y": 6,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 0,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "loops",
+    "activity": "reorder"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "repeat"
+    ],
+    "maxInstructions": 6,
+    "starterProgram": [],
+    "suppliedCards": [
+      "repeat",
+      "forward",
+      "forward",
+      "rotateCCW",
+      "forward",
+      "rotateCW"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 4
+        },
+        {
+          "x": 2,
+          "y": 4
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 2
+        }
+      ],
+      "text": "Up two, turn left, left one, turn to look up. Three times."
+    },
+    {
+      "kind": "card",
+      "command": "repeat",
+      "text": "Everything goes inside the Repeat. Check the count is 3."
+    },
+    {
+      "kind": "fill",
+      "slot": 2,
+      "command": "rotateCCW",
+      "text": "After two Forwards inside the Repeat comes the turn to the left.",
+      "path": [
+        0
+      ]
+    }
+  ],
+  "referenceSolution": [
+    {
+      "repeat": 3,
+      "do": [
+        "forward",
+        "forward",
+        "rotateCCW",
+        "forward",
+        "rotateCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 6
+  }
+}

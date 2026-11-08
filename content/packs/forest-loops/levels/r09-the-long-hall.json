@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "id": "r09-the-long-hall",
+  "title": "The long hall",
+  "intro": "Two halls, each with two corners. Loops inside a loop, with turns both ways.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "###....",
+      "###.###",
+      "###.###",
+      "....###",
+      ".######",
+      ".######",
+      ".######"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 6,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 6,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 0,
+        "y": 3
+      },
+      {
+        "x": 3,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "loops",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "repeat"
+    ],
+    "maxInstructions": 8,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 3
+        },
+        {
+          "x": 3,
+          "y": 3
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 6,
+          "y": 0
+        }
+      ],
+      "text": "Three up, turn right, three right, turn left. Then the same again."
+    },
+    {
+      "kind": "card",
+      "command": "repeat",
+      "text": "Repeat 2 times: Repeat 3 Forward, a turn, Repeat 3 Forward, the other turn."
+    },
+    {
+      "kind": "fill",
+      "slot": 1,
+      "command": "rotateCW",
+      "text": "After the first Repeat 3 inside, the robot turns clockwise.",
+      "path": [
+        0
+      ]
+    }
+  ],
+  "referenceSolution": [
+    {
+      "repeat": 2,
+      "do": [
+        {
+          "repeat": 3,
+          "do": [
+            "forward"
+          ]
+        },
+        "rotateCW",
+        {
+          "repeat": 3,
+          "do": [
+            "forward"
+          ]
+        },
+        "rotateCCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 7
+  }
+}

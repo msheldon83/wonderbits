@@ -26,6 +26,8 @@ export interface RobotElements {
   arrow: SVGPolygonElement;
   /** Curved arrow around the robot, shown while it turns. */
   turnCue: HTMLElement;
+  /** Speech bubble over the robot: the answer to a check, or which go round a Repeat is on. */
+  bubble: HTMLElement;
 }
 
 const MOVE_MS = 420;
@@ -33,6 +35,8 @@ const TURN_MS = 380;
 /** The turn cue lingers a little after the robot has settled. */
 const CUE_TAIL_MS = 140;
 const BUMP_MS = 440;
+/** A check or a loop turn pauses this long with its bubble showing. */
+const THINK_MS = 520;
 const REDUCED_PAUSE_MS = 280;
 
 function settle(anim: Animation, signal: AbortSignal): Promise<void> {
@@ -154,10 +158,38 @@ export class BoardController implements Player {
     return settle(anim, signal);
   }
 
+  /** The bubble over the robot while it thinks: "yes", "no", or "2 of 3". */
+  private showBubble(robot: RobotState, text: string, tone: 'yes' | 'no' | 'loop', durationMs: number, signal: AbortSignal): Promise<void> {
+    const bubble = this.robot.bubble;
+    const p = toScreen(this.layout, robot);
+    bubble.textContent = text;
+    bubble.dataset.tone = tone;
+    const base = `translate(${p.x}px, ${p.y - TILE * 0.62}px) translate(-50%, -100%)`;
+    if (this.motion.reducedMotion) {
+      bubble.style.transform = base;
+      bubble.style.opacity = '1';
+      return wait(durationMs, signal).then(() => {
+        bubble.style.opacity = '0';
+      });
+    }
+    const anim = bubble.animate(
+      [
+        { opacity: 0, transform: `${base} scale(0.6)` },
+        { opacity: 1, transform: `${base} scale(1.05)`, offset: 0.25 },
+        { opacity: 1, transform: `${base} scale(1)`, offset: 0.8 },
+        { opacity: 0, transform: `${base} scale(1)` },
+      ],
+      { duration: durationMs, easing: 'ease-out' },
+    );
+    return settle(anim, signal);
+  }
+
   showState(state: SimState): void {
     this.robot.root.getAnimations({ subtree: true }).forEach((a) => a.cancel());
     this.robot.turnCue.getAnimations().forEach((a) => a.cancel());
     this.robot.turnCue.style.opacity = '0';
+    this.robot.bubble.getAnimations().forEach((a) => a.cancel());
+    this.robot.bubble.style.opacity = '0';
     this.place(state.robot);
     for (const [key, el] of this.collectibles) {
       el.getAnimations().forEach((a) => a.cancel());
@@ -173,6 +205,14 @@ export class BoardController implements Player {
     const el = this.robot.root;
     const from = this.angle;
     const to = turnAngle(from, event.op);
+
+    // A block thinking: nothing moves, a bubble says what it decided.
+    if (event.op === 'check' || event.op === 'loop') {
+      const text = event.op === 'check' ? (event.value ? 'yes' : 'no') : `${event.iteration} of ${event.count}`;
+      const tone = event.op === 'loop' ? 'loop' : event.value ? 'yes' : 'no';
+      await this.showBubble(before.robot, text, tone, ms(THINK_MS), signal);
+      return;
+    }
     this.showIndicator(null);
 
     if (this.motion.reducedMotion) {

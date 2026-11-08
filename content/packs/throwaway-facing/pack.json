@@ -3,5 +3,9 @@
   "id": "throwaway-facing",
   "title": "Facing check",
   "themeId": "forest",
-  "levels": ["facing-01", "facing-02"]
+  "levels": [
+    "facing-01",
+    "facing-02"
+  ],
+  "order": 99
 }

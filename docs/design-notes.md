@@ -4,6 +4,83 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## After the gate, early: 30 more levels, Repeat and If (2026-11-08)
+
+The first testers finished the 15 MVP levels and asked for harder ones, so
+the plan's step 7 (Repeat, then the curriculum) started before the formal
+child test. Three packs follow the Forest pack on the map, each with ten
+levels and its own stepping-stone trail: **Forest trails** (harder
+sequencing with the same three cards), **Around and around** (Repeat) and
+**Look before you leap** (If, If / else and Repeat until). The plan's rule
+held: a construct arrives only after a puzzle made the old way cumbersome.
+Trails ends on a 22-card square; Around and around opens by showing the
+same shape in four cards. Loops ends with a lawn-mower sweep whose budget
+needs a Repeat inside a Repeat; the If pack ends with a corridor follower
+and a prediction that acorns are used to steer, not to collect.
+
+### What is built
+
+- **Blocks in the IR** (`src/ir/types.ts`). Four new node kinds hold other
+  cards: `repeat` with a count (2 to 10), `if` and `ifElse` with a
+  condition, `until` with a condition. Programs are trees now; every helper
+  walks them (`walk`, `countNodes`, `locate`). Edits name a `Place`: a
+  container (the main body or a branch of a block) and a gap in it. A new
+  `set` operation changes a count or a condition, so undo covers it.
+- **Specs** (`src/ir/spec.ts`) are the id-free form level files and tests
+  use: `"forward"` or `{ "repeat": 3, "do": [...] }`. The parser reports
+  bad blocks by path like everything else.
+- **Senses** (`src/sim/world.ts`): path ahead, blocked ahead (wall, water
+  or the island's edge), acorn ahead (an uncollected one), at the flag.
+  The world is unchanged otherwise; nothing moves but the robot.
+- **Interpreter** runs blocks recursively and emits two new trace events
+  that change nothing on the board: `loop` at the start of each go round
+  of a Repeat, and `check` with the answer an If or Repeat until got. A
+  Repeat until that comes back to the same state at the top of the loop
+  would run forever, so it halts with reason `forever` and the message
+  says the loop got nowhere. Every event counts against the step limit,
+  now 600, so a runaway program never produces a trace that takes minutes
+  to play.
+- **Thought bubble.** While a block thinks the robot stays put and a bubble
+  over it says "yes", "no" or "2 of 3". The running block in the program
+  shows the same words; blocks that hold the running step glow softly.
+- **Editor.** Each block holds its own list (two for If / else), and the
+  cursor, the carets, the drop target and the keyboard all work inside
+  them. Steps are numbered straight through, blocks included, so "step 4"
+  means one thing in the program, in the message line and in the code.
+  A Repeat has minus and plus buttons; an If or Repeat until has a dropdown
+  of the checks the level allows. The palette's Repeat starts at 3; an If
+  starts by checking "blocked ahead" and a Repeat until "at the flag".
+- **Printer.** Repeat prints as a `for` loop, If as `if`, Repeat until as
+  `while (!...)`, with the node tag on the opening line so the running
+  line still highlights.
+- **Validator.** Hints into a block carry a `path`. A debug starter must
+  differ from the solution in exactly one card, count or condition, in a
+  program of the same shape. The breadth-first search still finds the
+  shortest flat program; on a level with blocks it cannot find the
+  shortest program, so the reference solution is the proof that the budget
+  can be met, and the validator warns when a flat program would also fit
+  the limits or the budget on a build or reorder level.
+- **Packs play in `order`**, then by path, so new packs slot in before the
+  throwaway facing pack without renaming directories.
+
+### Deviations and choices
+
+- **Repeat until, not while.** Scratch's "repeat until" reads better to a
+  child than a negated while, and it pairs with "at the flag". The code
+  panel shows the honest `while (!robot.atFlag())`.
+- **No "not", no "and".** Each sense has its opposite in the list instead
+  (path ahead, blocked ahead), so a condition is always one tap.
+- **The robot cannot look sideways.** Only the tile ahead is sensed, so
+  a corridor with left turns is solved by trying right first and turning
+  back on a second check. That is the lesson of "Left and right", and it
+  is why there is no general maze level.
+- **One board per level still.** The strongest case for If is one program
+  that must work on several boards. That needs a board switcher, a trace
+  per board and prediction per board, and it waits for the child test to
+  say whether the single-board If levels already land.
+- **The observation log** records a card's place (container and gap) and
+  a `card-changed` event for counts and conditions.
+
 ## Plan change: the code lives inside the Program panel (2026-11-06)
 
 The "see the code" panel used to sit under the program in the side

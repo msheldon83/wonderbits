@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "id": "r06-fix-the-loop",
+  "title": "Fix the loop",
+  "intro": "One card inside this Repeat is wrong. Run it, watch all three goes, then fix it.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....",
+      "....",
+      "....",
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 3,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 2,
+      "y": 3
+    },
+    "collectibles": [
+      {
+        "x": 0,
+        "y": 1
+      },
+      {
+        "x": 2,
+        "y": 1
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "loops",
+    "activity": "debug"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "repeat"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": [
+      {
+        "repeat": 3,
+        "do": [
+          "forward",
+          "forward",
+          "rotateCCW"
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 3
+        }
+      ],
+      "text": "Up two, right two, down two. Every turn is the same way."
+    },
+    {
+      "kind": "step",
+      "index": 2,
+      "text": "Watch this turn on the first go round. Which way should it point the robot?",
+      "path": [
+        0
+      ]
+    },
+    {
+      "kind": "fill",
+      "slot": 2,
+      "command": "rotateCW",
+      "text": "Up, then right: that is a clockwise turn.",
+      "path": [
+        0
+      ]
+    }
+  ],
+  "referenceSolution": [
+    {
+      "repeat": 3,
+      "do": [
+        "forward",
+        "forward",
+        "rotateCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 4
+  }
+}

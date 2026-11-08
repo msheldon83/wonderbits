@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "id": "r04-stairs",
+  "title": "Stairs",
+  "intro": "Up, left, up, left. Spot the pattern and put it in one Repeat.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..###",
+      "#..##",
+      "##..#",
+      "###..",
+      "####."
+    ],
+    "robot": {
+      "x": 4,
+      "y": 4,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 0,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 2,
+        "y": 2
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "loops",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "repeat"
+    ],
+    "maxInstructions": 6,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 4,
+          "y": 3
+        },
+        {
+          "x": 3,
+          "y": 3
+        },
+        {
+          "x": 3,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 2
+        }
+      ],
+      "text": "Each stair is: up one, turn left, left one, turn right. Four stairs."
+    },
+    {
+      "kind": "card",
+      "command": "repeat",
+      "text": "Four cards inside one Repeat, four times round."
+    },
+    {
+      "kind": "fill",
+      "slot": 1,
+      "command": "rotateCCW",
+      "text": "After the first Forward inside the Repeat, turn to look left.",
+      "path": [
+        0
+      ]
+    }
+  ],
+  "referenceSolution": [
+    {
+      "repeat": 4,
+      "do": [
+        "forward",
+        "rotateCCW",
+        "forward",
+        "rotateCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 5
+  }
+}

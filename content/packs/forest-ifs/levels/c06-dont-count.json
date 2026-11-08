@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "id": "c06-dont-count",
+  "title": "Don't count, just go",
+  "intro": "Repeat until keeps going until the check says yes. No counting needed. Where will it stop?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "conditionals",
+    "activity": "run"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "until"
+    ],
+    "maxInstructions": 2,
+    "starterProgram": [
+      {
+        "until": "blockedAhead",
+        "do": [
+          "forward"
+        ]
+      }
+    ],
+    "allowedConditions": [
+      "blockedAhead",
+      "atFlag"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        }
+      ],
+      "text": "It steps and steps. When does it stop?"
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "Blocked ahead? No: step again. Yes: the loop is over."
+    },
+    {
+      "kind": "fill",
+      "slot": 0,
+      "command": "until",
+      "text": "The Repeat until is the whole program."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "until": "blockedAhead",
+      "do": [
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true
+  }
+}

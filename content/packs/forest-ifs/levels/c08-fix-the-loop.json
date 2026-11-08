@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "id": "c08-fix-the-loop",
+  "title": "Fix the loop",
+  "intro": "This loop should walk to the flag, but it bumps straight away. Watch, then fix the one card that is wrong.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      ".....",
+      ".###.",
+      ".###.",
+      ".###.",
+      ".###."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 4,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 4,
+      "y": 4
+    },
+    "collectibles": [
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 4,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "conditionals",
+    "activity": "debug"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "if",
+      "until"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": [
+      {
+        "until": "atFlag",
+        "do": [
+          {
+            "if": "blockedAhead",
+            "do": [
+              "rotateCCW"
+            ]
+          },
+          "forward"
+        ]
+      }
+    ],
+    "allowedConditions": [
+      "atFlag",
+      "blockedAhead"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 4
+        }
+      ],
+      "text": "At the top corner the path turns right."
+    },
+    {
+      "kind": "step",
+      "index": 0,
+      "text": "When the robot is blocked, which way does this turn point it?",
+      "path": [
+        0,
+        0
+      ]
+    },
+    {
+      "kind": "fill",
+      "slot": 0,
+      "command": "rotateCW",
+      "text": "Blocked, so turn clockwise and the path opens up.",
+      "path": [
+        0,
+        0
+      ]
+    }
+  ],
+  "referenceSolution": [
+    {
+      "until": "atFlag",
+      "do": [
+        {
+          "if": "blockedAhead",
+          "do": [
+            "rotateCW"
+          ]
+        },
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

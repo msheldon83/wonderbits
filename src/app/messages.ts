@@ -36,6 +36,9 @@ export function outcomeMessage(outcome: RunOutcome, stepNumber: number | null, s
       }
       break;
     case 'halted':
+      if (outcome.reason === 'forever') {
+        return { tone: 'problem', text: 'That loop would go round forever: the robot kept ending up in the same spot. It stopped. Does the loop need a Forward inside?' };
+      }
       return { tone: 'problem', text: 'That program ran too long, so the robot stopped.' };
     case 'error':
       return { tone: 'problem', text: 'Something went wrong. Press Reset and try again.' };

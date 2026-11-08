@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "id": "r03-round-the-corner",
+  "title": "Round the corner",
+  "intro": "Only five cards fit, and the flag is six tiles away. A Repeat holds many Forwards in one card.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....",
+      "....",
+      "....",
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 3,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 3,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 0,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "loops",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "repeat"
+    ],
+    "maxInstructions": 5,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "Three up, then three right. Two runs of the same move."
+    },
+    {
+      "kind": "card",
+      "command": "repeat",
+      "text": "Put a Forward inside a Repeat, and set it to 3 times."
+    },
+    {
+      "kind": "fill",
+      "slot": 0,
+      "command": "repeat",
+      "text": "Start with a Repeat for the way up."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "repeat": 3,
+      "do": [
+        "forward"
+      ]
+    },
+    "rotateCW",
+    {
+      "repeat": 3,
+      "do": [
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 5
+  }
+}

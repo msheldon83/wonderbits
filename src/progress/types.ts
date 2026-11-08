@@ -3,7 +3,7 @@
  * locally behind the storage interface; nothing leaves the device unless an
  * adult exports it.
  */
-import type { NodeId } from '../ir/types';
+import type { ConditionId, NodeId, Place } from '../ir/types';
 import type { Cell } from '../sim/types';
 
 export const PROGRESS_VERSION = 1 as const;
@@ -52,9 +52,10 @@ export const DEFAULT_SETTINGS: Settings = { muted: false, reducedMotion: 'system
 export type ObservationEvent = { t: number; levelId: string } & (
   | { kind: 'level-opened' }
   | { kind: 'level-restarted' }
-  | { kind: 'card-placed'; command: string; slot: number }
-  | { kind: 'card-moved'; nodeId: NodeId; slot: number }
+  | { kind: 'card-placed'; command: string; at: Place }
+  | { kind: 'card-moved'; nodeId: NodeId; to: Place }
   | { kind: 'card-removed'; nodeId: NodeId }
+  | { kind: 'card-changed'; nodeId: NodeId; count?: number; condition?: ConditionId }
   | { kind: 'run-started'; steps: number }
   | { kind: 'trace-halted'; nodeId: NodeId; reason: string }
   | { kind: 'prediction-made'; cell: Cell; correct: boolean }

@@ -15,10 +15,10 @@ export interface LoadedPack {
 
 export function loadPacks(): LoadedPack[] {
   return Object.entries(packFiles)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([path, json]) => {
+    .map(([path, json]) => ({ path, manifest: parsePack(json, path) }))
+    .sort((a, b) => a.manifest.order - b.manifest.order || a.path.localeCompare(b.path))
+    .map(({ path, manifest }) => {
       const dir = path.slice(0, -'pack.json'.length);
-      const manifest = parsePack(json, path);
       const levels = manifest.levels.map((id) => {
         const levelPath = `${dir}levels/${id}.json`;
         if (!(levelPath in levelFiles)) throw new Error(`${path}: level "${id}" has no file ${levelPath}`);

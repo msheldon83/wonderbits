@@ -152,7 +152,7 @@ a.btn {
 .app-main {
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
   gap: 16px;
 }
 
@@ -994,6 +994,236 @@ a.btn {
   background: var(--blue);
   color: #fff;
   box-shadow: inset 0 0 0 2px var(--blue-deep);
+}
+
+/* ---------- Blocks: Repeat, If, If / else, Repeat until ---------- */
+
+/* A step is a row (number, card, controls) and, for a block, the list it holds. */
+.program-step {
+  flex-wrap: wrap;
+}
+
+.step-row {
+  flex: 1 1 100%;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.step-row .card {
+  flex: 1;
+  min-width: 0;
+}
+
+.program-step.is-block > .step-row .card {
+  min-width: 0;
+  flex: 1 1 120px;
+}
+
+.card-repeat .card-icon,
+.card-until .card-icon {
+  background: var(--green);
+}
+
+.card-if .card-icon,
+.card-ifElse .card-icon {
+  background: var(--amber-deep);
+}
+
+/* The block holding the running step glows softly with it. */
+.card.is-running {
+  border-color: var(--gold);
+  box-shadow: 0 4px 0 var(--gold);
+}
+
+/* Live words on a running block: "2 of 3", "yes", "no". */
+.card-live {
+  margin-left: auto;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: var(--gold);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 800;
+  animation: card-in 160ms ease-out;
+}
+
+/* The count and the check sit under the block's card, outside the button,
+   on a line of their own so they never fight the card for room. */
+.block-param {
+  order: 10;
+  flex: 1 1 100%;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 44px;
+}
+
+.card-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.param-step {
+  min-width: 36px;
+  min-height: 36px;
+  width: 36px;
+  height: 36px;
+  box-shadow: inset 0 0 0 2px var(--line);
+  color: var(--ink);
+}
+
+.param-step:disabled {
+  opacity: 0.4;
+}
+
+.param-value {
+  min-width: 68px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--green-deep);
+}
+
+.param-select {
+  min-height: 44px;
+  padding: 0 32px 0 12px;
+  border: 3px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%231d3047' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 8px center / 20px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.param-select:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+/* What a block holds: an indented list with a coloured spine. */
+.block-body {
+  flex: 1 1 100%;
+  min-width: 0;
+  margin-left: 24px;
+  padding-left: 6px;
+  border-left: 5px solid var(--green);
+  border-radius: 0 0 0 14px;
+}
+
+.program-step.is-block > .block-body:last-child {
+  margin-bottom: 4px;
+}
+
+.card-if ~ .block-body,
+.program-step:has(> .step-row > .card-if) > .block-body,
+.program-step:has(> .step-row > .card-ifElse) > .block-body {
+  border-left-color: var(--amber-deep);
+}
+
+.slot-empty-button {
+  min-height: 44px;
+  padding: 6px 16px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.block-else-label {
+  display: inline-block;
+  border: 0;
+  cursor: pointer;
+  margin: 6px 0 -8px;
+  padding: 2px 10px;
+  border-radius: 10px;
+  background: var(--amber-wash);
+  color: var(--amber-deep);
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.program-list.is-nested {
+  padding-top: 14px;
+  padding-bottom: 12px;
+  row-gap: 8px;
+}
+
+.slot-empty.is-nested {
+  min-height: 48px;
+  font-size: 14px;
+  /* Leaves room where the Move and Delete buttons sit on a real row. */
+  margin-right: 104px;
+}
+
+.is-readonly .slot-empty.is-nested {
+  margin-right: 0;
+}
+
+.program-step.is-block > .block-body .step-number {
+  width: 26px;
+}
+
+.program-step.is-block > .block-body .block-param {
+  padding-left: 34px;
+}
+
+/* ---------- Thought bubble ---------- */
+
+/* Over the robot while a block thinks: the answer to a check, or the go round. */
+.thought-bubble {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 6px 14px;
+  border-radius: 18px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 3px 0 var(--line), 0 6px 16px rgba(29, 48, 71, 0.2);
+  transform-origin: bottom center;
+  pointer-events: none;
+}
+
+.thought-bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  width: 16px;
+  height: 16px;
+  margin-left: -8px;
+  background: inherit;
+  transform: rotate(45deg);
+  border-radius: 3px;
+}
+
+.thought-bubble[data-tone='yes'] {
+  color: var(--green-deep);
+  box-shadow: 0 3px 0 var(--green), 0 6px 16px rgba(29, 48, 71, 0.2);
+}
+
+.thought-bubble[data-tone='no'] {
+  color: var(--red);
+  box-shadow: 0 3px 0 var(--red), 0 6px 16px rgba(29, 48, 71, 0.2);
+}
+
+.thought-bubble[data-tone='loop'] {
+  color: var(--green-deep);
 }
 
 /* ---------- Completion dialog ---------- */

@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "id": "t09-nine-cards",
+  "title": "Nine cards",
+  "intro": "Nine cards, one acorn. Put them in the right order.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....",
+      "##..",
+      "...#",
+      ".#.#"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 3,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 3,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 2,
+        "y": 2
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "sequencing",
+    "activity": "reorder"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 9,
+    "starterProgram": [],
+    "suppliedCards": [
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      "rotateCW",
+      "rotateCW",
+      "rotateCCW",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "Up one, right to the acorn, up to the top, then right to the flag."
+    },
+    {
+      "kind": "card",
+      "command": "rotateCW",
+      "text": "The first and last turns are clockwise. The middle one is not."
+    },
+    {
+      "kind": "fill",
+      "slot": 4,
+      "command": "rotateCCW",
+      "text": "After the acorn the robot turns to look up."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "rotateCW",
+    "forward",
+    "forward",
+    "rotateCCW",
+    "forward",
+    "forward",
+    "rotateCW",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 9
+  }
+}

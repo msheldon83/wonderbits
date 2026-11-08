@@ -11,7 +11,7 @@ import { paletteFor } from '../editor/palette';
 import { canRedo, canUndo, createHistory, push, redo, undo, type History } from '../ir/history';
 import { randomIdFactory } from '../ir/ids';
 import { applyOp, type EditOp } from '../ir/ops';
-import { countNodes, findNodeIndex, programFromCommands } from '../ir/program';
+import { countNodes, programFromSpec, stepNumber } from '../ir/program';
 import type { NodeId, ProgramIR } from '../ir/types';
 import { hintEffect, type HintEffect } from '../lessons/hints';
 import { predictionCorrect } from '../lessons/prediction';
@@ -22,7 +22,7 @@ import { Board } from '../render/Board';
 import type { BoardController } from '../render/controller';
 import { Sequencer } from '../render/sequencer';
 import { themeFor } from '../render/themes';
-import { DEFAULT_LIMITS, type RunOutcome, type RunResult, type Runtime } from '../runtime/contract';
+import { DEFAULT_LIMITS, type RunOutcome, type RunResult, type Runtime, type TraceEvent } from '../runtime/contract';
 import type { Cell, Facing } from '../sim/types';
 import { initialState } from '../sim/world';
 import { useMotion } from './hooks';
@@ -69,12 +69,14 @@ interface Completion {
 export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }: LessonProps) {
   const theme = themeFor(level.themeId);
   const newId = useMemo(() => randomIdFactory(), []);
-  const [history, setHistory] = useState<History>(() => createHistory(programFromCommands(level.programming.starterProgram, newId)));
+  const [history, setHistory] = useState<History>(() => createHistory(programFromSpec(level.programming.starterProgram, newId)));
   const program = history.present;
   const [phase, setPhase] = useState<Phase>('editing');
   const [outcome, setOutcome] = useState<RunOutcome | null>(null);
   const [shortfall, setShortfall] = useState<Shortfall | undefined>(undefined);
   const [activeNode, setActiveNode] = useState<NodeId | null>(null);
+  /** The event playing now, so blocks can show their count or answer. */
+  const [activeEvent, setActiveEvent] = useState<TraceEvent | null>(null);
   const [position, setPosition] = useState(0);
   const [showCode, setShowCode] = useState(false);
   const [prediction, setPrediction] = useState<Prediction | null>(null);
@@ -114,7 +116,12 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   const onControllers = useCallback((cs: BoardController[] | null) => {
     controller.current = cs?.[0] ?? null;
     sequencer.current = controller.current
-      ? new Sequencer(controller.current, { onEvent: (e) => setActiveNode(e?.nodeId ?? null) })
+      ? new Sequencer(controller.current, {
+          onEvent: (e) => {
+            setActiveNode(e?.nodeId ?? null);
+            setActiveEvent(e);
+          },
+        })
       : null;
   }, []);
 
@@ -125,6 +132,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
     setPhase('editing');
     setOutcome(null);
     setActiveNode(null);
+    setActiveEvent(null);
     setPosition(0);
     setCompletion(null);
     // A fresh go means a fresh guess: the placed flag, its result and the wrong marks go too.
@@ -137,7 +145,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   const restart = useCallback(() => {
     reset();
     cache.current = null;
-    setHistory(createHistory(programFromCommands(level.programming.starterProgram, newId)));
+    setHistory(createHistory(programFromSpec(level.programming.starterProgram, newId)));
     setHintsUsed(0);
     setHint(null);
     store.record({ levelId: level.id, kind: 'level-restarted' });
@@ -199,6 +207,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
       }
       if (result.outcome.status === 'success') {
         setActiveNode(null);
+        setActiveEvent(null);
         const before = store.getSnapshot().progress.badges;
         const stars = store.complete({ levelId: level.id, usedHints: hintsUsed > 0, steps: countNodes(program), budget: level.stars.budget });
         const after = store.getSnapshot().progress.badges;
@@ -231,8 +240,9 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   const applyEdit = useCallback(
     (op: EditOp) => {
       change((h) => push(h, applyOp(h.present, op)));
-      if (op.op === 'insert') store.record({ levelId: level.id, kind: 'card-placed', command: op.node.kind, slot: op.slot });
-      else if (op.op === 'move') store.record({ levelId: level.id, kind: 'card-moved', nodeId: op.id, slot: op.slot });
+      if (op.op === 'insert') store.record({ levelId: level.id, kind: 'card-placed', command: op.node.kind, at: op.at });
+      else if (op.op === 'move') store.record({ levelId: level.id, kind: 'card-moved', nodeId: op.id, to: op.to });
+      else if (op.op === 'set') store.record({ levelId: level.id, kind: 'card-changed', nodeId: op.id, ...(op.count !== undefined && { count: op.count }), ...(op.condition !== undefined && { condition: op.condition }) });
       else store.record({ levelId: level.id, kind: 'card-removed', nodeId: op.id });
     },
     [change, store, level.id],
@@ -308,7 +318,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
     const base =
       outcome.status === 'incomplete' && countNodes(program) === 0
         ? { tone: 'problem' as const, text: 'Your program is empty. Tap an instruction to add a step.' }
-        : outcomeMessage(outcome, errorNode ? findNodeIndex(program, errorNode) + 1 : null, shortfall);
+        : outcomeMessage(outcome, errorNode ? stepNumber(program, errorNode) : null, shortfall);
     const guess = guessedRight ? 'Your flag was in the right spot! ' : '';
     message = { tone: base.tone, text: guess + base.text };
   } else if (predicting) message = predictionPrompt();
@@ -397,6 +407,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           locked={phase === 'running'}
           readOnly={readOnly}
           activeNodeId={activeNode}
+          activeEvent={activeEvent}
           errorNodeId={errorNode}
           highlightCommand={hint?.command ?? null}
           highlightNodeId={hint?.nodeId ?? null}

@@ -53,7 +53,7 @@ describe('parsePuzzle', () => {
       expect(issues).toMatch(/world.rows\[0\]\[2\]: unknown tile "x"/);
       expect(issues).toMatch(/world.rows\[1\]: expected a string of length 4/);
       expect(issues).toMatch(/world.robot.facing/);
-      expect(issues).toMatch(/programming.allowedCommands\[0\]: unknown command "jump"/);
+      expect(issues).toMatch(/programming.allowedCommands\[0\]: unknown card "jump"/);
     }
   });
 });

@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "id": "c05-acorn-trail",
+  "title": "Acorn trail",
+  "intro": "Follow the acorns. If one is ahead, step onto it. Otherwise turn left and look again.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....",
+      "....",
+      "....",
+      "...."
+    ],
+    "robot": {
+      "x": 3,
+      "y": 3,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 0,
+      "y": 2
+    },
+    "collectibles": [
+      {
+        "x": 3,
+        "y": 2
+      },
+      {
+        "x": 3,
+        "y": 1
+      },
+      {
+        "x": 3,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 0,
+        "y": 1
+      },
+      {
+        "x": 0,
+        "y": 2
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "conditionals",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "ifElse",
+      "repeat"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": [],
+    "allowedConditions": [
+      "acornAhead",
+      "pathAhead",
+      "blockedAhead"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 2
+        }
+      ],
+      "text": "The trail goes up, then left, then down to the flag."
+    },
+    {
+      "kind": "card",
+      "command": "ifElse",
+      "text": "If acorn ahead: Forward. Else: Rotate the other way from a clock hand. Ten goes."
+    },
+    {
+      "kind": "fill",
+      "slot": 0,
+      "command": "ifElse",
+      "text": "The If / else goes inside the Repeat.",
+      "path": [
+        0
+      ]
+    }
+  ],
+  "referenceSolution": [
+    {
+      "repeat": 10,
+      "do": [
+        {
+          "if": "acornAhead",
+          "do": [
+            "forward"
+          ],
+          "else": [
+            "rotateCCW"
+          ]
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 4
+  }
+}

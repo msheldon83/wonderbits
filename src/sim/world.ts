@@ -1,4 +1,4 @@
-import type { CommandId } from '../ir/types';
+import type { CommandId, ConditionId } from '../ir/types';
 import type { Cell, Facing, ObjectiveDefinition, SimState, TileKind, WorldDefinition } from './types';
 
 export const cellKey = (c: Cell): string => `${c.x},${c.y}`;
@@ -55,6 +55,24 @@ export function step(world: WorldDefinition, state: SimState, command: CommandId
       }
       return { kind: 'ok', state: moved };
     }
+  }
+}
+
+/** What the robot senses right now. Pure. */
+export function evaluate(world: WorldDefinition, state: SimState, condition: ConditionId): boolean {
+  const { robot } = state;
+  const target = ahead(robot, robot.facing);
+  switch (condition) {
+    case 'pathAhead':
+      return tileAt(world, target) === 'floor';
+    case 'blockedAhead':
+      return tileAt(world, target) !== 'floor';
+    case 'acornAhead': {
+      const key = cellKey(target);
+      return tileAt(world, target) === 'floor' && world.collectibles.some((c) => cellKey(c) === key) && !state.collected.includes(key);
+    }
+    case 'atFlag':
+      return robot.x === world.goal.x && robot.y === world.goal.y;
   }
 }
 

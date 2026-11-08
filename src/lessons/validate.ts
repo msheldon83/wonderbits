@@ -3,25 +3,28 @@
  * limits before it ships; CI runs this over all content.
  */
 import { sequentialIdFactory } from '../ir/ids';
-import { programFromCommands } from '../ir/program';
-import type { CommandId } from '../ir/types';
+import { programFromSpec } from '../ir/program';
+import { cardsOfSpec, conditionsOfSpec, countSpec, depthOfSpec, specDiff, type NodeSpec } from '../ir/spec';
+import { CONDITION_IDS, isBlockId, isCommandId, type CardId, type CommandId } from '../ir/types';
 import { interpretAll } from '../runtime/interpreter';
 import { cellKey, objectiveMet, step, tileAt } from '../sim/world';
 import type { SimState } from '../sim/types';
+import { cardOfSpec, resolveSpecPath } from './paths';
 import type { PuzzleDefinition } from './types';
 
 export interface ValidationReport {
   errors: string[];
   warnings: string[];
-  /** Shortest program that meets the objective, ignoring per-command quotas. */
+  /** Shortest flat program of commands that meets the objective, ignoring per-command quotas. */
   minInstructions: number | null;
 }
 
-const SEARCH_CAP = 24;
+const SEARCH_CAP = 64;
 
-/** Breadth-first search over robot states for the shortest solving program. */
+/** Breadth-first search over robot states for the shortest solving program of plain commands. */
 export function shortestSolution(puzzle: PuzzleDefinition, cap = SEARCH_CAP): CommandId[] | null {
   const { world, objective, programming } = puzzle;
+  const commands = programming.allowedCommands.filter(isCommandId);
   const keyOf = (s: SimState) => `${s.robot.x},${s.robot.y},${s.robot.facing}|${[...s.collected].sort().join(';')}`;
   const start: SimState = { robot: { ...world.robot }, collected: [] };
   if (objectiveMet(world, objective, start)) return [];
@@ -30,7 +33,7 @@ export function shortestSolution(puzzle: PuzzleDefinition, cap = SEARCH_CAP): Co
   for (let depth = 1; depth <= cap && frontier.length; depth++) {
     const next: typeof frontier = [];
     for (const { state, path } of frontier) {
-      for (const cmd of programming.allowedCommands) {
+      for (const cmd of commands) {
         const r = step(world, state, cmd);
         if (r.kind !== 'ok') continue;
         const k = keyOf(r.state);
@@ -46,9 +49,12 @@ export function shortestSolution(puzzle: PuzzleDefinition, cap = SEARCH_CAP): Co
   return null;
 }
 
-function countOf(cmds: CommandId[], c: CommandId): number {
-  return cmds.filter((x) => x === c).length;
+function countOf(cards: readonly string[], c: string): number {
+  return cards.filter((x) => x === c).length;
 }
+
+const solves = (puzzle: PuzzleDefinition, spec: NodeSpec[]) =>
+  interpretAll({ program: programFromSpec(spec, sequentialIdFactory()), world: puzzle.world, objective: puzzle.objective, limits: { maxSteps: 1000 } }).outcome.status === 'success';
 
 export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
   const errors: string[] = [];
@@ -69,84 +75,105 @@ export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
   if (!puzzle.objective.reachGoal && !puzzle.objective.collectAll) errors.push('objective must ask for something');
 
   if (programming.allowedCommands.length === 0) errors.push('allowedCommands must not be empty');
-  const allowed = new Set(programming.allowedCommands);
-  const checkList = (name: string, cmds: CommandId[]) => {
-    cmds.forEach((c, i) => {
+  const allowed = new Set<string>(programming.allowedCommands);
+  const conditions = new Set<string>(programming.allowedConditions ?? CONDITION_IDS);
+  const usesConditions = programming.allowedCommands.some((c) => c === 'if' || c === 'ifElse' || c === 'until');
+  if (usesConditions && conditions.size === 0) errors.push('allowedConditions must not be empty when If or Repeat until is allowed');
+  if (!usesConditions && programming.allowedConditions) warnings.push('allowedConditions is set, but no card here senses anything');
+
+  const checkCards = (name: string, cards: readonly string[]) => {
+    cards.forEach((c, i) => {
       if (!allowed.has(c)) errors.push(`${name}[${i}] uses ${c}, which this level does not allow`);
     });
-    if (programming.maxInstructions !== undefined && cmds.length > programming.maxInstructions) {
-      errors.push(`${name} has ${cmds.length} steps, over the limit of ${programming.maxInstructions}`);
+    if (programming.maxInstructions !== undefined && cards.length > programming.maxInstructions) {
+      errors.push(`${name} has ${cards.length} cards, over the limit of ${programming.maxInstructions}`);
     }
     for (const [c, max] of Object.entries(programming.maxPerCommand ?? {})) {
-      if (countOf(cmds, c as CommandId) > max!) errors.push(`${name} uses ${c} more than ${max} times`);
+      if (countOf(cards, c) > max!) errors.push(`${name} uses ${c} more than ${max} times`);
     }
   };
-  checkList('starterProgram', programming.starterProgram);
-  checkList('referenceSolution', referenceSolution);
-  if (programming.suppliedCards) checkList('suppliedCards', programming.suppliedCards);
+  const checkSpec = (name: string, spec: NodeSpec[]) => {
+    checkCards(name, cardsOfSpec(spec));
+    conditionsOfSpec(spec).forEach((c) => {
+      if (!conditions.has(c)) errors.push(`${name} senses ${c}, which this level does not allow`);
+    });
+    if (programming.maxNestingDepth !== undefined && depthOfSpec(spec) > programming.maxNestingDepth) {
+      errors.push(`${name} nests ${depthOfSpec(spec)} deep, over the limit of ${programming.maxNestingDepth}`);
+    }
+  };
+  checkSpec('starterProgram', programming.starterProgram);
+  checkSpec('referenceSolution', referenceSolution);
+  if (programming.suppliedCards) checkCards('suppliedCards', programming.suppliedCards);
 
-  const ref = interpretAll({
-    program: programFromCommands(referenceSolution, sequentialIdFactory()),
-    world,
-    objective: puzzle.objective,
-    limits: { maxSteps: 1000 },
-  });
-  if (ref.outcome.status !== 'success') {
-    errors.push(`referenceSolution does not solve the level (outcome: ${ref.outcome.status})`);
+  if (!solves(puzzle, referenceSolution)) {
+    const outcome = interpretAll({ program: programFromSpec(referenceSolution, sequentialIdFactory()), world, objective: puzzle.objective, limits: { maxSteps: 1000 } }).outcome;
+    errors.push(`referenceSolution does not solve the level (outcome: ${outcome.status})`);
   }
 
   validateActivity(puzzle, errors);
   validateHints(puzzle, errors);
 
+  const structured = programming.allowedCommands.some(isBlockId);
+  /** Levels where the child writes the program; elsewhere a shorter flat program is no concern. */
+  const open = puzzle.curriculum.activity === 'build' || puzzle.curriculum.activity === 'reorder';
+  const refCount = countSpec(referenceSolution);
   const shortest = shortestSolution(puzzle);
   const min = shortest?.length ?? null;
   if (min === null) {
-    errors.push(`no solution of ${SEARCH_CAP} steps or fewer exists`);
-  } else {
+    errors.push(`no solution of ${SEARCH_CAP} commands or fewer exists`);
+  } else if (!structured) {
     if (programming.maxInstructions !== undefined && programming.maxInstructions < min) {
       errors.push(`maxInstructions ${programming.maxInstructions} is below the minimum solution of ${min}`);
     }
     if (stars.budget !== undefined && stars.budget < min) {
       errors.push(`stars.budget ${stars.budget} is below the minimum solution of ${min}`);
     }
-    if (referenceSolution.length > min) {
-      warnings.push(`referenceSolution has ${referenceSolution.length} steps; the shortest has ${min}`);
+    if (open && refCount > min) {
+      warnings.push(`referenceSolution has ${refCount} steps; the shortest has ${min}`);
+    }
+  } else {
+    // With blocks there is no exhaustive search; the reference solution is the proof.
+    if (stars.budget !== undefined && stars.budget < refCount) {
+      errors.push(`stars.budget ${stars.budget} is below the referenceSolution's ${refCount} cards, so nothing proves it can be met`);
+    }
+    if (open && programming.maxInstructions !== undefined && programming.maxInstructions >= min) {
+      warnings.push(`a flat program of ${min} commands fits under maxInstructions ${programming.maxInstructions}, so blocks are optional here`);
+    }
+    if (open && stars.budget !== undefined && stars.budget >= min) {
+      warnings.push(`stars.budget ${stars.budget} can be met by a flat program of ${min} commands, so the star does not need a block`);
     }
   }
 
   return { errors, warnings, minInstructions: min };
 }
 
-const multiset = (cmds: CommandId[]) => [...cmds].sort().join(',');
+const multiset = (cards: readonly string[]) => [...cards].sort().join(',');
 
 /** Each activity makes its own promises about the starter program and cards. */
 function validateActivity(puzzle: PuzzleDefinition, errors: string[]): void {
   const { programming, referenceSolution, curriculum, prediction } = puzzle;
   const starter = programming.starterProgram;
-  const solves = (cmds: CommandId[]) =>
-    interpretAll({ program: programFromCommands(cmds, sequentialIdFactory()), world: puzzle.world, objective: puzzle.objective, limits: { maxSteps: 1000 } }).outcome.status === 'success';
   switch (curriculum.activity) {
     case 'run':
     case 'predict':
-      if (!solves(starter)) errors.push(`a ${curriculum.activity} level's starterProgram must already solve the level`);
+      if (!solves(puzzle, starter)) errors.push(`a ${curriculum.activity} level's starterProgram must already solve the level`);
       if (!prediction) errors.push(`a ${curriculum.activity} level must set prediction`);
       break;
     case 'reorder':
       if (!programming.suppliedCards) errors.push('a reorder level must list suppliedCards');
-      else if (multiset(programming.suppliedCards) !== multiset(referenceSolution)) {
+      else if (multiset(programming.suppliedCards) !== multiset(cardsOfSpec(referenceSolution))) {
         errors.push('suppliedCards must be exactly the cards of referenceSolution, in any order');
       }
       if (starter.length > 0) errors.push('a reorder level starts with an empty program');
       break;
     case 'debug': {
       if (starter.length === 0) errors.push('a debug level needs a starterProgram to repair');
-      if (solves(starter)) errors.push('a debug level\'s starterProgram must not already solve the level');
-      const diffs = starter.length === referenceSolution.length ? starter.filter((c, i) => c !== referenceSolution[i]).length : -1;
-      if (diffs !== 1) errors.push('a debug level\'s starterProgram must differ from referenceSolution in exactly one instruction');
+      if (solves(puzzle, starter)) errors.push("a debug level's starterProgram must not already solve the level");
+      if (specDiff(starter, referenceSolution) !== 1) errors.push("a debug level's starterProgram must differ from referenceSolution in exactly one card, count or condition");
       break;
     }
     case 'build':
-      if (solves(starter)) errors.push('a build level\'s starterProgram must not already solve the level');
+      if (solves(puzzle, starter)) errors.push("a build level's starterProgram must not already solve the level");
       break;
   }
   if (prediction && !prediction.askTile) errors.push('prediction must ask for the tile');
@@ -159,6 +186,7 @@ function validateHints(puzzle: PuzzleDefinition, errors: string[]): void {
   if (kinds[0] !== 'region') errors.push('hints[0] must orient attention: kind "region"');
   if (kinds[1] !== 'card' && kinds[1] !== 'step') errors.push('hints[1] must identify a card or a step: kind "card" or "step"');
   if (kinds[2] !== 'fill') errors.push('hints[2] must fill one slot: kind "fill"');
+  const allowed = new Set<CardId>(programming.allowedCommands);
   hints.forEach((h, i) => {
     switch (h.kind) {
       case 'region':
@@ -167,16 +195,26 @@ function validateHints(puzzle: PuzzleDefinition, errors: string[]): void {
         });
         break;
       case 'card':
-        if (!programming.allowedCommands.includes(h.command)) errors.push(`hints[${i}] names ${h.command}, which this level does not allow`);
+        if (!allowed.has(h.command)) errors.push(`hints[${i}] names ${h.command}, which this level does not allow`);
         break;
-      case 'step':
-        if (h.index >= programming.starterProgram.length) errors.push(`hints[${i}] points at step ${h.index + 1}, but the starter program has ${programming.starterProgram.length} steps`);
+      case 'step': {
+        const cards = resolveSpecPath(programming.starterProgram, h.path);
+        if (!cards) errors.push(`hints[${i}] follows path ${JSON.stringify(h.path)}, which the starter program does not have`);
+        else if (h.index >= cards.length) errors.push(`hints[${i}] points at step ${h.index + 1}, but that part of the starter program has ${cards.length} steps`);
         break;
-      case 'fill':
-        if (referenceSolution[h.slot] !== h.command) {
-          errors.push(`hints[${i}] fills slot ${h.slot} with ${h.command}, but the reference solution has ${referenceSolution[h.slot] ?? 'nothing'} there`);
+      }
+      case 'fill': {
+        const cards = resolveSpecPath(referenceSolution, h.path);
+        if (!cards) {
+          errors.push(`hints[${i}] follows path ${JSON.stringify(h.path)}, which the reference solution does not have`);
+        } else {
+          const there = cards[h.slot];
+          if (there === undefined || cardOfSpec(there) !== h.command) {
+            errors.push(`hints[${i}] fills slot ${h.slot} with ${h.command}, but the reference solution has ${there === undefined ? 'nothing' : cardOfSpec(there)} there`);
+          }
         }
         break;
+      }
     }
   });
 }

@@ -2,18 +2,19 @@
  * What the palette offers for a level, given the program so far. Pure, so the
  * constraints are tested without the DOM.
  *
- * A level constrains the palette three ways: the commands it allows, a cap on
- * total steps, and per-command quotas. On reorder (Parsons) levels the quotas
- * come from the supplied cards: each card can be used exactly once.
+ * A level constrains the palette three ways: the cards it allows, a cap on
+ * total cards, and per-card quotas. On reorder (Parsons) levels the quotas
+ * come from the supplied cards: each card can be used exactly once. Blocks
+ * count like any other card, and so does everything inside them.
  */
-import { countNodes, mainBody } from '../ir/program';
-import type { CommandId, ProgramIR } from '../ir/types';
+import { cardCounts, countNodes } from '../ir/program';
+import { CONDITION_IDS, DEFAULT_CONDITION, type BlockId, type CardId, type ConditionId, type ProgramIR } from '../ir/types';
 import type { PuzzleDefinition } from '../lessons/types';
 
 export type Programming = PuzzleDefinition['programming'];
 
 export interface PaletteEntry {
-  command: CommandId;
+  command: CardId;
   /** Cards of this kind still available, or null when the level sets no quota. */
   remaining: number | null;
   /** False when the quota or the total budget is used up. */
@@ -29,9 +30,9 @@ export interface PaletteState {
 }
 
 /** Per-command quotas for a level, or null when it has none. */
-export function quotasFor(programming: Programming): Partial<Record<CommandId, number>> | null {
+export function quotasFor(programming: Programming): Partial<Record<CardId, number>> | null {
   if (programming.suppliedCards) {
-    const quotas: Partial<Record<CommandId, number>> = {};
+    const quotas: Partial<Record<CardId, number>> = {};
     for (const c of programming.suppliedCards) quotas[c] = (quotas[c] ?? 0) + 1;
     return quotas;
   }
@@ -43,8 +44,7 @@ export function paletteFor(programming: Programming, program: ProgramIR): Palett
   const max = programming.maxInstructions ?? (programming.suppliedCards ? programming.suppliedCards.length : undefined);
   const full = max !== undefined && used >= max;
   const quotas = quotasFor(programming);
-  const counts = new Map<CommandId, number>();
-  for (const node of mainBody(program)) counts.set(node.kind, (counts.get(node.kind) ?? 0) + 1);
+  const counts = cardCounts(program);
 
   const entries = programming.allowedCommands.flatMap((command): PaletteEntry[] => {
     const quota = quotas?.[command];
@@ -58,4 +58,16 @@ export function paletteFor(programming: Programming, program: ProgramIR): Palett
   });
 
   return { entries, used, max, full };
+}
+
+/** The conditions a level's If and Repeat until may choose from. */
+export function conditionsFor(programming: Programming): readonly ConditionId[] {
+  return programming.allowedConditions ?? CONDITION_IDS;
+}
+
+/** The condition a fresh block starts with: a loop waits for the flag, an If looks at the way ahead. */
+export function defaultCondition(kind: BlockId, programming: Programming): ConditionId {
+  const allowed = conditionsFor(programming);
+  const preferred: ConditionId[] = kind === 'until' ? ['atFlag', 'blockedAhead', 'acornAhead', 'pathAhead'] : ['blockedAhead', 'pathAhead', 'acornAhead', 'atFlag'];
+  return preferred.find((c) => allowed.includes(c)) ?? allowed[0] ?? DEFAULT_CONDITION;
 }

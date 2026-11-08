@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "id": "c04-otherwise",
+  "title": "Otherwise",
+  "intro": "If / else has two parts. Yes runs the first part, no runs the else part. Eight goes: where does it end?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "####",
+      "....",
+      ".##.",
+      ".###"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 3,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 3,
+      "y": 2
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "conditionals",
+    "activity": "run"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "ifElse",
+      "repeat"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": [
+      {
+        "repeat": 8,
+        "do": [
+          {
+            "if": "pathAhead",
+            "do": [
+              "forward"
+            ],
+            "else": [
+              "rotateCW"
+            ]
+          }
+        ]
+      }
+    ],
+    "allowedConditions": [
+      "pathAhead",
+      "blockedAhead"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 3,
+          "y": 1
+        },
+        {
+          "x": 3,
+          "y": 2
+        }
+      ],
+      "text": "Path ahead? Then step. Otherwise turn. Count eight goes, turns included."
+    },
+    {
+      "kind": "card",
+      "command": "ifElse",
+      "text": "A turn uses up a go round, just like a step does."
+    },
+    {
+      "kind": "fill",
+      "slot": 0,
+      "command": "repeat",
+      "text": "The Repeat holds the If / else."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "repeat": 8,
+      "do": [
+        {
+          "if": "pathAhead",
+          "do": [
+            "forward"
+          ],
+          "else": [
+            "rotateCW"
+          ]
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true
+  }
+}

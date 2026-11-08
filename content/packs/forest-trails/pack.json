@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "forest-trails",
+  "title": "Forest trails",
+  "themeId": "forest",
+  "order": 1,
+  "levels": [
+    "t01-zigzag",
+    "t02-three-acorns",
+    "t03-seven-cards",
+    "t04-deep-bug",
+    "t05-a-long-way",
+    "t06-the-bridge",
+    "t07-round-the-lake",
+    "t08-all-the-way-round",
+    "t09-nine-cards",
+    "t10-the-big-square"
+  ]
+}

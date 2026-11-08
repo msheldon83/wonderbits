@@ -9,9 +9,11 @@ the phases, the build sequence, the architecture, and the exit gate for the
 first child test. Read it before starting new work.
 
 This repository is at **build step 4 of the plan: lessons and the
-meta-loop**. It has the 15 MVP levels with validators in CI, prediction
-mode, three-rung hint ladders, the level map with stars and badges, progress
-in IndexedDB, and an observation log the grown-up can export. See
+meta-loop**, plus the first curriculum beyond it. It has the 15 MVP levels
+and 30 more in three packs (harder sequencing, then Repeat, then If,
+If / else and Repeat until), validators in CI, prediction mode, three-rung
+hint ladders, the level map with stars and badges, progress in IndexedDB,
+and an observation log the grown-up can export. See
 [docs/design-notes.md](docs/design-notes.md) for what is built, what is
 deliberately not, and any deviations from the plan.
 
@@ -61,6 +63,9 @@ frames per second with few frames over 33 ms.
 | Pause after the current move | Pause button | P |
 | Reset: robot back to the start, program kept | Reset button | R |
 | Start over: erase the program and begin the level again | Start over, in the program header | |
+| Put a card inside a block | Tap a step inside the block, then tap an instruction; or drag the card into the block's list | Enter on the cursor, arrows to a gap inside the block, Enter |
+| Change a Repeat's count | The minus and plus buttons beside it | Tab to the buttons, Enter |
+| Change what an If or Repeat until checks | The dropdown beside it | Tab to the dropdown, arrows |
 | See the code: the program written in TypeScript inside the Program panel, beside the blocks | The code icon in the Program panel's header | C |
 
 ## How it is built
@@ -83,24 +88,41 @@ content/
 
 The editor writes the IR. The IR is printed to TypeScript for the "see the
 code" panel and sent to the runtime over `postMessage`. The runtime returns a
-deterministic trace, and only the trace reaches the renderer.
+deterministic trace, and only the trace reaches the renderer. A trace holds
+one event per robot action, plus a `loop` event each time a Repeat goes
+round and a `check` event each time an If or Repeat until looks at the world,
+so the board can show the robot thinking.
 
 ## Adding a level
 
 1. Add `content/packs/<pack>/levels/<id>.json`. Copy an existing level.
 2. Draw the board with row strings: `.` floor, `#` wall, `_` gap.
 3. Give a `referenceSolution` that solves it. An optional `intro` sentence
-   shows before the first run. `maxPerCommand` caps a command; `suppliedCards`
+   shows before the first run. `maxPerCommand` caps a card; `suppliedCards`
    hands out a fixed set of cards for reorder levels.
-4. Write the three `hints`: a `region` of cells to look at, a `card` or
-   `step` to notice, and a `fill` that places one card of the solution. Set
-   `prediction` on run and predict levels. Each `curriculum.activity` makes
-   promises the validator checks: a debug starter differs from the solution
-   by exactly one card, reorder cards match the solution, and so on.
-5. List the id in the pack's `pack.json`.
-6. Run `npm run validate:content`. It proves the level is solvable within its
+4. Programs are lists of commands and blocks. A command is its name:
+   `"forward"`, `"rotateCW"`, `"rotateCCW"`. A block is an object with a
+   `do` list: `{ "repeat": 3, "do": [...] }`, `{ "if": "blockedAhead",
+   "do": [...] }`, the same with an `"else"` list for If / else, and
+   `{ "until": "atFlag", "do": [...] }`. The checks are `pathAhead`,
+   `blockedAhead`, `acornAhead` and `atFlag`. `allowedCommands` lists the
+   cards the palette offers (`repeat`, `if`, `ifElse`, `until` are cards
+   too); `allowedConditions` narrows the checks; `maxNestingDepth` caps how
+   deep blocks go. A budget counts every card, blocks included.
+5. Write the three `hints`: a `region` of cells to look at, a `card` or
+   `step` to notice, and a `fill` that places one card of the solution. A
+   `step` or `fill` inside a block carries a `path`: card indexes from the
+   top, with `"else"` after an index to enter an If / else's else part.
+   Set `prediction` on run and predict levels. Each `curriculum.activity`
+   makes promises the validator checks: a debug starter differs from the
+   solution by exactly one card, count or check, reorder cards match the
+   solution, and so on.
+6. List the id in the pack's `pack.json`. Packs play in `order`, then by path.
+7. Run `npm run validate:content`. It proves the level is solvable within its
    limits, checks the hints and the activity's promises, and reports the
-   shortest solution.
+   shortest flat solution. On a level with blocks the reference solution is
+   the proof that the budget can be met, and the validator warns when a
+   flat program would fit the limits too.
 
 ## Licensing
 

@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "id": "r02-set-the-count",
+  "title": "Set the count",
+  "intro": "This Repeat does not go round enough times. Use the plus button to fix the count.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "loops",
+    "activity": "debug"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "repeat"
+    ],
+    "maxInstructions": 2,
+    "starterProgram": [
+      {
+        "repeat": 2,
+        "do": [
+          "forward"
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        }
+      ],
+      "text": "The flag is five tiles away. How many Forwards is that?"
+    },
+    {
+      "kind": "step",
+      "index": 0,
+      "text": "Look at the number on this Repeat. Two goes is two tiles."
+    },
+    {
+      "kind": "fill",
+      "slot": 0,
+      "command": "repeat",
+      "text": "Five tiles means Repeat 5 times."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "repeat": 5,
+      "do": [
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 2
+  }
+}

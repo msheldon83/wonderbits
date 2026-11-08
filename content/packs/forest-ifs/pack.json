@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "forest-ifs",
+  "title": "Look before you leap",
+  "themeId": "forest",
+  "order": 3,
+  "levels": [
+    "c01-look-ahead",
+    "c02-yes-or-no",
+    "c03-turn-at-every-wall",
+    "c04-otherwise",
+    "c05-acorn-trail",
+    "c06-dont-count",
+    "c07-until-the-flag",
+    "c08-fix-the-loop",
+    "c09-left-and-right",
+    "c10-where-will-it-stop"
+  ]
+}

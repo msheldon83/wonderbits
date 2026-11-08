@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "id": "c01-look-ahead",
+  "title": "Look ahead",
+  "intro": "A new card! If looks at the tile ahead. The cards inside it only run when the answer is yes. Place the flag, then Run.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....",
+      "...#",
+      "....",
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 1,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 3
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "conditionals",
+    "activity": "run"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "if"
+    ],
+    "maxInstructions": 6,
+    "starterProgram": [
+      "forward",
+      "forward",
+      {
+        "if": "blockedAhead",
+        "do": [
+          "rotateCW"
+        ]
+      },
+      "forward",
+      "forward"
+    ],
+    "allowedConditions": [
+      "blockedAhead",
+      "pathAhead"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 3,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 3
+        }
+      ],
+      "text": "After two Forwards, what is on the tile ahead?"
+    },
+    {
+      "kind": "card",
+      "command": "if",
+      "text": "Blocked ahead? Yes: the Rotate inside runs. No: it is skipped."
+    },
+    {
+      "kind": "fill",
+      "slot": 2,
+      "command": "if",
+      "text": "The If is the third card."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward",
+    {
+      "if": "blockedAhead",
+      "do": [
+        "rotateCW"
+      ]
+    },
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true
+  }
+}

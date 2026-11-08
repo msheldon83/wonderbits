@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "id": "c07-until-the-flag",
+  "title": "Until the flag",
+  "intro": "A long winding path, and only five cards. Keep going until the robot stands on the flag.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      ".......",
+      ".#####.",
+      ".#...#.",
+      ".#.#.#.",
+      ".#.#.#.",
+      ".#.###.",
+      ".#....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 6,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 4,
+      "y": 4
+    },
+    "collectibles": [
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 6,
+        "y": 0
+      },
+      {
+        "x": 6,
+        "y": 6
+      },
+      {
+        "x": 2,
+        "y": 6
+      },
+      {
+        "x": 2,
+        "y": 2
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "conditionals",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "if",
+      "until",
+      "repeat"
+    ],
+    "maxInstructions": 5,
+    "starterProgram": [],
+    "allowedConditions": [
+      "atFlag",
+      "blockedAhead",
+      "pathAhead"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 6,
+          "y": 0
+        },
+        {
+          "x": 6,
+          "y": 6
+        },
+        {
+          "x": 2,
+          "y": 6
+        },
+        {
+          "x": 4,
+          "y": 4
+        }
+      ],
+      "text": "Every corner turns the same way. Follow the path until the flag."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "Repeat until at the flag: If blocked ahead, Rotate. Then Forward."
+    },
+    {
+      "kind": "fill",
+      "slot": 0,
+      "command": "if",
+      "text": "Inside the loop, check for a wall before stepping.",
+      "path": [
+        0
+      ]
+    }
+  ],
+  "referenceSolution": [
+    {
+      "until": "atFlag",
+      "do": [
+        {
+          "if": "blockedAhead",
+          "do": [
+            "rotateCW"
+          ]
+        },
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 4
+  }
+}

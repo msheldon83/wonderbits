@@ -84,7 +84,7 @@ describe('ProgressStore', () => {
     store.record({ levelId: 'l1', kind: 'level-abandoned' });
     expect(store.getSnapshot().log).toEqual([]);
     store.record({ levelId: 'l1', kind: 'level-opened' });
-    store.record({ levelId: 'l1', kind: 'card-placed', command: 'forward', slot: 0 });
+    store.record({ levelId: 'l1', kind: 'card-placed', command: 'forward', at: { parent: null, branch: 'body', index: 0 } });
     store.record({ levelId: 'l1', kind: 'level-abandoned' });
     expect(store.getSnapshot().log.map((e) => e.kind)).toEqual(['level-opened', 'card-placed', 'level-abandoned']);
   });

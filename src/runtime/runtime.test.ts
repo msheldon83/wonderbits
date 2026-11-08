@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { sequentialIdFactory } from '../ir/ids';
-import { programFromCommands } from '../ir/program';
+import { programFromCommands, programFromSpec } from '../ir/program';
+import type { NodeSpec } from '../ir/spec';
 import type { CommandId } from '../ir/types';
 import type { ObjectiveDefinition, WorldDefinition } from '../sim/types';
 import { createRuntimeClient, type Endpoint } from './client';
@@ -51,6 +52,52 @@ describe('interpreter', () => {
     const r = run(['forward', 'forward', 'forward'], 2);
     expect(r.outcome).toEqual({ status: 'halted', reason: 'step-limit' });
     expect(r.trace).toHaveLength(2);
+  });
+
+  it('runs a Repeat with one loop event per go round, and blocks inside it', () => {
+    const p = programFromSpec([{ repeat: 3, do: ['forward'] }], sequentialIdFactory());
+    const r = interpretAll({ program: p, world, objective, limits: { maxSteps: 100 } });
+    expect(r.outcome).toEqual({ status: 'success' });
+    expect(r.trace.map((e) => `${e.op}:${e.nodeId}`)).toEqual(['loop:n1', 'forward:n2', 'loop:n1', 'forward:n2', 'loop:n1', 'forward:n2']);
+    expect(r.trace.filter((e) => e.op === 'loop').map((e) => (e.op === 'loop' ? [e.iteration, e.count] : null))).toEqual([[1, 3], [2, 3], [3, 3]]);
+    const bump = interpretAll({ program: programFromSpec([{ repeat: 5, do: ['forward'] }], sequentialIdFactory()), world, objective, limits: { maxSteps: 100 } });
+    expect(bump.outcome).toEqual({ status: 'blocked', nodeId: 'n2', reason: 'edge' });
+    expect(bump.trace).toHaveLength(8);
+  });
+
+  it('checks a condition for If and If/else and records the answer', () => {
+    // Facing east at (0,1): the path ahead is clear, so the If runs and the else does not.
+    const spec: NodeSpec[] = [{ if: 'blockedAhead', do: ['rotateCW'] }, { if: 'pathAhead', do: ['forward'], else: ['rotateCCW'] }, 'forward', 'forward'];
+    const r = interpretAll({ program: programFromSpec(spec, sequentialIdFactory()), world, objective, limits: { maxSteps: 100 } });
+    expect(r.outcome).toEqual({ status: 'success' });
+    expect(r.trace.map((e) => (e.op === 'check' ? `${e.condition}=${e.value}` : e.op))).toEqual(['blockedAhead=false', 'pathAhead=true', 'forward', 'forward', 'forward']);
+    expect(r.trace[0]!.after).toEqual(r.trace[0]!.before);
+  });
+
+  it('senses acorns ahead and the flag underfoot', () => {
+    const w = { ...world, collectibles: [{ x: 1, y: 1 }] };
+    const spec: NodeSpec[] = [{ if: 'acornAhead', do: ['forward'] }, { if: 'acornAhead', do: ['rotateCW'] }, 'forward', 'forward', { if: 'atFlag', do: ['rotateCW'] }];
+    const r = interpretAll({ program: programFromSpec(spec, sequentialIdFactory()), world: w, objective: { reachGoal: true, collectAll: true }, limits: { maxSteps: 100 } });
+    expect(r.outcome).toEqual({ status: 'success' });
+    expect(r.trace.map((e) => (e.op === 'check' ? `${e.condition}=${e.value}` : e.op))).toEqual(['acornAhead=true', 'forward', 'acornAhead=false', 'forward', 'forward', 'atFlag=true', 'rotateCW']);
+  });
+
+  it('repeats until the condition holds, and halts a loop that gets nowhere', () => {
+    const walk = interpretAll({ program: programFromSpec([{ until: 'blockedAhead', do: ['forward'] }], sequentialIdFactory()), world, objective, limits: { maxSteps: 100 } });
+    expect(walk.outcome).toEqual({ status: 'success' });
+    expect(walk.trace.map((e) => e.op)).toEqual(['check', 'forward', 'check', 'forward', 'check', 'forward', 'check']);
+    const spin = interpretAll({ program: programFromSpec([{ until: 'atFlag', do: ['rotateCW'] }], sequentialIdFactory()), world, objective, limits: { maxSteps: 100 } });
+    expect(spin.outcome).toEqual({ status: 'halted', reason: 'forever' });
+    expect(spin.trace.filter((e) => e.op === 'rotateCW')).toHaveLength(4);
+    const empty = interpretAll({ program: programFromSpec([{ until: 'atFlag', do: [] }], sequentialIdFactory()), world, objective, limits: { maxSteps: 100 } });
+    expect(empty.outcome).toEqual({ status: 'halted', reason: 'forever' });
+    expect(empty.trace).toHaveLength(2);
+  });
+
+  it('counts every event against the step limit', () => {
+    const r = interpretAll({ program: programFromSpec([{ repeat: 10, do: [{ repeat: 10, do: ['rotateCW'] }] }], sequentialIdFactory()), world, objective, limits: { maxSteps: 50 } });
+    expect(r.outcome).toEqual({ status: 'halted', reason: 'step-limit' });
+    expect(r.trace).toHaveLength(50);
   });
 
   it('is deterministic', () => {

@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "id": "r10-mow-the-lawn",
+  "title": "Mow the lawn",
+  "intro": "Six acorns, one on every row. Sweep the whole lawn: along, down, back, down, and again.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......",
+      "......",
+      "......",
+      "......",
+      "......",
+      "......",
+      ".#####"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 0,
+      "y": 6
+    },
+    "collectibles": [
+      {
+        "x": 2,
+        "y": 0
+      },
+      {
+        "x": 4,
+        "y": 1
+      },
+      {
+        "x": 1,
+        "y": 2
+      },
+      {
+        "x": 5,
+        "y": 3
+      },
+      {
+        "x": 3,
+        "y": 4
+      },
+      {
+        "x": 0,
+        "y": 5
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "loops",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "repeat"
+    ],
+    "maxInstructions": 12,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 5,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 2
+        }
+      ],
+      "text": "Along the row, down one, back along the next row, down one. That is one go round. Three goes."
+    },
+    {
+      "kind": "card",
+      "command": "repeat",
+      "text": "A Repeat 5 of Forward goes along a row. Turns and single Forwards get the robot to the next row."
+    },
+    {
+      "kind": "fill",
+      "slot": 1,
+      "command": "rotateCW",
+      "text": "After the first Repeat 5 inside, turn clockwise to face down.",
+      "path": [
+        0
+      ]
+    }
+  ],
+  "referenceSolution": [
+    {
+      "repeat": 3,
+      "do": [
+        {
+          "repeat": 5,
+          "do": [
+            "forward"
+          ]
+        },
+        "rotateCW",
+        "forward",
+        "rotateCW",
+        {
+          "repeat": 5,
+          "do": [
+            "forward"
+          ]
+        },
+        "rotateCCW",
+        "forward",
+        "rotateCCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 11
+  }
+}

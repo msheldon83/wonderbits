@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "forest-loops",
+  "title": "Around and around",
+  "themeId": "forest",
+  "order": 2,
+  "levels": [
+    "r01-repeat",
+    "r02-set-the-count",
+    "r03-round-the-corner",
+    "r04-stairs",
+    "r05-loop-in-order",
+    "r06-fix-the-loop",
+    "r07-where-will-it-stop",
+    "r08-loop-in-a-loop",
+    "r09-the-long-hall",
+    "r10-mow-the-lawn"
+  ]
+}

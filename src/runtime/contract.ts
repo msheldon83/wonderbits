@@ -6,20 +6,20 @@
  * cross-origin sandboxed iframe behind the same messages without the app
  * changing. Keep every message structured-clone safe: plain data only.
  */
-import type { CommandId, NodeId, ProgramIR } from '../ir/types';
+import type { CommandId, ConditionId, NodeId, ProgramIR } from '../ir/types';
 import type { BlockReason } from '../sim/world';
 import type { Cell, ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 
 export const CONTRACT_VERSION = 1 as const;
 
 export interface RunLimits {
-  /** Maximum executed operations before the run is halted. */
+  /** Maximum trace events (actions, checks and loop turns) before the run is halted. */
   maxSteps: number;
   /** Wall-clock budget in milliseconds, enforced by the client. */
   maxMillis: number;
 }
 
-export const DEFAULT_LIMITS: RunLimits = { maxSteps: 1000, maxMillis: 2000 };
+export const DEFAULT_LIMITS: RunLimits = { maxSteps: 600, maxMillis: 2000 };
 
 export interface RunRequest {
   type: 'run';
@@ -35,20 +35,40 @@ export type TraceResult =
   | { kind: 'ok'; collected?: Cell }
   | { kind: 'blocked'; reason: BlockReason; at: Cell };
 
-export interface TraceEvent {
+interface TraceBase {
   index: number;
   nodeId: NodeId;
-  op: CommandId;
   before: SimState;
   after: SimState;
   result: TraceResult;
 }
 
+/** The robot did something: moved, turned, or bumped. */
+export interface ActionEvent extends TraceBase {
+  op: CommandId;
+}
+
+/** An If or Repeat until looked at the world and got an answer. */
+export interface CheckEvent extends TraceBase {
+  op: 'check';
+  condition: ConditionId;
+  value: boolean;
+}
+
+/** A Repeat started one more go round its body. */
+export interface LoopEvent extends TraceBase {
+  op: 'loop';
+  iteration: number;
+  count: number;
+}
+
+export type TraceEvent = ActionEvent | CheckEvent | LoopEvent;
+
 export type RunOutcome =
   | { status: 'success' }
   | { status: 'incomplete' }
   | { status: 'blocked'; nodeId: NodeId; reason: BlockReason }
-  | { status: 'halted'; reason: 'step-limit' | 'time-limit' }
+  | { status: 'halted'; reason: 'step-limit' | 'time-limit' | 'forever' }
   | { status: 'error'; message: string };
 
 export type RuntimeMessage =

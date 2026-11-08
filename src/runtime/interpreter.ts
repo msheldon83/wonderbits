@@ -1,11 +1,16 @@
 /**
  * Deterministic interpreter over the program IR. Pure: same input, same trace.
  * It is a generator so a host can stream events and stop it at any point.
+ *
+ * Every robot action is one event. A block adds events of its own so the
+ * child can watch it think: a Repeat emits a `loop` event at the start of
+ * each go round, and an If or Repeat until emits a `check` event with the
+ * answer it got. Those events change nothing on the board.
  */
 import { mainBody } from '../ir/program';
-import { initialState, objectiveMet, step } from '../sim/world';
+import { initialState, evaluate, objectiveMet, step } from '../sim/world';
 import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
-import type { ProgramIR } from '../ir/types';
+import type { IRNode, ProgramIR } from '../ir/types';
 import type { RunLimits, RunOutcome, TraceEvent } from './contract';
 
 export interface InterpretInput {
@@ -21,41 +26,103 @@ export interface InterpretSummary {
   executedSteps: number;
 }
 
+/** Omit that keeps a union a union. */
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
+
+const stateKey = (s: SimState) => `${s.robot.x},${s.robot.y},${s.robot.facing}|${[...s.collected].sort().join(';')}`;
+
 export function* interpret(input: InterpretInput): Generator<TraceEvent, InterpretSummary, void> {
   const { program, world, objective, limits } = input;
   let state = initialState(world);
   let executed = 0;
+  /** Set once something ends the run early. */
+  let stop: RunOutcome | null = null;
 
-  for (const node of mainBody(program)) {
+  /** Emit one event, counting it against the limit. Returns false when the run must stop. */
+  function* emit(event: DistributiveOmit<TraceEvent, 'index'>): Generator<TraceEvent, boolean, void> {
     if (executed >= limits.maxSteps) {
-      return { outcome: { status: 'halted', reason: 'step-limit' }, final: state, executedSteps: executed };
+      stop = { status: 'halted', reason: 'step-limit' };
+      return false;
     }
-    const result = step(world, state, node.kind);
-    const event: TraceEvent = {
-      index: executed,
-      nodeId: node.id,
-      op: node.kind,
-      before: state,
-      after: result.state,
-      result:
-        result.kind === 'ok'
-          ? result.collected
-            ? { kind: 'ok', collected: result.collected }
-            : { kind: 'ok' }
-          : { kind: 'blocked', reason: result.reason, at: result.at },
-    };
+    const full = { index: executed, ...event } as TraceEvent;
     executed++;
-    yield event;
-    if (result.kind === 'blocked') {
-      return {
-        outcome: { status: 'blocked', nodeId: node.id, reason: result.reason },
-        final: state,
-        executedSteps: executed,
-      };
-    }
-    state = result.state;
+    yield full;
+    return true;
   }
 
+  function* run(nodes: readonly IRNode[]): Generator<TraceEvent, void, void> {
+    for (const node of nodes) {
+      if (stop) return;
+      switch (node.kind) {
+        case 'forward':
+        case 'rotateCW':
+        case 'rotateCCW': {
+          const result = step(world, state, node.kind);
+          const ok = yield* emit({
+            nodeId: node.id,
+            op: node.kind,
+            before: state,
+            after: result.state,
+            result:
+              result.kind === 'ok'
+                ? result.collected
+                  ? { kind: 'ok', collected: result.collected }
+                  : { kind: 'ok' }
+                : { kind: 'blocked', reason: result.reason, at: result.at },
+          });
+          if (!ok) return;
+          if (result.kind === 'blocked') {
+            stop = { status: 'blocked', nodeId: node.id, reason: result.reason };
+            return;
+          }
+          state = result.state;
+          break;
+        }
+        case 'repeat': {
+          for (let i = 1; i <= node.count; i++) {
+            const ok = yield* emit({ nodeId: node.id, op: 'loop', iteration: i, count: node.count, before: state, after: state, result: { kind: 'ok' } });
+            if (!ok) return;
+            yield* run(node.body);
+            if (stop) return;
+          }
+          break;
+        }
+        case 'if':
+        case 'ifElse': {
+          const value = evaluate(world, state, node.condition);
+          const ok = yield* emit({ nodeId: node.id, op: 'check', condition: node.condition, value, before: state, after: state, result: { kind: 'ok' } });
+          if (!ok) return;
+          if (value) yield* run(node.body);
+          else if (node.kind === 'ifElse') yield* run(node.elseBody);
+          if (stop) return;
+          break;
+        }
+        case 'until': {
+          // The world is deterministic, so the same state at the top of the
+          // loop twice means it would go round forever.
+          const seen = new Set<string>();
+          for (;;) {
+            const value = evaluate(world, state, node.condition);
+            const ok = yield* emit({ nodeId: node.id, op: 'check', condition: node.condition, value, before: state, after: state, result: { kind: 'ok' } });
+            if (!ok) return;
+            if (value) break;
+            const key = stateKey(state);
+            if (seen.has(key)) {
+              stop = { status: 'halted', reason: 'forever' };
+              return;
+            }
+            seen.add(key);
+            yield* run(node.body);
+            if (stop) return;
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  yield* run(mainBody(program));
+  if (stop) return { outcome: stop, final: state, executedSteps: executed };
   const outcome: RunOutcome = objectiveMet(world, objective, state) ? { status: 'success' } : { status: 'incomplete' };
   return { outcome, final: state, executedSteps: executed };
 }

@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "id": "t01-zigzag",
+  "title": "Zigzag",
+  "intro": "A bigger island with more corners. Plan the whole route before you run.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....",
+      ".###",
+      "....",
+      "###."
+    ],
+    "robot": {
+      "x": 3,
+      "y": 3,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 3,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 0,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "sequencing",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 14,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "Up one, left along the middle, up to the acorn, then right along the top."
+    },
+    {
+      "kind": "card",
+      "command": "rotateCCW",
+      "text": "The first corner turns the robot to the left: Rotate the other way from a clock hand."
+    },
+    {
+      "kind": "fill",
+      "slot": 1,
+      "command": "rotateCCW",
+      "text": "The first turn comes right after one Forward."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "rotateCCW",
+    "forward",
+    "forward",
+    "forward",
+    "rotateCW",
+    "forward",
+    "forward",
+    "rotateCW",
+    "forward",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 12
+  }
+}

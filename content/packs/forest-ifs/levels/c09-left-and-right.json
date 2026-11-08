@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "id": "c09-left-and-right",
+  "title": "Left and right",
+  "intro": "Some corners turn left. Try turning right first; if that is blocked too, turn the other way.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "######",
+      "##...#",
+      "##.#.#",
+      "...#.#",
+      ".###..",
+      ".#####"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 5,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 5,
+      "y": 4
+    },
+    "collectibles": [
+      {
+        "x": 2,
+        "y": 3
+      },
+      {
+        "x": 4,
+        "y": 1
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "conditionals",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "if",
+      "until"
+    ],
+    "maxInstructions": 8,
+    "starterProgram": [],
+    "allowedConditions": [
+      "atFlag",
+      "blockedAhead",
+      "pathAhead"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 3
+        },
+        {
+          "x": 2,
+          "y": 3
+        },
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 4,
+          "y": 1
+        },
+        {
+          "x": 4,
+          "y": 4
+        },
+        {
+          "x": 5,
+          "y": 4
+        }
+      ],
+      "text": "Right, left, right, right, left. The robot cannot see sideways, so it tries."
+    },
+    {
+      "kind": "card",
+      "command": "if",
+      "text": "Two Ifs in a row. The second one only matters when the first turn was not enough."
+    },
+    {
+      "kind": "fill",
+      "slot": 1,
+      "command": "if",
+      "text": "After the first If, another If: still blocked? Turn the other way, twice.",
+      "path": [
+        0
+      ]
+    }
+  ],
+  "referenceSolution": [
+    {
+      "until": "atFlag",
+      "do": [
+        {
+          "if": "blockedAhead",
+          "do": [
+            "rotateCW"
+          ]
+        },
+        {
+          "if": "blockedAhead",
+          "do": [
+            "rotateCCW",
+            "rotateCCW"
+          ]
+        },
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 7
+  }
+}

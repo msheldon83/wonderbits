@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { sequentialIdFactory } from '../ir/ids';
-import { programFromCommands } from '../ir/program';
+import { programFromCommands, programFromSpec } from '../ir/program';
 import { hintEffect } from './hints';
 import { ContentError, parsePuzzle } from './parse';
 import { predictionCorrect } from './prediction';
@@ -37,6 +37,7 @@ describe('parse: hints and prediction', () => {
   it('parses the three rungs and optional prediction settings', () => {
     const p = parsed((j) => (j.prediction = { askTile: true }));
     expect(p.hints.map((h) => h.kind)).toEqual(['region', 'card', 'fill']);
+    expect(p.hints[2]).toMatchObject({ path: [] });
     expect(p.prediction).toEqual({ askTile: true });
   });
 
@@ -88,7 +89,7 @@ describe('validate: hints and activities', () => {
       j.programming.allowedCommands = ['forward', 'rotateCW'];
       j.programming.starterProgram = ['rotateCW', 'rotateCW'];
     });
-    expect(validatePuzzle(debugTwoWrong).errors.join('\n')).toMatch(/exactly one instruction/);
+    expect(validatePuzzle(debugTwoWrong).errors.join('\n')).toMatch(/exactly one card/);
   });
 });
 
@@ -101,7 +102,7 @@ describe('hintEffect', () => {
     expect(hintEffect(level, 0, empty, ids, false)).toEqual({ text: 'Look at the flag.', cells: [{ x: 2, y: 0 }] });
     expect(hintEffect(level, 1, empty, ids, false)).toEqual({ text: 'Forward moves one tile.', command: 'forward' });
     const fill = hintEffect(level, 2, empty, ids, false);
-    expect(fill.edit).toEqual({ op: 'insert', slot: 0, node: { id: 'h1', kind: 'forward' } });
+    expect(fill.edit).toEqual({ op: 'insert', at: { parent: null, branch: 'body', index: 0 }, node: { id: 'h1', kind: 'forward' } });
   });
 
   it('only points when the slot already holds the right card, and asks for room when full', () => {
@@ -110,6 +111,123 @@ describe('hintEffect', () => {
     const wrong = programFromCommands(['rotateCW'], sequentialIdFactory('s'));
     expect(hintEffect(level, 2, wrong, ids, true).edit).toBeUndefined();
     expect(hintEffect(level, 2, wrong, ids, true).text).toMatch(/make room/);
+  });
+});
+
+describe('hintEffect with blocks', () => {
+  const loopLevel = (over: (j: Json) => void = () => {}) =>
+    parsed((j) => {
+      j.world.rows = ['......'];
+      j.world.goal = { x: 4, y: 0 };
+      j.programming.allowedCommands = ['forward', 'repeat'];
+      j.programming.maxInstructions = 3;
+      j.referenceSolution = [{ repeat: 4, do: ['forward'] }];
+      j.hints[2] = { kind: 'fill', path: [0], slot: 0, command: 'forward', text: 'A Forward goes inside the Repeat.' };
+      j.stars.budget = 2;
+      over(j);
+    });
+  const level = loopLevel();
+  const ids = sequentialIdFactory('h');
+
+  it('validates a fill inside a block against the reference solution', () => {
+    expect(validatePuzzle(level).errors).toEqual([]);
+    const wrong = loopLevel((j) => (j.hints[2] = { kind: 'fill', path: [0], slot: 0, command: 'rotateCW', text: 't' }));
+    expect(validatePuzzle(wrong).errors.join('\n')).toMatch(/fills slot 0 with rotateCW, but the reference solution has forward/);
+    const missing = loopLevel((j) => (j.hints[2] = { kind: 'fill', path: [1], slot: 0, command: 'forward', text: 't' }));
+    expect(validatePuzzle(missing).errors.join('\n')).toMatch(/path \[1\], which the reference solution does not have/);
+  });
+
+  it('points at the card when the block is not built yet, and fills inside it once it is', () => {
+    const empty = programFromCommands([], sequentialIdFactory());
+    expect(hintEffect(level, 2, empty, ids, false)).toEqual({ text: 'A Forward goes inside the Repeat.', command: 'forward' });
+    const withRepeat = programFromSpec([{ repeat: 2, do: [] }], sequentialIdFactory('s'));
+    const fill = hintEffect(level, 2, withRepeat, ids, false);
+    expect(fill.edit).toEqual({ op: 'insert', at: { parent: 's1', branch: 'body', index: 0 }, node: { id: 'h1', kind: 'forward' } });
+  });
+
+  it('scaffolds a block with the solution\'s count but an empty body', () => {
+    const blockLevel = parsed((j) => {
+      j.world.rows = ['......'];
+      j.world.goal = { x: 4, y: 0 };
+      j.programming.allowedCommands = ['forward', 'repeat'];
+      j.referenceSolution = [{ repeat: 4, do: ['forward'] }];
+      j.hints[2] = { kind: 'fill', slot: 0, command: 'repeat', text: 'Start with a Repeat.' };
+    });
+    const fill = hintEffect(blockLevel, 2, programFromCommands([], sequentialIdFactory()), sequentialIdFactory('h'), false);
+    expect(fill.edit).toEqual({ op: 'insert', at: { parent: null, branch: 'body', index: 0 }, node: { id: 'h1', kind: 'repeat', count: 4, body: [] } });
+  });
+});
+
+describe('validate: blocks', () => {
+  const loops = (over: (j: Json) => void = () => {}) =>
+    parsed((j) => {
+      j.world.rows = ['......'];
+      j.world.goal = { x: 5, y: 0 };
+      j.programming.allowedCommands = ['forward', 'repeat'];
+      j.programming.maxInstructions = 3;
+      j.referenceSolution = [{ repeat: 5, do: ['forward'] }];
+      j.hints[2] = { kind: 'fill', slot: 0, command: 'repeat', text: 't' };
+      j.stars.budget = 2;
+      over(j);
+    });
+
+  it('accepts a loop level whose budget the reference proves, and reports the flat minimum', () => {
+    const r = validatePuzzle(loops());
+    expect(r.errors).toEqual([]);
+    expect(r.warnings).toEqual([]);
+    expect(r.minInstructions).toBe(5);
+  });
+
+  it('warns when blocks are optional and rejects a budget nothing proves', () => {
+    expect(validatePuzzle(loops((j) => (j.programming.maxInstructions = 6))).warnings.join('\n')).toMatch(/blocks are optional/);
+    expect(validatePuzzle(loops((j) => (j.stars.budget = 1))).errors.join('\n')).toMatch(/nothing proves/);
+  });
+
+  it('rejects cards, conditions and nesting the level does not allow', () => {
+    const r = validatePuzzle(
+      loops((j) => {
+        j.programming.allowedCommands = ['forward', 'repeat', 'until'];
+        j.programming.allowedConditions = ['atFlag'];
+        j.programming.maxNestingDepth = 1;
+        j.referenceSolution = [{ until: 'blockedAhead', do: [{ repeat: 2, do: ['forward'] }] }];
+      }),
+    );
+    expect(r.errors.join('\n')).toMatch(/senses blockedAhead/);
+    expect(r.errors.join('\n')).toMatch(/nests 2 deep/);
+    const disallowed = validatePuzzle(loops((j) => (j.referenceSolution = [{ if: 'atFlag', do: ['forward'] }, 'forward'])));
+    expect(disallowed.errors.join('\n')).toMatch(/referenceSolution\[0\] uses if/);
+  });
+
+  it('checks debug and reorder promises on nested programs', () => {
+    const debug = loops((j) => {
+      j.curriculum.activity = 'debug';
+      j.programming.starterProgram = [{ repeat: 2, do: ['forward'] }];
+      j.hints[1] = { kind: 'step', path: [], index: 0, text: 'Count again.' };
+    });
+    expect(validatePuzzle(debug).errors).toEqual([]);
+    const shape = loops((j) => {
+      j.curriculum.activity = 'debug';
+      j.programming.starterProgram = ['forward'];
+    });
+    expect(validatePuzzle(shape).errors.join('\n')).toMatch(/exactly one card/);
+    const reorder = loops((j) => {
+      j.curriculum.activity = 'reorder';
+      j.programming.suppliedCards = ['repeat', 'forward'];
+    });
+    expect(validatePuzzle(reorder).errors).toEqual([]);
+    const stepHint = loops((j) => {
+      j.curriculum.activity = 'debug';
+      j.programming.starterProgram = [{ repeat: 2, do: ['forward'] }];
+      j.hints[1] = { kind: 'step', path: [0], index: 1, text: 'x' };
+    });
+    expect(validatePuzzle(stepHint).errors.join('\n')).toMatch(/points at step 2, but that part of the starter program has 1 steps/);
+  });
+
+  it('parses block specs and reports bad ones by path', () => {
+    expect(() => parsed((j) => (j.referenceSolution = [{ repeat: 1, do: [] }]))).toThrow(/referenceSolution\[0\]\.repeat/);
+    expect(() => parsed((j) => (j.referenceSolution = [{ loop: 3, do: [] }]))).toThrow(/needs "repeat", "if" or "until"/);
+    expect(() => parsed((j) => (j.referenceSolution = [{ if: 'sunny', do: [] }]))).toThrow(/referenceSolution\[0\]\.if: unknown condition/);
+    expect(() => parsed((j) => (j.hints[2] = { kind: 'fill', path: ['else'], slot: 0, command: 'forward', text: 't' }))).toThrow(/"else" must follow a card index/);
   });
 });
 

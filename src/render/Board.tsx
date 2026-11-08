@@ -255,6 +255,15 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
           ))}
           {Array.from({ length: robotCount }, (_, i) => (
             <div
+              key={`bubble${i}`}
+              ref={(el) => void (elsFor(i).bubble = el ?? undefined)}
+              className="thought-bubble"
+              style={{ zIndex: LAYER.effect + 1, opacity: 0 }}
+              aria-hidden="true"
+            />
+          ))}
+          {Array.from({ length: robotCount }, (_, i) => (
+            <div
               key={`robot${i}`}
               ref={(el) => void (elsFor(i).root = el ?? undefined)}
               className="robot"

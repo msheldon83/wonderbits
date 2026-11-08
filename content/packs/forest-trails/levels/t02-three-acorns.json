@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "id": "t02-three-acorns",
+  "title": "Three acorns",
+  "intro": "Three acorns, two rocks, one flag. Which order is quickest?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....",
+      ".#..",
+      "..#.",
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 3,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 1,
+      "y": 3
+    },
+    "collectibles": [
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 3,
+        "y": 0
+      },
+      {
+        "x": 3,
+        "y": 3
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "sequencing",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 16,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 3
+        },
+        {
+          "x": 1,
+          "y": 3
+        }
+      ],
+      "text": "Round the outside: up, right, down, then back along the bottom to the flag."
+    },
+    {
+      "kind": "card",
+      "command": "rotateCW",
+      "text": "Every corner on this trip is a clockwise turn."
+    },
+    {
+      "kind": "fill",
+      "slot": 3,
+      "command": "rotateCW",
+      "text": "After three Forwards the robot is on the top corner. Turn it to the right."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward",
+    "forward",
+    "rotateCW",
+    "forward",
+    "forward",
+    "forward",
+    "rotateCW",
+    "forward",
+    "forward",
+    "forward",
+    "rotateCW",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 14
+  }
+}

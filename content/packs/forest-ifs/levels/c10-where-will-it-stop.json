@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "id": "c10-where-will-it-stop",
+  "title": "Where will it stop?",
+  "intro": "Tricky! Acorns make this robot turn, not stop. Read carefully, place the flag, then Run.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      ".....",
+      ".....",
+      ".....",
+      ".....",
+      "..#.."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 4,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 2,
+      "y": 3
+    },
+    "collectibles": [
+      {
+        "x": 0,
+        "y": 1
+      },
+      {
+        "x": 3,
+        "y": 2
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "transfer",
+    "activity": "predict"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "ifElse",
+      "until"
+    ],
+    "maxInstructions": 5,
+    "starterProgram": [
+      {
+        "until": "blockedAhead",
+        "do": [
+          {
+            "if": "acornAhead",
+            "do": [
+              "rotateCW"
+            ],
+            "else": [
+              "forward"
+            ]
+          }
+        ]
+      }
+    ],
+    "allowedConditions": [
+      "acornAhead",
+      "blockedAhead",
+      "pathAhead",
+      "atFlag"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 3
+        }
+      ],
+      "text": "The robot turns when an acorn is ahead, and stops when it is blocked."
+    },
+    {
+      "kind": "card",
+      "command": "ifElse",
+      "text": "Acorn ahead? Turn. Otherwise step. Over and over, until blocked."
+    },
+    {
+      "kind": "fill",
+      "slot": 0,
+      "command": "until",
+      "text": "The Repeat until wraps the If / else."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "until": "blockedAhead",
+      "do": [
+        {
+          "if": "acornAhead",
+          "do": [
+            "rotateCW"
+          ],
+          "else": [
+            "forward"
+          ]
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true
+  }
+}

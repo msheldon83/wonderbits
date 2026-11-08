@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "id": "r01-repeat",
+  "title": "Repeat",
+  "intro": "A new card! Repeat runs the cards inside it again and again. Count the goes, place the flag where the robot ends up, then Run.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "loops",
+    "activity": "run"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "repeat"
+    ],
+    "maxInstructions": 2,
+    "starterProgram": [
+      {
+        "repeat": 4,
+        "do": [
+          "forward"
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "text": "One Forward inside, four times. Count four tiles."
+    },
+    {
+      "kind": "card",
+      "command": "repeat",
+      "text": "The number on the Repeat says how many times the cards inside it run."
+    },
+    {
+      "kind": "fill",
+      "slot": 0,
+      "command": "repeat",
+      "text": "The Repeat is the whole program here."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "repeat": 4,
+      "do": [
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true
+  }
+}

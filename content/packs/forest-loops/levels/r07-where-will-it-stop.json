@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "id": "r07-where-will-it-stop",
+  "title": "Where will it stop?",
+  "intro": "A Repeat and two more cards. Follow every go round, then place the flag.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..#..",
+      ".....",
+      ".....",
+      ".#...",
+      "...#."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 4,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 4,
+      "y": 3
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "transfer",
+    "activity": "predict"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "repeat"
+    ],
+    "maxInstructions": 7,
+    "starterProgram": [
+      {
+        "repeat": 2,
+        "do": [
+          "forward",
+          "forward",
+          "rotateCW",
+          "forward"
+        ]
+      },
+      "rotateCCW",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 3,
+          "y": 2
+        },
+        {
+          "x": 3,
+          "y": 3
+        }
+      ],
+      "text": "Two up, turn, one right. Then two right, turn, one down. Then the last two cards."
+    },
+    {
+      "kind": "card",
+      "command": "repeat",
+      "text": "The cards inside run twice. The two cards after the Repeat run once."
+    },
+    {
+      "kind": "fill",
+      "slot": 0,
+      "command": "repeat",
+      "text": "The Repeat comes first."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "repeat": 2,
+      "do": [
+        "forward",
+        "forward",
+        "rotateCW",
+        "forward"
+      ]
+    },
+    "rotateCCW",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true
+  }
+}

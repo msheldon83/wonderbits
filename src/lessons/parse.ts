@@ -2,9 +2,10 @@
  * Parse untrusted content JSON into typed definitions. Content is data that
  * contributors may write by hand, so errors name the exact path at fault.
  */
-import { isCommandId, type CommandId } from '../ir/types';
+import type { NodeSpec } from '../ir/spec';
+import { isCardId, isCommandId, isConditionId, REPEAT_MAX, REPEAT_MIN, type CardId, type ConditionId } from '../ir/types';
 import { FACINGS, type Cell, type Facing, type TileKind } from '../sim/types';
-import { CONTENT_SCHEMA_VERSION, type Activity, type HintStep, type PackManifest, type PuzzleDefinition } from './types';
+import { CONTENT_SCHEMA_VERSION, type Activity, type HintPath, type HintStep, type PackManifest, type PuzzleDefinition } from './types';
 
 export class ContentError extends Error {
   constructor(
@@ -51,14 +52,63 @@ class Reader {
     const o = this.obj(v, path);
     return { x: this.int(o.x, `${path}.x`), y: this.int(o.y, `${path}.y`) };
   }
-  commands(v: unknown, path: string): CommandId[] {
+  cards(v: unknown, path: string): CardId[] {
     if (!Array.isArray(v)) {
-      this.fail(path, 'expected an array of commands');
+      this.fail(path, 'expected an array of cards');
       return [];
     }
     return v.flatMap((c, i) => {
-      if (isCommandId(c)) return [c];
-      this.fail(`${path}[${i}]`, `unknown command ${JSON.stringify(c)}`);
+      if (isCardId(c)) return [c];
+      this.fail(`${path}[${i}]`, `unknown card ${JSON.stringify(c)}`);
+      return [];
+    });
+  }
+  conditions(v: unknown, path: string): ConditionId[] {
+    if (!Array.isArray(v)) {
+      this.fail(path, 'expected an array of conditions');
+      return [];
+    }
+    return v.flatMap((c, i) => {
+      if (isConditionId(c)) return [c];
+      this.fail(`${path}[${i}]`, `unknown condition ${JSON.stringify(c)}`);
+      return [];
+    });
+  }
+  condition(v: unknown, path: string): ConditionId {
+    if (isConditionId(v)) return v;
+    this.fail(path, `unknown condition ${JSON.stringify(v)}`);
+    return 'blockedAhead';
+  }
+  /** A program spec: commands as strings, blocks as objects with a "do" list. */
+  spec(v: unknown, path: string): NodeSpec[] {
+    if (!Array.isArray(v)) {
+      this.fail(path, 'expected an array of commands and blocks');
+      return [];
+    }
+    return v.flatMap((s, i): NodeSpec[] => {
+      const at = `${path}[${i}]`;
+      if (typeof s === 'string') {
+        if (isCommandId(s)) return [s];
+        this.fail(at, `unknown command ${JSON.stringify(s)}; blocks are objects like { "repeat": 3, "do": [...] }`);
+        return [];
+      }
+      if (!isObj(s)) {
+        this.fail(at, 'expected a command name or a block object');
+        return [];
+      }
+      const body = this.spec(s.do, `${at}.do`);
+      if ('repeat' in s) {
+        const count = this.int(s.repeat, `${at}.repeat`, REPEAT_MIN);
+        if (count > REPEAT_MAX) this.fail(`${at}.repeat`, `expected a count of at most ${REPEAT_MAX}`);
+        return [{ repeat: count, do: body }];
+      }
+      if ('until' in s) return [{ until: this.condition(s.until, `${at}.until`), do: body }];
+      if ('if' in s) {
+        const node: NodeSpec = { if: this.condition(s.if, `${at}.if`), do: body };
+        if (s.else !== undefined) node.else = this.spec(s.else, `${at}.else`);
+        return [node];
+      }
+      this.fail(at, 'a block needs "repeat", "if" or "until"');
       return [];
     });
   }
@@ -66,10 +116,26 @@ class Reader {
     if (v !== CONTENT_SCHEMA_VERSION) this.fail(path, `expected schema version ${CONTENT_SCHEMA_VERSION}`);
     return CONTENT_SCHEMA_VERSION;
   }
-  command(v: unknown, path: string): CommandId {
-    if (isCommandId(v)) return v;
-    this.fail(path, `unknown command ${JSON.stringify(v)}`);
+  card(v: unknown, path: string): CardId {
+    if (isCardId(v)) return v;
+    this.fail(path, `unknown card ${JSON.stringify(v)}`);
     return 'forward';
+  }
+  hintPath(v: unknown, path: string): HintPath {
+    if (v === undefined) return [];
+    if (!Array.isArray(v)) {
+      this.fail(path, 'expected an array of indexes and "else"');
+      return [];
+    }
+    return v.flatMap((p, i): HintPath => {
+      if (Number.isInteger(p) && (p as number) >= 0) return [p as number];
+      if (p === 'else') {
+        if (i === 0 || typeof v[i - 1] !== 'number') this.fail(`${path}[${i}]`, '"else" must follow a card index');
+        return ['else'];
+      }
+      this.fail(`${path}[${i}]`, 'expected a card index or "else"');
+      return [];
+    });
   }
   hint(v: unknown, path: string): HintStep {
     const o = this.obj(v, path);
@@ -82,11 +148,11 @@ class Reader {
           text,
         };
       case 'card':
-        return { kind: 'card', command: this.command(o.command, `${path}.command`), text };
+        return { kind: 'card', command: this.card(o.command, `${path}.command`), text };
       case 'step':
-        return { kind: 'step', index: this.int(o.index, `${path}.index`), text };
+        return { kind: 'step', path: this.hintPath(o.path, `${path}.path`), index: this.int(o.index, `${path}.index`), text };
       case 'fill':
-        return { kind: 'fill', slot: this.int(o.slot, `${path}.slot`), command: this.command(o.command, `${path}.command`), text };
+        return { kind: 'fill', path: this.hintPath(o.path, `${path}.path`), slot: this.int(o.slot, `${path}.slot`), command: this.card(o.command, `${path}.command`), text };
       default:
         this.fail(`${path}.kind`, 'expected region, card, step or fill');
         return { kind: 'region', cells: [], text };
@@ -133,12 +199,12 @@ export function parsePuzzle(json: unknown, source: string): PuzzleDefinition {
     prediction = { askTile: r.bool(o.askTile, 'prediction.askTile') };
   }
 
-  let maxPerCommand: Partial<Record<CommandId, number>> | undefined;
+  let maxPerCommand: Partial<Record<CardId, number>> | undefined;
   if (programming.maxPerCommand !== undefined) {
     const raw = r.obj(programming.maxPerCommand, 'programming.maxPerCommand');
     maxPerCommand = {};
     for (const [k, v] of Object.entries(raw)) {
-      if (!isCommandId(k)) r.fail(`programming.maxPerCommand.${k}`, 'unknown command');
+      if (!isCardId(k)) r.fail(`programming.maxPerCommand.${k}`, 'unknown card');
       else maxPerCommand[k] = r.int(v, `programming.maxPerCommand.${k}`, 1);
     }
   }
@@ -165,19 +231,25 @@ export function parsePuzzle(json: unknown, source: string): PuzzleDefinition {
     },
     curriculum: { concept: r.str(curriculum.concept, 'curriculum.concept'), activity },
     programming: {
-      allowedCommands: r.commands(programming.allowedCommands, 'programming.allowedCommands'),
+      allowedCommands: r.cards(programming.allowedCommands, 'programming.allowedCommands'),
+      ...(programming.allowedConditions !== undefined && {
+        allowedConditions: r.conditions(programming.allowedConditions, 'programming.allowedConditions'),
+      }),
       ...(programming.maxInstructions !== undefined && {
         maxInstructions: r.int(programming.maxInstructions, 'programming.maxInstructions', 1),
       }),
       ...(maxPerCommand && { maxPerCommand }),
-      starterProgram: programming.starterProgram === undefined ? [] : r.commands(programming.starterProgram, 'programming.starterProgram'),
+      ...(programming.maxNestingDepth !== undefined && {
+        maxNestingDepth: r.int(programming.maxNestingDepth, 'programming.maxNestingDepth', 1),
+      }),
+      starterProgram: programming.starterProgram === undefined ? [] : r.spec(programming.starterProgram, 'programming.starterProgram'),
       ...(programming.suppliedCards !== undefined && {
-        suppliedCards: r.commands(programming.suppliedCards, 'programming.suppliedCards'),
+        suppliedCards: r.cards(programming.suppliedCards, 'programming.suppliedCards'),
       }),
     },
     ...(prediction && { prediction }),
     hints,
-    referenceSolution: r.commands(root.referenceSolution, 'referenceSolution'),
+    referenceSolution: r.spec(root.referenceSolution, 'referenceSolution'),
     stars: {
       noHints: r.bool(stars.noHints, 'stars.noHints'),
       ...(stars.budget !== undefined && { budget: r.int(stars.budget, 'stars.budget', 1) }),
@@ -198,6 +270,7 @@ export function parsePack(json: unknown, source: string): PackManifest {
     id: r.str(root.id, 'id'),
     title: r.str(root.title, 'title'),
     themeId: r.str(root.themeId, 'themeId'),
+    order: root.order === undefined ? 0 : r.int(root.order, 'order'),
     levels,
   };
   if (r.issues.length) throw new ContentError(source, r.issues);

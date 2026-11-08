@@ -1,4 +1,5 @@
-import type { CommandId } from '../ir/types';
+import type { NodeSpec } from '../ir/spec';
+import type { CardId, ConditionId } from '../ir/types';
 import type { Cell, ObjectiveDefinition, WorldDefinition } from '../sim/types';
 
 export const CONTENT_SCHEMA_VERSION = 1 as const;
@@ -13,15 +14,23 @@ export const CONTENT_SCHEMA_VERSION = 1 as const;
 export type Activity = 'run' | 'build' | 'reorder' | 'debug' | 'predict';
 
 /**
+ * Where inside a program a hint points. Each number enters that card's body;
+ * "else" right after a number enters its else branch instead. Empty means
+ * the main program. For example [1, "else", 0] is the body of the first card
+ * inside the else branch of the second card.
+ */
+export type HintPath = (number | 'else')[];
+
+/**
  * A deterministic three-rung hint ladder: orient attention on the board,
  * identify the card or step that matters, then fill one slot. The solution
  * itself is never given.
  */
 export type HintStep =
   | { kind: 'region'; cells: Cell[]; text: string }
-  | { kind: 'card'; command: CommandId; text: string }
-  | { kind: 'step'; index: number; text: string }
-  | { kind: 'fill'; slot: number; command: CommandId; text: string };
+  | { kind: 'card'; command: CardId; text: string }
+  | { kind: 'step'; path: HintPath; index: number; text: string }
+  | { kind: 'fill'; path: HintPath; slot: number; command: CardId; text: string };
 
 /** Prediction asks where the robot will end up. Kept as an object so later levels can ask more. */
 export interface PredictionSettings {
@@ -39,20 +48,23 @@ export interface PuzzleDefinition {
   objective: ObjectiveDefinition;
   curriculum: { concept: string; activity: Activity };
   programming: {
-    allowedCommands: CommandId[];
+    /** Cards the palette offers: commands and blocks. */
+    allowedCommands: CardId[];
+    /** What If and Repeat until may sense. Every condition when left out. */
+    allowedConditions?: ConditionId[];
     maxInstructions?: number;
-    maxPerCommand?: Partial<Record<CommandId, number>>;
-    /** Unused until Repeat arrives. */
+    maxPerCommand?: Partial<Record<CardId, number>>;
+    /** How deeply blocks may nest; 1 means a block may not hold a block. */
     maxNestingDepth?: number;
-    starterProgram: CommandId[];
+    starterProgram: NodeSpec[];
     /** Cards handed to the child on reorder (Parsons) levels. */
-    suppliedCards?: CommandId[];
+    suppliedCards?: CardId[];
   };
   /** When set, the level opens in prediction mode before Run is enabled. */
   prediction?: PredictionSettings;
   hints: [HintStep, HintStep, HintStep];
   /** Required on every level; validators prove it works. */
-  referenceSolution: CommandId[];
+  referenceSolution: NodeSpec[];
   stars: { noHints: boolean; budget?: number };
 }
 
@@ -61,6 +73,8 @@ export interface PackManifest {
   id: string;
   title: string;
   themeId: string;
+  /** Packs play in ascending order, then by path. */
+  order: number;
   /** Level ids in play order; each is a file levels/<id>.json in the pack. */
   levels: string[];
 }

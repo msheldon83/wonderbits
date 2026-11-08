@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "id": "c02-yes-or-no",
+  "title": "Yes or no?",
+  "intro": "This If asks the wrong question, so its Rotate never runs. Change what it checks.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..#",
+      "...",
+      "..."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 1,
+      "y": 2
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "conditionals",
+    "activity": "debug"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "if"
+    ],
+    "maxInstructions": 5,
+    "starterProgram": [
+      "forward",
+      {
+        "if": "pathAhead",
+        "do": [
+          "rotateCW"
+        ]
+      },
+      "forward",
+      "forward"
+    ],
+    "allowedConditions": [
+      "pathAhead",
+      "blockedAhead"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "text": "After one Forward there is a rock ahead. The robot must turn."
+    },
+    {
+      "kind": "step",
+      "index": 1,
+      "text": "Path ahead? No. So the Rotate inside is skipped. What question gets a yes here?"
+    },
+    {
+      "kind": "fill",
+      "slot": 1,
+      "command": "if",
+      "text": "Blocked ahead? Yes. Now the Rotate runs."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    {
+      "if": "blockedAhead",
+      "do": [
+        "rotateCW"
+      ]
+    },
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}
