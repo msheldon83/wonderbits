@@ -4,6 +4,78 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Build step 8: concept introductions and the card book (2026-11-08)
+
+The child test passed on 2026-11-08: every box of the plan's exit gate is
+ticked, and the owner dropped the requirement to play-test each pack before
+the next is written. Step 8 followed the same day.
+
+### What is built
+
+- **Pack manifests carry the concept graph** (`src/lessons/types.ts`,
+  `parse.ts`). Every `pack.json` lists the `concepts` it teaches and the
+  `prerequisites` it expects played first. A pack that introduces a concept
+  has an `introduction`: a `title`, one `explanation` sentence in kid terms,
+  and a `demo` with a tiny board and the `program` the robot plays on it,
+  plus an optional `before` program for the old way. The board reader is
+  shared with levels, so a demo board is written like a level's.
+- **The validator proves the introduction** (`validate.ts`, `validatePack`):
+  prerequisites name real packs that come earlier on the map, the
+  introduction is for one of the pack's own concepts, the demo reaches the
+  flag, the old way is the longer one, and the program uses a card of the
+  concept (`concepts.ts`, `cardsTeaching`). Content validation in CI runs it
+  for every pack.
+- **The introduction screen** (`src/app/ConceptIntro.tsx`) opens before a
+  pack's first level, once. It shows before it tells: the robot plays the
+  demo over and over on a small board while the cards light up and the same
+  program is printed as TypeScript beside them, with the running line
+  highlighted. When the demo has a `before`, the old way plays first under
+  the caption "The old way", its cards fold away, and the new program plays
+  under "With Repeat". The explanation sits under the demo, then "Let's go"
+  and "Watch again". The demo runs through the same runtime contract and
+  sequencer as a level; nothing new reaches the renderer.
+- **The card book** (`src/app/CardBookScreen.tsx`, `#/book`) lists one page
+  per introduction in map order: the title, the island, the sentence and
+  Watch, which replays the introduction at `#/book/<pack id>` with a link to
+  play the island. Pages for islands not reached yet show a lock and say
+  which island opens them; a direct link to a locked page goes back to the
+  book. The header has a Card book button on the map and in a level, and
+  each island's heading on the map links to its card once reached.
+- **Progress remembers** which introductions were watched (`introsSeen`;
+  older saves load without it). The log gains `intro-shown` (with the pack
+  and whether it was a replay) and `card-book-opened` (with the level it was
+  opened from, or "map").
+- **Sequencing consolidated to 5 plus 10.** Forest keeps five levels that
+  teach the game itself: First step, Looking up, Two steps, Turn first and
+  In order. Forest trails holds the ten real sequencing levels: The other
+  way, Around the pond, Fix it, Where will it end up?, Two acorns, The short
+  way, Nine cards, Zigzag, Deep bug and The big square, so the 22-card square
+  still closes the pack and motivates Repeat. Ten levels were retired: Up
+  the path, Order matters, The acorn, One wrong turn, Three acorns, Seven
+  cards, A long way, The bridge, Round the lake and All the way round. Level
+  ids did not change, so existing progress carries over; stars on retired
+  levels are simply no longer shown.
+- **First levels lost their intro sentence.** The introduction replaces it
+  on First step, Repeat and Look ahead. Other levels keep theirs.
+
+### Deviations and choices
+
+- **The code is printed, not written.** The plan's "peek at the code" was a
+  hand-written line in the introduction. It is printed from the demo program
+  by the same projection as the see-the-code panel instead, so the demo, the
+  cards and the code can never disagree, and the running line highlights.
+- **Two packs, not one.** The plan said sequencing "consolidates to 15". The
+  five intro levels stay in Forest and the ten real ones in Forest trails,
+  so the map shows the game's own island first and the sequencing island
+  second, and the sequencing introduction opens Forest. Forest trails
+  teaches the same concept and has no introduction of its own.
+- **The card book is gated by islands reached**, not by concepts finished.
+  A card opens when its island's first level is unlocked, which is also when
+  the child first sees the introduction. The grown-up's "open every level"
+  opens every card.
+- **No sound or final art in the demo yet**; it uses the same placeholder
+  robot and tiles as the levels until step 5's art lands.
+
 ## After the gate, early: 30 more levels, Repeat and If (2026-11-08)
 
 The first testers finished the 15 MVP levels and asked for harder ones, so

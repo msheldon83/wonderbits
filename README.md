@@ -32,16 +32,18 @@ introduced, creation mode, the AI design guide, the build sequence, the
 architecture, and the exit gate for the first child test. Read it before
 starting new work.
 
-This repository is at **build step 4 of the plan: lessons and the
-meta-loop**, plus the first three concepts of the spine. It has the 15 MVP
-levels and 30 more in three packs (harder sequencing, then Repeat, then If,
-If / else and Repeat until), validators in CI, prediction mode, three-rung
-hint ladders, the level map with stars and badges, progress in IndexedDB,
-and an observation log the grown-up can export. The next concept is
-functions, in a pack called "Same trick, new place", which needs a `call`
-node in the IR; the memory card panel and switches and gates follow it. See
-[docs/design-notes.md](docs/design-notes.md) for what is built, what is
-deliberately not, and any deviations from the plan.
+The first child test passed on 2026-11-08, and this repository is at
+**build step 8 of the plan: concept introductions and the card book**. It
+has 35 levels in four packs (Forest, five levels that teach the game; Forest
+trails, ten sequencing levels; Around and around, Repeat; Look before you
+leap, If, If / else and Repeat until), a show-first introduction before each
+new concept, a card book to watch them again, validators in CI, prediction
+mode, three-rung hint ladders, the level map with stars and badges, progress
+in IndexedDB, and an observation log the grown-up can export. The next
+concept is functions, in a pack called "Same trick, new place", which needs
+a `call` node in the IR; the memory card panel and switches and gates follow
+it. See [docs/design-notes.md](docs/design-notes.md) for what is built, what
+is deliberately not, and any deviations from the plan.
 
 ## Run it
 
@@ -51,10 +53,12 @@ npm run dev
 ```
 
 Open the printed URL. On an iPad on the same network, use the "Network" URL.
-The level map is the home screen (`#/`). A level is `#/level/<id>`, and
-`#/settings` has reduced motion, "open every level" for the grown-up, the
-progress export and a reset. The "Facing check" pack at the end of the map
-holds two throwaway boards for the quick facing check with the tester.
+The level map is the home screen (`#/`). A level is `#/level/<id>`; the
+first level of a pack opens with the pack's introduction, once. The card
+book is `#/book`, and one of its pages is `#/book/<pack id>`. `#/settings`
+has reduced motion, "open every level" for the grown-up, the progress export
+and a reset. The "Facing check" pack at the end of the map holds two
+throwaway boards for the quick facing check with the tester.
 
 | Command | What it does |
 | --- | --- |
@@ -102,11 +106,11 @@ src/
   sim/         Pure grid simulation: tiles, robot, step function, objectives
   runtime/     Interpreter, runtime contract over postMessage, Worker host
   projection/  IR to read-only TypeScript printer
-  lessons/     Level schema, content parser, validator, pack loader, hints, prediction
+  lessons/     Level and pack schema, content parser, validator, pack loader, hints, prediction, the concept graph and card book
   progress/    Progress, stars, badges, settings and the observation log over IndexedDB
   render/      Grid math, DOM and SVG board, animation controller, sequencer
   editor/      Program editor (cursor, move handles, drag and drop) and the code panel
-  app/         App shell, routes, level map, settings, lesson flow
+  app/         App shell, routes, level map, settings, lesson flow, concept introductions, card book
   perf/        Performance check page
 content/
   packs/       Level packs as JSON, validated in CI
@@ -149,6 +153,28 @@ so the board can show the robot thinking.
    shortest flat solution. On a level with blocks the reference solution is
    the proof that the budget can be met, and the validator warns when a
    flat program would fit the limits too.
+
+## Adding a pack
+
+A pack is a directory under `content/packs/` with a `pack.json` and a
+`levels/` folder. The manifest names the pack, its theme, its `order` on the
+map and its `levels`. It also carries the concept graph:
+
+- `concepts`: the concept ids the pack teaches or practises, such as
+  `"sequencing"`, `"loops"` or `"conditionals"`.
+- `prerequisites`: ids of packs that should be played first. They must come
+  earlier on the map.
+- `introduction`, on a pack that brings a new concept: a `title` the child
+  sees (such as "Repeat"), one `explanation` sentence in kid terms, and a
+  `demo` with a small `world` written like a level's board and the `program`
+  the robot plays on it. An optional `before` program shows the old way
+  first; its cards fold into the new program. The code the child sees is
+  printed from the demo program, so there is nothing to keep in sync.
+
+The validator checks the graph and proves the demo: it reaches the flag, the
+old way is the longer one, and the program uses a card of the concept it
+introduces. The introduction shows once before the pack's first level and
+lives in the card book after that.
 
 ## Licensing
 

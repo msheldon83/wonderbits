@@ -38,6 +38,19 @@ function manualPlayer() {
 }
 
 describe('Sequencer', () => {
+  it('stop aborts playback without redrawing the board', async () => {
+    const m = manualPlayer();
+    const seq = new Sequencer(m.player);
+    seq.load(trace, state(0));
+    const shownBefore = m.shown.length;
+    const playing = seq.play();
+    seq.stop();
+    await playing;
+    expect(seq.state).toBe('idle');
+    expect(seq.position).toBe(0);
+    expect(m.shown.length).toBe(shownBefore);
+  });
+
   it('plays every event in order and finishes', async () => {
     const m = manualPlayer();
     const statuses: SequencerStatus[] = [];

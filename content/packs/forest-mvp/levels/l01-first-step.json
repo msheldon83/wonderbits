@@ -2,7 +2,6 @@
   "schemaVersion": 1,
   "id": "l01-first-step",
   "title": "First step",
-  "intro": "Place the flag where the robot will end up, then press Run.",
   "themeId": "forest",
   "world": {
     "rows": [

@@ -3,9 +3,11 @@
   "id": "throwaway-facing",
   "title": "Facing check",
   "themeId": "forest",
+  "order": 99,
+  "concepts": ["facing"],
+  "prerequisites": [],
   "levels": [
     "facing-01",
     "facing-02"
-  ],
-  "order": 99
+  ]
 }

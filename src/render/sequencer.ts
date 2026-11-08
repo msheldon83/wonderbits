@@ -67,6 +67,14 @@ export class Sequencer {
     if (this.status === 'playing') this.pauseRequested = true;
   }
 
+  /** Abort immediately without touching the board, for when the board is going away. */
+  stop(): void {
+    this.abort();
+    this.cursor = 0;
+    this.listener.onEvent?.(null);
+    this.setStatus('idle');
+  }
+
   /** Abort immediately and return to the initial state. */
   reset(): void {
     this.abort();

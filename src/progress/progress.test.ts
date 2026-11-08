@@ -16,6 +16,26 @@ const withLevel = (p: Progress, id: string, patch: Partial<ReturnType<typeof emp
 });
 const done = (noHints = true, budget: boolean | null = null) => ({ stars: { complete: true, noHints, budget } });
 
+describe('introductions', () => {
+  it('remembers which packs the child has been introduced to, and tolerates older saves', async () => {
+    const storage = memoryStore();
+    await storage.set('progress', { version: 1, levels: {}, badges: [] });
+    const store = new ProgressStore(storage, () => 5);
+    await store.load();
+    expect(store.hasSeenIntro('loops')).toBe(false);
+    store.markIntroSeen('loops');
+    store.markIntroSeen('loops');
+    expect(store.hasSeenIntro('loops')).toBe(true);
+    expect(store.getSnapshot().progress.introsSeen).toEqual(['loops']);
+    const again = new ProgressStore(storage);
+    await again.load();
+    expect(again.hasSeenIntro('loops')).toBe(true);
+    store.record({ levelId: 'r01', kind: 'intro-shown', packId: 'loops', replay: false });
+    store.record({ levelId: 'map', kind: 'card-book-opened' });
+    expect(store.getSnapshot().log.map((e) => e.kind)).toEqual(['intro-shown', 'card-book-opened']);
+  });
+});
+
 describe('computeBadges', () => {
   it('awards nothing on an empty history', () => {
     expect(computeBadges(levels, emptyProgress(), [])).toEqual([]);

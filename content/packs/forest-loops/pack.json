@@ -4,6 +4,22 @@
   "title": "Around and around",
   "themeId": "forest",
   "order": 2,
+  "concepts": ["loops"],
+  "prerequisites": ["forest-trails"],
+  "introduction": {
+    "concept": "loops",
+    "title": "Repeat",
+    "explanation": "A Repeat card runs the cards inside it again and again.",
+    "demo": {
+      "world": {
+        "rows": ["....."],
+        "robot": { "x": 0, "y": 0, "facing": "E" },
+        "goal": { "x": 4, "y": 0 }
+      },
+      "before": ["forward", "forward", "forward", "forward"],
+      "program": [{ "repeat": 4, "do": ["forward"] }]
+    }
+  },
   "levels": [
     "r01-repeat",
     "r02-set-the-count",

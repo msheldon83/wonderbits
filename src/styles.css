@@ -1698,6 +1698,218 @@ a.btn {
   margin: 0;
 }
 
+/* ---------- Concept introductions and the card book ---------- */
+
+.btn-book {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.intro {
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.intro-card {
+  width: min(1100px, 100%);
+  padding: 18px 22px 20px;
+  border-radius: 28px;
+  background: var(--paper);
+  box-shadow: 0 2px 0 var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.intro-kicker {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--amber-deep);
+}
+
+.intro-title {
+  margin: -8px 0 0;
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--blue-deep);
+}
+
+.intro-demo {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(420px, 1.4fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.intro-board {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.intro-board .board-viewport {
+  flex: none;
+  height: clamp(200px, 34dvh, 360px);
+}
+
+.intro-caption {
+  margin: 0;
+  min-height: 24px;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+
+.intro-program .editor {
+  gap: 0;
+}
+
+.intro-program .code-note {
+  display: none;
+}
+
+/* The old way's cards fold away before the new way takes their place. */
+.intro-demo.is-folding .program-list {
+  animation: fold-cards 650ms ease-in forwards;
+  transform-origin: top center;
+}
+
+@keyframes fold-cards {
+  to {
+    transform: scaleY(0.15);
+    opacity: 0;
+  }
+}
+
+.intro-explanation {
+  margin: 4px 0 0;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.intro-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.book {
+  overflow-y: auto;
+  min-height: 0;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.book-lead {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.book-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.book-entry {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  border-radius: 24px;
+  background: var(--paper);
+  box-shadow: 0 2px 0 var(--line);
+}
+
+.book-entry.is-locked {
+  background: transparent;
+  box-shadow: inset 0 0 0 3px var(--line);
+  color: var(--ink-soft);
+}
+
+.book-entry-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.book-entry-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--blue-deep);
+}
+
+.book-entry.is-locked .book-entry-title {
+  color: var(--ink-soft);
+}
+
+.book-entry-pack {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+}
+
+.book-entry-explanation {
+  margin: 6px 0 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.book-lock {
+  flex: none;
+  width: var(--tap);
+  height: var(--tap);
+  display: grid;
+  place-items: center;
+  color: var(--ink-soft);
+}
+
+.map-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.map-card-link {
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--blue-wash);
+  color: var(--blue-deep);
+  text-decoration: none;
+}
+
+.map-card-link:hover {
+  background: var(--blue);
+  color: #fff;
+}
+
 /* ---------- Portrait and narrow screens ---------- */
 
 /* Portrait tablets stack the board over the editor. The board and the run
@@ -1745,6 +1957,28 @@ a.btn {
     min-height: 40px;
     font-size: 16px;
   }
+  .intro-demo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .intro-program .program-body.has-code {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 12px;
+  }
+  .intro-program .program-code {
+    padding-left: 0;
+    border-left: 0;
+    padding-top: 12px;
+    border-top: 3px solid var(--line);
+  }
+  .intro-board .board-viewport {
+    height: clamp(160px, 30dvh, 300px);
+  }
+  .intro-title {
+    font-size: 28px;
+  }
+  .intro-explanation {
+    font-size: 19px;
+  }
 }
 
 /* Phones: no room for blocks and code side by side; the code goes under
@@ -1788,6 +2022,10 @@ a.btn {
   }
   .caret.cursor {
     transition: none;
+  }
+  .intro-demo.is-folding .program-list {
+    animation: none;
+    opacity: 0.3;
   }
   /* Keep the colour flash, drop the movement. */
   .program-step .card.is-new {

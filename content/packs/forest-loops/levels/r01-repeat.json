@@ -2,7 +2,6 @@
   "schemaVersion": 1,
   "id": "r01-repeat",
   "title": "Repeat",
-  "intro": "A new card! Repeat runs the cards inside it again and again. Count the goes, place the flag where the robot ends up, then Run.",
   "themeId": "forest",
   "world": {
     "rows": [

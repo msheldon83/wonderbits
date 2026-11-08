@@ -68,6 +68,30 @@ export interface PuzzleDefinition {
   stars: { noHints: boolean; budget?: number };
 }
 
+/**
+ * How a pack introduces its concept: show before tell. The demo is a tiny
+ * board and a program the robot plays on it, over and over, with the cards
+ * lighting up and the same program printed as code beside them. When the
+ * demo has a `before` program, the old way plays first, then its cards fold
+ * into the new one. The explanation is one sentence in kid terms. All of it
+ * goes into the card book the child can open anytime.
+ */
+export interface ConceptIntroduction {
+  /** The concept id this introduces; must be one of the pack's concepts. */
+  concept: string;
+  /** The name of the new idea as the child will see it, such as "Repeat". */
+  title: string;
+  /** One sentence in kid terms, shown beside the new card. */
+  explanation: string;
+  demo: {
+    world: WorldDefinition;
+    /** The program that shows the new idea. It must reach the flag. */
+    program: NodeSpec[];
+    /** The old way, played first, whose cards fold into `program`. Optional. */
+    before?: NodeSpec[];
+  };
+}
+
 export interface PackManifest {
   schemaVersion: typeof CONTENT_SCHEMA_VERSION;
   id: string;
@@ -77,6 +101,12 @@ export interface PackManifest {
   order: number;
   /** Level ids in play order; each is a file levels/<id>.json in the pack. */
   levels: string[];
+  /** Concept ids this pack teaches or practises, such as "sequencing" or "loops". */
+  concepts: string[];
+  /** Ids of packs that should be played first. Together with concepts this is the concept graph. */
+  prerequisites: string[];
+  /** The show-first introduction to the pack's new concept. Absent on a pack that only practises. */
+  introduction?: ConceptIntroduction;
 }
 
 /** What the child predicted before a run. */

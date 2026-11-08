@@ -4,6 +4,21 @@
   "title": "Look before you leap",
   "themeId": "forest",
   "order": 3,
+  "concepts": ["conditionals"],
+  "prerequisites": ["forest-loops"],
+  "introduction": {
+    "concept": "conditionals",
+    "title": "If",
+    "explanation": "An If card checks the world first, then picks what to do.",
+    "demo": {
+      "world": {
+        "rows": ["...#", "...."],
+        "robot": { "x": 0, "y": 0, "facing": "E" },
+        "goal": { "x": 2, "y": 1 }
+      },
+      "program": ["forward", "forward", { "if": "blockedAhead", "do": ["rotateCW"] }, "forward"]
+    }
+  },
   "levels": [
     "c01-look-ahead",
     "c02-yes-or-no",

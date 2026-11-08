@@ -57,7 +57,8 @@ export class ProgressStore {
     ]);
     this.snapshot = {
       loaded: true,
-      progress: progress?.version === PROGRESS_VERSION ? progress : emptyProgress(),
+      // introsSeen arrived after the first builds; older saves do not have it.
+      progress: progress?.version === PROGRESS_VERSION ? { ...progress, introsSeen: progress.introsSeen ?? [] } : emptyProgress(),
       settings: { ...DEFAULT_SETTINGS, ...settings },
       log: log ?? [],
     };
@@ -96,6 +97,17 @@ export class ProgressStore {
   private updateLevel(levelId: string, update: (p: LevelProgress) => LevelProgress): void {
     const progress = this.snapshot.progress;
     this.setProgress({ ...progress, levels: { ...progress.levels, [levelId]: update(this.levelProgress(levelId)) } });
+  }
+
+  hasSeenIntro(packId: string): boolean {
+    return this.snapshot.progress.introsSeen.includes(packId);
+  }
+
+  /** The child pressed "Let's go" on a pack's introduction; it is not shown again before that pack. */
+  markIntroSeen(packId: string): void {
+    if (this.hasSeenIntro(packId)) return;
+    const progress = this.snapshot.progress;
+    this.setProgress({ ...progress, introsSeen: [...progress.introsSeen, packId] });
   }
 
   /** A level is open when the one before it is complete, or the adult opened them all. */

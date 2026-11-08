@@ -4,8 +4,8 @@
  */
 import type { NodeSpec } from '../ir/spec';
 import { isCardId, isCommandId, isConditionId, REPEAT_MAX, REPEAT_MIN, type CardId, type ConditionId } from '../ir/types';
-import { FACINGS, type Cell, type Facing, type TileKind } from '../sim/types';
-import { CONTENT_SCHEMA_VERSION, type Activity, type HintPath, type HintStep, type PackManifest, type PuzzleDefinition } from './types';
+import { FACINGS, type Cell, type Facing, type TileKind, type WorldDefinition } from '../sim/types';
+import { CONTENT_SCHEMA_VERSION, type Activity, type ConceptIntroduction, type HintPath, type HintStep, type PackManifest, type PuzzleDefinition } from './types';
 
 export class ContentError extends Error {
   constructor(
@@ -112,6 +112,63 @@ class Reader {
       return [];
     });
   }
+  /** A board: row strings of . # and _, the robot's start pose, the goal and the acorns. */
+  world(v: unknown, path: string): WorldDefinition {
+    const world = this.obj(v, path);
+    const rows = Array.isArray(world.rows) ? world.rows : [];
+    if (rows.length === 0) this.fail(`${path}.rows`, 'expected at least one row string');
+    const width = typeof rows[0] === 'string' ? rows[0].length : 0;
+    const tiles: TileKind[][] = rows.map((row, y) => {
+      if (typeof row !== 'string' || row.length !== width) {
+        this.fail(`${path}.rows[${y}]`, `expected a string of length ${width}`);
+        return [];
+      }
+      return [...row].map((ch, x) => {
+        const kind = TILE_CHARS[ch];
+        if (!kind) this.fail(`${path}.rows[${y}][${x}]`, `unknown tile ${JSON.stringify(ch)}; use . # or _`);
+        return kind ?? 'gap';
+      });
+    });
+    const robotRaw = this.obj(world.robot, `${path}.robot`);
+    const facing = robotRaw.facing as Facing;
+    if (!FACINGS.includes(facing)) this.fail(`${path}.robot.facing`, 'expected N, E, S or W');
+    return {
+      width,
+      height: rows.length,
+      tiles,
+      robot: { ...this.cell(robotRaw, `${path}.robot`), facing },
+      goal: this.cell(world.goal, `${path}.goal`),
+      collectibles:
+        world.collectibles === undefined
+          ? []
+          : Array.isArray(world.collectibles)
+            ? world.collectibles.map((c, i) => this.cell(c, `${path}.collectibles[${i}]`))
+            : (this.fail(`${path}.collectibles`, 'expected an array'), []),
+    };
+  }
+  /** A list of ids: concepts a pack teaches, or packs it needs first. */
+  ids(v: unknown, path: string): string[] {
+    if (v === undefined) return [];
+    if (!Array.isArray(v)) {
+      this.fail(path, 'expected an array of ids');
+      return [];
+    }
+    return v.map((x, i) => this.str(x, `${path}[${i}]`));
+  }
+  introduction(v: unknown, path: string): ConceptIntroduction {
+    const o = this.obj(v, path);
+    const demo = this.obj(o.demo, `${path}.demo`);
+    return {
+      concept: this.str(o.concept, `${path}.concept`),
+      title: this.str(o.title, `${path}.title`),
+      explanation: this.str(o.explanation, `${path}.explanation`),
+      demo: {
+        world: this.world(demo.world, `${path}.demo.world`),
+        program: this.spec(demo.program, `${path}.demo.program`),
+        ...(demo.before !== undefined && { before: this.spec(demo.before, `${path}.demo.before`) }),
+      },
+    };
+  }
   version(v: unknown, path: string): typeof CONTENT_SCHEMA_VERSION {
     if (v !== CONTENT_SCHEMA_VERSION) this.fail(path, `expected schema version ${CONTENT_SCHEMA_VERSION}`);
     return CONTENT_SCHEMA_VERSION;
@@ -163,26 +220,10 @@ class Reader {
 export function parsePuzzle(json: unknown, source: string): PuzzleDefinition {
   const r = new Reader();
   const root = r.obj(json, '$');
-  const world = r.obj(root.world, 'world');
-
-  const rows = Array.isArray(world.rows) ? world.rows : [];
-  if (rows.length === 0) r.fail('world.rows', 'expected at least one row string');
-  const width = typeof rows[0] === 'string' ? rows[0].length : 0;
-  const tiles: TileKind[][] = rows.map((row, y) => {
-    if (typeof row !== 'string' || row.length !== width) {
-      r.fail(`world.rows[${y}]`, `expected a string of length ${width}`);
-      return [];
-    }
-    return [...row].map((ch, x) => {
-      const kind = TILE_CHARS[ch];
-      if (!kind) r.fail(`world.rows[${y}][${x}]`, `unknown tile ${JSON.stringify(ch)}; use . # or _`);
-      return kind ?? 'gap';
-    });
-  });
-
-  const robotRaw = r.obj(world.robot, 'world.robot');
-  const facing = robotRaw.facing as Facing;
-  if (!FACINGS.includes(facing)) r.fail('world.robot.facing', 'expected N, E, S or W');
+  // A level's board must list its collectibles, even when there are none.
+  const worldRaw = r.obj(root.world, 'world');
+  if (worldRaw.collectibles === undefined) r.fail('world.collectibles', 'expected an array');
+  const world = r.world(root.world, 'world');
 
   const objective = r.obj(root.objective, 'objective');
   const curriculum = r.obj(root.curriculum, 'curriculum');
@@ -215,16 +256,7 @@ export function parsePuzzle(json: unknown, source: string): PuzzleDefinition {
     title: r.str(root.title, 'title'),
     ...(root.intro !== undefined && { intro: r.str(root.intro, 'intro') }),
     themeId: r.str(root.themeId, 'themeId'),
-    world: {
-      width,
-      height: rows.length,
-      tiles,
-      robot: { ...r.cell(robotRaw, 'world.robot'), facing },
-      goal: r.cell(world.goal, 'world.goal'),
-      collectibles: Array.isArray(world.collectibles)
-        ? world.collectibles.map((c, i) => r.cell(c, `world.collectibles[${i}]`))
-        : (r.fail('world.collectibles', 'expected an array'), []),
-    },
+    world,
     objective: {
       reachGoal: r.bool(objective.reachGoal, 'objective.reachGoal'),
       collectAll: r.bool(objective.collectAll, 'objective.collectAll'),
@@ -272,7 +304,11 @@ export function parsePack(json: unknown, source: string): PackManifest {
     themeId: r.str(root.themeId, 'themeId'),
     order: root.order === undefined ? 0 : r.int(root.order, 'order'),
     levels,
+    concepts: r.ids(root.concepts, 'concepts'),
+    prerequisites: r.ids(root.prerequisites, 'prerequisites'),
+    ...(root.introduction !== undefined && { introduction: r.introduction(root.introduction, 'introduction') }),
   };
+  if (pack.concepts.length === 0) r.fail('concepts', 'expected at least one concept id');
   if (r.issues.length) throw new ContentError(source, r.issues);
   return pack;
 }

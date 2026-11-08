@@ -2,7 +2,6 @@
   "schemaVersion": 1,
   "id": "c01-look-ahead",
   "title": "Look ahead",
-  "intro": "A new card! If looks at the tile ahead. The cards inside it only run when the answer is yes. Place the flag, then Run.",
   "themeId": "forest",
   "world": {
     "rows": [

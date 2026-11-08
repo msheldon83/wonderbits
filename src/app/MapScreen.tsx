@@ -4,6 +4,7 @@
  * badge shelf. Reads progress only.
  */
 import { useEffect, useRef } from 'react';
+import type { BookEntry } from '../lessons/concepts';
 import { BADGE_IDS } from '../progress/types';
 import type { ProgressStore } from '../progress/store';
 import { BADGE_INFO, BadgeIcon, Star } from './icons';
@@ -13,7 +14,7 @@ const STEP_Y = 108;
 const X_CENTER = 50;
 const X_SWING = 30;
 
-export function MapScreen({ choices, store, badges }: { choices: LevelChoice[]; store: ProgressStore; badges: readonly string[] }) {
+export function MapScreen({ choices, book, store, badges }: { choices: LevelChoice[]; book: BookEntry[]; store: ProgressStore; badges: readonly string[] }) {
   const packs = new Map<string, LevelChoice[]>();
   for (const c of choices) packs.set(c.packTitle, [...(packs.get(c.packTitle) ?? []), c]);
   const current = choices.find((c) => store.isUnlocked(c.level.id) && !store.levelProgress(c.level.id).stars.complete)?.level.id;
@@ -35,7 +36,18 @@ export function MapScreen({ choices, store, badges }: { choices: LevelChoice[]; 
         const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
         return (
           <section key={title} className="map-pack" aria-label={`${title} levels`}>
-            <h2 className="map-title">{title}</h2>
+            <h2 className="map-title">
+              {title}
+              {(() => {
+                /* The island's card, once the island is reached: watch its introduction again. */
+                const entry = book.find((e) => e.packId === list[0]!.packId);
+                return entry && store.isUnlocked(entry.firstLevelId) ? (
+                  <a className="map-card-link" href={hashFor({ screen: 'book', packId: entry.packId })} title={`Watch the ${entry.introduction.title} card again`}>
+                    {entry.introduction.title} card
+                  </a>
+                ) : null;
+              })()}
+            </h2>
             <div className="map-trail" style={{ height }}>
               <svg className="map-path" viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" aria-hidden="true">
                 <path d={path} fill="none" stroke="rgba(138, 106, 74, 0.35)" strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" strokeDasharray="1 10" vectorEffect="non-scaling-stroke" />

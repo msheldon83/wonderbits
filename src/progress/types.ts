@@ -35,6 +35,8 @@ export interface Progress {
   version: typeof PROGRESS_VERSION;
   levels: Record<string, LevelProgress>;
   badges: BadgeId[];
+  /** Packs whose concept introduction the child has watched through to "Let's go". */
+  introsSeen: string[];
 }
 
 export interface Settings {
@@ -48,9 +50,15 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = { muted: false, reducedMotion: 'system', themeId: 'forest', openAllLevels: false };
 
-/** One structured event per thing the child did. Timestamps are epoch ms. */
+/**
+ * One structured event per thing the child did. Timestamps are epoch ms.
+ * levelId is the level the event belongs to; for the card book it is the
+ * level it was opened from, or "map".
+ */
 export type ObservationEvent = { t: number; levelId: string } & (
   | { kind: 'level-opened' }
+  | { kind: 'intro-shown'; packId: string; replay: boolean }
+  | { kind: 'card-book-opened' }
   | { kind: 'level-restarted' }
   | { kind: 'card-placed'; command: string; at: Place }
   | { kind: 'card-moved'; nodeId: NodeId; to: Place }
@@ -75,7 +83,7 @@ export interface ExportFile {
 }
 
 export function emptyProgress(): Progress {
-  return { version: PROGRESS_VERSION, levels: {}, badges: [] };
+  return { version: PROGRESS_VERSION, levels: {}, badges: [], introsSeen: [] };
 }
 
 export function emptyLevelProgress(levelId: string): LevelProgress {

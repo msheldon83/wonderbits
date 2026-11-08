@@ -8,9 +8,10 @@ import { cardsOfSpec, conditionsOfSpec, countSpec, depthOfSpec, specDiff, type N
 import { CONDITION_IDS, isBlockId, isCommandId, type CardId, type CommandId } from '../ir/types';
 import { interpretAll } from '../runtime/interpreter';
 import { cellKey, objectiveMet, step, tileAt } from '../sim/world';
-import type { SimState } from '../sim/types';
+import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
+import { cardsTeaching } from './concepts';
 import { cardOfSpec, resolveSpecPath } from './paths';
-import type { PuzzleDefinition } from './types';
+import type { ConceptIntroduction, PackManifest, PuzzleDefinition } from './types';
 
 export interface ValidationReport {
   errors: string[];
@@ -53,26 +54,32 @@ function countOf(cards: readonly string[], c: string): number {
   return cards.filter((x) => x === c).length;
 }
 
-const solves = (puzzle: PuzzleDefinition, spec: NodeSpec[]) =>
-  interpretAll({ program: programFromSpec(spec, sequentialIdFactory()), world: puzzle.world, objective: puzzle.objective, limits: { maxSteps: 1000 } }).outcome.status === 'success';
+const solvesOn = (world: WorldDefinition, objective: ObjectiveDefinition, spec: NodeSpec[]) =>
+  interpretAll({ program: programFromSpec(spec, sequentialIdFactory()), world, objective, limits: { maxSteps: 1000 } }).outcome.status === 'success';
+const solves = (puzzle: PuzzleDefinition, spec: NodeSpec[]) => solvesOn(puzzle.world, puzzle.objective, spec);
 
-export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-  const { world, programming, referenceSolution, stars } = puzzle;
-
+/** The board itself: size, and the robot, goal and acorns on floor tiles. Shared by levels and demos. */
+function validateWorld(world: WorldDefinition, objective: ObjectiveDefinition, errors: string[]): void {
   if (world.width < 1 || world.width > 16 || world.height < 1 || world.height > 16) {
     errors.push(`board must be 1..16 tiles on each side, got ${world.width}x${world.height}`);
   }
   if (tileAt(world, world.robot) !== 'floor') errors.push('robot must start on a floor tile');
-  if (puzzle.objective.reachGoal && tileAt(world, world.goal) !== 'floor') errors.push('goal must be on a floor tile');
+  if (objective.reachGoal && tileAt(world, world.goal) !== 'floor') errors.push('goal must be on a floor tile');
   if (cellKey(world.robot) === cellKey(world.goal)) errors.push('robot must not start on the goal');
   const keys = world.collectibles.map(cellKey);
   if (new Set(keys).size !== keys.length) errors.push('collectibles must not share a tile');
   world.collectibles.forEach((c) => {
     if (tileAt(world, c) !== 'floor') errors.push(`collectible at ${cellKey(c)} must be on a floor tile`);
   });
-  if (!puzzle.objective.reachGoal && !puzzle.objective.collectAll) errors.push('objective must ask for something');
+  if (!objective.reachGoal && !objective.collectAll) errors.push('objective must ask for something');
+}
+
+export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const { world, programming, referenceSolution, stars } = puzzle;
+
+  validateWorld(world, puzzle.objective, errors);
 
   if (programming.allowedCommands.length === 0) errors.push('allowedCommands must not be empty');
   const allowed = new Set<string>(programming.allowedCommands);
@@ -217,4 +224,48 @@ function validateHints(puzzle: PuzzleDefinition, errors: string[]): void {
       }
     }
   });
+}
+
+/**
+ * The concept graph across packs: prerequisites name real packs that come
+ * earlier, an introduction belongs to one of the pack's own concepts, and
+ * its demo truly shows the idea.
+ */
+export function validatePack(pack: PackManifest, all: readonly PackManifest[]): string[] {
+  const errors: string[] = [];
+  const byId = new Map(all.map((p) => [p.id, p]));
+  const ids = pack.concepts;
+  if (new Set(ids).size !== ids.length) errors.push('concepts must not repeat');
+  for (const pre of pack.prerequisites) {
+    const other = byId.get(pre);
+    if (!other) errors.push(`prerequisite "${pre}" is not a pack`);
+    else if (other.id === pack.id) errors.push('a pack cannot be its own prerequisite');
+    else if (other.order > pack.order || (other.order === pack.order && all.indexOf(other) > all.indexOf(pack))) {
+      errors.push(`prerequisite "${pre}" plays after this pack on the map`);
+    }
+  }
+  if (pack.introduction) {
+    if (!pack.concepts.includes(pack.introduction.concept)) {
+      errors.push(`introduction is for "${pack.introduction.concept}", which is not one of this pack's concepts`);
+    }
+    validateIntroduction(pack.introduction, errors);
+  }
+  return errors;
+}
+
+/** The demo must reach the flag and must use a card that belongs to the concept it introduces. */
+export function validateIntroduction(intro: ConceptIntroduction, errors: string[]): void {
+  const { world, program, before } = intro.demo;
+  const objective: ObjectiveDefinition = { reachGoal: true, collectAll: world.collectibles.length > 0 };
+  validateWorld(world, objective, errors);
+  if (program.length === 0) errors.push('introduction.demo.program must not be empty');
+  if (!solvesOn(world, objective, program)) errors.push('introduction.demo.program must reach the flag (and collect every acorn) on its board');
+  if (before) {
+    if (!solvesOn(world, objective, before)) errors.push('introduction.demo.before must reach the flag on its board too, the old way');
+    if (countSpec(before) <= countSpec(program)) errors.push('introduction.demo.before should be the longer, old way; it has no more cards than the program');
+  }
+  const teaching = cardsTeaching(intro.concept);
+  if (teaching && !cardsOfSpec(program).some((c) => teaching.includes(c as CardId))) {
+    errors.push(`introduction.demo.program never uses a ${teaching.join(' or ')} card, so it does not show "${intro.concept}"`);
+  }
 }

@@ -10,7 +10,7 @@
 
 ## Decision summary
 
-Build a polished top-down 2D robot-puzzle MVP first, with a visual program IR as the single source of truth and TypeScript shown as read-only "see the code". Validate puzzle play with the first child tester before writing the full curriculum, Game Workshop, or AI features.
+Build a polished top-down 2D robot-puzzle MVP first, with a visual program IR as the single source of truth and TypeScript shown as read-only "see the code". Validate puzzle play with the first child tester before writing the full curriculum, Game Workshop, or AI features. That validation passed on 2026-11-08 (section 11).
 
 Purpose: approve the product direction and the Phase 1 boundary before handing work to coding agents. This is a personal project for a nephew first; it may later be open-sourced or offered online, so the architecture keeps those doors open without building for them now.
 
@@ -63,7 +63,7 @@ The longer aim, set on 2026-11-08: Wonderbits teaches the full set of ideas a me
 - Create before typing. Children build and modify games visually, with AI help, before text programming.
 - No dead-end language. Every visual program has a real TypeScript form the child can read now and edit later.
 - Tablet-first interactions. Tap and keyboard cover everything; drag is an enhancement.
-- Validate before expanding. Each pack is play-tested before the next concept's pack is written in full. Creation mode and AI work wait until the puzzle loop is proven with a child.
+- Validate before expanding. The puzzle loop was proven with a child on 2026-11-08. From there a pack ships when its validators pass; play-testing between packs is not required. Creation mode and AI work keep their own gates in section 9.
 - Constraints create concepts. Each new idea arrives as the tool that cracks a puzzle, the way the level 15 instruction budget made Repeat feel necessary.
 - The puzzle stays the point. Each concept gets a short, show-first introduction, then the puzzles do the teaching. State, variables and saving show up as game mechanics: switches, a memory budget, a robot that sleeps.
 - Puzzles first, never forced. Creation is open anytime. The program encourages finishing the puzzles first and never asks a child to prove mastery.
@@ -253,9 +253,9 @@ Fourteen packs follow Look before you leap, at least ten levels each, like the e
 | The notebook | Find the crate with the key from a list of crates that share one shape | Answer a riddle that needs two lists joined by a crate number. Sets up: many things that each remember and act. |
 | Robot team | Two robots from one blueprint, started in different places, each reaching its own flag | Robots coordinate: one holds a plate open while another passes, each with its own backpack. Sets up: building games full of things that act. |
 
-Within each pack the mix follows the existing pattern: run and predict early, then build, reorder, debug, a transfer level with no hints, and a budget level last. Exact level lists are written after the functions pack is play-tested.
+Within each pack the mix follows the existing pattern: run and predict early, then build, reorder, debug, a transfer level with no hints, and a budget level last. Exact level lists are written pack by pack as each is built.
 
-Ten levels is a floor. When play-testing shows a concept needs more practice, it gets a second pack or optional practice trails on the map. Sequencing goes the other way: its 25 levels today (Forest's 15 and Forest trails' 10) consolidate to 5 intro levels plus 10 real ones, keeping the 22-card square as the closer that motivates Repeat. Those 5 intro levels teach the game itself (the board, the cards, Run and the flag) and are not repeated in later packs.
+Ten levels is a floor. When play shows a concept needs more practice, it gets a second pack or optional practice trails on the map. Sequencing went the other way: on 2026-11-08 its 25 levels (Forest's 15 and Forest trails' 10) were consolidated to 5 intro levels in Forest plus 10 real ones in Forest trails, keeping the 22-card square as the closer that motivates Repeat. The 5 intro levels teach the game itself (the board, the cards, Run and the flag) and are not repeated in later packs.
 
 **Introducing each concept**
 
@@ -288,7 +288,9 @@ Every new concept opens with a short introduction that shows before it tells, th
 | Records and shapes | A record is a thing with named parts, and every crate has the same parts. | A crate opens to show its label, colour and contents. |
 | Objects | A blueprint makes robots, and each robot keeps its own memory. | One blueprint stamps out two robots that walk off in different directions. |
 
-Explanations stay short enough for a 9-year-old to read, and the demo carries the rest. In creation mode, the AI's explanations link to the same card book page. The three built packs get the same introduction, replacing the single `intro` sentence on their first levels today.
+Explanations stay short enough for a 9-year-old to read, and the demo carries the rest. In creation mode, the AI's explanations link to the same card book page. The three built packs have theirs, replacing the single `intro` sentence their first levels used to carry (built 2026-11-08; see design-notes.md).
+
+A pack's introduction lives in its `pack.json` beside `concepts` and `prerequisites`: a `title`, one `explanation` sentence, and a `demo` with a small board and the `program` the robot plays on it, plus an optional `before` program that shows the old way first and folds into the new one. The code shown is printed from the demo program by the same projection as the see-the-code panel, so the three parts of the introduction can never disagree. The validator proves the demo reaches the flag, that the old way is the longer one, and that the program uses a card of the concept it introduces.
 
 ## 5. Puzzle rules and lesson schema
 
@@ -468,7 +470,7 @@ Every session appends structured events locally: level opened, card placed, card
 
 ## 9. Delivery phases and boundaries
 
-Each phase has a hard boundary and a gate. Nothing past Phase 1a is specified in detail until the MVP child test passes.
+Each phase has a hard boundary and a gate. The MVP child test passed on 2026-11-08, and Phase 1b is specified in section 4.
 
 ```mermaid
 flowchart LR
@@ -480,7 +482,7 @@ flowchart LR
   style p1a stroke-width:3px
 ```
 
-Phase 1a is built. The first three packs of Phase 1b (Forest trails, Around and around, Look before you leap) followed early because the first testers finished the 15 MVP levels and asked for harder ones (see design-notes.md). The three gates are the child test on the built packs, curriculum validation pack by pack, and a written creation-mode scope. Bands are not to scale; effort is not estimated.
+Phase 1a is built. The first three packs of Phase 1b (Forest trails, Around and around, Look before you leap) followed early because the first testers finished the 15 MVP levels and asked for harder ones (see design-notes.md). The child test passed on 2026-11-08. The remaining gates are curriculum validation and a written creation-mode scope; play-testing between packs is not required. Bands are not to scale; effort is not estimated.
 
 | Phase | Core deliverable | Explicitly not included |
 | --- | --- | --- |
@@ -550,16 +552,16 @@ Work proceeds vertically: each step ends with something runnable on an iPad. Cod
 4. **Lessons and meta-loop.** Lesson schema and validators in CI; prediction mode; hint ladders; the 15 MVP levels with reference solutions; level map; stars and badges; IndexedDB progress; observation log and export; see-the-code panel.
 5. **Polish.** Final AI art, robot movement and rotation animation with expression changes, sound with mute, reduced motion, success and error effects, frozen theme smoke test proving the same trace under both themes, onboarding without words on level 1.
 6. **Child test.** Run the section 11 protocol. Fix usability failures. Re-test the fixed levels.
-7. **After the gate.** Repeat, motivated by the level 15 budget, then If. Started early: the first testers finished the 15 levels and asked for more, so the Forest trails, Around and around and Look before you leap packs exist (design-notes.md). The child test in step 6 now runs on all four packs.
-8. **Concept introductions and the card book.** Show, name it, peek at the code, first try, save it to the card book. The three built packs get theirs, replacing the `intro` sentence on their first levels. Concepts, prerequisites and the introduction go into each `pack.json`. Sequencing consolidates to 5 intro levels plus 10.
-9. **Functions.** `call` in the IR, the printer and the interpreter; the Same trick, new place pack, play-tested before the next pack's level list is written.
+7. **After the gate.** Repeat, motivated by the level 15 budget, then If. Started early: the first testers finished the 15 levels and asked for more, so the Forest trails, Around and around and Look before you leap packs exist (design-notes.md). The child test in step 6 passed on 2026-11-08.
+8. **Concept introductions and the card book.** Show, name it, peek at the code, first try, save it to the card book. The three built packs get theirs, replacing the `intro` sentence on their first levels. Concepts, prerequisites and the introduction go into each `pack.json`. Sequencing consolidates to 5 intro levels plus 10. Built 2026-11-08 (design-notes.md).
+9. **Functions.** `call` in the IR, the printer and the interpreter; the Same trick, new place pack with its introduction.
 10. **World state and the memory card.** Switches and gates in the simulation with their senses; the memory card panel rendered from trace state; the Flip the switch pack; the `model` activity and state prediction with their validator rules.
 11. **Events, input and time.** `on` handlers and When it happens; `inputScript` and Remote control; ticks, every-tick handlers, moving hazards and Tick tock.
 12. **Data.** The memory budget and kinds of values (Two things to remember); `set` and variables (Into the dark); lists (In a row); 2D grids (Reading the map); seeded randomness (Never the same twice); stored vs. derived (Two scoreboards); the backpack and persistence (Overnight); records (The notebook); blueprints and instances (Robot team).
 13. **Creation mode.** Create on the map with its nudge; remix; design a puzzle with the validator as critic; the Workshop's turn-based and real-time starters; the design card and save-my-place for detours; grown-up review.
 14. **AI design guide.** Gap detection by rules over the concept graph first, then the AI conversation behind a flag, in creation mode only.
 
-Steps 8 to 14 are the order of the spine, not a commitment to dates. Each pack is play-tested before the next concept's level list is written in full.
+Steps 9 to 14 are the order of the spine, not a commitment to dates. A pack ships when its validators pass; play-testing between packs is not required (owner's decision, 2026-11-08).
 
 Agents must keep the module boundaries in section 7, write tests for the interpreter, printer, validators and editor operations, and record any deviation from this plan in a short design note in the repository.
 
@@ -587,15 +589,17 @@ The MVP gate is about usability, not learning efficacy. One or three children ca
 
 **Exit gate for Phase 1a**
 
-- [ ] Level 1 completed with no verbal explanation.
-- [ ] Rotation cues work: no more than one facing error per five rotations after level 6.
-- [ ] The child places, moves and deletes cards with the tap-a-card-tap-a-slot gesture without being shown.
-- [ ] At least one correct prediction, one successful repair, and one independent route from an empty program.
-- [ ] The child can explain, in their own words, what a three-step program will do.
-- [ ] The child asks to continue, or returns for a second session unprompted.
-- [ ] No technical check above fails on the iPad build.
+Passed 2026-11-08.
 
-If the facing check fails after the cues are fixed, strengthen the robot's front and the rotation cue, then re-test before any curriculum work. Repeat and If were built before this gate because the first testers asked for more; the gate still holds for everything from step 8 of section 10 onward, and in particular for creation mode and the AI guide. Each new pack is play-tested before the next is written in full.
+- [x] Level 1 completed with no verbal explanation.
+- [x] Rotation cues work: no more than one facing error per five rotations after level 6.
+- [x] The child places, moves and deletes cards with the tap-a-card-tap-a-slot gesture without being shown.
+- [x] At least one correct prediction, one successful repair, and one independent route from an empty program.
+- [x] The child can explain, in their own words, what a three-step program will do.
+- [x] The child asks to continue, or returns for a second session unprompted.
+- [x] No technical check above fails on the iPad build.
+
+Repeat and If were built before this gate because the first testers asked for more. With the gate passed, play-testing between packs is not required; creation mode and the AI guide keep their own gates in section 9.
 
 ## 12. Open decisions and agent handoff contract
 
@@ -604,7 +608,7 @@ If the facing check fails after the cues are fixed, strengthen the robot's front
 | Decision | Proposed default | Resolve by |
 | --- | --- | --- |
 | Licensing | MIT for code; CC BY 4.0 for curriculum, puzzles and themes; CC0 with a note for AI-generated art; project name kept as a trademark and stated in the README. LICENSE file in the first commit | First commit |
-| Session length and level count | One sitting; 15 levels; measure where the child stops | After the first child test |
+| Session length and level count | Resolved 2026-11-08: one sitting; the testers finished the 15 MVP levels and asked for more | Done |
 | Creation-mode scope | The four sizes in section 9: remix, design a puzzle, modify a starter game, design a game from a design card; two or three named starter games per family | After Phase 1b |
 | AI provider and placement | A design guide in creation mode only, behind a flag; no AI in puzzle hints | Before Phase 3 |
 | Public release | Open source or hosted; decided only if the MVP is good | After Phase 1b |
@@ -624,9 +628,9 @@ If the facing check fails after the cues are fixed, strengthen the robot's front
 
 - [ ] Add `call` to the IR and write the Same trick, new place pack
 - [ ] Build the memory card panel from trace state
-- [ ] Add switches and gates to the simulation, then write and play-test Flip the switch
+- [ ] Add switches and gates to the simulation, then write Flip the switch
 - [ ] Draft the `model` activity schema and its validator rule
-- [ ] Add concepts, prerequisites and the introduction to each `pack.json`
+- [x] Add concepts, prerequisites and the introduction to each `pack.json` (2026-11-08)
 - [ ] Define how creation mode nudges toward unfinished puzzles
 - [ ] Sketch the Workshop design card and the detour flow on paper with a tester
 

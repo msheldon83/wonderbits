@@ -3,21 +3,27 @@
   "id": "forest-mvp",
   "title": "Forest",
   "themeId": "forest",
+  "order": 0,
+  "concepts": ["sequencing"],
+  "prerequisites": [],
+  "introduction": {
+    "concept": "sequencing",
+    "title": "Cards in order",
+    "explanation": "The robot does your cards in order, one at a time, top to bottom.",
+    "demo": {
+      "world": {
+        "rows": ["....", "...."],
+        "robot": { "x": 0, "y": 1, "facing": "E" },
+        "goal": { "x": 3, "y": 0 }
+      },
+      "program": ["forward", "forward", "forward", "rotateCCW", "forward"]
+    }
+  },
   "levels": [
     "l01-first-step",
     "l02-looking-up",
     "l03-two-steps",
-    "l04-up-the-path",
     "l05-turn-first",
-    "l06-the-other-way",
-    "l07-in-order",
-    "l08-order-matters",
-    "l09-the-acorn",
-    "l10-around-the-pond",
-    "l11-fix-it",
-    "l12-one-wrong-turn",
-    "l13-where-will-it-stop",
-    "l14-two-acorns",
-    "l15-the-short-way"
+    "l07-in-order"
   ]
 }
