@@ -16,6 +16,9 @@
   --amber: #e9a23b;
   --amber-deep: #b8701a;
   --amber-wash: #fff3df;
+  --purple: #8a5cc7;
+  --purple-deep: #6c43a8;
+  --purple-wash: #f3edfb;
   --radius: 18px;
   --tap: 48px;
   font-family: 'Nunito', ui-rounded, 'SF Pro Rounded', 'Segoe UI', system-ui, sans-serif;
@@ -1069,6 +1072,60 @@ a.btn {
   background: var(--amber-deep);
 }
 
+.card-call .card-icon,
+.function-head .card-icon {
+  background: var(--purple);
+}
+
+/* ---------- Functions ---------- */
+
+/* A function sits under the program: a heading with its name, and its own list on a purple spine. */
+.function-def {
+  margin-top: 18px;
+}
+
+.function-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 4px 10px 4px 4px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--purple-wash);
+  color: var(--purple-deep);
+  font: inherit;
+  font-size: 18px;
+  font-weight: 800;
+  text-align: left;
+}
+
+button.function-head {
+  cursor: pointer;
+}
+
+.function-head .function-kicker {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.8;
+}
+
+.function-def.is-running .function-head {
+  box-shadow: 0 0 0 3px var(--gold);
+}
+
+.function-body {
+  margin-left: 24px;
+  padding-left: 6px;
+  border-left: 5px solid var(--purple);
+  border-radius: 0 0 0 14px;
+}
+
 /* The block holding the running step glows softly with it. */
 .card.is-running {
   border-color: var(--gold);
@@ -1261,6 +1318,11 @@ a.btn {
 
 .thought-bubble[data-tone='loop'] {
   color: var(--green-deep);
+}
+
+.thought-bubble[data-tone='call'] {
+  color: var(--purple-deep);
+  box-shadow: 0 3px 0 var(--purple), 0 6px 16px rgba(29, 48, 71, 0.2);
 }
 
 /* ---------- Completion dialog ---------- */

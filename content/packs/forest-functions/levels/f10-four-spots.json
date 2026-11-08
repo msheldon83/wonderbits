@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "id": "f10-four-spots",
+  "title": "Four spots",
+  "intro": "A rock on every side of the pond, and each side faces a new way. One Detour does them all.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..#...#",
+      ".#..#..",
+      "..####.",
+      "#..#...",
+      "##...##"
+    ],
+    "robot": {
+      "x": 2,
+      "y": 1,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 1,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "functions",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "call"
+    ],
+    "maxInstructions": 21,
+    "starterProgram": [
+      {
+        "define": "detour",
+        "do": []
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "text": "Every rock is passed the same way: turn left, go around, turn back.",
+      "cells": [
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 1
+        },
+        {
+          "x": 6,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "kind": "card",
+      "command": "call",
+      "text": "Detour works facing any way. Turn the robot first, then use Detour."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 2,
+      "command": "rotateCW",
+      "text": "After the first rock, turn to face down the next side."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    {
+      "call": "detour"
+    },
+    "rotateCW",
+    {
+      "call": "detour"
+    },
+    "rotateCW",
+    "forward",
+    {
+      "call": "detour"
+    },
+    "forward",
+    "rotateCW",
+    "forward",
+    {
+      "call": "detour"
+    },
+    {
+      "define": "detour",
+      "do": [
+        "rotateCCW",
+        "forward",
+        "rotateCW",
+        "forward",
+        "forward",
+        "rotateCW",
+        "forward",
+        "rotateCCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 19
+  }
+}

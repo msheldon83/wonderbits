@@ -94,6 +94,7 @@ describe('card book', () => {
     expect(cardsTeaching('loops')).toEqual(['repeat']);
     expect(cardsTeaching('conditionals')).toEqual(['if', 'ifElse', 'until']);
     expect(cardsTeaching('sequencing')).toContain('rotateCW');
-    expect(cardsTeaching('functions')).toBeNull();
+    expect(cardsTeaching('functions')).toEqual(['call']);
+    expect(cardsTeaching('worldState')).toBeNull();
   });
 });

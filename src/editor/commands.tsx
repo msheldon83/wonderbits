@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import type { CardId, ConditionId, IRNode } from '../ir/types';
+import { functionLabel, type CardId, type ConditionId, type IRNode } from '../ir/types';
 import { TurnArrow } from '../render/art';
 
 export interface CommandInfo {
@@ -82,7 +82,30 @@ export const COMMANDS: Record<CardId, CommandInfo> = {
     description: 'Repeat the cards inside until the check says yes',
     icon: <LoopArrow />,
   },
+  call: {
+    label: 'Function',
+    description: 'Run the cards of a function',
+    icon: <FunctionIcon />,
+  },
 };
+
+/** Three cards folded into one: a function's icon, on its cards and its heading. */
+export function FunctionIcon() {
+  return (
+    <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+      <rect x="6" y="5" width="20" height="6" rx="2" {...stroke} strokeWidth={2.6} />
+      <rect x="6" y="13" width="20" height="6" rx="2" {...stroke} strokeWidth={2.6} />
+      <rect x="6" y="21" width="20" height="6" rx="2" {...stroke} strokeWidth={2.6} />
+    </svg>
+  );
+}
+
+/** What a card reads: a call reads as its function's name, everything else as its kind. */
+export function cardLabel(kind: CardId, name?: string): string {
+  return kind === 'call' && name ? functionLabel(name) : COMMANDS[kind].label;
+}
+
+export const nodeLabel = (node: IRNode): string => cardLabel(node.kind, node.kind === 'call' ? node.name : undefined);
 
 export const CONDITIONS: Record<ConditionId, { label: string; description: string }> = {
   pathAhead: { label: 'path ahead', description: 'the tile ahead is free' },
@@ -102,6 +125,8 @@ export function describeNode(node: IRNode): string {
       return `If ${CONDITIONS[node.condition].label}, else`;
     case 'until':
       return `Repeat until ${CONDITIONS[node.condition].label}`;
+    case 'call':
+      return `Run the cards of ${functionLabel(node.name)}`;
     default:
       return COMMANDS[node.kind].description;
   }

@@ -225,9 +225,75 @@ describe('validate: blocks', () => {
 
   it('parses block specs and reports bad ones by path', () => {
     expect(() => parsed((j) => (j.referenceSolution = [{ repeat: 1, do: [] }]))).toThrow(/referenceSolution\[0\]\.repeat/);
-    expect(() => parsed((j) => (j.referenceSolution = [{ loop: 3, do: [] }]))).toThrow(/needs "repeat", "if" or "until"/);
+    expect(() => parsed((j) => (j.referenceSolution = [{ loop: 3, do: [] }]))).toThrow(/needs "repeat", "if", "until", "call" or "define"/);
     expect(() => parsed((j) => (j.referenceSolution = [{ if: 'sunny', do: [] }]))).toThrow(/referenceSolution\[0\]\.if: unknown condition/);
     expect(() => parsed((j) => (j.hints[2] = { kind: 'fill', path: ['else'], slot: 0, command: 'forward', text: 't' }))).toThrow(/"else" must follow a card index/);
+  });
+});
+
+describe('validate: functions', () => {
+  /** Two Forwards named Twice, called once from the program. */
+  const fns = (over: (j: Json) => void = () => {}) =>
+    parsed((j) => {
+      j.curriculum.concept = 'functions';
+      j.programming.allowedCommands = ['forward', 'call'];
+      j.programming.starterProgram = [{ define: 'twice', do: [] }];
+      j.referenceSolution = [{ call: 'twice' }, { define: 'twice', do: ['forward', 'forward'] }];
+      j.hints[1] = { kind: 'card', command: 'call', text: 'Use Twice.' };
+      j.hints[2] = { kind: 'fill', path: ['twice'], slot: 0, command: 'forward', text: 'Twice starts with a Forward.' };
+      j.stars.budget = 3;
+      over(j);
+    });
+
+  it('accepts a level whose reference solution calls the function it fills in', () => {
+    const r = validatePuzzle(fns());
+    expect(r.errors).toEqual([]);
+    expect(r.minInstructions).toBe(2);
+  });
+
+  it('requires the starter and the solution to define the same functions', () => {
+    expect(validatePuzzle(fns((j) => (j.programming.starterProgram = []))).errors.join('\n')).toMatch(/must define the same functions/);
+    expect(validatePuzzle(fns((j) => (j.programming.allowedCommands = ['forward']))).errors.join('\n')).toMatch(/call is not allowed/);
+  });
+
+  it('rejects calls to missing functions, calls inside functions, and a solution that never calls', () => {
+    const missing = fns((j) => (j.referenceSolution = [{ call: 'jump' }, { define: 'twice', do: ['forward', 'forward'] }]));
+    expect(validatePuzzle(missing).errors.join('\n')).toMatch(/calls jump, which it does not define/);
+    const nested = fns((j) => (j.referenceSolution = ['forward', 'forward', { define: 'twice', do: [{ call: 'twice' }] }]));
+    expect(validatePuzzle(nested).errors.join('\n')).toMatch(/cannot use a function yet/);
+    expect(validatePuzzle(nested).errors.join('\n')).toMatch(/never calls its function/);
+  });
+
+  it('lets a reorder level start with its functions, empty', () => {
+    const reorder = fns((j) => {
+      j.curriculum.activity = 'reorder';
+      j.programming.suppliedCards = ['call', 'forward', 'forward'];
+    });
+    expect(validatePuzzle(reorder).errors).toEqual([]);
+  });
+
+  it('parses names and defines, and reports bad ones by path', () => {
+    expect(() => fns((j) => (j.referenceSolution = [{ call: 'Hop' }]))).toThrow(/referenceSolution\[0\]\.call: expected a function name/);
+    expect(() => fns((j) => (j.referenceSolution = [{ call: 'main' }]))).toThrow(/expected a function name/);
+    expect(() => fns((j) => (j.referenceSolution = [{ repeat: 2, do: [{ define: 'x', do: [] }] }]))).toThrow(/only be defined at the top/);
+    expect(() => fns((j) => (j.programming.starterProgram = [{ define: 'twice', do: [] }, { define: 'twice', do: [] }]))).toThrow(/defined twice/);
+    expect(() => fns((j) => (j.hints[2].path = ['twice', 'hop']))).toThrow(/hints\[2\]\.path\[1\]/);
+  });
+
+  it('checks hint paths into a function', () => {
+    const r = validatePuzzle(fns((j) => (j.hints[2] = { kind: 'fill', path: ['hop'], slot: 0, command: 'forward', text: 'x' })));
+    expect(r.errors.join('\n')).toMatch(/follows path \["hop"\]/);
+  });
+
+  it('fills a card inside the function, or a call to it in the program', () => {
+    const level = fns();
+    const program = programFromSpec(level.programming.starterProgram, sequentialIdFactory('s'));
+    const fill = hintEffect(level, 2, program, sequentialIdFactory('h'), false);
+    expect(fill.edit).toMatchObject({ op: 'insert', at: { parent: 'fn:twice', branch: 'body', index: 0 }, node: { kind: 'forward' } });
+    const callLevel = fns((j) => (j.hints[2] = { kind: 'fill', path: [], slot: 0, command: 'call', text: 'Use Twice.' }));
+    expect(validatePuzzle(callLevel).errors).toEqual([]);
+    const call = hintEffect(callLevel, 2, program, sequentialIdFactory('h'), false);
+    expect(call.edit).toMatchObject({ op: 'insert', at: { parent: null, index: 0 }, node: { kind: 'call', name: 'twice' } });
   });
 });
 

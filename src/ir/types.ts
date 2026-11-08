@@ -30,9 +30,15 @@ export function isConditionId(value: unknown): value is ConditionId {
 export const BLOCK_IDS = ['repeat', 'if', 'ifElse', 'until'] as const;
 export type BlockId = (typeof BLOCK_IDS)[number];
 
-/** Everything the palette can hand out: a command or a block. */
-export const CARD_IDS = [...COMMAND_IDS, ...BLOCK_IDS] as const;
-export type CardId = CommandId | BlockId;
+/**
+ * A call runs one of the program's own functions by name. It is a card like
+ * any other, but the palette shows one per function, labelled with its name.
+ */
+export const CALL = 'call' as const;
+
+/** Everything the palette can hand out: a command, a block or a call. */
+export const CARD_IDS = [...COMMAND_IDS, ...BLOCK_IDS, CALL] as const;
+export type CardId = CommandId | BlockId | typeof CALL;
 
 export function isCardId(value: unknown): value is CardId {
   return typeof value === 'string' && (CARD_IDS as readonly string[]).includes(value);
@@ -83,8 +89,15 @@ export interface UntilNode {
   body: IRNode[];
 }
 
+/** Runs the function with this name, then carries on with the next card. */
+export interface CallNode {
+  id: NodeId;
+  kind: 'call';
+  name: string;
+}
+
 export type BlockNode = RepeatNode | IfNode | IfElseNode | UntilNode;
-export type IRNode = CommandNode | BlockNode;
+export type IRNode = CommandNode | BlockNode | CallNode;
 
 export function isBlockNode(node: IRNode): node is BlockNode {
   return isBlockId(node.kind);
@@ -94,9 +107,10 @@ export function isBlockNode(node: IRNode): node is BlockNode {
 export type Branch = 'body' | 'else';
 
 /**
- * A gap in the program: a container (the main body when parent is null,
- * otherwise a branch of a block) and an index into it. Index i is the gap
- * before node i, and the container's length is the gap after the last node.
+ * A gap in the program: a container (the main body when parent is null, the
+ * top of a function when parent is that function's container id, otherwise
+ * a branch of a block) and an index into it. Index i is the gap before node
+ * i, and the container's length is the gap after the last node.
  */
 export interface Place {
   parent: NodeId | null;
@@ -125,3 +139,26 @@ export interface ProgramIR {
 }
 
 export const MAIN = 'main';
+
+/**
+ * Every procedure other than main is a function the child can call. Its own
+ * cards sit in a container whose parent is this id, so a Place can point at
+ * the top of a function the same way it points into a block.
+ */
+const FUNCTION_PREFIX = 'fn:';
+export const functionContainerId = (name: string): NodeId => FUNCTION_PREFIX + name;
+/** The function a container id names, or null when it is a block or main. */
+export function functionOfContainer(parent: NodeId | null): string | null {
+  return parent !== null && parent.startsWith(FUNCTION_PREFIX) ? parent.slice(FUNCTION_PREFIX.length) : null;
+}
+
+/** Function names are short lower camel case words, so they print as real TypeScript. */
+export const FUNCTION_NAME = /^[a-z][A-Za-z0-9]{0,19}$/;
+/** Names a function may not take: main, and words TypeScript or the hint paths reserve. */
+export const RESERVED_NAMES: ReadonlySet<string> = new Set(['main', 'robot', 'else', 'if', 'for', 'while', 'function', 'return', 'let', 'const', 'var', 'new', 'do', 'in', 'of', 'import', 'export', 'default', 'void', 'this', 'true', 'false', 'null']);
+
+/** "hop" becomes "Hop", which is how the card reads. */
+export function functionLabel(name: string): string {
+  const words = name.replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}

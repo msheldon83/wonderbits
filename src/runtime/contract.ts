@@ -41,6 +41,11 @@ interface TraceBase {
   before: SimState;
   after: SimState;
   result: TraceResult;
+  /**
+   * The call cards this event is running inside, outermost first. Absent in
+   * main, so a card in a function knows which call brought it there.
+   */
+  via?: NodeId[];
 }
 
 /** The robot did something: moved, turned, or bumped. */
@@ -62,7 +67,13 @@ export interface LoopEvent extends TraceBase {
   count: number;
 }
 
-export type TraceEvent = ActionEvent | CheckEvent | LoopEvent;
+/** A call card handed over to its function. The function's own events follow. */
+export interface CallEvent extends TraceBase {
+  op: 'call';
+  name: string;
+}
+
+export type TraceEvent = ActionEvent | CheckEvent | LoopEvent | CallEvent;
 
 export type RunOutcome =
   | { status: 'success' }

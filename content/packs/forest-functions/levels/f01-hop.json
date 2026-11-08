@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "id": "f01-hop",
+  "title": "Hop",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..##",
+      "#..#",
+      "##..",
+      "###."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 3,
+      "y": 3
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "functions",
+    "activity": "run"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "call"
+    ],
+    "maxInstructions": 7,
+    "starterProgram": [
+      {
+        "call": "hop"
+      },
+      {
+        "call": "hop"
+      },
+      {
+        "call": "hop"
+      },
+      {
+        "define": "hop",
+        "do": [
+          "forward",
+          "rotateCW",
+          "forward",
+          "rotateCCW"
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "text": "One hop: one tile right, then one tile down.",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "kind": "card",
+      "command": "call",
+      "text": "Each Hop card in the program runs all four cards inside Hop."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "call",
+      "text": "Three Hop cards make three hops down the stairs."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "call": "hop"
+    },
+    {
+      "call": "hop"
+    },
+    {
+      "call": "hop"
+    },
+    {
+      "define": "hop",
+      "do": [
+        "forward",
+        "rotateCW",
+        "forward",
+        "rotateCCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true
+  }
+}

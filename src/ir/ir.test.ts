@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { sequentialIdFactory } from './ids';
 import { applyOp, isNoOpMove } from './ops';
-import { ancestorsOf, commandsOf, countNodes, emptyProgram, locate, mainBody, nestingDepth, programFromCommands, programFromSpec, stepNumber, walk } from './program';
-import { buildNodes, cardsOfSpec, countSpec, depthOfSpec, specDiff, specOf, type NodeSpec } from './spec';
-import { IR_VERSION, type Place } from './types';
+import { ancestorsOf, commandsOf, containerAt, countNodes, emptyProgram, locate, mainBody, nestingDepth, procedureOfPlace, programFromCommands, programFromSpec, programSpec, stepNumber, walk } from './program';
+import { buildNodes, callsOfSpec, cardsOfSpec, countSpec, depthOfSpec, specDiff, specOf, type NodeSpec } from './spec';
+import { functionContainerId, functionLabel, IR_VERSION, type Place } from './types';
 
 const ids = (p: ReturnType<typeof emptyProgram>) => mainBody(p).map((n) => n.id);
 const main = (index: number): Place => ({ parent: null, branch: 'body', index });
@@ -136,5 +136,83 @@ describe('edit operations', () => {
 
   it('builds nodes with the given id factory', () => {
     expect(buildNodes(['forward'], sequentialIdFactory('q'))).toEqual([{ id: 'q1', kind: 'forward' }]);
+  });
+});
+
+describe('functions', () => {
+  // main: Hop, Forward, Hop; hop: Forward, Rotate CW, Repeat 2 [Forward].
+  const spec: NodeSpec[] = [{ call: 'hop' }, 'forward', { call: 'hop' }, { define: 'hop', do: ['forward', 'rotateCW', { repeat: 2, do: ['forward'] }] }];
+  const fn = (index: number): Place => ({ parent: functionContainerId('hop'), branch: 'body', index });
+  const make = () => programFromSpec(spec, sequentialIdFactory());
+
+  it('builds a procedure per define, wherever it is listed, and prints it back', () => {
+    const p = make();
+    expect(p.procedures.map((x) => x.name)).toEqual(['main', 'hop']);
+    expect(specOf(mainBody(p))).toEqual([{ call: 'hop' }, 'forward', { call: 'hop' }]);
+    expect(programSpec(p)).toEqual(spec);
+    expect(programSpec(programFromSpec([{ define: 'hop', do: [] }, 'forward'], sequentialIdFactory()))).toEqual(['forward', { define: 'hop', do: [] }]);
+  });
+
+  it('walks main, then each function, numbering straight on', () => {
+    const p = make();
+    expect([...walk(p)].map((v) => [v.node.id, v.parent, v.depth, v.number, v.procedure])).toEqual([
+      ['n1', null, 0, 1, 'main'],
+      ['n2', null, 0, 2, 'main'],
+      ['n3', null, 0, 3, 'main'],
+      ['n4', 'fn:hop', 0, 4, 'hop'],
+      ['n5', 'fn:hop', 0, 5, 'hop'],
+      ['n6', 'fn:hop', 0, 6, 'hop'],
+      ['n7', 'n6', 1, 7, 'hop'],
+    ]);
+    expect(countNodes(p)).toBe(7);
+    expect(ancestorsOf(p, 'n7')).toEqual(['n6']);
+    expect(ancestorsOf(p, 'n4')).toEqual([]);
+    expect(containerAt(p, fn(0))!.map((n) => n.id)).toEqual(['n4', 'n5', 'n6']);
+    expect(containerAt(p, { parent: functionContainerId('jump'), branch: 'body' })).toBeUndefined();
+    expect(procedureOfPlace(p, fn(0))).toBe('hop');
+    expect(procedureOfPlace(p, { parent: 'n6' })).toBe('hop');
+    expect(procedureOfPlace(p, main(0))).toBe('main');
+  });
+
+  it('counts cards inside a function, but not the define heading', () => {
+    expect(cardsOfSpec(spec)).toEqual(['call', 'forward', 'call', 'forward', 'rotateCW', 'repeat', 'forward']);
+    expect(countSpec(spec)).toBe(7);
+    expect(depthOfSpec(spec)).toBe(1);
+    expect(callsOfSpec(spec)).toEqual(['hop', 'hop']);
+  });
+
+  it('diffs calls by name and functions by their cards', () => {
+    expect(specDiff([{ call: 'hop' }], [{ call: 'jump' }])).toBe(1);
+    expect(specDiff([{ call: 'hop' }], ['forward'])).toBe(-1);
+    expect(specDiff([{ define: 'hop', do: ['forward'] }], [{ define: 'hop', do: ['rotateCW'] }])).toBe(1);
+    expect(specDiff([{ define: 'hop', do: ['forward'] }], [{ define: 'jump', do: ['forward'] }])).toBe(-1);
+  });
+
+  it('edits inside a function like anywhere else', () => {
+    const p = make();
+    const inserted = applyOp(p, { op: 'insert', at: fn(0), node: { id: 'x1', kind: 'rotateCCW' } });
+    expect(specOf(inserted.procedures[1]!.body)[0]).toBe('rotateCCW');
+    expect(specOf(mainBody(inserted))).toEqual(specOf(mainBody(p)));
+    const moved = applyOp(p, { op: 'move', id: 'n2', to: fn(3) });
+    expect(specOf(mainBody(moved))).toEqual([{ call: 'hop' }, { call: 'hop' }]);
+    expect(specOf(moved.procedures[1]!.body).at(-1)).toBe('forward');
+    const out = applyOp(p, { op: 'move', id: 'n5', to: main(0) });
+    expect(specOf(mainBody(out))[0]).toBe('rotateCW');
+    expect(countNodes(applyOp(p, { op: 'delete', id: 'n6' }))).toBe(5);
+    expect(specOf(applyOp(p, { op: 'set', id: 'n6', count: 4 }).procedures[1]!.body)[2]).toEqual({ repeat: 4, do: ['forward'] });
+  });
+
+  it('keeps calls in main and to functions that exist', () => {
+    const p = make();
+    expect(() => applyOp(p, { op: 'insert', at: fn(0), node: { id: 'x1', kind: 'call', name: 'hop' } })).toThrow(/cannot use a function/);
+    expect(() => applyOp(p, { op: 'insert', at: inside('n6', 0), node: { id: 'x1', kind: 'call', name: 'hop' } })).toThrow(/cannot use a function/);
+    expect(() => applyOp(p, { op: 'move', id: 'n1', to: fn(0) })).toThrow(/cannot use a function/);
+    expect(() => applyOp(p, { op: 'insert', at: main(0), node: { id: 'x1', kind: 'call', name: 'jump' } })).toThrow(/No function named jump/);
+    expect(() => applyOp(p, { op: 'insert', at: main(0), node: { id: 'n4', kind: 'forward' } })).toThrow(/already exists/);
+  });
+
+  it('labels functions the way their cards read', () => {
+    expect(functionLabel('hop')).toBe('Hop');
+    expect(functionLabel('turnAround')).toBe('Turn around');
   });
 });

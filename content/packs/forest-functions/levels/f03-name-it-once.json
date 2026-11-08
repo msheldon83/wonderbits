@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "id": "f03-name-it-once",
+  "title": "Name it once",
+  "intro": "The same hop shows up twice. Put it in Hop once, then use Hop twice.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "####.",
+      "####.",
+      "#....",
+      "#.###",
+      "..###"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 4,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "functions",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "call"
+    ],
+    "maxInstructions": 9,
+    "starterProgram": [
+      {
+        "define": "hop",
+        "do": []
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "text": "These two hops are the same shape: one right, two up.",
+      "cells": [
+        {
+          "x": 1,
+          "y": 4
+        },
+        {
+          "x": 1,
+          "y": 3
+        },
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 4,
+          "y": 2
+        },
+        {
+          "x": 4,
+          "y": 1
+        },
+        {
+          "x": 4,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "kind": "card",
+      "command": "call",
+      "text": "Write the hop inside Hop once. A Hop card in the program runs it."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "call",
+      "text": "The program starts with a Hop."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "call": "hop"
+    },
+    "forward",
+    "forward",
+    {
+      "call": "hop"
+    },
+    {
+      "define": "hop",
+      "do": [
+        "forward",
+        "rotateCCW",
+        "forward",
+        "forward",
+        "rotateCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 9
+  }
+}

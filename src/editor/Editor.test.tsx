@@ -442,3 +442,45 @@ describe('Editor: undo, redo and keyboard', () => {
     expect(document.activeElement).toBe(rotateCard());
   });
 });
+
+describe('Editor: functions', () => {
+  const start: NodeSpec[] = ['forward', { define: 'hop', do: ['rotateCW'] }];
+  const allowed: CardId[] = ['forward', 'rotateCW', 'call'];
+  const hopCard = () => screen.getByRole('button', { name: /^Add Hop: run the cards of Hop/ });
+
+  it('shows each function under the program, numbered straight on', () => {
+    render(<Harness start={start} allowed={allowed} />);
+    expect(screen.getByRole('region', { name: /^Function Hop/ })).toBeTruthy();
+    expect(step(2).getAttribute('aria-label')).toMatch(/^Step 2: Rotate clockwise/);
+  });
+
+  it('adds a call from the palette card named after the function', () => {
+    let last: ProgramIR | null = null;
+    render(<Harness start={start} allowed={allowed} onChange={(p) => (last = p)} />);
+    fireEvent.click(hopCard());
+    expect(specOf(mainBody(last!))).toEqual(['forward', { call: 'hop' }]);
+    expect(screen.getByRole('button', { name: /^Step 2: Run the cards of Hop/ })).toBeTruthy();
+  });
+
+  it('puts new cards inside a function after a tap on its heading, and rests the call card there', () => {
+    let last: ProgramIR | null = null;
+    render(<Harness start={start} allowed={allowed} onChange={(p) => (last = p)} />);
+    fireEvent.click(screen.getByRole('button', { name: /^Function Hop\. Tap to put the insert point/ }));
+    expect((hopCard() as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(forwardCard());
+    expect(specOf(last!.procedures[1]!.body)).toEqual(['rotateCW', 'forward']);
+    expect(specOf(mainBody(last!))).toEqual(['forward']);
+  });
+
+  it('never offers a gap inside a function to a call being moved', () => {
+    render(<Harness start={[{ call: 'hop' }, 'forward', { define: 'hop', do: ['rotateCW'] }]} allowed={allowed} />);
+    fireEvent.click(moveButton(1));
+    const names = carets().map((c) => c.getAttribute('aria-label'));
+    expect(names.length).toBeGreaterThan(0);
+    expect(names.some((n) => /in Hop/.test(n ?? ''))).toBe(false);
+    fireEvent.click(moveButton(1));
+    fireEvent.click(moveButton(2));
+    expect(carets().some((c) => /in Hop/.test(c.getAttribute('aria-label') ?? ''))).toBe(true);
+  });
+});
+

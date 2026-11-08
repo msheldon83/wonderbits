@@ -4,7 +4,7 @@
  */
 import { sequentialIdFactory } from '../ir/ids';
 import { programFromSpec } from '../ir/program';
-import { cardsOfSpec, conditionsOfSpec, countSpec, depthOfSpec, specDiff, type NodeSpec } from '../ir/spec';
+import { callsOfSpec, cardsOfSpec, conditionsOfSpec, countSpec, depthOfSpec, specDiff, splitSpec, type NodeSpec } from '../ir/spec';
 import { CONDITION_IDS, isBlockId, isCommandId, type CardId, type CommandId } from '../ir/types';
 import { interpretAll } from '../runtime/interpreter';
 import { cellKey, objectiveMet, step, tileAt } from '../sim/world';
@@ -117,10 +117,11 @@ export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
     errors.push(`referenceSolution does not solve the level (outcome: ${outcome.status})`);
   }
 
+  validateFunctions(puzzle, errors);
   validateActivity(puzzle, errors);
   validateHints(puzzle, errors);
 
-  const structured = programming.allowedCommands.some(isBlockId);
+  const structured = programming.allowedCommands.some((c) => isBlockId(c) || c === 'call');
   /** Levels where the child writes the program; elsewhere a shorter flat program is no concern. */
   const open = puzzle.curriculum.activity === 'build' || puzzle.curriculum.activity === 'reorder';
   const refCount = countSpec(referenceSolution);
@@ -154,6 +155,38 @@ export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
   return { errors, warnings, minInstructions: min };
 }
 
+/**
+ * Functions are the level's to name: the starter program defines them (empty
+ * on a build level) and the reference solution fills the same ones in. Calls
+ * name a defined function and sit in main, since a function cannot use a
+ * function yet.
+ */
+function validateFunctions(puzzle: PuzzleDefinition, errors: string[]): void {
+  const { programming, referenceSolution } = puzzle;
+  const starter = splitSpec(programming.starterProgram);
+  const reference = splitSpec(referenceSolution);
+  const names = starter.functions.map((f) => f.name);
+  const refNames = reference.functions.map((f) => f.name);
+  if (names.join(',') !== refNames.join(',')) {
+    errors.push(`starterProgram defines ${names.join(', ') || 'no functions'} but referenceSolution defines ${refNames.join(', ') || 'none'}; they must define the same functions in the same order`);
+  }
+  const callAllowed = programming.allowedCommands.includes('call');
+  if (callAllowed && names.length === 0) errors.push('call is allowed, but the starterProgram defines no function to call');
+  if (!callAllowed && names.length > 0) errors.push('the starterProgram defines a function, but call is not allowed');
+  for (const [label, split] of [['starterProgram', starter], ['referenceSolution', reference]] as const) {
+    const defined = new Set(split.functions.map((f) => f.name));
+    for (const name of callsOfSpec(split.main)) {
+      if (!defined.has(name)) errors.push(`${label} calls ${name}, which it does not define`);
+    }
+    for (const f of split.functions) {
+      if (callsOfSpec(f.body).length > 0) errors.push(`${label}: function ${f.name} uses a call, but a function cannot use a function yet`);
+    }
+  }
+  if (callAllowed && puzzle.curriculum.activity !== 'run' && puzzle.curriculum.activity !== 'predict' && callsOfSpec(reference.main).length === 0) {
+    errors.push('referenceSolution never calls its function');
+  }
+}
+
 const multiset = (cards: readonly string[]) => [...cards].sort().join(',');
 
 /** Each activity makes its own promises about the starter program and cards. */
@@ -171,7 +204,8 @@ function validateActivity(puzzle: PuzzleDefinition, errors: string[]): void {
       else if (multiset(programming.suppliedCards) !== multiset(cardsOfSpec(referenceSolution))) {
         errors.push('suppliedCards must be exactly the cards of referenceSolution, in any order');
       }
-      if (starter.length > 0) errors.push('a reorder level starts with an empty program');
+      // Functions are the level's to name, so they are there from the start, but empty.
+      if (cardsOfSpec(starter).length > 0) errors.push('a reorder level starts with an empty program');
       break;
     case 'debug': {
       if (starter.length === 0) errors.push('a debug level needs a starterProgram to repair');

@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "id": "f06-turn-and-hop",
+  "title": "Turn and hop",
+  "intro": "Hop goes a new way when the robot faces a new way. Down the hill, turn, then up.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "#####..",
+      "#####.#",
+      "...#..#",
+      "##...##",
+      "####.##"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 2,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 6,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "functions",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "call"
+    ],
+    "maxInstructions": 10,
+    "starterProgram": [
+      {
+        "define": "hop",
+        "do": []
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "text": "Down the hill: two right, one down, twice.",
+      "cells": [
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 3
+        },
+        {
+          "x": 3,
+          "y": 3
+        },
+        {
+          "x": 4,
+          "y": 3
+        },
+        {
+          "x": 4,
+          "y": 4
+        }
+      ]
+    },
+    {
+      "kind": "card",
+      "command": "rotateCCW",
+      "text": "The same Hop climbs the hill if the robot turns to face up first."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 2,
+      "command": "rotateCCW",
+      "text": "After two hops, turn to face up."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "call": "hop"
+    },
+    {
+      "call": "hop"
+    },
+    "rotateCCW",
+    {
+      "call": "hop"
+    },
+    {
+      "call": "hop"
+    },
+    {
+      "define": "hop",
+      "do": [
+        "forward",
+        "forward",
+        "rotateCW",
+        "forward",
+        "rotateCCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

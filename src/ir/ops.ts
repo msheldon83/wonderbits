@@ -4,10 +4,14 @@
  *
  * A Place names a container (the main body, or a branch of a block) and a
  * gap in it: gap i is before node i, and the container's length is the gap
- * after the last node.
+ * after the last node. The top of a function is a container too, so the same
+ * operations edit main and every function alike.
+ *
+ * A function cannot use a function yet: a call may sit anywhere in main but
+ * never inside a function, which also rules out a function calling itself.
  */
-import { branchBody, containerAt, isWithin, locate, mainBody, samePlaceContainer } from './program';
-import { MAIN, REPEAT_MAX, REPEAT_MIN, type Branch, type ConditionId, type IRNode, type NodeId, type Place, type ProgramIR } from './types';
+import { branchBody, containerAt, functionNames, isWithin, locate, procedureOfPlace, samePlaceContainer } from './program';
+import { functionOfContainer, MAIN, REPEAT_MAX, REPEAT_MIN, type Branch, type ConditionId, type IRNode, type NodeId, type Place, type ProgramIR } from './types';
 
 export type EditOp =
   | { op: 'insert'; at: Place; node: IRNode }
@@ -16,11 +20,35 @@ export type EditOp =
   /** Change a block's parameter: a Repeat's count or an If's or Until's condition. */
   | { op: 'set'; id: NodeId; count?: number; condition?: ConditionId };
 
-function withMainBody(program: ProgramIR, body: IRNode[]): ProgramIR {
-  return {
-    ...program,
-    procedures: program.procedures.map((p) => (p.name === MAIN ? { ...p, body } : p)),
+/** Rebuild every procedure's body. */
+function mapBodies(program: ProgramIR, update: (body: readonly IRNode[], name: string) => IRNode[]): ProgramIR {
+  return { ...program, procedures: program.procedures.map((p) => ({ ...p, body: update(p.body, p.name) })) };
+}
+
+/** Rebuild the program with one container's cards replaced, wherever it is. */
+function updateIn(program: ProgramIR, parent: NodeId | null, branch: Branch, update: (cards: IRNode[]) => IRNode[]): ProgramIR {
+  const fn = functionOfContainer(parent);
+  return mapBodies(program, (body, name) => {
+    if (parent === null) return name === MAIN ? update([...body]) : [...body];
+    if (fn !== null) return name === fn ? update([...body]) : [...body];
+    return updateContainer(body, parent, branch, update);
+  });
+}
+
+function hasCall(nodes: readonly IRNode[]): boolean {
+  return nodes.some((n) => n.kind === 'call' || (['body', 'else'] as const).some((b) => hasCall(branchBody(n, b) ?? [])));
+}
+
+/** Calls belong in main for now, and each must name one of the program's functions. */
+function checkCalls(program: ProgramIR, node: IRNode, at: Pick<Place, 'parent'>): void {
+  if (!hasCall([node])) return;
+  if (procedureOfPlace(program, at) !== MAIN) throw new Error('A function cannot use a function');
+  const names = new Set(functionNames(program));
+  const check = (n: IRNode) => {
+    if (n.kind === 'call' && !names.has(n.name)) throw new Error(`No function named ${n.name}`);
+    for (const b of ['body', 'else'] as const) (branchBody(n, b) ?? []).forEach(check);
   };
+  check(node);
 }
 
 function assertIndex(index: number, length: number): void {
@@ -80,17 +108,18 @@ function idsIn(nodes: readonly IRNode[], out: Set<NodeId> = new Set()): Set<Node
 }
 
 export function applyOp(program: ProgramIR, edit: EditOp): ProgramIR {
-  const body = mainBody(program);
   switch (edit.op) {
     case 'insert': {
       const container = containerAt(program, edit.at);
       if (!container) throw new Error(`No container at ${edit.at.parent}/${edit.at.branch}`);
       assertIndex(edit.at.index, container.length);
-      const existing = idsIn(body);
+      const existing = new Set<NodeId>();
+      for (const p of program.procedures) idsIn(p.body, existing);
       for (const id of idsIn([edit.node])) {
         if (existing.has(id)) throw new Error(`Node id ${id} already exists`);
       }
-      return withMainBody(program, updateContainer(body, edit.at.parent, edit.at.branch, (cards) => (cards.splice(edit.at.index, 0, edit.node), cards)));
+      checkCalls(program, edit.node, edit.at);
+      return updateIn(program, edit.at.parent, edit.at.branch, (cards) => (cards.splice(edit.at.index, 0, edit.node), cards));
     }
     case 'move': {
       const from = locate(program, edit.id);
@@ -101,14 +130,15 @@ export function applyOp(program: ProgramIR, edit: EditOp): ProgramIR {
       const target = containerAt(program, edit.to);
       if (!target) throw new Error(`No container at ${edit.to.parent}/${edit.to.branch}`);
       assertIndex(edit.to.index, target.length);
+      checkCalls(program, from.node, edit.to);
       // Removing the node shifts later gaps in the same container down by one.
       const index = samePlaceContainer(from, edit.to) && edit.to.index > from.index ? edit.to.index - 1 : edit.to.index;
-      const without = removeNode(body, edit.id);
-      return withMainBody(program, updateContainer(without, edit.to.parent, edit.to.branch, (cards) => (cards.splice(index, 0, from.node), cards)));
+      const without = mapBodies(program, (body) => removeNode(body, edit.id));
+      return updateIn(without, edit.to.parent, edit.to.branch, (cards) => (cards.splice(index, 0, from.node), cards));
     }
     case 'delete': {
       if (!locate(program, edit.id)) throw new Error(`No node ${edit.id}`);
-      return withMainBody(program, removeNode(body, edit.id));
+      return mapBodies(program, (body) => removeNode(body, edit.id));
     }
     case 'set': {
       const found = locate(program, edit.id);
@@ -143,7 +173,7 @@ export function applyOp(program: ProgramIR, edit: EditOp): ProgramIR {
               return p;
           }
         });
-      return withMainBody(program, replaceIn(body));
+      return mapBodies(program, replaceIn);
     }
   }
 }

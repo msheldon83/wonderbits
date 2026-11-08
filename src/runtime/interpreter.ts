@@ -5,9 +5,11 @@
  * Every robot action is one event. A block adds events of its own so the
  * child can watch it think: a Repeat emits a `loop` event at the start of
  * each go round, and an If or Repeat until emits a `check` event with the
- * answer it got. Those events change nothing on the board.
+ * answer it got. A call emits a `call` event, then runs its function's
+ * cards, each tagged with the calls it runs inside. Those events change
+ * nothing on the board.
  */
-import { mainBody } from '../ir/program';
+import { functionBody, mainBody } from '../ir/program';
 import { initialState, evaluate, objectiveMet, step } from '../sim/world';
 import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 import type { IRNode, ProgramIR } from '../ir/types';
@@ -29,6 +31,9 @@ export interface InterpretSummary {
 /** Omit that keeps a union a union. */
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 
+/** How many calls may be running inside one another. */
+const MAX_CALL_DEPTH = 16;
+
 const stateKey = (s: SimState) => `${s.robot.x},${s.robot.y},${s.robot.facing}|${[...s.collected].sort().join(';')}`;
 
 export function* interpret(input: InterpretInput): Generator<TraceEvent, InterpretSummary, void> {
@@ -37,6 +42,8 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
   let executed = 0;
   /** Set once something ends the run early. */
   let stop: RunOutcome | null = null;
+  /** The call cards being run, outermost first. */
+  const calls: string[] = [];
 
   /** Emit one event, counting it against the limit. Returns false when the run must stop. */
   function* emit(event: DistributiveOmit<TraceEvent, 'index'>): Generator<TraceEvent, boolean, void> {
@@ -44,7 +51,7 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
       stop = { status: 'halted', reason: 'step-limit' };
       return false;
     }
-    const full = { index: executed, ...event } as TraceEvent;
+    const full = { index: executed, ...event, ...(calls.length > 0 && { via: [...calls] }) } as TraceEvent;
     executed++;
     yield full;
     return true;
@@ -94,6 +101,25 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
           if (!ok) return;
           if (value) yield* run(node.body);
           else if (node.kind === 'ifElse') yield* run(node.elseBody);
+          if (stop) return;
+          break;
+        }
+        case 'call': {
+          const body = functionBody(program, node.name);
+          if (!body) {
+            stop = { status: 'error', message: `No function named ${node.name}` };
+            return;
+          }
+          // Programs only call from main today, but a deep stack means a function reached itself.
+          if (calls.length >= MAX_CALL_DEPTH) {
+            stop = { status: 'halted', reason: 'forever' };
+            return;
+          }
+          const ok = yield* emit({ nodeId: node.id, op: 'call', name: node.name, before: state, after: state, result: { kind: 'ok' } });
+          if (!ok) return;
+          calls.push(node.id);
+          yield* run(body);
+          calls.pop();
           if (stop) return;
           break;
         }
