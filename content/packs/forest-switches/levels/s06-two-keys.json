@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "id": "s06-two-keys",
+  "title": "Two keys",
+  "intro": "Two shut gates, each with its switch in a nook. Teach Press the way in and out of a nook.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "#.###.##",
+      "........"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 1,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 7,
+      "y": 1
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 3,
+        "y": 1,
+        "open": false
+      },
+      {
+        "id": "b",
+        "x": 6,
+        "y": 1,
+        "open": false
+      }
+    ],
+    "switches": [
+      {
+        "x": 1,
+        "y": 0,
+        "toggles": [
+          "a"
+        ]
+      },
+      {
+        "x": 5,
+        "y": 0,
+        "toggles": [
+          "b"
+        ]
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "worldState",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "call"
+    ],
+    "maxInstructions": 15,
+    "starterProgram": [
+      {
+        "define": "press",
+        "do": []
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        }
+      ],
+      "text": "Both switches sit in a nook above the path. The way in and out is the same."
+    },
+    {
+      "kind": "card",
+      "command": "call",
+      "text": "Put the trip into the nook and back inside Press, then use Press at each switch."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "press"
+      ],
+      "slot": 0,
+      "command": "rotateCCW",
+      "text": "Press starts by turning to face the nook."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    {
+      "call": "press"
+    },
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    {
+      "call": "press"
+    },
+    "forward",
+    "forward",
+    {
+      "define": "press",
+      "do": [
+        "rotateCCW",
+        "forward",
+        "rotateCW",
+        "rotateCW",
+        "forward",
+        "rotateCCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

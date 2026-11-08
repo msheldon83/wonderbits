@@ -16,6 +16,8 @@ export type SequencerStatus = 'idle' | 'playing' | 'paused' | 'finished';
 
 export interface SequencerListener {
   onEvent?(event: TraceEvent | null): void;
+  /** An event finished playing: the board now shows its after state. */
+  onPlayed?(event: TraceEvent): void;
   onStatus?(status: SequencerStatus): void;
 }
 
@@ -96,6 +98,7 @@ export class Sequencer {
       if (session.signal.aborted) return;
       this.cursor++;
       played++;
+      this.listener.onPlayed?.(event);
       if (this.pauseRequested) break;
     }
     this.session = null;

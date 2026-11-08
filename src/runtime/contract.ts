@@ -32,7 +32,8 @@ export interface RunRequest {
 }
 
 export type TraceResult =
-  | { kind: 'ok'; collected?: Cell }
+  /** toggled: the gates a switch just flipped, by id. */
+  | { kind: 'ok'; collected?: Cell; toggled?: string[] }
   | { kind: 'blocked'; reason: BlockReason; at: Cell };
 
 interface TraceBase {

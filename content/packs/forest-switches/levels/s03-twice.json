@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "id": "s03-twice",
+  "title": "Twice",
+  "intro": "The robot steps on the switch, then on it again on the way back. Is the gate open at the end?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...",
+      "..."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 0,
+      "y": 1
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 2,
+        "y": 1,
+        "open": false
+      }
+    ],
+    "switches": [
+      {
+        "x": 1,
+        "y": 0,
+        "toggles": [
+          "a"
+        ]
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "worldState",
+    "activity": "model"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 8,
+    "starterProgram": [
+      "forward",
+      "forward",
+      "rotateCW",
+      "rotateCW",
+      "forward",
+      "forward",
+      "rotateCCW",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        }
+      ],
+      "text": "Watch how many times the robot lands on the switch."
+    },
+    {
+      "kind": "card",
+      "command": "forward",
+      "text": "Every step onto the switch flips the gate: open, then shut, then open."
+    },
+    {
+      "kind": "fill",
+      "slot": 0,
+      "command": "forward",
+      "text": "The first Forward lands on the switch. The fifth card lands on it again."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward",
+    "rotateCW",
+    "rotateCW",
+    "forward",
+    "forward",
+    "rotateCCW",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": false,
+    "askMemory": [
+      "gate:a"
+    ]
+  }
+}

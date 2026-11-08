@@ -4,6 +4,78 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Build step 10: world state and the memory card (2026-11-08)
+
+The sixth island, **Flip the switch**, makes the world itself change. Its
+introduction shows a robot stepping on a switch, walking through the gate it
+opened, then stepping on the switch again and leaving the gate shut, with the
+memory card under the board following along.
+
+### What is built
+
+- **Switches and gates in the simulation** (`src/sim`). A board may list
+  `gates` (an id letter, a tile, and whether it starts open) and `switches`
+  (a tile and the gates it flips). A shut gate blocks the robot like a wall,
+  with its own reason, `gate`. Stepping onto a switch flips every gate it
+  names; standing or turning on it flips nothing. The open gates are part of
+  `SimState` (`open`, sorted ids), so traces, the until-loop's forever check
+  and the validator's search all tell a shut gate from an open one.
+- **Senses.** `pathAhead` and `blockedAhead` now count a shut gate as
+  blocked. Two new checks, `gateClosedAhead` ("gate shut ahead") and
+  `onSwitch` ("on a switch"), print as `robot.gateClosedAhead()` and
+  `robot.onSwitch()`. A level that does not list its conditions still
+  offers only the four older ones (`BASIC_CONDITIONS`), so older If levels
+  are unchanged.
+- **The trace** marks a step onto a switch with `toggled`, the gates it
+  flipped. On the board the switch plate presses, then the gate's bars slide
+  into its posts. Each gate and its switches share a colour and a letter; a
+  switch that flips two gates shows both letters.
+- **The memory card** (`src/app/MemoryCard.tsx`, `src/lessons/memory.ts`) is
+  a strip under the run controls: position, facing, acorns where there are
+  acorns, and one line per gate, each with an icon for its kind (a place, a
+  direction, a number, a yes/no). It shows the state after the last event
+  played, from the sequencer's new `onPlayed`, so it never runs ahead of the
+  board. It appears on every board with gates, on any level that asks about
+  memory, and in the introduction when the demo has gates.
+- **The `model` activity and state prediction.** `prediction` gains
+  `askMemory`: memory card fields (`facing`, `acorns`, `gate:<id>`) to fill
+  in before the run. On a model level the program is given and locked, the
+  asked lines turn into questions (arrows, a number stepper, yes and no), and
+  Run waits until every one has an answer. A wrong answer is never a
+  failure: the wrong lines turn red, are cleared, and the message names
+  them; the right ones stay. The log records the answers and the fields
+  missed.
+- **Validator.** Gates and switches sit on floor, never share a tile with
+  each other, the robot, the goal or an acorn; switches flip gates that
+  exist; every gate has a switch. A model level must solve the level and ask
+  at least one field, every asked field must be on that board's card, and a
+  predict level must still ask for the tile. The world-state introduction
+  must step on a switch.
+- **The pack** (`content/packs/forest-switches`): One switch (model), Open
+  the gate, Twice (model), Step on it again (a gate that starts open),
+  Fix the route (debug), Two keys (the Press function from the last pack, at
+  two nooks), The whole card (model: two gates and the facing), Cards in
+  order (reorder), Where will it stop? (the transfer prediction, counting
+  presses inside a Repeat) and Which switches? (some switches flip two gates,
+  so pressing every one shuts a gate again; under a budget).
+
+### Deviations and choices
+
+- **Order comes from the layout.** Flips commute: pressing A then B leaves
+  the same gates as B then A. So "the order matters" in the closer comes
+  from which switches to press at all, and the backtracking the plan asks
+  for is the trip into a nook and back (Open the gate, Two keys, Which
+  switches?) and stepping off a switch and on again (Step on it again).
+- **The memory card shows from the start of the pack**, answering the
+  plan's open question: on every board with gates, not only once state
+  matters, so it is already familiar when The whole card asks for all of it.
+- **The new senses are built, not yet taught.** No level in this pack uses
+  If; gate and switch checks are there for When it happens, where the world
+  reacts on its own.
+- **No switch state of its own.** A switch shows no on or off: what it
+  changed is the gate, and the memory card lists gates. The plan's "switch
+  on" sense became "on a switch".
+
 ## Build step 9: functions (2026-11-08)
 
 Functions follow conditionals on the spine. The fifth island, **Same trick,

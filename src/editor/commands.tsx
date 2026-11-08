@@ -112,6 +112,8 @@ export const CONDITIONS: Record<ConditionId, { label: string; description: strin
   blockedAhead: { label: 'blocked ahead', description: 'the tile ahead is blocked' },
   acornAhead: { label: 'acorn ahead', description: 'an acorn is on the tile ahead' },
   atFlag: { label: 'at the flag', description: 'the robot is standing on the flag' },
+  gateClosedAhead: { label: 'gate shut ahead', description: 'a closed gate is on the tile ahead' },
+  onSwitch: { label: 'on a switch', description: 'the robot is standing on a switch' },
 };
 
 /** A block's own words, with its count or condition filled in. */

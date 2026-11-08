@@ -9,7 +9,7 @@
 import { functionLabel } from '../ir/types';
 import type { TraceEvent } from '../runtime/contract';
 import type { Cell, RobotState, SimState, WorldDefinition } from '../sim/types';
-import { ahead, cellKey, tileAt } from '../sim/world';
+import { ahead, cellKey, gateAt, tileAt } from '../sim/world';
 import { CUE_BOX, ROBOT_BOX } from './art';
 import { angleFor, toScreen, TILE, turnAngle, type BoardLayout } from './grid';
 import type { Player } from './sequencer';
@@ -76,6 +76,8 @@ export class BoardController implements Player {
   private lastRobot: RobotState | null = null;
   /** False while the child is predicting: the next-tile ghost would give the answer away. */
   private indicatorVisible = true;
+  /** Gates open on screen right now. */
+  private open: string[] = [];
 
   constructor(
     private world: WorldDefinition,
@@ -84,7 +86,26 @@ export class BoardController implements Player {
     private collectibles: Map<string, HTMLElement>,
     private colors: { ok: string; blocked: string },
     public motion: MotionSettings,
+    /** Gate elements by id and switch plates by cell key, when the board has them. */
+    private worldEls: { gates: Map<string, HTMLElement>; switches: Map<string, HTMLElement> } = { gates: new Map(), switches: new Map() },
   ) {}
+
+  private showGates(open: readonly string[]): void {
+    this.open = [...open];
+    for (const [id, el] of this.worldEls.gates) el.dataset.open = String(open.includes(id));
+  }
+
+  /** A switch was stepped on: the plate presses, then its gates swing. */
+  private async flipGates(at: Cell, open: readonly string[], signal: AbortSignal): Promise<void> {
+    const plate = this.worldEls.switches.get(cellKey(at));
+    if (plate && !this.motion.reducedMotion) {
+      const press = plate.animate([{ transform: 'scale(1)' }, { transform: 'scale(0.86)', offset: 0.4 }, { transform: 'scale(1)' }], { duration: 260 / this.motion.speed });
+      await settle(press, signal);
+      if (signal.aborted) return;
+    }
+    this.showGates(open);
+    if (!this.motion.reducedMotion) await wait(320 / this.motion.speed, signal);
+  }
 
   private transformFor(cell: Cell, angle: number, scale = 1): string {
     const p = toScreen(this.layout, cell);
@@ -117,7 +138,8 @@ export class BoardController implements Player {
     }
     const target = ahead(robot, robot.facing);
     const tile = tileAt(this.world, target);
-    const blocked = tile !== 'floor';
+    const gate = gateAt(this.world, target);
+    const blocked = tile !== 'floor' || (gate !== undefined && !this.open.includes(gate.id));
     // Off the island there is no tile to draw on, so a smaller arrow sits on
     // the board's edge instead of being clipped by the viewport.
     const offBoard = tile === 'outside';
@@ -192,6 +214,7 @@ export class BoardController implements Player {
     this.robot.bubble.getAnimations().forEach((a) => a.cancel());
     this.robot.bubble.style.opacity = '0';
     this.place(state.robot);
+    this.showGates(state.open);
     for (const [key, el] of this.collectibles) {
       el.getAnimations().forEach((a) => a.cancel());
       el.style.opacity = state.collected.includes(key) ? '0' : '1';
@@ -220,6 +243,7 @@ export class BoardController implements Player {
       this.place(after.robot, to);
       if (result.kind === 'blocked') this.setMood('error');
       if (result.kind === 'ok' && result.collected) this.collectibles.get(cellKey(result.collected))!.style.opacity = '0';
+      if (result.kind === 'ok' && result.toggled) this.showGates(after.open);
       if (event.op === 'forward') await wait(ms(REDUCED_PAUSE_MS), signal);
       else await this.showTurnCue(after.robot, event.op, ms(REDUCED_PAUSE_MS * 2), signal);
       if (!signal.aborted) this.showIndicator(after.robot);
@@ -245,6 +269,10 @@ export class BoardController implements Player {
         const pop = gem.animate([{ opacity: 1, scale: '1' }, { opacity: 0, scale: '1.6' }], { duration: ms(300), fill: 'forwards' });
         await settle(pop, signal);
         gem.style.opacity = '0';
+      }
+      if (result.toggled) {
+        await this.flipGates(after.robot, after.open, signal);
+        if (signal.aborted) return;
       }
     } else if (event.op === 'forward' && result.kind === 'blocked') {
       const nudge = {

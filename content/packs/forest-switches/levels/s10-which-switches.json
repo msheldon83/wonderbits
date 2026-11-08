@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "id": "s10-which-switches",
+  "title": "Which switches?",
+  "intro": "Three switches, three gates. Some switches flip two gates. Which ones should the robot press?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "#.#.#.###",
+      "........."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 1,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 8,
+      "y": 1
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 2,
+        "y": 1,
+        "open": false
+      },
+      {
+        "id": "b",
+        "x": 4,
+        "y": 1,
+        "open": false
+      },
+      {
+        "id": "c",
+        "x": 6,
+        "y": 1,
+        "open": false
+      }
+    ],
+    "switches": [
+      {
+        "x": 1,
+        "y": 0,
+        "toggles": [
+          "a",
+          "b"
+        ]
+      },
+      {
+        "x": 3,
+        "y": 0,
+        "toggles": [
+          "b",
+          "c"
+        ]
+      },
+      {
+        "x": 5,
+        "y": 0,
+        "toggles": [
+          "c"
+        ]
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "worldState",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "call"
+    ],
+    "maxInstructions": 18,
+    "starterProgram": [
+      {
+        "define": "press",
+        "do": []
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        }
+      ],
+      "text": "Read each switch: its letters say which gates it flips."
+    },
+    {
+      "kind": "card",
+      "command": "call",
+      "text": "Press only where it helps. A switch that flips an open gate shuts it again."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 1,
+      "command": "call",
+      "text": "The first switch opens A and B."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    {
+      "call": "press"
+    },
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    {
+      "call": "press"
+    },
+    "forward",
+    "forward",
+    "forward",
+    {
+      "define": "press",
+      "do": [
+        "rotateCCW",
+        "forward",
+        "rotateCW",
+        "rotateCW",
+        "forward",
+        "rotateCCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 16
+  }
+}

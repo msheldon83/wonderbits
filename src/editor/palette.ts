@@ -8,7 +8,7 @@
  * count like any other card, and so does everything inside them.
  */
 import { cardCounts, countNodes, functionNames } from '../ir/program';
-import { CONDITION_IDS, DEFAULT_CONDITION, type BlockId, type CardId, type ConditionId, type ProgramIR } from '../ir/types';
+import { BASIC_CONDITIONS, DEFAULT_CONDITION, type BlockId, type CardId, type ConditionId, type ProgramIR } from '../ir/types';
 import type { PuzzleDefinition } from '../lessons/types';
 
 export type Programming = PuzzleDefinition['programming'];
@@ -70,7 +70,7 @@ export function paletteFor(programming: Programming, program: ProgramIR): Palett
 
 /** The conditions a level's If and Repeat until may choose from. */
 export function conditionsFor(programming: Programming): readonly ConditionId[] {
-  return programming.allowedConditions ?? CONDITION_IDS;
+  return programming.allowedConditions ?? BASIC_CONDITIONS;
 }
 
 /** The condition a fresh block starts with: a loop waits for the flag, an If looks at the way ahead. */

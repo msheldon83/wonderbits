@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "id": "s07-the-whole-card",
+  "title": "The whole card",
+  "intro": "Gate B starts open. Follow every step, then fill in the memory card for the end.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......",
+      "...##."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 1
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 5,
+        "y": 1,
+        "open": false
+      },
+      {
+        "id": "b",
+        "x": 0,
+        "y": 1,
+        "open": true
+      }
+    ],
+    "switches": [
+      {
+        "x": 1,
+        "y": 0,
+        "toggles": [
+          "a"
+        ]
+      },
+      {
+        "x": 3,
+        "y": 0,
+        "toggles": [
+          "b"
+        ]
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "worldState",
+    "activity": "model"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 10,
+    "starterProgram": [
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      "rotateCW",
+      "rotateCW",
+      "forward",
+      "forward",
+      "rotateCCW",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "Switch A is stepped on once. Count the steps on switch B."
+    },
+    {
+      "kind": "card",
+      "command": "rotateCCW",
+      "text": "The last turn decides which way the robot faces at the end."
+    },
+    {
+      "kind": "fill",
+      "slot": 0,
+      "command": "forward",
+      "text": "The first Forward lands on switch A."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    "rotateCW",
+    "rotateCW",
+    "forward",
+    "forward",
+    "rotateCCW",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": false,
+    "askMemory": [
+      "gate:a",
+      "gate:b",
+      "facing"
+    ]
+  }
+}

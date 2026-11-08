@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "forest-switches",
+  "title": "Flip the switch",
+  "themeId": "forest",
+  "order": 5,
+  "concepts": ["worldState"],
+  "prerequisites": ["forest-functions"],
+  "introduction": {
+    "concept": "worldState",
+    "title": "Switches and gates",
+    "explanation": "Things in the world can change, and they stay changed until something changes them back.",
+    "demo": {
+      "world": {
+        "rows": [".....", "##.##"],
+        "robot": { "x": 0, "y": 0, "facing": "E" },
+        "goal": { "x": 2, "y": 1 },
+        "gates": [{ "id": "a", "x": 3, "y": 0 }],
+        "switches": [{ "x": 1, "y": 0, "toggles": ["a"] }]
+      },
+      "program": ["forward", "forward", "forward", "rotateCW", "rotateCW", "forward", "forward", "rotateCW", "rotateCW", "forward", "rotateCW", "forward"]
+    }
+  },
+  "levels": [
+    "s01-one-switch",
+    "s02-open-the-gate",
+    "s03-twice",
+    "s04-step-on-it-again",
+    "s05-fix-the-route",
+    "s06-two-keys",
+    "s07-the-whole-card",
+    "s08-cards-in-order",
+    "s09-where-will-it-stop",
+    "s10-which-switches"
+  ]
+}

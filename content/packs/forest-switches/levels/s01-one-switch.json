@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "id": "s01-one-switch",
+  "title": "One switch",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      ".....",
+      "##.##"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 2,
+        "y": 1,
+        "open": false
+      }
+    ],
+    "switches": [
+      {
+        "x": 2,
+        "y": 0,
+        "toggles": [
+          "a"
+        ]
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "worldState",
+    "activity": "model"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": [
+      "forward",
+      "forward",
+      "forward",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 1
+        }
+      ],
+      "text": "The switch and its gate share a letter and a colour."
+    },
+    {
+      "kind": "card",
+      "command": "forward",
+      "text": "Count the Forwards. Which one lands on the switch?"
+    },
+    {
+      "kind": "fill",
+      "slot": 1,
+      "command": "forward",
+      "text": "The second Forward steps on the switch. The gate stays the way the switch left it."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": false,
+    "askMemory": [
+      "gate:a"
+    ]
+  }
+}

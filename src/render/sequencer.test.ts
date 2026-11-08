@@ -3,7 +3,7 @@ import type { TraceEvent } from '../runtime/contract';
 import type { SimState } from '../sim/types';
 import { Sequencer, type Player, type SequencerStatus } from './sequencer';
 
-const state = (x: number): SimState => ({ robot: { x, y: 0, facing: 'E' }, collected: [] });
+const state = (x: number): SimState => ({ robot: { x, y: 0, facing: 'E' }, collected: [], open: [] });
 const trace: TraceEvent[] = [0, 1, 2].map((i) => ({
   index: i,
   nodeId: `n${i + 1}`,
@@ -55,11 +55,15 @@ describe('Sequencer', () => {
     const m = manualPlayer();
     const statuses: SequencerStatus[] = [];
     const events: (string | null)[] = [];
-    const seq = new Sequencer(m.player, { onStatus: (s) => statuses.push(s), onEvent: (e) => events.push(e?.nodeId ?? null) });
+    const played: string[] = [];
+    const seq = new Sequencer(m.player, { onStatus: (s) => statuses.push(s), onEvent: (e) => events.push(e?.nodeId ?? null), onPlayed: (e) => played.push(e.nodeId) });
     seq.load(trace, state(0));
     const done = seq.play();
-    for (let i = 0; i < 3; i++) await m.finishCurrent();
+    await m.finishCurrent();
+    expect(played).toEqual(['n1']);
+    for (let i = 0; i < 2; i++) await m.finishCurrent();
     await done;
+    expect(played).toEqual(['n1', 'n2', 'n3']);
     expect(m.played).toEqual(['n1', 'n2', 'n3']);
     expect(seq.state).toBe('finished');
     expect(statuses).toEqual(['playing', 'finished']);

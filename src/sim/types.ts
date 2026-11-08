@@ -17,6 +17,19 @@ export interface RobotState {
   facing: Facing;
 }
 
+/** A gate stands on a floor tile. Closed, it blocks the way like a wall; open, the robot walks through. */
+export interface Gate extends Cell {
+  /** A short id, such as "a". Switches name the gates they flip by id. */
+  id: string;
+  /** How the gate starts. */
+  open: boolean;
+}
+
+/** Stepping onto a switch flips every gate it names: open ones close, closed ones open. */
+export interface Switch extends Cell {
+  toggles: string[];
+}
+
 export interface WorldDefinition {
   width: number;
   height: number;
@@ -25,6 +38,9 @@ export interface WorldDefinition {
   robot: RobotState;
   goal: Cell;
   collectibles: Cell[];
+  /** World state: gates and the switches that flip them. Absent on boards without any. */
+  gates?: Gate[];
+  switches?: Switch[];
 }
 
 export interface ObjectiveDefinition {
@@ -39,4 +55,6 @@ export interface SimState {
   robot: RobotState;
   /** Keys of collectibles picked up so far, as "x,y". */
   collected: string[];
+  /** Ids of the gates open right now, sorted. */
+  open: string[];
 }

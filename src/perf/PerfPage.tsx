@@ -74,7 +74,7 @@ export function PerfPage() {
     const ac = new AbortController();
     abort.current = ac;
     controllers.forEach(async (c, i) => {
-      let state: SimState = { robot: { ...STARTS[i]! }, collected: [] };
+      let state: SimState = { robot: { ...STARTS[i]! }, collected: [], open: [] };
       c.showState(state);
       let index = 0;
       while (!ac.signal.aborted) {

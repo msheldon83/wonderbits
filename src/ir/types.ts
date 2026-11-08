@@ -19,8 +19,10 @@ export function isCommandId(value: unknown): value is CommandId {
 }
 
 /** What the robot can sense about the world, for If and Repeat until. */
-export const CONDITION_IDS = ['pathAhead', 'blockedAhead', 'acornAhead', 'atFlag'] as const;
+export const CONDITION_IDS = ['pathAhead', 'blockedAhead', 'acornAhead', 'atFlag', 'gateClosedAhead', 'onSwitch'] as const;
 export type ConditionId = (typeof CONDITION_IDS)[number];
+/** What a level offers when it does not list its conditions: the senses every board has. Gate senses are listed by the levels that have gates. */
+export const BASIC_CONDITIONS: readonly ConditionId[] = ['pathAhead', 'blockedAhead', 'acornAhead', 'atFlag'];
 
 export function isConditionId(value: unknown): value is ConditionId {
   return typeof value === 'string' && (CONDITION_IDS as readonly string[]).includes(value);

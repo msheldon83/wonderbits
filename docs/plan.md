@@ -181,7 +181,7 @@ Each level authors a deterministic three-rung ladder: orient attention (highligh
 
 **Curriculum: the concept spine**
 
-Repeat was motivated by the instruction budget the child felt on level 15, and the Repeat, If and functions packs are built. The spine continues from there to data. Functions came next after conditionals. Switches then introduce world state on its own, and events follow right after, so the world can react to the robot. Input and the game loop follow events, and lists, grids and randomness follow variables, because the target game types depend on them. Types run as a thread from Representation onward, and Robot team adds objects at the end. A construct is introduced only after a concrete puzzle makes the previous approach cumbersome.
+Repeat was motivated by the instruction budget the child felt on level 15, and the Repeat, If, functions and switch packs are built. The spine continues from there to data. Functions came next after conditionals. Switches then introduce world state on its own, and events follow right after, so the world can react to the robot. Input and the game loop follow events, and lists, grids and randomness follow variables, because the target game types depend on them. Types run as a thread from Representation onward, and Robot team adds objects at the end. A construct is introduced only after a concrete puzzle makes the previous approach cumbersome.
 
 | # | Concept | Pack | Status |
 | --- | --- | --- | --- |
@@ -189,7 +189,7 @@ Repeat was motivated by the instruction budget the child felt on level 15, and t
 | 2 | Loops | Around and around | Built |
 | 3 | Conditionals | Look before you leap | Built |
 | 4 | Functions | Same trick, new place | Built |
-| 5 | World state | Flip the switch | Proposed |
+| 5 | World state | Flip the switch | Built |
 | 6 | Events | When it happens | Proposed |
 | 7 | Player input | Remote control | Proposed |
 | 8 | Time and the game loop | Tick tock | Proposed |
@@ -555,7 +555,7 @@ Work proceeds vertically: each step ends with something runnable on an iPad. Cod
 7. **After the gate.** Repeat, motivated by the level 15 budget, then If. Started early: the first testers finished the 15 levels and asked for more, so the Forest trails, Around and around and Look before you leap packs exist (design-notes.md). The child test in step 6 passed on 2026-11-08.
 8. **Concept introductions and the card book.** Show, name it, peek at the code, first try, save it to the card book. The three built packs get theirs, replacing the `intro` sentence on their first levels. Concepts, prerequisites and the introduction go into each `pack.json`. Sequencing consolidates to 5 intro levels plus 10. Built 2026-11-08 (design-notes.md).
 9. **Functions.** `call` in the IR, the printer and the interpreter; the Same trick, new place pack with its introduction. Built 2026-11-08 (design-notes.md).
-10. **World state and the memory card.** Switches and gates in the simulation with their senses; the memory card panel rendered from trace state; the Flip the switch pack; the `model` activity and state prediction with their validator rules.
+10. **World state and the memory card.** Switches and gates in the simulation with their senses; the memory card panel rendered from trace state; the Flip the switch pack; the `model` activity and state prediction with their validator rules. Built 2026-11-08 (design-notes.md).
 11. **Events, input and time.** `on` handlers and When it happens; `inputScript` and Remote control; ticks, every-tick handlers, moving hazards and Tick tock.
 12. **Data.** The memory budget and kinds of values (Two things to remember); `set` and variables (Into the dark); lists (In a row); 2D grids (Reading the map); seeded randomness (Never the same twice); stored vs. derived (Two scoreboards); the backpack and persistence (Overnight); records (The notebook); blueprints and instances (Robot team).
 13. **Creation mode.** Create on the map with its nudge; remix; design a puzzle with the validator as critic; the Workshop's turn-based and real-time starters; the design card and save-my-place for detours; grown-up review.
@@ -620,16 +620,16 @@ Repeat and If were built before this gate because the first testers asked for mo
 - Is the Workshop the same as creation mode, or the part of it for modifying and designing games? This plan treats it as the part.
 - How strongly should the map nudge toward puzzles: a quiet note, or a suggested path?
 - Are detours required or suggested? Suggested keeps agency, but some kids will skip and get stuck.
-- Does the memory card appear from the start of the switch pack, or only once state matters?
+- Resolved 2026-11-08: the memory card appears on every board with gates, from the switch pack's first level, and on any level that asks the child to predict it.
 - How should the trace show events: one handler at a time, or interleaved with the robot's moves?
 - When accounts arrive, how does the grown-up review work: on the child's device, or from the grown-up's own account?
 
 **Next steps (2026-11-08)**
 
 - [x] Add `call` to the IR and write the Same trick, new place pack (2026-11-08)
-- [ ] Build the memory card panel from trace state
-- [ ] Add switches and gates to the simulation, then write Flip the switch
-- [ ] Draft the `model` activity schema and its validator rule
+- [x] Build the memory card panel from trace state (2026-11-08)
+- [x] Add switches and gates to the simulation, then write Flip the switch (2026-11-08)
+- [x] Draft the `model` activity schema and its validator rule (2026-11-08)
 - [x] Add concepts, prerequisites and the introduction to each `pack.json` (2026-11-08)
 - [ ] Define how creation mode nudges toward unfinished puzzles
 - [ ] Sketch the Workshop design card and the detour flow on paper with a tester

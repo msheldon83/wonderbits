@@ -117,6 +117,43 @@ export function Collectible({ theme }: { theme: Theme }) {
   );
 }
 
+/**
+ * A gate across the tile: two posts and a lettered sign in the gate's
+ * colour, with bars that slide into the posts when it opens. The open look
+ * comes from CSS on the wrapper's data-open, so the controller only flips
+ * an attribute.
+ */
+export function GateArt({ color, letter }: { color: string; letter: string }) {
+  return (
+    <g className="gate-art">
+      <g className="gate-bars">
+        <rect x={-38} y={-14} width={76} height={9} rx={4} fill={color} />
+        <rect x={-38} y={4} width={76} height={9} rx={4} fill={color} />
+        <path d="M-30 -14 L-14 13 M-6 -14 L10 13 M18 -14 L32 9" stroke="rgba(0,0,0,0.18)" strokeWidth={4} strokeLinecap="round" />
+      </g>
+      <rect x={-46} y={-24} width={12} height={46} rx={5} fill="#7a5b40" />
+      <rect x={34} y={-24} width={12} height={46} rx={5} fill="#7a5b40" />
+      <circle cx={0} cy={-34} r={13} fill="#fff" stroke={color} strokeWidth={4} />
+      <text x={0} y={-29} textAnchor="middle" fontSize={16} fontWeight={800} fill={color} fontFamily="inherit">
+        {letter}
+      </text>
+    </g>
+  );
+}
+
+/** A switch plate on the floor, ringed in the colour of the gate it flips, with the gate's letter on it. */
+export function SwitchArt({ color, letter }: { color: string; letter: string }) {
+  return (
+    <g className="switch-art">
+      <rect x={-30} y={-30} width={60} height={60} rx={14} fill="#eef3ef" stroke={color} strokeWidth={6} />
+      <circle className="switch-button" cx={0} cy={0} r={17} fill={color} />
+      <text x={0} y={6} textAnchor="middle" fontSize={17} fontWeight={800} fill="#fff" fontFamily="inherit">
+        {letter}
+      </text>
+    </g>
+  );
+}
+
 /** The robot's drawing box. Larger than a tile so the headlamp beam fits. */
 export const ROBOT_BOX = 120;
 

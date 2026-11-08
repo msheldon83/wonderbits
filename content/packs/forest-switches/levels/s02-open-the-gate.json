@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "id": "s02-open-the-gate",
+  "title": "Open the gate",
+  "intro": "The gate is shut. Step on its switch first, then walk through.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "#.###",
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 1,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 1
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 2,
+        "y": 1,
+        "open": false
+      }
+    ],
+    "switches": [
+      {
+        "x": 1,
+        "y": 0,
+        "toggles": [
+          "a"
+        ]
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "worldState",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 12,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        }
+      ],
+      "text": "The switch is in the nook above the path."
+    },
+    {
+      "kind": "card",
+      "command": "rotateCCW",
+      "text": "Turn up into the nook, step on the switch, then come back down."
+    },
+    {
+      "kind": "fill",
+      "slot": 1,
+      "command": "rotateCCW",
+      "text": "After one step, turn to face the switch."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "rotateCCW",
+    "forward",
+    "rotateCW",
+    "rotateCW",
+    "forward",
+    "rotateCCW",
+    "forward",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

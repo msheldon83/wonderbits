@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "id": "s04-step-on-it-again",
+  "title": "Step on it again",
+  "intro": "The gate is open now, but the switch on the path will shut it. How can the robot open it again?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 3,
+        "y": 0,
+        "open": true
+      }
+    ],
+    "switches": [
+      {
+        "x": 1,
+        "y": 0,
+        "toggles": [
+          "a"
+        ]
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "worldState",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 12,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "Stepping on the switch shuts the open gate. A second step opens it."
+    },
+    {
+      "kind": "card",
+      "command": "rotateCW",
+      "text": "Two turns face the robot the other way, so it can step off and back on."
+    },
+    {
+      "kind": "fill",
+      "slot": 1,
+      "command": "rotateCW",
+      "text": "After the first step, turn around."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "rotateCW",
+    "rotateCW",
+    "forward",
+    "rotateCW",
+    "rotateCW",
+    "forward",
+    "forward",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

@@ -10,7 +10,7 @@
  * nothing on the board.
  */
 import { functionBody, mainBody } from '../ir/program';
-import { initialState, evaluate, objectiveMet, step } from '../sim/world';
+import { initialState, evaluate, objectiveMet, stateKey, step } from '../sim/world';
 import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 import type { IRNode, ProgramIR } from '../ir/types';
 import type { RunLimits, RunOutcome, TraceEvent } from './contract';
@@ -34,7 +34,6 @@ type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K>
 /** How many calls may be running inside one another. */
 const MAX_CALL_DEPTH = 16;
 
-const stateKey = (s: SimState) => `${s.robot.x},${s.robot.y},${s.robot.facing}|${[...s.collected].sort().join(';')}`;
 
 export function* interpret(input: InterpretInput): Generator<TraceEvent, InterpretSummary, void> {
   const { program, world, objective, limits } = input;
@@ -72,9 +71,7 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
             after: result.state,
             result:
               result.kind === 'ok'
-                ? result.collected
-                  ? { kind: 'ok', collected: result.collected }
-                  : { kind: 'ok' }
+                ? { kind: 'ok', ...(result.collected && { collected: result.collected }), ...(result.toggled && { toggled: result.toggled }) }
                 : { kind: 'blocked', reason: result.reason, at: result.at },
           });
           if (!ok) return;
