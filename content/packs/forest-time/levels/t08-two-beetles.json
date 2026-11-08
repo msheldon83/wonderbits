@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "id": "t08-two-beetles",
+  "title": "Two beetles",
+  "intro": "Two beetles patrol across the path. Time each crossing.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......",
+      "#.##.#",
+      "#.##.#"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 0
+    },
+    "collectibles": [],
+    "movers": [
+      {
+        "id": "b1",
+        "kind": "beetle",
+        "path": [
+          {
+            "x": 1,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 0
+          },
+          {
+            "x": 1,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "b2",
+        "kind": "beetle",
+        "path": [
+          {
+            "x": 4,
+            "y": 0
+          },
+          {
+            "x": 4,
+            "y": 1
+          },
+          {
+            "x": 4,
+            "y": 2
+          },
+          {
+            "x": 4,
+            "y": 1
+          }
+        ]
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "time",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "wait"
+    ],
+    "maxInstructions": 9,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "text": "Each beetle crosses the path every four ticks."
+    },
+    {
+      "kind": "card",
+      "command": "wait",
+      "text": "Before the second beetle, wait."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 3,
+      "command": "wait",
+      "text": "After three steps, wait."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward",
+    "forward",
+    "wait",
+    "wait",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

@@ -1,5 +1,5 @@
 import type { NodeSpec } from '../ir/spec';
-import type { CardId, ConditionId } from '../ir/types';
+import type { CardId, ConditionId, Key } from '../ir/types';
 import type { Cell, Facing, ObjectiveDefinition, WorldDefinition } from '../sim/types';
 
 export const CONTENT_SCHEMA_VERSION = 1 as const;
@@ -75,6 +75,8 @@ export interface PuzzleDefinition {
   };
   /** When set, the level opens in prediction mode before Run is enabled. */
   prediction?: PredictionSettings;
+  /** Input levels: the key presses played after the program, in order. Each fires its When card. */
+  inputScript?: Key[];
   hints: [HintStep, HintStep, HintStep];
   /** Required on every level; validators prove it works. */
   referenceSolution: NodeSpec[];
@@ -102,6 +104,8 @@ export interface ConceptIntroduction {
     program: NodeSpec[];
     /** The old way, played first, whose cards fold into `program`. Optional. */
     before?: NodeSpec[];
+    /** Key presses played after the program, for the input introduction. */
+    input?: Key[];
   };
 }
 

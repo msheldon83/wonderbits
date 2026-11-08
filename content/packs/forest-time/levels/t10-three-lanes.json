@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "id": "t10-three-lanes",
+  "title": "Three lanes",
+  "intro": "Three lanes of water, three logs at different speeds. Find the moment to go.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      ".___.",
+      ".___.",
+      ".___."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 1,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 1
+    },
+    "collectibles": [],
+    "movers": [
+      {
+        "id": "l1",
+        "kind": "log",
+        "path": [
+          {
+            "x": 1,
+            "y": 0
+          },
+          {
+            "x": 1,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "l2",
+        "kind": "log",
+        "path": [
+          {
+            "x": 2,
+            "y": 2
+          },
+          {
+            "x": 2,
+            "y": 2
+          },
+          {
+            "x": 2,
+            "y": 1
+          },
+          {
+            "x": 2,
+            "y": 0
+          },
+          {
+            "x": 2,
+            "y": 0
+          },
+          {
+            "x": 2,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "l3",
+        "kind": "log",
+        "path": [
+          {
+            "x": 3,
+            "y": 1
+          },
+          {
+            "x": 3,
+            "y": 0
+          },
+          {
+            "x": 3,
+            "y": 1
+          },
+          {
+            "x": 3,
+            "y": 2
+          }
+        ]
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "time",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "wait"
+    ],
+    "maxInstructions": 11,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 3,
+          "y": 1
+        }
+      ],
+      "text": "Each log passes the middle row on its own beat."
+    },
+    {
+      "kind": "card",
+      "command": "wait",
+      "text": "Wait until all three line up, then go without stopping."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "wait",
+      "text": "It starts with waiting."
+    }
+  ],
+  "referenceSolution": [
+    "wait",
+    "wait",
+    "wait",
+    "wait",
+    "wait",
+    "forward",
+    "forward",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 9
+  }
+}

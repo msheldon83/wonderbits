@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "id": "forest-input",
+  "title": "Remote control",
+  "themeId": "forest",
+  "order": 7,
+  "concepts": [
+    "input"
+  ],
+  "prerequisites": [
+    "forest-events"
+  ],
+  "introduction": {
+    "concept": "input",
+    "title": "Keys",
+    "explanation": "Each key can have its own When card.",
+    "demo": {
+      "world": {
+        "rows": [
+          "...."
+        ],
+        "robot": {
+          "x": 0,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 3,
+          "y": 0
+        }
+      },
+      "program": [
+        {
+          "on": "key:right",
+          "do": [
+            "forward"
+          ]
+        }
+      ],
+      "input": [
+        "right",
+        "right",
+        "right"
+      ]
+    }
+  },
+  "levels": [
+    "k01-press-up",
+    "k02-what-up-does",
+    "k03-turn-key",
+    "k04-left-and-right",
+    "k05-fix-the-key",
+    "k06-sidestep",
+    "k07-cards-in-order",
+    "k08-the-down-key",
+    "k09-where-will-it-stop",
+    "k10-two-keys-only"
+  ]
+}

@@ -3,7 +3,7 @@ import type { TraceEvent } from '../runtime/contract';
 import type { SimState } from '../sim/types';
 import { Sequencer, type Player, type SequencerStatus } from './sequencer';
 
-const state = (x: number): SimState => ({ robot: { x, y: 0, facing: 'E' }, collected: [], open: [] });
+const state = (x: number): SimState => ({ robot: { x, y: 0, facing: 'E' }, collected: [], open: [], tick: 0 });
 const trace: TraceEvent[] = [0, 1, 2].map((i) => ({
   index: i,
   nodeId: `n${i + 1}`,

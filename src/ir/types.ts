@@ -11,7 +11,7 @@ export const IR_VERSION = 1 as const;
 export type NodeId = string;
 
 /** Primitive commands: one robot action each. */
-export const COMMAND_IDS = ['forward', 'rotateCW', 'rotateCCW'] as const;
+export const COMMAND_IDS = ['forward', 'rotateCW', 'rotateCCW', 'wait'] as const;
 export type CommandId = (typeof COMMAND_IDS)[number];
 
 export function isCommandId(value: unknown): value is CommandId {
@@ -38,9 +38,17 @@ export type BlockId = (typeof BLOCK_IDS)[number];
  */
 export const CALL = 'call' as const;
 
-/** Everything the palette can hand out: a command, a block or a call. */
-export const CARD_IDS = [...COMMAND_IDS, ...BLOCK_IDS, CALL] as const;
-export type CardId = CommandId | BlockId | typeof CALL;
+/** Cards that act on the world instead of the robot: open or shut a gate by its letter. */
+export const GATE_ACTION_IDS = ['openGate', 'closeGate'] as const;
+export type GateActionId = (typeof GATE_ACTION_IDS)[number];
+
+export function isGateActionId(value: unknown): value is GateActionId {
+  return typeof value === 'string' && (GATE_ACTION_IDS as readonly string[]).includes(value);
+}
+
+/** Everything the palette can hand out: a command, a block, a call or a gate action. */
+export const CARD_IDS = [...COMMAND_IDS, ...BLOCK_IDS, CALL, ...GATE_ACTION_IDS] as const;
+export type CardId = CommandId | BlockId | typeof CALL | GateActionId;
 
 export function isCardId(value: unknown): value is CardId {
   return typeof value === 'string' && (CARD_IDS as readonly string[]).includes(value);
@@ -98,8 +106,15 @@ export interface CallNode {
   name: string;
 }
 
+/** Opens or shuts one gate, wherever the robot is. */
+export interface GateActionNode {
+  id: NodeId;
+  kind: GateActionId;
+  gate: string;
+}
+
 export type BlockNode = RepeatNode | IfNode | IfElseNode | UntilNode;
-export type IRNode = CommandNode | BlockNode | CallNode;
+export type IRNode = CommandNode | BlockNode | CallNode | GateActionNode;
 
 export function isBlockNode(node: IRNode): node is BlockNode {
   return isBlockId(node.kind);
@@ -126,12 +141,21 @@ export interface Procedure {
 }
 
 /**
- * Event handlers are part of the shape from day one so Game Workshop events
- * need no migration. Phase 1 programs always have an empty list.
+ * A When card: cards that run each time an event happens. Events are
+ * stepping onto a plate (`stepOn:1`), picking up an acorn (`acorn`), a key
+ * press from the level's script (`key:up`), and every tick (`tick`).
  */
 export interface EventHandler {
   event: string;
   body: IRNode[];
+}
+
+export const KEYS = ['up', 'down', 'left', 'right'] as const;
+export type Key = (typeof KEYS)[number];
+
+/** True for an event a When card can wait for. */
+export function isEventId(value: unknown): value is string {
+  return typeof value === 'string' && (/^stepOn:[1-9]$/.test(value) || value === 'acorn' || value === 'tick' || KEYS.some((k) => value === `key:${k}`));
 }
 
 export interface ProgramIR {
@@ -152,6 +176,14 @@ export const functionContainerId = (name: string): NodeId => FUNCTION_PREFIX + n
 /** The function a container id names, or null when it is a block or main. */
 export function functionOfContainer(parent: NodeId | null): string | null {
   return parent !== null && parent.startsWith(FUNCTION_PREFIX) ? parent.slice(FUNCTION_PREFIX.length) : null;
+}
+
+/** A When card's own cards sit in a container whose parent is this id. */
+const HANDLER_PREFIX = 'on:';
+export const handlerContainerId = (event: string): NodeId => HANDLER_PREFIX + event;
+/** The event a container id names, or null when it is not a When card. */
+export function handlerOfContainer(parent: NodeId | null): string | null {
+  return parent !== null && parent.startsWith(HANDLER_PREFIX) ? parent.slice(HANDLER_PREFIX.length) : null;
 }
 
 /** Function names are short lower camel case words, so they print as real TypeScript. */

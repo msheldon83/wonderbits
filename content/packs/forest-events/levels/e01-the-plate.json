@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "id": "e01-the-plate",
+  "title": "The plate",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 0
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 4,
+        "y": 0,
+        "open": false
+      }
+    ],
+    "plates": [
+      {
+        "id": "1",
+        "x": 2,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "events",
+    "activity": "run"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "openGate"
+    ],
+    "maxInstructions": 6,
+    "starterProgram": [
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      {
+        "on": "stepOn:1",
+        "do": [
+          {
+            "open": "a"
+          }
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "text": "Plate 1 and gate A. Nothing joins them but the When card."
+    },
+    {
+      "kind": "card",
+      "command": "openGate",
+      "text": "When the robot steps on plate 1, the cards inside the When card run."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "forward",
+      "text": "The program just walks. The When card does the opening."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    {
+      "on": "stepOn:1",
+      "do": [
+        {
+          "open": "a"
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true
+  }
+}

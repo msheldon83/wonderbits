@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "id": "e09-who-goes-first",
+  "title": "Who goes first?",
+  "intro": "A plate and an acorn each have a When card. Follow them in the order they happen, then place the flag and fill in the card.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......",
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 1
+    },
+    "collectibles": [
+      {
+        "x": 2,
+        "y": 1
+      }
+    ],
+    "gates": [
+      {
+        "id": "a",
+        "x": 4,
+        "y": 1,
+        "open": false
+      }
+    ],
+    "plates": [
+      {
+        "id": "1",
+        "x": 2,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "transfer",
+    "activity": "predict"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "until",
+      "openGate"
+    ],
+    "allowedConditions": [
+      "atFlag"
+    ],
+    "maxInstructions": 6,
+    "starterProgram": [
+      {
+        "until": "atFlag",
+        "do": [
+          "forward"
+        ]
+      },
+      {
+        "on": "stepOn:1",
+        "do": [
+          "rotateCW"
+        ]
+      },
+      {
+        "on": "acorn",
+        "do": [
+          "rotateCCW",
+          {
+            "open": "a"
+          }
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 1
+        }
+      ],
+      "text": "First the plate, then the acorn right under it."
+    },
+    {
+      "kind": "card",
+      "command": "openGate",
+      "text": "The acorn turns the robot back to the right and opens the gate."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "until",
+      "text": "The program only walks; the When cards steer."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "until": "atFlag",
+      "do": [
+        "forward"
+      ]
+    },
+    {
+      "on": "stepOn:1",
+      "do": [
+        "rotateCW"
+      ]
+    },
+    {
+      "on": "acorn",
+      "do": [
+        "rotateCCW",
+        {
+          "open": "a"
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true,
+    "askMemory": [
+      "gate:a",
+      "facing"
+    ]
+  }
+}

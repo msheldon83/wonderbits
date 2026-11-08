@@ -29,9 +29,9 @@ import type { IdFactory } from '../ir/ids';
 import { isNoOpMove, type EditOp } from '../ir/ops';
 import { ancestorsOf, branchesOf, branchBody, containerAt, endOfMain, functionsOf, isWithin, locate, mainBody, procedureOfPlace, samePlaceContainer, walk } from '../ir/program';
 import { buildNodes } from '../ir/spec';
-import { functionContainerId, functionLabel, functionOfContainer, MAIN as MAIN_PROCEDURE, REPEAT_DEFAULT, REPEAT_MAX, REPEAT_MIN, type Branch, type CardId, type CommandId, type IRNode, type NodeId, type Place, type ProgramIR } from '../ir/types';
+import { functionContainerId, functionLabel, functionOfContainer, handlerContainerId, handlerOfContainer, MAIN as MAIN_PROCEDURE, REPEAT_DEFAULT, REPEAT_MAX, REPEAT_MIN, type Branch, type CardId, type CommandId, type IRNode, type NodeId, type Place, type ProgramIR } from '../ir/types';
 import type { TraceEvent } from '../runtime/contract';
-import { cardLabel, COMMANDS, CONDITIONS, describeNode, FunctionIcon, nodeLabel } from './commands';
+import { cardLabel, COMMANDS, CONDITIONS, describeNode, eventLabel, FunctionIcon, nodeLabel } from './commands';
 import { gapCentres, slotForY, type RowBox } from './geometry';
 import { conditionsFor, defaultCondition, paletteFor, type Programming } from './palette';
 
@@ -64,6 +64,8 @@ export interface EditorProps {
   showCode?: boolean;
   /** Toggle the code view. The button lives in the program panel's header. */
   onToggleCode?(): void;
+  /** The board's gate letters, for Open gate and Shut gate cards to choose from. */
+  gates?: readonly string[];
 }
 
 /** What is being carried to a gap: a palette card, a program block, or the cursor. */
@@ -108,6 +110,7 @@ export function Editor({
   codePanel,
   showCode = false,
   onToggleCode,
+  gates = [],
 }: EditorProps) {
   const locked = lockedProp || readOnly;
   const body = mainBody(program);
@@ -125,9 +128,12 @@ export function Editor({
     runningAncestors.add(id);
     for (const a of ancestorsOf(program, id)) runningAncestors.add(a);
   }
-  /** The function the running step belongs to, if it is in one. */
-  const runningFunction = activeNodeId ? (locate(program, activeNodeId)?.procedure ?? null) : null;
+  /** The function or When card the running step belongs to, if it is in one; a When card also lights while it is being set off. */
+  const runningFunction = activeNodeId ? (handlerOfContainer(activeNodeId) !== null ? activeNodeId : (locate(program, activeNodeId)?.procedure ?? null)) : null;
   const functions = functionsOf(program);
+  const handlers = program.handlers;
+  /** Functions and When cards: everything listed under the program. */
+  const extras = functions.length + handlers.length;
 
   /** The gap the next card goes into. Clamped, so edits elsewhere never leave it dangling. */
   const [cursorRaw, setCursor] = useState<Place>(() => endOfMain(program));
@@ -217,6 +223,9 @@ export function Editor({
     switch (command) {
       case 'call':
         return { id: newId(), kind: 'call', name: name ?? functions[0]?.name ?? MAIN_PROCEDURE };
+      case 'openGate':
+      case 'closeGate':
+        return { id: newId(), kind: command, gate: gates[0] ?? 'a' };
       case 'repeat':
         return buildNodes([{ repeat: REPEAT_DEFAULT, do: [] }], newId)[0]!;
       case 'if':
@@ -230,12 +239,13 @@ export function Editor({
     }
   };
 
-  /** Whether a carried card or block may go into a container: calls stay out of functions. */
+  /** Whether a carried card or block may go into a container: calls stay out of functions, but may go in When cards. */
   const fits = (carried: Carried, container: Container): boolean => {
     const call = carried.kind === 'palette' ? carried.command === 'call' : carried.kind === 'program' ? holdsCall(locate(program, carried.id)?.node ?? { id: '', kind: 'forward' }) : false;
-    return !call || procedureOfPlace(program, container) === MAIN_PROCEDURE;
+    const procedure = procedureOfPlace(program, container);
+    return !call || procedure === MAIN_PROCEDURE || procedure?.startsWith('on:') === true;
   };
-  const cursorInFunction = procedureOfPlace(program, cursor) !== MAIN_PROCEDURE;
+  const cursorInFunction = !fits({ kind: 'palette', command: 'call' }, cursor);
 
   const insertAt = (command: CardId, at: Place, focus: Focus, name?: string) => {
     if (full || !fits({ kind: 'palette', command }, at)) return;
@@ -284,11 +294,11 @@ export function Editor({
     else if (cursor.parent !== null && isWithin(program, cursor.parent, id)) setCursor(endOfMain(program));
     const siblings = containerAt(program, found) ?? [];
     const neighbour = siblings[found.index + 1] ?? siblings[found.index - 1];
-    focusAfter.current = neighbour ? { kind: 'card', id: neighbour.id } : found.parent && functionOfContainer(found.parent) === null ? { kind: 'card', id: found.parent } : 'palette';
+    focusAfter.current = neighbour ? { kind: 'card', id: neighbour.id } : found.parent && functionOfContainer(found.parent) === null && handlerOfContainer(found.parent) === null ? { kind: 'card', id: found.parent } : 'palette';
     if (moving === id) setCarrying(null);
   };
 
-  const setParam = (id: NodeId, patch: { count?: number; condition?: EditOp extends { op: 'set'; condition?: infer C } ? C : never }) => {
+  const setParam = (id: NodeId, patch: { count?: number; condition?: EditOp extends { op: 'set'; condition?: infer C } ? C : never; gate?: string }) => {
     onEdit({ op: 'set', id, ...patch });
   };
 
@@ -455,6 +465,8 @@ export function Editor({
     if (place.parent === null) return where;
     const fn = functionOfContainer(place.parent);
     if (fn !== null) return `in ${functionLabel(fn)} ${where}`;
+    const event = handlerOfContainer(place.parent);
+    if (event !== null) return `in "${eventLabel(event)}" ${where}`;
     const inside = place.branch === 'else' ? `in the else part of step ${numbers.get(place.parent)}` : `inside step ${numbers.get(place.parent)}`;
     return `${inside} ${where}`;
   };
@@ -488,6 +500,7 @@ export function Editor({
     const centres = gaps.get(key) ?? [0];
     const isMain = container.parent === null;
     const fn = functionOfContainer(container.parent);
+    const event = handlerOfContainer(container.parent);
 
     const carets =
       carrying &&
@@ -534,13 +547,13 @@ export function Editor({
           else listRefs.current.delete(key);
         }}
       >
-        {cards.length === 0 && isMain && remaining === null && functions.length === 0 && (
+        {cards.length === 0 && isMain && remaining === null && extras === 0 && (
           <li className="slot-empty" aria-hidden="true">
             <span>{drag ? 'Drop it here' : 'Tap an instruction to add a step'}</span>
           </li>
         )}
         {/* With functions below, an empty program needs its own spot to tap, so new cards can come back here. */}
-        {cards.length === 0 && isMain && functions.length > 0 && (
+        {cards.length === 0 && isMain && extras > 0 && (
           <li className="slot-empty is-nested">
             {readOnly ? (
               <span aria-hidden="true">Nothing in the program</span>
@@ -570,8 +583,8 @@ export function Editor({
                 className="slot-empty-button"
                 disabled={locked}
                 aria-label={
-                  fn !== null
-                    ? `Nothing in ${functionLabel(fn)} yet. Tap to put the insert point here`
+                  fn !== null || event !== null
+                    ? `Nothing in ${fn !== null ? functionLabel(fn) : `"${eventLabel(event!)}"`} yet. Tap to put the insert point here`
                     : `Nothing ${container.branch === 'else' ? 'in the else part of' : 'inside'} step ${numbers.get(container.parent!)}. Tap to put the insert point here`
                 }
                 onClick={() => {
@@ -593,7 +606,7 @@ export function Editor({
         {isMain &&
           remaining !== null &&
           !readOnly &&
-          functions.length === 0 &&
+          extras === 0 &&
           Array.from({ length: remaining }, (_, k) => (
             <li key={`empty-${k}`} className={`program-step is-empty ${budgetTone}`} aria-hidden="true">
               <span className="step-number">{palette.used + k + 1}</span>
@@ -695,6 +708,17 @@ export function Editor({
                   <path d="M6 12h12M12 6v12" {...stroke} strokeWidth={3.4} />
                 </svg>
               </button>
+            </span>
+          )}
+          {(node.kind === 'openGate' || node.kind === 'closeGate') && (
+            <span className="block-param block-condition">
+              <select className="param-select" aria-label={`Which gate, step ${number}`} value={node.gate} disabled={locked} onChange={(e) => setParam(node.id, { gate: e.target.value })}>
+                {(gates.includes(node.gate) ? gates : [node.gate, ...gates]).map((g) => (
+                  <option key={g} value={g}>
+                    {g.toUpperCase()}
+                  </option>
+                ))}
+              </select>
             </span>
           )}
           {(node.kind === 'if' || node.kind === 'ifElse' || node.kind === 'until') && (
@@ -896,6 +920,40 @@ export function Editor({
                 </section>
               );
             })}
+            {handlers.map((h) => {
+              const container: Container = { parent: handlerContainerId(h.event), branch: 'body' };
+              const label = eventLabel(h.event);
+              const head = (
+                <>
+                  <span className="card-icon">
+                    <WhenIcon />
+                  </span>
+                  <span>{label}</span>
+                </>
+              );
+              return (
+                <section key={h.event} className={`function-def handler-def ${runningFunction === container.parent ? 'is-running' : ''}`} aria-label={`${label}: the cards that run then`}>
+                  {readOnly ? (
+                    <h3 className="function-head">{head}</h3>
+                  ) : (
+                    <button
+                      type="button"
+                      className="function-head"
+                      disabled={locked}
+                      aria-label={`${label}. Tap to put the insert point at the end of this When card`}
+                      title="Tap to add cards to this When card"
+                      onClick={() => {
+                        setCarrying(null);
+                        setCursor({ ...container, index: h.body.length });
+                      }}
+                    >
+                      {head}
+                    </button>
+                  )}
+                  <div className="function-body">{renderList(container, 1)}</div>
+                </section>
+              );
+            })}
           </div>
           {codePanel && showCode && <div className="program-code">{codePanel}</div>}
         </div>
@@ -917,6 +975,15 @@ export function Editor({
         </div>
       )}
     </div>
+  );
+}
+
+/** A lightning bolt: something happens, and a When card answers. */
+function WhenIcon() {
+  return (
+    <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+      <path d="M18 4 8 18h8l-2 10 10-14h-8z" fill="currentColor" />
+    </svg>
   );
 }
 

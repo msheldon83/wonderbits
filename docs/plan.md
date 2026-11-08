@@ -181,7 +181,7 @@ Each level authors a deterministic three-rung ladder: orient attention (highligh
 
 **Curriculum: the concept spine**
 
-Repeat was motivated by the instruction budget the child felt on level 15, and the Repeat, If, functions and switch packs are built. The spine continues from there to data. Functions came next after conditionals. Switches then introduce world state on its own, and events follow right after, so the world can react to the robot. Input and the game loop follow events, and lists, grids and randomness follow variables, because the target game types depend on them. Types run as a thread from Representation onward, and Robot team adds objects at the end. A construct is introduced only after a concrete puzzle makes the previous approach cumbersome.
+Repeat was motivated by the instruction budget the child felt on level 15, and the packs through Tick tock (time and the game loop) are built. The spine continues from there to data. Functions came next after conditionals. Switches then introduce world state on its own, and events follow right after, so the world can react to the robot. Input and the game loop follow events, and lists, grids and randomness follow variables, because the target game types depend on them. Types run as a thread from Representation onward, and Robot team adds objects at the end. A construct is introduced only after a concrete puzzle makes the previous approach cumbersome.
 
 | # | Concept | Pack | Status |
 | --- | --- | --- | --- |
@@ -190,9 +190,9 @@ Repeat was motivated by the instruction budget the child felt on level 15, and t
 | 3 | Conditionals | Look before you leap | Built |
 | 4 | Functions | Same trick, new place | Built |
 | 5 | World state | Flip the switch | Built |
-| 6 | Events | When it happens | Proposed |
-| 7 | Player input | Remote control | Proposed |
-| 8 | Time and the game loop | Tick tock | Proposed |
+| 6 | Events | When it happens | Built |
+| 7 | Player input | Remote control | Built |
+| 8 | Time and the game loop | Tick tock | Built |
 | 9 | Representation and kinds of values | Two things to remember | Proposed |
 | 10 | Variables | Into the dark | Proposed |
 | 11 | Lists | In a row | Proposed |
@@ -373,7 +373,7 @@ The editor writes the IR, the IR is printed to TypeScript and sent to whichever 
 **Program IR**
 
 - A versioned JSON document: a list of named procedures and event handlers, each a tree of nodes with stable IDs. Phase 1 shows only `main`, but the shape is there so Game Workshop events need no migration.
-- Node kinds today: `forward`, `rotateCW`, `rotateCCW`, `repeat`, `if`, `ifElse`, `until` and `call`, which runs one of the program's functions; each function is a procedure beside `main`. Next, in spine order: `on` handlers for events and player input, every-tick handlers for the game loop, `set` and a named, typed memory-slot list per level for variables, and blueprints and instances for Robot team.
+- Node kinds today: `forward`, `rotateCW`, `rotateCCW`, `wait`, `repeat`, `if`, `ifElse`, `until`, `call`, which runs one of the program's functions (each a procedure beside `main`), and `openGate` and `closeGate`. When cards are the IR's event handlers: stepping on a plate, picking up an acorn, a key press from the level's script, and every tick. Next, in spine order: `set` and a named, typed memory-slot list per level for variables, and blueprints and instances for Robot team.
 - Every edit is an operation on the IR, which gives undo, redo, and later AI operations the same path.
 
 **TypeScript projection**
@@ -408,7 +408,7 @@ Most of the 2026-11-08 additions extend modules that already exist, and the IR-a
 | Area | Change | Builds on |
 | --- | --- | --- |
 | Simulation | Switches and gates as mutable world state; senses for gate open and switch on; hazards that move on a tick; seeded randomness so every trace stays reproducible | `sim/world.ts`, the theme's logical elements (switch and gate are already named) |
-| IR | `call` for functions (built), `on` handlers for events, `set` for variables; a named, typed memory-slot list per level; blueprints and instances for Robot team | The planned `call`, `on` and `set` kinds; `ir/ops.ts` edit operations |
+| IR | `call` for functions and `on` handlers for events, input and ticks (built), `set` for variables; a named, typed memory-slot list per level; blueprints and instances for Robot team | The planned `call`, `on` and `set` kinds; `ir/ops.ts` edit operations |
 | Memory card | A panel rendering the world and robot state from trace events, with each field's kind; the code panel prints shapes as TypeScript interfaces | Trace before and after state |
 | Prediction | Predict the memory card, field by field | `lessons/prediction.ts` |
 | Lesson schema | `model` activity; `maxMemory` budget; `persistAcross` for two-run levels; `inputScript` of key presses for input levels | `PuzzleDefinition`, validators in CI |
@@ -556,7 +556,7 @@ Work proceeds vertically: each step ends with something runnable on an iPad. Cod
 8. **Concept introductions and the card book.** Show, name it, peek at the code, first try, save it to the card book. The three built packs get theirs, replacing the `intro` sentence on their first levels. Concepts, prerequisites and the introduction go into each `pack.json`. Sequencing consolidates to 5 intro levels plus 10. Built 2026-11-08 (design-notes.md).
 9. **Functions.** `call` in the IR, the printer and the interpreter; the Same trick, new place pack with its introduction. Built 2026-11-08 (design-notes.md).
 10. **World state and the memory card.** Switches and gates in the simulation with their senses; the memory card panel rendered from trace state; the Flip the switch pack; the `model` activity and state prediction with their validator rules. Built 2026-11-08 (design-notes.md).
-11. **Events, input and time.** `on` handlers and When it happens; `inputScript` and Remote control; ticks, every-tick handlers, moving hazards and Tick tock.
+11. **Events, input and time.** `on` handlers and When it happens; `inputScript` and Remote control; ticks, every-tick handlers, moving hazards and Tick tock. Built 2026-11-08 (design-notes.md).
 12. **Data.** The memory budget and kinds of values (Two things to remember); `set` and variables (Into the dark); lists (In a row); 2D grids (Reading the map); seeded randomness (Never the same twice); stored vs. derived (Two scoreboards); the backpack and persistence (Overnight); records (The notebook); blueprints and instances (Robot team).
 13. **Creation mode.** Create on the map with its nudge; remix; design a puzzle with the validator as critic; the Workshop's turn-based and real-time starters; the design card and save-my-place for detours; grown-up review.
 14. **AI design guide.** Gap detection by rules over the concept graph first, then the AI conversation behind a flag, in creation mode only.
@@ -621,7 +621,7 @@ Repeat and If were built before this gate because the first testers asked for mo
 - How strongly should the map nudge toward puzzles: a quiet note, or a suggested path?
 - Are detours required or suggested? Suggested keeps agency, but some kids will skip and get stuck.
 - Resolved 2026-11-08: the memory card appears on every board with gates, from the switch pack's first level, and on any level that asks the child to predict it.
-- How should the trace show events: one handler at a time, or interleaved with the robot's moves?
+- Resolved 2026-11-08: the trace interleaves. A When card runs right after the step that set it off, before the next card; on a timed board each robot action is followed by one tick, then the Every tick card.
 - When accounts arrive, how does the grown-up review work: on the child's device, or from the grown-up's own account?
 
 **Next steps (2026-11-08)**

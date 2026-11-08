@@ -19,9 +19,10 @@ interface HarnessProps {
   programming?: Partial<Programming>;
   history?: Pick<EditorProps, 'canUndo' | 'canRedo' | 'onUndo' | 'onRedo'>;
   onChange?: (p: ProgramIR) => void;
+  gates?: string[];
 }
 
-function Harness({ start, max, allowed = ['forward', 'rotateCW'], programming, history, onChange }: HarnessProps) {
+function Harness({ start, max, allowed = ['forward', 'rotateCW'], programming, history, onChange, gates }: HarnessProps) {
   const [newId] = useState(() => sequentialIdFactory('t'));
   const [program, setProgram] = useState(() => programFromSpec(start, sequentialIdFactory('s')));
   return (
@@ -40,6 +41,7 @@ function Harness({ start, max, allowed = ['forward', 'rotateCW'], programming, h
         })
       }
       {...history}
+      gates={gates}
     />
   );
 }
@@ -354,7 +356,7 @@ describe('Editor: blocks', () => {
   it('shows what a running block is doing', () => {
     const program = programFromSpec([{ repeat: 3, do: ['forward'] }], sequentialIdFactory('s'));
     const base = { program, programming: { allowedCommands: ['forward', 'repeat'] as CardId[], starterProgram: [] as NodeSpec[] }, locked: true, errorNodeId: null, newId: sequentialIdFactory('t'), onEdit: () => {} };
-    const state = { robot: { x: 0, y: 0, facing: 'N' as const }, collected: [], open: [] };
+    const state = { robot: { x: 0, y: 0, facing: 'N' as const }, collected: [], open: [], tick: 0 };
     const { rerender } = render(<Editor {...base} activeNodeId="s1" activeEvent={{ index: 0, nodeId: 's1', op: 'loop', iteration: 2, count: 3, before: state, after: state, result: { kind: 'ok' } }} />);
     expect(step(1).textContent).toContain('2 of 3');
     expect(step(1).className).toContain('is-active');
@@ -481,6 +483,26 @@ describe('Editor: functions', () => {
     fireEvent.click(moveButton(1));
     fireEvent.click(moveButton(2));
     expect(carets().some((c) => /in Hop/.test(c.getAttribute('aria-label') ?? ''))).toBe(true);
+  });
+});
+
+describe('Editor: When cards and gate cards', () => {
+  it('shows each When card under the program, and lets its gate card choose a gate', () => {
+    let last: ProgramIR | null = null;
+    render(
+      <Harness
+        start={['forward', { on: 'stepOn:1', do: [{ open: 'a' }] }]}
+        allowed={['forward', 'openGate', 'closeGate']}
+        gates={['a', 'b']}
+        onChange={(p) => (last = p)}
+      />,
+    );
+    expect(screen.getByRole('region', { name: /^When plate 1 is stepped on/ })).toBeTruthy();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Which gate, step 2' }), { target: { value: 'b' } });
+    expect(specOf(last!.handlers[0]!.body)).toEqual([{ open: 'b' }]);
+    fireEvent.click(screen.getByRole('button', { name: /^When plate 1 is stepped on\. Tap/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Add Shut a gate/ }));
+    expect(specOf(last!.handlers[0]!.body)).toEqual([{ open: 'b' }, { close: 'a' }]);
   });
 });
 

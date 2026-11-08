@@ -154,6 +154,44 @@ export function SwitchArt({ color, letter }: { color: string; letter: string }) 
   );
 }
 
+/** A pressure plate: a round stone pad with its number. It does nothing until a When card says so. */
+export function PlateArt({ label }: { label: string }) {
+  return (
+    <g className="plate-art">
+      <circle cx={0} cy={0} r={31} fill="#d9d2c3" stroke="#a89c86" strokeWidth={5} />
+      <circle cx={0} cy={0} r={21} fill="#eee8dc" />
+      <text x={0} y={7} textAnchor="middle" fontSize={20} fontWeight={800} fill="#6f6250" fontFamily="inherit">
+        {label}
+      </text>
+    </g>
+  );
+}
+
+/** A floating log, seen from above, that carries the robot across water. */
+export function LogArt() {
+  return (
+    <g className="log-art">
+      <rect x={-44} y={-26} width={88} height={52} rx={22} fill="#9a6a3f" stroke="#6f4a29" strokeWidth={4} />
+      <path d="M-30 -10 H22 M-24 8 H30" stroke="#6f4a29" strokeWidth={4} strokeLinecap="round" opacity={0.6} />
+      <ellipse cx={36} cy={0} rx={8} ry={18} fill="#c79a66" stroke="#6f4a29" strokeWidth={3} />
+    </g>
+  );
+}
+
+/** A beetle on patrol, seen from above. Touching it stops the robot. */
+export function BeetleArt() {
+  return (
+    <g className="beetle-art">
+      <path d="M-22 -14 L-34 -22 M-24 0 L-38 0 M-22 14 L-34 22 M22 -14 L34 -22 M24 0 L38 0 M22 14 L34 22" stroke="#2b2b35" strokeWidth={4} strokeLinecap="round" />
+      <ellipse cx={0} cy={4} rx={24} ry={28} fill="#3d3f73" />
+      <path d="M0 -22 V32" stroke="#23244a" strokeWidth={3} />
+      <circle cx={0} cy={-26} r={11} fill="#23244a" />
+      <circle cx={-9} cy={6} r={5} fill="#8f92d6" />
+      <circle cx={9} cy={14} r={4} fill="#8f92d6" />
+    </g>
+  );
+}
+
 /** The robot's drawing box. Larger than a tile so the headlamp beam fits. */
 export const ROBOT_BOX = 120;
 

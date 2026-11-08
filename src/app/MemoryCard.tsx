@@ -60,7 +60,7 @@ export function MemoryCard({ world, state, asking = [], answers = {}, wrong = []
   const gateIds = gatesOf(world).map((g) => g.id);
   const lines = memoryLines(world);
   const valueOf = (line: MemoryLine): string =>
-    line.field === 'position' ? `column ${state.robot.x + 1}, row ${state.robot.y + 1}` : describeValue(memoryValue(state, line.field));
+    line.field === 'position' ? `column ${state.robot.x + 1}, row ${state.robot.y + 1}` : line.field === 'tick' ? String(state.tick) : describeValue(memoryValue(state, line.field));
 
   const question = (field: MemoryField, label: string) => {
     const answer = answers[field];
@@ -109,8 +109,9 @@ export function MemoryCard({ world, state, asking = [], answers = {}, wrong = []
       <ul className="memory-lines">
         {lines.map((line) => {
           const gate = gateOfField(line.field);
-          const asked = line.field !== 'position' && asking.includes(line.field);
-          const isWrong = line.field !== 'position' && wrong.includes(line.field);
+          const field = line.field === 'position' || line.field === 'tick' ? null : line.field;
+          const asked = field !== null && asking.includes(field);
+          const isWrong = field !== null && wrong.includes(field);
           return (
             <li
               key={line.field}

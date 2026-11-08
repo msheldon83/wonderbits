@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "id": "t06-every-tick",
+  "title": "Every tick",
+  "intro": "No switch, no plate. An Every tick card runs after every step. Use it to open the gate.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 2,
+        "y": 0,
+        "open": false
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "time",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "wait",
+      "openGate"
+    ],
+    "maxInstructions": 5,
+    "starterProgram": [
+      {
+        "on": "tick",
+        "do": []
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "text": "Gate A has nothing to open it, yet."
+    },
+    {
+      "kind": "card",
+      "command": "openGate",
+      "text": "Cards in the Every tick card run after each step the robot takes."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:tick"
+      ],
+      "slot": 0,
+      "command": "openGate",
+      "text": "Every tick, open gate A."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    {
+      "on": "tick",
+      "do": [
+        {
+          "open": "a"
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

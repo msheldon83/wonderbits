@@ -31,11 +31,15 @@ function scaffoldNode(level: PuzzleDefinition, program: ProgramIR, path: HintPat
   let spec: NodeSpec;
   if (there !== undefined && typeof there !== 'string' && cardOfSpec(there) === command) {
     if ('call' in there) spec = { call: there.call };
+    else if ('open' in there) spec = { open: there.open };
+    else if ('close' in there) spec = { close: there.close };
     else if ('repeat' in there) spec = { repeat: there.repeat, do: [] };
     else if ('until' in there) spec = { until: there.until, do: [] };
     else if ('if' in there) spec = there.else ? { if: there.if, do: [], else: [] } : { if: there.if, do: [] };
     else spec = command as CommandId;
-  } else if (command === 'call') spec = { call: functionNames(program)[0] ?? 'main' };
+  } else if (command === 'openGate') spec = { open: 'a' };
+  else if (command === 'closeGate') spec = { close: 'a' };
+  else if (command === 'call') spec = { call: functionNames(program)[0] ?? 'main' };
   else if (command === 'repeat') spec = { repeat: 3, do: [] };
   else if (command === 'until') spec = { until: 'atFlag', do: [] };
   else if (command === 'if') spec = { if: 'blockedAhead', do: [] };

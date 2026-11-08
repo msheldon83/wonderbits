@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "id": "e06-fix-the-when",
+  "title": "Fix the When",
+  "intro": "The robot bumps the gate. The program is right, but the When card opens the wrong gate.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......",
+      "###.##"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 0
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 4,
+        "y": 0,
+        "open": false
+      },
+      {
+        "id": "b",
+        "x": 3,
+        "y": 1,
+        "open": false
+      }
+    ],
+    "plates": [
+      {
+        "id": "1",
+        "x": 1,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "events",
+    "activity": "debug"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "openGate",
+      "closeGate"
+    ],
+    "maxInstructions": 6,
+    "starterProgram": [
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      {
+        "on": "stepOn:1",
+        "do": [
+          {
+            "open": "b"
+          }
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 1
+        }
+      ],
+      "text": "Gate A is in the way. Gate B only guards a nook."
+    },
+    {
+      "kind": "step",
+      "path": [
+        "on:stepOn:1"
+      ],
+      "index": 0,
+      "text": "Which gate does this card open?"
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:stepOn:1"
+      ],
+      "slot": 0,
+      "command": "openGate",
+      "text": "Open gate A instead: choose A on the card."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    {
+      "on": "stepOn:1",
+      "do": [
+        {
+          "open": "a"
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

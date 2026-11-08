@@ -82,6 +82,33 @@ export const COMMANDS: Record<CardId, CommandInfo> = {
     description: 'Repeat the cards inside until the check says yes',
     icon: <LoopArrow />,
   },
+  wait: {
+    label: 'Wait',
+    description: 'Wait one tick without moving',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <path d="M10 5h12M10 27h12M11 5c0 7 10 7 10 11s-10 4-10 11M21 5c0 7-10 7-10 11s10 4 10 11" {...stroke} strokeWidth={2.6} />
+      </svg>
+    ),
+  },
+  openGate: {
+    label: 'Open gate',
+    description: 'Open a gate',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <path d="M6 6v20M26 6v20M9 11h4M9 19h4M19 11h4M19 19h4" {...stroke} />
+      </svg>
+    ),
+  },
+  closeGate: {
+    label: 'Shut gate',
+    description: 'Shut a gate',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <path d="M6 6v20M26 6v20M6 11h20M6 19h20" {...stroke} />
+      </svg>
+    ),
+  },
   call: {
     label: 'Function',
     description: 'Run the cards of a function',
@@ -129,7 +156,32 @@ export function describeNode(node: IRNode): string {
       return `Repeat until ${CONDITIONS[node.condition].label}`;
     case 'call':
       return `Run the cards of ${functionLabel(node.name)}`;
+    case 'openGate':
+      return `Open gate ${node.gate.toUpperCase()}`;
+    case 'closeGate':
+      return `Shut gate ${node.gate.toUpperCase()}`;
     default:
       return COMMANDS[node.kind].description;
   }
+}
+
+const KEY_WORDS: Record<string, string> = { up: 'Up', down: 'Down', left: 'Left', right: 'Right' };
+
+/** A When card's heading: "When plate 1 is stepped on", "When Up is pressed", "Every tick". */
+export function eventLabel(event: string): string {
+  const [kind, arg] = event.split(':');
+  if (kind === 'stepOn') return `When plate ${arg} is stepped on`;
+  if (kind === 'key') return `When ${KEY_WORDS[arg ?? ''] ?? arg} is pressed`;
+  if (kind === 'acorn') return 'When an acorn is picked up';
+  if (kind === 'tick') return 'Every tick';
+  return `When ${event}`;
+}
+
+/** A short name for the robot's thought bubble: "plate 1!", "Up", "tick". */
+export function eventShort(event: string): string {
+  const [kind, arg] = event.split(':');
+  if (kind === 'stepOn') return `plate ${arg}!`;
+  if (kind === 'key') return KEY_WORDS[arg ?? ''] ?? String(arg);
+  if (kind === 'acorn') return 'acorn!';
+  return 'tick';
 }

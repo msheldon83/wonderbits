@@ -233,3 +233,57 @@ describe('interpreter: switches and gates', () => {
     expect(go(pace, row).outcome).toEqual({ status: 'success' });
   });
 });
+
+describe('interpreter: When cards, keys and ticks', () => {
+  // A row of five: plate 1 at (1,0), gate a at (3,0), the flag at (4,0).
+  const row: WorldDefinition = {
+    width: 5,
+    height: 1,
+    tiles: [['floor', 'floor', 'floor', 'floor', 'floor']],
+    robot: { x: 0, y: 0, facing: 'E' },
+    goal: { x: 4, y: 0 },
+    collectibles: [],
+    gates: [{ id: 'a', x: 3, y: 0, open: false }],
+    plates: [{ id: '1', x: 1, y: 0 }],
+  };
+  const go = (spec: NodeSpec[], w: WorldDefinition = row, input?: ('up' | 'down' | 'left' | 'right')[]) =>
+    interpretAll({ program: programFromSpec(spec, sequentialIdFactory()), world: w, objective, limits: { maxSteps: 200 }, ...(input && { input }) });
+
+  it('runs a When card right after the step that sets it off', () => {
+    const r = go(['forward', 'forward', 'forward', 'forward', { on: 'stepOn:1', do: [{ open: 'a' }] }]);
+    expect(r.outcome).toEqual({ status: 'success' });
+    expect(r.trace.map((e) => [e.op, e.nodeId, e.via ?? null]).slice(0, 4)).toEqual([
+      ['forward', 'n1', null],
+      ['when', 'on:stepOn:1', null],
+      ['openGate', 'n5', ['on:stepOn:1']],
+      ['forward', 'n2', null],
+    ]);
+    expect(go(['forward', 'forward', 'forward', 'forward', { on: 'stepOn:1', do: [] }]).outcome).toMatchObject({ status: 'blocked', reason: 'gate' });
+  });
+
+  it('plays the key script after main, one When card per press', () => {
+    const open: WorldDefinition = { ...row, gates: [], plates: [] };
+    const r = go([{ on: 'key:right', do: ['forward', 'forward'] }], open, ['right', 'up', 'right']);
+    expect(r.outcome).toEqual({ status: 'success' });
+    expect(r.trace.filter((e) => e.op === 'press').map((e) => [e.nodeId, e.op === 'press' && e.press])).toEqual([
+      ['on:key:right', 0],
+      ['input', 1],
+      ['on:key:right', 2],
+    ]);
+  });
+
+  it('ticks after every robot action on a timed board, then runs the Every tick card without ticking again', () => {
+    const open: WorldDefinition = { ...row, plates: [] };
+    const r = go(['forward', 'wait', 'forward', 'forward', 'forward', { on: 'tick', do: [{ open: 'a' }, 'rotateCW', 'rotateCCW'] }], open);
+    expect(r.outcome).toEqual({ status: 'success' });
+    const ops = r.trace.map((e) => e.op);
+    expect(ops.slice(0, 6)).toEqual(['forward', 'tick', 'when', 'openGate', 'rotateCW', 'rotateCCW']);
+    expect(ops.filter((o) => o === 'tick')).toHaveLength(5);
+    expect(r.final.tick).toBe(5);
+  });
+
+  it('stops a run when the world moves a beetle onto the robot', () => {
+    const bug: WorldDefinition = { ...row, gates: [], plates: [], movers: [{ id: 'b', kind: 'beetle', path: [{ x: 2, y: 0 }, { x: 1, y: 0 }] }] };
+    expect(go(['wait'], { ...bug, robot: { x: 1, y: 0, facing: 'E' } }).outcome).toEqual({ status: 'blocked', nodeId: 'n1', reason: 'beetle' });
+  });
+});

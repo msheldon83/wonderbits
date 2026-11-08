@@ -13,7 +13,7 @@ const world: WorldDefinition = {
   gates: [{ id: 'a', x: 2, y: 0, open: false }],
   switches: [{ x: 1, y: 0, toggles: ['a'] }],
 };
-const end: SimState = { robot: { x: 2, y: 0, facing: 'S' }, collected: ['1,0'], open: ['a'] };
+const end: SimState = { robot: { x: 2, y: 0, facing: 'S' }, collected: ['1,0'], open: ['a'], tick: 0 };
 
 describe('memory card', () => {
   it('lists position, facing, acorns where there are acorns, and every gate', () => {

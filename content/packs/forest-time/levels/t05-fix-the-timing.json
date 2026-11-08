@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "id": "t05-fix-the-timing",
+  "title": "Fix the timing",
+  "intro": "Splash! The robot steps out too early. One card is wrong.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "._.",
+      "._.",
+      "._."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 1
+    },
+    "collectibles": [],
+    "movers": [
+      {
+        "id": "log1",
+        "kind": "log",
+        "path": [
+          {
+            "x": 1,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 0
+          },
+          {
+            "x": 1,
+            "y": 1
+          }
+        ]
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "time",
+    "activity": "debug"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "wait"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": [
+      "wait",
+      "forward",
+      "forward",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        }
+      ],
+      "text": "The log reaches this tile after two ticks."
+    },
+    {
+      "kind": "step",
+      "path": [],
+      "index": 1,
+      "text": "Is the log in front of the robot yet?"
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 1,
+      "command": "wait",
+      "text": "Wait one more tick here."
+    }
+  ],
+  "referenceSolution": [
+    "wait",
+    "wait",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "id": "e03-two-gates",
+  "title": "Two gates",
+  "intro": "One plate, two gates. Write the whole walk, and what the plate does.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 6,
+      "y": 0
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 3,
+        "y": 0,
+        "open": false
+      },
+      {
+        "id": "b",
+        "x": 5,
+        "y": 0,
+        "open": false
+      }
+    ],
+    "plates": [
+      {
+        "id": "1",
+        "x": 1,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "events",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "openGate"
+    ],
+    "maxInstructions": 8,
+    "starterProgram": [
+      {
+        "on": "stepOn:1",
+        "do": []
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        }
+      ],
+      "text": "Both gates stand in the way."
+    },
+    {
+      "kind": "card",
+      "command": "openGate",
+      "text": "A When card can hold more than one card. Open both gates."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:stepOn:1"
+      ],
+      "slot": 1,
+      "command": "openGate",
+      "text": "The second card opens gate B."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    {
+      "on": "stepOn:1",
+      "do": [
+        {
+          "open": "a"
+        },
+        {
+          "open": "b"
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

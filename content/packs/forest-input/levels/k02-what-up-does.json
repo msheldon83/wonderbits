@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "id": "k02-what-up-does",
+  "title": "What Up does",
+  "intro": "The robot faces right, but Up should move it up. Write what Up does.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "#.#",
+      "#.#",
+      "#.#",
+      "#.#"
+    ],
+    "robot": {
+      "x": 1,
+      "y": 3,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 1,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "input",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 3,
+    "starterProgram": [
+      {
+        "on": "key:up",
+        "do": []
+      }
+    ]
+  },
+  "inputScript": [
+    "up",
+    "up",
+    "up"
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        }
+      ],
+      "text": "The flag is three tiles up."
+    },
+    {
+      "kind": "card",
+      "command": "rotateCCW",
+      "text": "Turn to face up, step, then turn back so the next Up works the same way."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:key:up"
+      ],
+      "slot": 0,
+      "command": "rotateCCW",
+      "text": "Up starts by turning to face up."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "on": "key:up",
+      "do": [
+        "rotateCCW",
+        "forward",
+        "rotateCW"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

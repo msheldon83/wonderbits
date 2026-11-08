@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "id": "k09-where-will-it-stop",
+  "title": "Where will it stop?",
+  "intro": "Seven key presses. Follow each When card, then place the flag.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      ".....",
+      ".....",
+      ".....",
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 3,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "transfer",
+    "activity": "predict"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW"
+    ],
+    "maxInstructions": 5,
+    "starterProgram": [
+      {
+        "on": "key:up",
+        "do": [
+          "forward"
+        ]
+      },
+      {
+        "on": "key:right",
+        "do": [
+          "rotateCW",
+          "forward"
+        ]
+      },
+      {
+        "on": "key:left",
+        "do": [
+          "rotateCCW",
+          "forward"
+        ]
+      }
+    ]
+  },
+  "inputScript": [
+    "up",
+    "right",
+    "up",
+    "up",
+    "left",
+    "up",
+    "right"
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 3
+        }
+      ],
+      "text": "Start here, facing up."
+    },
+    {
+      "kind": "card",
+      "command": "rotateCW",
+      "text": "Right turns and steps; so does Left. Up only steps."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:key:up"
+      ],
+      "slot": 0,
+      "command": "forward",
+      "text": "Up is one Forward."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "on": "key:up",
+      "do": [
+        "forward"
+      ]
+    },
+    {
+      "on": "key:right",
+      "do": [
+        "rotateCW",
+        "forward"
+      ]
+    },
+    {
+      "on": "key:left",
+      "do": [
+        "rotateCCW",
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true
+  }
+}
