@@ -1,19 +1,45 @@
 # Wonderbits
 
-A visual-first programming game for children aged 8 to 12. Kids guide a robot
-across a grid island by building programs from cards. Every card is a
+A visual-first programming game for children aged 9 and up. Kids guide a
+robot across a grid island by building programs from cards. Every card is a
 real line of TypeScript they can look at, and later edit.
 
+Wonderbits aims to teach the full set of ideas a meaningful program needs,
+including state, data and persistence, entirely through play. Each concept
+arrives as a puzzle the old way cannot solve: an instruction budget makes
+Repeat feel necessary, a gate that toggles makes world state necessary, a
+robot that can only remember two things makes choosing what to store
+necessary. The concept spine runs from sequencing through loops,
+conditionals, functions, world state, events, player input, time and the
+game loop, representation and kinds of values, variables, lists, 2D grids,
+randomness, stored versus derived values, persistence, records and objects.
+A graduate has used those building blocks to create, or recreate, an
+interactive game of their own, and ideally can also read and write
+TypeScript and work with AI. Ages 9 to 12 work through the puzzle packs and
+start creating; ages 13 and up reach the phase where the see-the-code panel
+becomes editable TypeScript.
+
+Puzzles come first but are never forced. Creation mode is open at any time
+and runs from remixing a level, through designing a puzzle for someone else
+on the same device, to modifying a small pre-built game and designing a
+whole one. AI appears only in creation mode, as a design guide that asks
+questions, explains concepts and points to the puzzle that teaches a missing
+idea. It never writes the design, the program or the code for the child.
+
 The product and technical plan is in [docs/plan.md](docs/plan.md). It covers
-the phases, the build sequence, the architecture, and the exit gate for the
-first child test. Read it before starting new work.
+the phases, the concept spine and the proposed packs, how each concept is
+introduced, creation mode, the AI design guide, the build sequence, the
+architecture, and the exit gate for the first child test. Read it before
+starting new work.
 
 This repository is at **build step 4 of the plan: lessons and the
-meta-loop**, plus the first curriculum beyond it. It has the 15 MVP levels
-and 30 more in three packs (harder sequencing, then Repeat, then If,
+meta-loop**, plus the first three concepts of the spine. It has the 15 MVP
+levels and 30 more in three packs (harder sequencing, then Repeat, then If,
 If / else and Repeat until), validators in CI, prediction mode, three-rung
 hint ladders, the level map with stars and badges, progress in IndexedDB,
-and an observation log the grown-up can export. See
+and an observation log the grown-up can export. The next concept is
+functions, in a pack called "Same trick, new place", which needs a `call`
+node in the IR; the memory card panel and switches and gates follow it. See
 [docs/design-notes.md](docs/design-notes.md) for what is built, what is
 deliberately not, and any deviations from the plan.
 
