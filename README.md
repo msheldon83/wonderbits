@@ -57,8 +57,7 @@ The level map is the home screen (`#/`). A level is `#/level/<id>`; the
 first level of a pack opens with the pack's introduction, once. The card
 book is `#/book`, and one of its pages is `#/book/<pack id>`. `#/settings`
 has reduced motion, "open every level" for the grown-up, the progress export
-and a reset. The "Facing check" pack at the end of the map holds two
-throwaway boards for the quick facing check with the tester.
+and a reset.
 
 | Command | What it does |
 | --- | --- |

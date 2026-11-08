@@ -57,6 +57,9 @@ the next is written. Step 8 followed the same day.
   levels are simply no longer shown.
 - **First levels lost their intro sentence.** The introduction replaces it
   on First step, Repeat and Look ahead. Other levels keep theirs.
+- **The throwaway facing pack is deleted.** The two boards built in step 3
+  for the quick facing check did their job in the child test, and the
+  "Facing check" section at the end of the map is gone with them.
 
 ### Deviations and choices
 
