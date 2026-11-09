@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "id": "i07-cards-in-order",
+  "title": "Cards in order",
+  "intro": "Put the three cards in order to walk the list.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..",
+      "#.",
+      "#."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 1,
+      "y": 2
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "lists",
+    "activity": "reorder"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "face",
+      "forEach"
+    ],
+    "starterProgram": [
+      {
+        "remember": "route",
+        "kind": "list",
+        "of": "direction",
+        "start": [
+          "E",
+          "S",
+          "S"
+        ]
+      },
+      {
+        "remember": "way",
+        "kind": "direction",
+        "start": "N"
+      }
+    ],
+    "suppliedCards": [
+      "forEach",
+      "face",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        }
+      ],
+      "text": "Right, then down twice."
+    },
+    {
+      "kind": "card",
+      "command": "face",
+      "text": "Face comes before Forward, both inside the loop."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "forEach",
+      "text": "The loop holds the other two."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "route",
+      "kind": "list",
+      "of": "direction",
+      "start": [
+        "E",
+        "S",
+        "S"
+      ]
+    },
+    {
+      "remember": "way",
+      "kind": "direction",
+      "start": "N"
+    },
+    {
+      "forEach": "route",
+      "as": "way",
+      "do": [
+        {
+          "face": "way"
+        },
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

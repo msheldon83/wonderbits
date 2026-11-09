@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "id": "m01-read-the-card",
+  "title": "Read the card",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 3,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "representation",
+    "activity": "model"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change",
+      "set"
+    ],
+    "maxInstructions": 6,
+    "starterProgram": [
+      {
+        "remember": "steps",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "remember": "way",
+        "kind": "direction",
+        "start": "N"
+      },
+      "forward",
+      {
+        "change": "steps",
+        "by": 1
+      },
+      "forward",
+      {
+        "change": "steps",
+        "by": 1
+      },
+      {
+        "set": "way",
+        "to": "facing"
+      },
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "text": "Count the Add cards, and look which way the robot faces when it fills in way."
+    },
+    {
+      "kind": "card",
+      "command": "change",
+      "text": "Each Add card puts one more in steps. Set copies the way the robot faces into way."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 1,
+      "command": "change",
+      "text": "After each step, steps goes up by one."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "steps",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "way",
+      "kind": "direction",
+      "start": "N"
+    },
+    "forward",
+    {
+      "change": "steps",
+      "by": 1
+    },
+    "forward",
+    {
+      "change": "steps",
+      "by": 1
+    },
+    {
+      "set": "way",
+      "to": "facing"
+    },
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": false,
+    "askMemory": [
+      "slot:steps",
+      "slot:way"
+    ]
+  }
+}

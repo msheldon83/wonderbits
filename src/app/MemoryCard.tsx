@@ -6,7 +6,9 @@
  * matches the board.
  */
 import type { ReactElement } from 'react';
-import { describeValue, FACING_WORDS, gateOfField, memoryLines, memoryValue, type MemoryKind, type MemoryLine } from '../lessons/memory';
+import { valueWords } from '../editor/commands';
+import type { MemorySlot } from '../ir/types';
+import { describeValue, FACING_WORDS, gateOfField, memoryLines, memoryValue, slotOfField, type MemoryKind, type MemoryLine } from '../lessons/memory';
 import type { MemoryField, MemoryValue } from '../lessons/types';
 import { gateColor } from '../render/themes';
 import { FACINGS, type Facing, type SimState, type WorldDefinition } from '../sim/types';
@@ -39,14 +41,21 @@ const KIND_ICON: Record<MemoryKind, ReactElement> = {
       <circle cx="16.5" cy="12" r="3" fill="currentColor" />
     </svg>
   ),
+  list: (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <path d="M4 6h2M4 12h2M4 18h2M9 6h11M9 12h11M9 18h11" {...stroke} />
+    </svg>
+  ),
 };
 
-const KIND_WORDS: Record<MemoryKind, string> = { position: 'a place', direction: 'a direction', number: 'a number', yesNo: 'a yes or no' };
+const KIND_WORDS: Record<MemoryKind, string> = { position: 'a place', direction: 'a direction', number: 'a number', yesNo: 'a yes or no', list: 'a list' };
 const ARROW: Record<Facing, string> = { N: '↑', E: '→', S: '↓', W: '←' };
 
 export interface MemoryCardProps {
   world: WorldDefinition;
   state: SimState;
+  /** The robot's own memory slots, listed after the world's lines. */
+  slots?: readonly MemorySlot[];
   /** Fields the child is predicting now: they show as questions instead of values. */
   asking?: readonly MemoryField[];
   answers?: Partial<Record<MemoryField, MemoryValue>>;
@@ -56,13 +65,23 @@ export interface MemoryCardProps {
   onAnswer?(field: MemoryField, value: MemoryValue): void;
 }
 
-export function MemoryCard({ world, state, asking = [], answers = {}, wrong = [], disabled = false, onAnswer }: MemoryCardProps) {
+export function MemoryCard({ world, state, slots = [], asking = [], answers = {}, wrong = [], disabled = false, onAnswer }: MemoryCardProps) {
   const gateIds = gatesOf(world).map((g) => g.id);
-  const lines = memoryLines(world);
-  const valueOf = (line: MemoryLine): string =>
-    line.field === 'position' ? `column ${state.robot.x + 1}, row ${state.robot.y + 1}` : line.field === 'tick' ? String(state.tick) : describeValue(memoryValue(state, line.field));
+  const lines = memoryLines(world, slots);
+  const valueOf = (line: MemoryLine): string => {
+    if (line.field === 'position') return `column ${state.robot.x + 1}, row ${state.robot.y + 1}`;
+    if (line.field === 'tick') return String(state.tick);
+    const slot = slotOfField(line.field);
+    if (slot !== null) {
+      const v = state.memory?.[slot];
+      return v === undefined ? '?' : Array.isArray(v) ? `[${valueWords(v)}]` : valueWords(v);
+    }
+    return describeValue(memoryValue(state, line.field));
+  };
+  /** What a slot line is asked as: a number, a yes or no, or a direction. */
+  const askedKind = (line: MemoryLine): 'number' | 'yesNo' | 'direction' => (line.field === 'facing' ? 'direction' : line.field === 'acorns' ? 'number' : (line.kind as 'number' | 'yesNo' | 'direction'));
 
-  const question = (field: MemoryField, label: string) => {
+  const question = (field: MemoryField, label: string, kind: 'number' | 'yesNo' | 'direction') => {
     const answer = answers[field];
     const choice = (value: MemoryValue, text: string, aria: string) => (
       <button
@@ -77,8 +96,9 @@ export function MemoryCard({ world, state, asking = [], answers = {}, wrong = []
         {text}
       </button>
     );
-    if (field === 'facing') return FACINGS.map((f) => choice(f, ARROW[f], FACING_WORDS[f]));
-    if (field === 'acorns') {
+    if (kind === 'direction') return FACINGS.map((f) => choice(f, ARROW[f], FACING_WORDS[f]));
+    if (kind === 'number') {
+      const most = field === 'acorns' ? world.collectibles.length : 99;
       const n = typeof answer === 'number' ? answer : null;
       return (
         <span className="memory-stepper">
@@ -92,7 +112,7 @@ export function MemoryCard({ world, state, asking = [], answers = {}, wrong = []
             type="button"
             className="memory-choice"
             aria-label={`${label}: one more`}
-            disabled={disabled || (n ?? -1) >= world.collectibles.length}
+            disabled={disabled || (n ?? -1) >= most}
             onClick={() => onAnswer?.(field, n === null ? 0 : n + 1)}
           >
             +
@@ -115,7 +135,7 @@ export function MemoryCard({ world, state, asking = [], answers = {}, wrong = []
           return (
             <li
               key={line.field}
-              className={`memory-line kind-${line.kind} ${asked ? 'is-asked' : ''} ${isWrong ? 'is-wrong' : ''}`}
+              className={`memory-line kind-${line.kind} ${line.slot ? 'is-slot' : ''} ${asked ? 'is-asked' : ''} ${isWrong ? 'is-wrong' : ''}`}
               style={gate ? { ['--gate' as string]: gateColor(gateIds, gate) } : undefined}
             >
               <span className="memory-kind" title={`Holds ${KIND_WORDS[line.kind]}`}>
@@ -125,7 +145,7 @@ export function MemoryCard({ world, state, asking = [], answers = {}, wrong = []
               <span className="memory-label">{line.label}</span>
               {asked ? (
                 <span className="memory-question" role="group" aria-label={`${line.label} at the end? ${isWrong ? 'Not that one last time.' : ''}`}>
-                  {question(line.field as MemoryField, line.label)}
+                  {question(line.field as MemoryField, line.label, askedKind(line))}
                 </span>
               ) : (
                 <span className="memory-value" aria-live="off">

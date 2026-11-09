@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "id": "m07-the-whole-card",
+  "title": "The whole card",
+  "intro": "Three slots and a gate. Follow every card, then fill in the whole memory card.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 0
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 4,
+        "y": 0,
+        "open": false,
+        "code": 2
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "representation",
+    "activity": "model"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change",
+      "set",
+      "unlock"
+    ],
+    "maxInstructions": 10,
+    "starterProgram": [
+      {
+        "remember": "steps",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "remember": "clear",
+        "kind": "yesNo",
+        "start": false
+      },
+      {
+        "remember": "way",
+        "kind": "direction",
+        "start": "N"
+      },
+      "forward",
+      {
+        "change": "steps",
+        "by": 1
+      },
+      "forward",
+      {
+        "change": "steps",
+        "by": 1
+      },
+      {
+        "set": "clear",
+        "to": "pathAhead"
+      },
+      {
+        "set": "way",
+        "to": "facing"
+      },
+      {
+        "unlock": "a",
+        "with": "steps"
+      },
+      "forward",
+      "forward",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "text": "The lock opens for 2: does steps reach 2 before Unlock?"
+    },
+    {
+      "kind": "card",
+      "command": "unlock",
+      "text": "If steps holds the code, the gate opens and stays open."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "forward",
+      "text": "Two steps, two Adds."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "steps",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "clear",
+      "kind": "yesNo",
+      "start": false
+    },
+    {
+      "remember": "way",
+      "kind": "direction",
+      "start": "N"
+    },
+    "forward",
+    {
+      "change": "steps",
+      "by": 1
+    },
+    "forward",
+    {
+      "change": "steps",
+      "by": 1
+    },
+    {
+      "set": "clear",
+      "to": "pathAhead"
+    },
+    {
+      "set": "way",
+      "to": "facing"
+    },
+    {
+      "unlock": "a",
+      "with": "steps"
+    },
+    "forward",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": false,
+    "askMemory": [
+      "slot:steps",
+      "slot:clear",
+      "slot:way",
+      "gate:a"
+    ]
+  }
+}

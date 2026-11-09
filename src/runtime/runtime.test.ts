@@ -287,3 +287,48 @@ describe('interpreter: When cards, keys and ticks', () => {
     expect(go(['wait'], { ...bug, robot: { x: 1, y: 0, facing: 'E' } }).outcome).toEqual({ status: 'blocked', nodeId: 'n1', reason: 'beetle' });
   });
 });
+
+describe('interpreter: memory', () => {
+  // . . . G .   the robot at (0,0) facing E; gate a at (3,0) opens for the number 2; the flag at (4,0)
+  const row: WorldDefinition = {
+    width: 5,
+    height: 1,
+    tiles: [['floor', 'floor', 'floor', 'floor', 'floor']],
+    robot: { x: 0, y: 0, facing: 'E' },
+    goal: { x: 4, y: 0 },
+    collectibles: [{ x: 1, y: 0 }],
+    gates: [{ id: 'a', x: 3, y: 0, open: false, code: 2 }],
+  };
+  const go = (spec: NodeSpec[]) => interpretAll({ program: programFromSpec(spec, sequentialIdFactory()), world: row, objective, limits: { maxSteps: 200 } });
+
+  it('counts, reads the world into slots, and unlocks a gate with the right number', () => {
+    const r = go([{ remember: 'steps', kind: 'number' }, { remember: 'saw', kind: 'yesNo' }, { set: 'saw', to: 'acornAhead' }, 'forward', { change: 'steps', by: 1 }, 'forward', { change: 'steps', by: 1 }, { unlock: 'a', with: 'steps' }, 'forward', 'forward']);
+    expect(r.outcome).toEqual({ status: 'success' });
+    expect(r.final.memory).toEqual({ steps: 2, saw: true });
+    expect(r.trace.find((e) => e.op === 'unlock')).toMatchObject({ opened: true });
+    expect(r.trace.filter((e) => e.op === 'set').map((e) => e.op === 'set' && e.value)).toEqual([true, 1, 2]);
+  });
+
+  it('leaves a gate shut when the number is wrong', () => {
+    const r = go([{ remember: 'steps', kind: 'number' }, 'forward', 'forward', { unlock: 'a', with: 'steps' }, 'forward', 'forward']);
+    expect(r.trace.find((e) => e.op === 'unlock')).toMatchObject({ opened: false });
+    expect(r.outcome).toMatchObject({ status: 'blocked', reason: 'gate' });
+  });
+
+  it('walks a list item by item, and faces a remembered way', () => {
+    const r = go([
+      { remember: 'route', kind: 'list', of: 'direction', start: ['E', 'S', 'E'] },
+      { remember: 'way', kind: 'direction' },
+      { remember: 'count', kind: 'number' },
+      { forEach: 'route', as: 'way', do: [{ if: 'slot:way=E', do: [{ change: 'count', by: 1 }] }] },
+      { face: 'way' },
+    ]);
+    expect(r.final.memory).toMatchObject({ way: 'E', count: 2 });
+    expect(r.trace.filter((e) => e.op === 'loop').map((e) => e.after.memory?.way)).toEqual(['E', 'S', 'E']);
+    expect(r.trace.at(-1)).toMatchObject({ op: 'face', slot: 'way' });
+  });
+
+  it('stops with an error when a For each walks something that is not a list', () => {
+    expect(go([{ remember: 'n', kind: 'number' }, { forEach: 'n', as: 'n', do: [] }]).outcome).toEqual({ status: 'error', message: 'n is not a list' });
+  });
+});

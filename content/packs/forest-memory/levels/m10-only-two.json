@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "id": "m10-only-two",
+  "title": "Only two",
+  "intro": "Four slots on offer, room for two. Fetch the acorn behind you, then count your way to the lock.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 1,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 0,
+        "y": 0
+      }
+    ],
+    "gates": [
+      {
+        "id": "a",
+        "x": 4,
+        "y": 0,
+        "open": false,
+        "code": 3
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "representation",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "set",
+      "face",
+      "change",
+      "unlock"
+    ],
+    "allowedSources": [
+      "facing"
+    ],
+    "maxInstructions": 15,
+    "maxPerCommand": {
+      "rotateCW": 2
+    },
+    "memoryOptions": [
+      {
+        "remember": "steps",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "remember": "spot",
+        "kind": "position",
+        "start": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "remember": "seen",
+        "kind": "yesNo",
+        "start": false
+      },
+      {
+        "remember": "way",
+        "kind": "direction",
+        "start": "N"
+      }
+    ],
+    "maxMemory": 2,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "text": "An acorn behind you, a lock for 3 ahead."
+    },
+    {
+      "kind": "card",
+      "command": "face",
+      "text": "One slot to face the way back, one to count the steps. A place or a yes/no will not help."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "set",
+      "text": "First, remember the way the robot faces."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "steps",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "way",
+      "kind": "direction",
+      "start": "N"
+    },
+    {
+      "set": "way",
+      "to": "facing"
+    },
+    "rotateCW",
+    "rotateCW",
+    "forward",
+    {
+      "face": "way"
+    },
+    "forward",
+    {
+      "change": "steps",
+      "by": 1
+    },
+    "forward",
+    {
+      "change": "steps",
+      "by": 1
+    },
+    "forward",
+    {
+      "change": "steps",
+      "by": 1
+    },
+    {
+      "unlock": "a",
+      "with": "steps"
+    },
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 14
+  }
+}

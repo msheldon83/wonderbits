@@ -5,10 +5,11 @@
 import { sequentialIdFactory } from '../ir/ids';
 import { programFromSpec } from '../ir/program';
 import { callsOfSpec, cardsOfSpec, conditionsOfSpec, countSpec, depthOfSpec, gatesOfSpec, specDiff, splitSpec, type NodeSpec } from '../ir/spec';
-import { BASIC_CONDITIONS, isBlockId, isCommandId, isGateActionId, type CardId, type CommandId, type Key } from '../ir/types';
+import { BASIC_CONDITIONS, MEMORY_CARD_IDS, isBlockId, isCommandId, isGateActionId, isSenseId, parseSlotTest, type CardId, type CommandId, type Key, type Source, type ValueKind } from '../ir/types';
 import { interpretAll } from '../runtime/interpreter';
 import { advance, cellKey, gatesOf, initialState, isTimed, moverCell, moversOf, objectiveMet, period, platesOf, stateKey, step, switchesOf, tileAt } from '../sim/world';
 import { hasField } from './memory';
+import { valueFits } from './parse';
 import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 import { cardsTeaching } from './concepts';
 import { cardOfSpec, resolveSpecPath } from './paths';
@@ -109,6 +110,7 @@ function validateWorld(world: WorldDefinition, objective: ObjectiveDefinition, e
   // A gate opened by gate cards needs no switch.
   if (!gateCards) {
     gates.forEach((g) => {
+      if (g.code !== undefined) return;
       if (!switchesOf(world).some((sw) => sw.toggles.includes(g.id))) errors.push(`gate ${g.id} has no switch to flip it`);
     });
   }
@@ -137,7 +139,7 @@ export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
   const warnings: string[] = [];
   const { world, programming, referenceSolution, stars } = puzzle;
 
-  validateWorld(world, puzzle.objective, errors, programming.allowedCommands.some(isGateActionId));
+  validateWorld(world, puzzle.objective, errors, programming.allowedCommands.some((c) => isGateActionId(c) || c === 'unlock'));
 
   if (programming.allowedCommands.length === 0) errors.push('allowedCommands must not be empty');
   const allowed = new Set<string>(programming.allowedCommands);
@@ -177,16 +179,19 @@ export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
 
   validateFunctions(puzzle, errors);
   validateHandlers(puzzle, errors);
+  validateMemory(puzzle, errors);
   validateActivity(puzzle, errors);
   validateHints(puzzle, errors);
 
   /** Levels that need more than a flat list: blocks, functions, When cards, gate cards or a key script. */
   const structured =
-    programming.allowedCommands.some((c) => isBlockId(c) || c === 'call' || isGateActionId(c)) || splitSpec(referenceSolution).handlers.length > 0 || puzzle.inputScript !== undefined;
+    programming.allowedCommands.some((c) => isBlockId(c) || c === 'call' || isGateActionId(c) || (MEMORY_CARD_IDS as readonly string[]).includes(c)) || splitSpec(referenceSolution).handlers.length > 0 || puzzle.inputScript !== undefined;
   /** Levels where the child writes the program; elsewhere a shorter flat program is no concern. */
   const open = puzzle.curriculum.activity === 'build' || puzzle.curriculum.activity === 'reorder';
   const refCount = countSpec(referenceSolution);
   const shortest = shortestSolution(puzzle);
+  // A flat program that breaks a per-card quota is no way round the blocks, so it does not count.
+  const withinQuotas = shortest !== null && Object.entries(programming.maxPerCommand ?? {}).every(([c, max]) => countOf(shortest, c) <= max!);
   const min = shortest?.length ?? null;
   if (min === null && !structured) {
     errors.push(`no solution of ${SEARCH_CAP} commands or fewer exists`);
@@ -205,10 +210,10 @@ export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
     if (stars.budget !== undefined && stars.budget < refCount) {
       errors.push(`stars.budget ${stars.budget} is below the referenceSolution's ${refCount} cards, so nothing proves it can be met`);
     }
-    if (min !== null && open && programming.maxInstructions !== undefined && programming.maxInstructions >= min) {
+    if (min !== null && withinQuotas && open && programming.maxInstructions !== undefined && programming.maxInstructions >= min) {
       warnings.push(`a flat program of ${min} commands fits under maxInstructions ${programming.maxInstructions}, so blocks are optional here`);
     }
-    if (min !== null && open && stars.budget !== undefined && stars.budget >= min) {
+    if (min !== null && withinQuotas && open && stars.budget !== undefined && stars.budget >= min) {
       warnings.push(`stars.budget ${stars.budget} can be met by a flat program of ${min} commands, so the star does not need a block`);
     }
   }
@@ -274,6 +279,97 @@ function validateHandlers(puzzle: PuzzleDefinition, errors: string[]): void {
   }
 }
 
+/** Every value a spec's Set cards put in slots. */
+function setSources(spec: readonly NodeSpec[]): Source[] {
+  return spec.flatMap((s): Source[] => {
+    if (typeof s === 'string') return [];
+    const own = 'set' in s ? [s.to] : [];
+    return [...own, ...('do' in s ? setSources(s.do) : []), ...('if' in s && s.else ? setSources(s.else) : [])];
+  });
+}
+
+/** What kind of value a Set card's source gives. */
+function sourceKind(source: Source): ValueKind {
+  if (typeof source === 'number' || source === 'acorns') return 'number';
+  if (typeof source === 'boolean' || isSenseId(source)) return 'yesNo';
+  if (source === 'here') return 'position';
+  return 'direction';
+}
+
+/** What kind of slot a memory test's value fits. */
+function testKind(value: string): ValueKind {
+  if (value === 'yes' || value === 'no') return 'yesNo';
+  if (value === 'here') return 'position';
+  if (/^\d+$/.test(value)) return 'number';
+  return 'direction';
+}
+
+/** Every card that names a slot, and the kind it needs there, walking a spec. */
+function slotUses(spec: readonly NodeSpec[]): { slot: string; kind: ValueKind | 'item'; card: string; list?: string }[] {
+  return spec.flatMap((s) => {
+    if (typeof s === 'string') return [];
+    const inner = 'do' in s ? [...slotUses(s.do), ...('if' in s && s.else ? slotUses(s.else) : [])] : [];
+    const own: { slot: string; kind: ValueKind | 'item'; card: string; list?: string }[] = [];
+    if ('set' in s) own.push({ slot: s.set, kind: sourceKind(s.to), card: 'Set' });
+    if ('change' in s) own.push({ slot: s.change, kind: 'number', card: 'Add' });
+    if ('face' in s) own.push({ slot: s.face, kind: 'direction', card: 'Face' });
+    if ('unlock' in s) own.push({ slot: s.with, kind: 'number', card: 'Unlock' });
+    if ('forEach' in s) own.push({ slot: s.forEach, kind: 'list', card: 'For each' }, { slot: s.as, kind: 'item', card: 'For each', list: s.forEach });
+    for (const c of 'if' in s ? [s.if] : 'until' in s ? [s.until] : []) {
+      const t = parseSlotTest(c);
+      if (t) own.push({ slot: t.slot, kind: testKind(t.value), card: 'a check' });
+    }
+    return [...own, ...inner];
+  });
+}
+
+/**
+ * The robot's memory: slots hold one kind of value each, every card that
+ * names a slot names one the program has and puts the right kind of value
+ * in it, and the program keeps no more slots than the budget allows. A
+ * level that offers slots to choose from lets the solution pick its own;
+ * otherwise the starter's slots are the solution's.
+ */
+function validateMemory(puzzle: PuzzleDefinition, errors: string[]): void {
+  const { programming, referenceSolution, world } = puzzle;
+  const options = programming.memoryOptions;
+  for (const [label, spec] of [['starterProgram', programming.starterProgram], ['referenceSolution', referenceSolution]] as const) {
+    const { memory, functions } = splitSpec(spec);
+    const names = memory.map((m) => m.name);
+    if (new Set(names).size !== names.length) errors.push(`${label} remembers the same slot name twice`);
+    for (const m of memory) {
+      if (functions.some((f) => f.name === m.name)) errors.push(`${label}: slot ${m.name} has the same name as a function`);
+      if (!valueFits(m.start, m.kind, m.of)) errors.push(`${label}: slot ${m.name} starts with a value that is not a ${m.kind}`);
+      if (options && !options.some((o) => o.name === m.name && o.kind === m.kind)) errors.push(`${label} remembers ${m.name}, which is not one of the memoryOptions`);
+    }
+    if (programming.maxMemory !== undefined && memory.length > programming.maxMemory) errors.push(`${label} keeps ${memory.length} slots, over the memory budget of ${programming.maxMemory}`);
+    const byName = new Map(memory.map((m) => [m.name, m]));
+    for (const use of slotUses(spec)) {
+      const slot = byName.get(use.slot);
+      if (!slot) {
+        errors.push(`${label}: ${use.card} uses ${use.slot}, which the robot does not remember`);
+        continue;
+      }
+      const want = use.kind === 'item' ? byName.get(use.list ?? '')?.of : use.kind;
+      if (want !== undefined && slot.kind !== want) errors.push(`${label}: ${use.card} needs ${use.slot} to hold a ${want}, but it holds a ${slot.kind}`);
+    }
+    if (programming.allowedSources) {
+      const allowed = new Set(programming.allowedSources.map((x) => JSON.stringify(x)));
+      for (const to of setSources(spec)) if (!allowed.has(JSON.stringify(to))) errors.push(`${label} sets a slot to ${JSON.stringify(to)}, which allowedSources does not offer`);
+    }
+    for (const g of gatesOfSpec(spec)) {
+      const gate = gatesOf(world).find((x) => x.id === g);
+      if (gate && gate.code === undefined && JSON.stringify(spec).includes(`"unlock":"${g}"`)) errors.push(`${label} unlocks gate ${g}, which has no number lock`);
+    }
+  }
+  if (!options) {
+    const a = JSON.stringify(splitSpec(programming.starterProgram).memory);
+    const b = JSON.stringify(splitSpec(referenceSolution).memory);
+    if (a !== b) errors.push('starterProgram and referenceSolution must remember the same slots, unless the level offers memoryOptions');
+  }
+  if (options && programming.maxMemory === undefined) errors.push('memoryOptions need a maxMemory budget to choose under');
+}
+
 const multiset = (cards: readonly string[]) => [...cards].sort().join(',');
 
 /** Each activity makes its own promises about the starter program and cards. */
@@ -311,7 +407,7 @@ function validateActivity(puzzle: PuzzleDefinition, errors: string[]): void {
   const asked = prediction?.askMemory ?? [];
   if (new Set(asked).size !== asked.length) errors.push('prediction.askMemory must not repeat a field');
   asked.forEach((f) => {
-    if (!hasField(puzzle.world, f)) errors.push(`prediction asks for ${f}, which this board's memory card does not have`);
+    if (!hasField(puzzle.world, f, splitSpec(programming.starterProgram).memory)) errors.push(`prediction asks for ${f}, which this board's memory card does not have`);
   });
 }
 
@@ -400,6 +496,7 @@ export function validateIntroduction(intro: ConceptIntroduction, errors: string[
     events: [trace.some((e) => e.op === 'when' && !e.event.startsWith('key:') && e.event !== 'tick'), 'never sets off a When card'],
     input: [trace.some((e) => e.op === 'press' && e.nodeId !== 'input'), 'never presses a key that a When card waits for'],
     time: [trace.some((e) => e.op === 'tick' && e.before.tick !== e.after.tick) && moversOf(world).length > 0, 'never lets anything move with the ticks'],
+    representation: [splitSpec(program).memory.length > 0 && trace.some((e) => e.op === 'set'), 'never puts anything in a memory slot'],
   };
   const check = shows[intro.concept];
   if (check && !check[0]) errors.push(`introduction.demo.program ${check[1]}, so it does not show "${intro.concept}"`);

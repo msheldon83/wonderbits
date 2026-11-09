@@ -19,7 +19,8 @@
  */
 import { functionBody, handlerBody, mainBody } from '../ir/program';
 import { handlerContainerId, type Key } from '../ir/types';
-import { advance, initialState, evaluate, isTimed, objectiveMet, period, setGate, stateKey, step, type WorldEvent } from '../sim/world';
+import { advance, faceTo, initialState, evaluate, isTimed, objectiveMet, period, readSource, remember, setGate, stateKey, step, unlockGate, type WorldEvent } from '../sim/world';
+import type { Facing } from '../sim/types';
 import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 import type { IRNode, ProgramIR } from '../ir/types';
 import type { RunLimits, RunOutcome, TraceEvent } from './contract';
@@ -47,7 +48,7 @@ const MAX_CALL_DEPTH = 16;
 
 export function* interpret(input: InterpretInput): Generator<TraceEvent, InterpretSummary, void> {
   const { program, world, objective, limits } = input;
-  let state = initialState(world);
+  let state = initialState(world, program.memory);
   const timed = isTimed(world, handlerBody(program, 'tick') !== undefined);
   const worldPeriod = period(world);
   /** True while the Every tick card runs, so its own actions do not tick again. */
@@ -104,6 +105,55 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
           const ok = yield* emit({ nodeId: node.id, op: node.kind, gate: node.gate, before: state, after, result: { kind: 'ok' } });
           if (!ok) return;
           state = after;
+          break;
+        }
+        case 'set':
+        case 'change': {
+          const old = state.memory?.[node.slot];
+          const value = node.kind === 'set' ? readSource(world, state, node.to) : (typeof old === 'number' ? old : 0) + node.by;
+          const after = remember(state, node.slot, value);
+          const ok = yield* emit({ nodeId: node.id, op: 'set', slot: node.slot, value, before: state, after, result: { kind: 'ok' } });
+          if (!ok) return;
+          state = after;
+          break;
+        }
+        case 'face': {
+          const facing = state.memory?.[node.slot];
+          if (facing !== 'N' && facing !== 'E' && facing !== 'S' && facing !== 'W') {
+            stop = { status: 'error', message: `${node.slot} holds no direction` };
+            return;
+          }
+          const after = faceTo(state, facing as Facing);
+          const ok = yield* emit({ nodeId: node.id, op: 'face', slot: node.slot, before: state, after, result: { kind: 'ok' } });
+          if (!ok) return;
+          state = after;
+          yield* afterAction(node.id, []);
+          break;
+        }
+        case 'unlock': {
+          const after = unlockGate(world, state, node.gate, state.memory?.[node.slot]);
+          const opened = after !== state;
+          const ok = yield* emit({ nodeId: node.id, op: 'unlock', gate: node.gate, opened, before: state, after, result: { kind: 'ok' } });
+          if (!ok) return;
+          state = after;
+          break;
+        }
+        case 'forEach': {
+          const list = state.memory?.[node.list];
+          if (!Array.isArray(list)) {
+            stop = { status: 'error', message: `${node.list} is not a list` };
+            return;
+          }
+          // The list is read once, when the loop starts, so the cards inside cannot change how many goes it takes.
+          const items = [...list];
+          for (let i = 0; i < items.length; i++) {
+            const after = remember(state, node.item, items[i]!);
+            const ok = yield* emit({ nodeId: node.id, op: 'loop', iteration: i + 1, count: items.length, before: state, after, result: { kind: 'ok' } });
+            if (!ok) return;
+            state = after;
+            yield* run(node.body);
+            if (stop) return;
+          }
           break;
         }
         case 'repeat': {

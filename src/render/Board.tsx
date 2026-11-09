@@ -190,8 +190,8 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
         data-open={String(g.open)}
         style={{ position: 'absolute', left: p.x - TILE / 2, top: p.y - TILE / 2, width: TILE, height: TILE, zIndex: LAYER.collectible + 1 }}
       >
-        <Anchored x={TILE / 2} y={TILE / 2} size={TILE} z={0} label={`Gate ${g.id.toUpperCase()}`}>
-          <GateArt color={gateColor(gateIds, g.id)} letter={g.id.toUpperCase()} />
+        <Anchored x={TILE / 2} y={TILE / 2} size={TILE} z={0} label={`Gate ${g.id.toUpperCase()}${g.code !== undefined ? `, opened by the number ${g.code}` : ''}`}>
+          <GateArt color={gateColor(gateIds, g.id)} letter={g.id.toUpperCase()} {...(g.code !== undefined && { code: g.code })} />
         </Anchored>
       </div>,
     );

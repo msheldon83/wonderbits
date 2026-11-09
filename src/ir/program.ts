@@ -1,6 +1,6 @@
 import type { IdFactory } from './ids';
 import { buildNodes, specOf, splitSpec, type NodeSpec } from './spec';
-import { functionContainerId, functionOfContainer, handlerContainerId, handlerOfContainer, IR_VERSION, MAIN, type Branch, type CommandId, type EventHandler, type IRNode, type NodeId, type Place, type Procedure, type ProgramIR } from './types';
+import { functionContainerId, functionOfContainer, handlerContainerId, handlerOfContainer, IR_VERSION, MAIN, parseSlotTest, type Branch, type CommandId, type EventHandler, type IRNode, type MemorySlot, type NodeId, type Place, type Procedure, type ProgramIR } from './types';
 
 export function emptyProgram(): ProgramIR {
   return { version: IR_VERSION, procedures: [{ name: MAIN, body: [] }], handlers: [] };
@@ -12,8 +12,9 @@ export function programFromCommands(commands: readonly CommandId[], newId: IdFac
 
 /** A program from a spec: main's cards, a procedure for each "define" and a handler for each "on", in the order listed. */
 export function programFromSpec(spec: readonly NodeSpec[], newId: IdFactory): ProgramIR {
-  const { main, functions, handlers } = splitSpec(spec);
+  const { main, functions, handlers, memory } = splitSpec(spec);
   const program = emptyProgram();
+  if (memory.length > 0) program.memory = memory;
   program.procedures[0]!.body = buildNodes(main, newId);
   for (const f of functions) program.procedures.push({ name: f.name, body: buildNodes(f.body, newId) });
   for (const h of handlers) program.handlers.push({ event: h.event, body: buildNodes(h.body, newId) });
@@ -23,6 +24,7 @@ export function programFromSpec(spec: readonly NodeSpec[], newId: IdFactory): Pr
 /** The program back as a spec: main's cards, then each function as a "define", then each When card as an "on". */
 export function programSpec(program: ProgramIR): NodeSpec[] {
   return [
+    ...memoryOf(program).map((m): NodeSpec => ({ remember: m.name, kind: m.kind, ...(m.of && { of: m.of }), start: m.start })),
     ...specOf(mainBody(program)),
     ...functionsOf(program).map((f): NodeSpec => ({ define: f.name, do: specOf(f.body) })),
     ...program.handlers.map((h): NodeSpec => ({ on: h.event, do: specOf(h.body) })),
@@ -35,6 +37,30 @@ export function handlerBody(program: ProgramIR, event: string): readonly IRNode[
 }
 
 export const handlersOf = (program: ProgramIR): readonly EventHandler[] => program.handlers;
+
+/** The robot's memory slots, in order. */
+export const memoryOf = (program: ProgramIR): readonly MemorySlot[] => program.memory ?? [];
+
+export function slotOf(program: ProgramIR, name: string): MemorySlot | undefined {
+  return memoryOf(program).find((m) => m.name === name);
+}
+
+/** The slot names cards use, so a slot in use cannot be forgotten. */
+export function slotsInUse(program: ProgramIR): Set<string> {
+  const used = new Set<string>();
+  for (const { node } of walk(program)) {
+    if (node.kind === 'set' || node.kind === 'change' || node.kind === 'face' || node.kind === 'unlock') used.add(node.slot);
+    if (node.kind === 'forEach') {
+      used.add(node.list);
+      used.add(node.item);
+    }
+    if (node.kind === 'if' || node.kind === 'ifElse' || node.kind === 'until') {
+      const test = parseSlotTest(node.condition);
+      if (test) used.add(test.slot);
+    }
+  }
+  return used;
+}
 
 export function mainBody(program: ProgramIR): readonly IRNode[] {
   const main = program.procedures.find((p) => p.name === MAIN);
@@ -67,6 +93,7 @@ export function branchesOf(node: IRNode): Branch[] {
     case 'repeat':
     case 'if':
     case 'until':
+    case 'forEach':
       return ['body'];
     case 'ifElse':
       return ['body', 'else'];

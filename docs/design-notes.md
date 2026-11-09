@@ -4,6 +4,83 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Build step 12, part one: memory, variables and lists (2026-11-09)
+
+The first three packs of step 12: **Two things to remember**
+(representation and kinds of values), **Keep count** (variables) and **In a
+row** (lists), ten levels each, each with its introduction.
+
+### What is built
+
+- **The robot's memory** (`ProgramIR.memory`). A program declares named,
+  typed slots: number, yes/no, direction, position, or a list of numbers,
+  yes/noes or directions, each with a start value. Specs write one as
+  `{ "remember": "count", "kind": "number", "start": 0 }` at the top. They
+  print as `let count: number = 0;` before `main`, with `Direction` and
+  `Position` imported when used, so the type of each slot is in the code.
+  `SimState.memory` holds the values; traces, loop checks and the memory
+  card all read them.
+- **Memory cards.** Set puts a value in a slot: a literal, or a reading of
+  the world right now (the way the robot faces, where it is, the acorns it
+  holds, or a sense's yes or no). Add changes a number by +1 or −1 (a level
+  file may use up to 9). Face turns the robot to a stored direction in one
+  action. Unlock tries a gate's number lock (`gate.code`, shown on the gate)
+  with a number slot. For each is a block that walks a list slot, putting
+  each item in another slot; its `loop` events carry the item. If and
+  Repeat until can test a slot: `slot:count=3`, `slot:found=yes`,
+  `slot:way=E`, `slot:spot=here`.
+- **The memory budget.** A level may offer `memoryOptions` and a
+  `maxMemory`. The program panel opens with a Memory section: the kept
+  slots as typed chips, a Remember picker for the options (shut when memory
+  is full), and a Forget button on slots no card uses. Without options the
+  level's slots are fixed. `allowedSources` limits what Set may put in, so
+  a level can make the child count instead of typing the answer.
+- **Kinds are enforced.** Each card's pickers offer only slots of the kind
+  it needs, and Set offers only values that fit the chosen slot. The
+  validator checks every card in the starter and the solution against the
+  slots' kinds, the budget, and the options.
+- **The memory card** lists the robot's slots after the world's lines, in
+  blue with the slot name in code type; lists show their items. Model
+  levels can ask for number, yes/no and direction slots (`slot:<name>`).
+- **On the board:** a gate with a number lock shows its code on the bars;
+  the robot's bubble says what went into a slot ("steps = 2") and how a
+  lock answered ("click!" or "wrong number"); Face turns the shortest way.
+- **The packs.** Two things to remember: Read the card (model), Count the
+  steps, What kind? (model), Face the way, Fix the count (debug), Cards in
+  order, The whole card (model), Acorns held, Where will it stop? and Only
+  two (four slots on offer, room for two, under a card budget). Keep
+  count: Acorn counter (model), Three-acorn gate, Count down, Follow the
+  numbers (model), Fix the counter (debug), Four steps, Cards in order,
+  Found it, Where will it stop? and Count and go. In a row: Follow the
+  list, Walk the list, Count the crates, What is the count? (model), Fix
+  the check (debug), A long route, Cards in order, The first acorn, Where
+  will it stop? and Count and open.
+- **The validator's flat-program warning respects quotas.** A flat program
+  that needs more of a card than the level allows is no way round a loop,
+  so it no longer counts against a level.
+
+### Deviations and choices
+
+- **Keep count, not Into the dark.** The plan's variables pack centres on
+  dark tiles the robot must remember. On one fixed board the child can see
+  where every tile is, so remembering it teaches nothing the board does not
+  already show. The pack counts instead (acorns, steps, a countdown, a
+  found-it flag), which variables are for, and dark tiles wait for boards
+  that change every run, where memory is the only way to know.
+- **One board still, so budgets and quotas do the forcing.** A single
+  board can always be solved by hand. Card budgets, per-card quotas (one
+  Forward for a nine-step route) and `allowedSources` (no typing the
+  number) make the slot, the loop or the list the only way through.
+- **Lists are given, not built.** Every list starts with its items, as the
+  robot's notebook. Adding to a list waits for a pack that needs it.
+- **No crates on the board yet.** In a row's crates live in the list, shown
+  on the memory card, not as boxes on the board.
+- **Kinds are not asked separately.** The plan's predict levels ask for a
+  slot's kind before its value; the memory card shows each slot's kind as
+  an icon, so model levels ask only for the value.
+- **The slot names are the level's.** As with functions and When cards,
+  the child picks among slots the level offers rather than naming new ones.
+
 ## Build step 11: events, input and time (2026-11-08)
 
 Three islands at once, because they share one mechanism: **When it

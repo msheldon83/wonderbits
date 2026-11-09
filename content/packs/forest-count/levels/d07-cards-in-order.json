@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "id": "d07-cards-in-order",
+  "title": "Cards in order",
+  "intro": "Put the cards in order: a loop that counts its own steps.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 3,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "variables",
+    "activity": "reorder"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change",
+      "until"
+    ],
+    "allowedConditions": [
+      "slot:count=3"
+    ],
+    "starterProgram": [
+      {
+        "remember": "count",
+        "kind": "number",
+        "start": 0
+      }
+    ],
+    "suppliedCards": [
+      "until",
+      "forward",
+      "change"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "Three steps to the flag."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "The step and the Add both go inside the loop."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "until",
+      "text": "The loop holds everything."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "count",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "until": "slot:count=3",
+      "do": [
+        "forward",
+        {
+          "change": "count",
+          "by": 1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

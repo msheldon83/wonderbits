@@ -144,7 +144,9 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
           <div className="intro-board">
             <Board world={demo.world} theme={theme} motion={motion} label={label} onControllers={onControllers} maxScale={1.3} />
             {demo.input && <KeyScript keys={demo.input} event={activeEvent} />}
-            {(gatesOf(demo.world).length > 0 || moversOf(demo.world).length > 0) && <MemoryCard world={demo.world} state={shownState ?? initialState(demo.world)} />}
+            {(gatesOf(demo.world).length > 0 || moversOf(demo.world).length > 0 || (program.memory?.length ?? 0) > 0) && (
+              <MemoryCard world={demo.world} state={shownState ?? initialState(demo.world, program.memory)} slots={program.memory} />
+            )}
             {caption && (
               <p className="intro-caption" role="status" aria-live="polite">
                 {caption}

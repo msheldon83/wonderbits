@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "id": "m03-what-kind",
+  "title": "What kind?",
+  "intro": "One slot holds a yes or no, the other a direction. What will each hold at the end?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..#",
+      "..."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 1
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "representation",
+    "activity": "model"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "set"
+    ],
+    "maxInstructions": 7,
+    "starterProgram": [
+      {
+        "remember": "clear",
+        "kind": "yesNo",
+        "start": true
+      },
+      {
+        "remember": "way",
+        "kind": "direction",
+        "start": "N"
+      },
+      "forward",
+      {
+        "set": "clear",
+        "to": "pathAhead"
+      },
+      "rotateCW",
+      {
+        "set": "way",
+        "to": "facing"
+      },
+      "forward",
+      "rotateCCW",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "text": "When the robot fills in clear, it is looking at this rock."
+    },
+    {
+      "kind": "card",
+      "command": "set",
+      "text": "Set clear to path ahead? stores yes if the way is free, no if it is blocked."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 1,
+      "command": "set",
+      "text": "clear is filled in after the first step."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "clear",
+      "kind": "yesNo",
+      "start": true
+    },
+    {
+      "remember": "way",
+      "kind": "direction",
+      "start": "N"
+    },
+    "forward",
+    {
+      "set": "clear",
+      "to": "pathAhead"
+    },
+    "rotateCW",
+    {
+      "set": "way",
+      "to": "facing"
+    },
+    "forward",
+    "rotateCCW",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": false,
+    "askMemory": [
+      "slot:clear",
+      "slot:way"
+    ]
+  }
+}

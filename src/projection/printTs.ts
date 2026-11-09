@@ -3,7 +3,7 @@
  * readable TypeScript. Read-only through Phase 3; Phase 4 adds a parser that
  * lifts hand-edited code back into the IR using the @node comments.
  */
-import { MAIN, type CommandId, type ConditionId, type IRNode, type ProgramIR } from '../ir/types';
+import { isSenseId, MAIN, parseSlotTest, type CommandId, type ConditionId, type IRNode, type MemorySlot, type ProgramIR, type SenseId, type Source, type Value } from '../ir/types';
 
 const CALL: Record<CommandId, string> = {
   forward: 'robot.forward();',
@@ -12,7 +12,7 @@ const CALL: Record<CommandId, string> = {
   wait: 'robot.wait();',
 };
 
-export const SENSE: Record<ConditionId, string> = {
+export const SENSE: Record<SenseId, string> = {
   pathAhead: 'robot.pathAhead()',
   blockedAhead: 'robot.blockedAhead()',
   acornAhead: 'robot.acornAhead()',
@@ -22,6 +22,54 @@ export const SENSE: Record<ConditionId, string> = {
 };
 
 const INDENT = '  ';
+const DIRECTION: Record<string, string> = { N: 'up', E: 'right', S: 'down', W: 'left' };
+
+/** A value as TypeScript: 3, true, 'right', { x: 2, y: 1 }, [true, false]. */
+export function valueCode(v: Value): string {
+  if (Array.isArray(v)) return `[${v.map(valueCode).join(', ')}]`;
+  if (typeof v === 'object') return `{ x: ${v.x}, y: ${v.y} }`;
+  if (typeof v === 'string') return `'${DIRECTION[v] ?? v}'`;
+  return String(v);
+}
+
+const TYPE: Record<string, string> = { number: 'number', yesNo: 'boolean', direction: 'Direction', position: 'Position' };
+const typeCode = (m: MemorySlot) => (m.kind === 'list' ? `${TYPE[m.of ?? 'number']}[]` : TYPE[m.kind]!);
+
+/** What a Set card reads, as TypeScript. */
+function sourceCode(source: Source): string {
+  if (typeof source !== 'string') return String(source);
+  if (source === 'facing') return 'robot.facing()';
+  if (source === 'here') return 'robot.position()';
+  if (source === 'acorns') return 'robot.acorns()';
+  if (isSenseId(source)) return SENSE[source];
+  return valueCode(source);
+}
+
+/** A check as TypeScript: a sense call, or a comparison with a memory slot. */
+export function conditionCode(c: ConditionId): string {
+  if (isSenseId(c)) return SENSE[c];
+  const t = parseSlotTest(c)!;
+  if (t.value === 'yes') return t.slot;
+  if (t.value === 'no') return `!${t.slot}`;
+  if (t.value === 'here') return `robot.isAt(${t.slot})`;
+  if (/^\d+$/.test(t.value)) return `${t.slot} === ${t.value}`;
+  return `${t.slot} === '${DIRECTION[t.value] ?? t.value}'`;
+}
+
+/** The types a program's memory needs from the robot's library, beside the robot itself. */
+function typeImports(program: ProgramIR): string {
+  const kinds = new Set((program.memory ?? []).map((m) => (m.kind === 'list' ? m.of : m.kind)));
+  const types = [...(kinds.has('direction') ? ['Direction'] : []), ...(kinds.has('position') ? ['Position'] : [])];
+  return types.map((t) => `, type ${t}`).join('');
+}
+
+/** A negated check, written the way a person would. */
+function notCode(c: ConditionId): string {
+  const code = conditionCode(c);
+  if (code.startsWith('!')) return code.slice(1);
+  if (code.includes(' === ')) return code.replace(' === ', ' !== ');
+  return /^[\w.()]+$/.test(code) ? `!${code}` : `!(${code})`;
+}
 
 function printBody(nodes: readonly IRNode[], depth: number, lines: string[]): void {
   if (nodes.length === 0) lines.push(`${INDENT.repeat(depth)}// Nothing inside yet.`);
@@ -38,24 +86,41 @@ function printNode(node: IRNode, depth: number, lines: string[]): void {
       lines.push(`${pad}}`);
       return;
     case 'if':
-      lines.push(`${pad}if (${SENSE[node.condition]}) { ${tag}`);
+      lines.push(`${pad}if (${conditionCode(node.condition)}) { ${tag}`);
       printBody(node.body, depth + 1, lines);
       lines.push(`${pad}}`);
       return;
     case 'ifElse':
-      lines.push(`${pad}if (${SENSE[node.condition]}) { ${tag}`);
+      lines.push(`${pad}if (${conditionCode(node.condition)}) { ${tag}`);
       printBody(node.body, depth + 1, lines);
       lines.push(`${pad}} else {`);
       printBody(node.elseBody, depth + 1, lines);
       lines.push(`${pad}}`);
       return;
     case 'until':
-      lines.push(`${pad}while (!${SENSE[node.condition]}) { ${tag}`);
+      lines.push(`${pad}while (${notCode(node.condition)}) { ${tag}`);
       printBody(node.body, depth + 1, lines);
       lines.push(`${pad}}`);
       return;
     case 'call':
       lines.push(`${pad}${node.name}(); ${tag}`);
+      return;
+    case 'forEach':
+      lines.push(`${pad}for (${node.item} of ${node.list}) { ${tag}`);
+      printBody(node.body, depth + 1, lines);
+      lines.push(`${pad}}`);
+      return;
+    case 'set':
+      lines.push(`${pad}${node.slot} = ${sourceCode(node.to)}; ${tag}`);
+      return;
+    case 'change':
+      lines.push(`${pad}${node.slot} ${node.by < 0 ? '-=' : '+='} ${Math.abs(node.by)}; ${tag}`);
+      return;
+    case 'face':
+      lines.push(`${pad}robot.face(${node.slot}); ${tag}`);
+      return;
+    case 'unlock':
+      lines.push(`${pad}robot.unlock('${node.gate}', ${node.slot}); ${tag}`);
       return;
     case 'openGate':
       lines.push(`${pad}robot.openGate('${node.gate}'); ${tag}`);
@@ -80,8 +145,13 @@ function eventArgs(event: string): string {
 export function printProgram(program: ProgramIR): string {
   const lines: string[] = [
     `// Generated by Wonderbits from program IR v${program.version}. Read-only.`,
-    `import { robot } from 'wonderbits';`,
+    `import { robot${typeImports(program)} } from 'wonderbits';`,
   ];
+  // The robot's memory: one typed variable per slot, before anything uses it.
+  if (program.memory?.length) {
+    lines.push('');
+    for (const m of program.memory) lines.push(`let ${m.name}: ${typeCode(m)} = ${valueCode(m.start)};`);
+  }
   // Main is the program the robot runs; each function is a helper beside it.
   for (const proc of program.procedures) {
     lines.push('', `${proc.name === MAIN ? 'export ' : ''}function ${proc.name}(): void {`);

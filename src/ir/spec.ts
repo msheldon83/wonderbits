@@ -7,58 +7,123 @@
  *   [{ "until": "atFlag", "do": ["forward"] }]
  *   [{ "call": "hop" }, "forward", { "call": "hop" }, { "define": "hop", "do": ["forward", "rotateCW"] }]
  *   ["forward", { "on": "stepOn:1", "do": [{ "open": "a" }] }]
+ *   [{ "remember": "count", "kind": "number" }, { "change": "count", "by": 1 }, { "unlock": "a", "with": "count" }]
+ *   [{ "forEach": "crates", "as": "item", "do": [{ "if": "slot:item=yes", "do": [...] }] }]
  *
- * An "on" is a When card: like a define it sits only at the top and becomes
- * a handler of its own. "open" and "close" act on a gate by its letter.
- *
- * An "if" with an "else" is an ifElse node. A "define" gives a function its
- * cards; it may only sit at the top of a program spec, and it becomes a
- * procedure of its own rather than a card of main, wherever it is listed.
- * Building a program from a spec mints fresh ids; specOf throws the ids away
- * again.
+ * An "if" with an "else" is an ifElse node. Three entries may only sit at
+ * the top of a program spec, and each becomes part of the program rather
+ * than a card of main, wherever it is listed: a "define" is a function, an
+ * "on" is a When card, and a "remember" is a slot of the robot's memory.
+ * "open" and "close" act on a gate by its letter. Building a program from a
+ * spec mints fresh ids; specOf throws the ids away again.
  */
 import type { IdFactory } from './ids';
-import type { CommandId, ConditionId, IRNode } from './types';
+import type { CommandId, ConditionId, IRNode, ItemKind, MemorySlot, Source, Value, ValueKind } from './types';
 
 export type NodeSpec =
   | CommandId
   | { repeat: number; do: NodeSpec[] }
   | { if: ConditionId; do: NodeSpec[]; else?: NodeSpec[] }
   | { until: ConditionId; do: NodeSpec[] }
+  | { forEach: string; as: string; do: NodeSpec[] }
   | { call: string }
   | { open: string }
   | { close: string }
+  | { set: string; to: Source }
+  | { change: string; by: number }
+  | { face: string }
+  | { unlock: string; with: string }
   | { define: string; do: NodeSpec[] }
-  | { on: string; do: NodeSpec[] };
+  | { on: string; do: NodeSpec[] }
+  | { remember: string; kind: ValueKind; of?: ItemKind; start?: Value };
 
 export type DefineSpec = Extract<NodeSpec, { define: string }>;
 export type OnSpec = Extract<NodeSpec, { on: string }>;
+export type RememberSpec = Extract<NodeSpec, { remember: string }>;
 
-/** A spec split into main's cards, the functions it defines and its When cards, each in the order listed. */
-export function splitSpec(spec: readonly NodeSpec[]): { main: NodeSpec[]; functions: { name: string; body: NodeSpec[] }[]; handlers: { event: string; body: NodeSpec[] }[] } {
+/** What a spec entry is: a card id ("forward", "repeat", "ifElse", "set"...), or "define", "on" or "remember". */
+export type SpecKind = string;
+
+export function kindOfSpec(s: NodeSpec): SpecKind {
+  if (typeof s === 'string') return s;
+  if ('repeat' in s) return 'repeat';
+  if ('until' in s) return 'until';
+  if ('forEach' in s) return 'forEach';
+  if ('if' in s) return s.else ? 'ifElse' : 'if';
+  if ('call' in s) return 'call';
+  if ('open' in s) return 'openGate';
+  if ('close' in s) return 'closeGate';
+  if ('set' in s) return 'set';
+  if ('change' in s) return 'change';
+  if ('face' in s) return 'face';
+  if ('unlock' in s) return 'unlock';
+  if ('define' in s) return 'define';
+  if ('on' in s) return 'on';
+  return 'remember';
+}
+
+/** The cards inside an entry, in order: a block's body (and else), a function's or When card's cards. */
+function innerOf(s: NodeSpec): NodeSpec[][] {
+  if (typeof s === 'string' || !('do' in s)) return [];
+  return 'if' in s && s.else ? [s.do, s.else] : [s.do];
+}
+
+/** The start a slot gets when the spec gives none: nothing yet, in its kind. */
+export function defaultStart(kind: ValueKind): Value {
+  switch (kind) {
+    case 'number':
+      return 0;
+    case 'yesNo':
+      return false;
+    case 'direction':
+      return 'N';
+    case 'position':
+      return { x: 0, y: 0 };
+    case 'list':
+      return [];
+  }
+}
+
+export function slotOfSpec(s: RememberSpec): MemorySlot {
+  return { name: s.remember, kind: s.kind, ...(s.of && { of: s.of }), start: s.start ?? defaultStart(s.kind) };
+}
+
+/** A spec split into main's cards, its functions, its When cards and its memory slots, each in the order listed. */
+export function splitSpec(spec: readonly NodeSpec[]): {
+  main: NodeSpec[];
+  functions: { name: string; body: NodeSpec[] }[];
+  handlers: { event: string; body: NodeSpec[] }[];
+  memory: MemorySlot[];
+} {
   const main: NodeSpec[] = [];
   const functions: { name: string; body: NodeSpec[] }[] = [];
   const handlers: { event: string; body: NodeSpec[] }[] = [];
+  const memory: MemorySlot[] = [];
   for (const s of spec) {
     if (typeof s !== 'string' && 'define' in s) functions.push({ name: s.define, body: s.do });
     else if (typeof s !== 'string' && 'on' in s) handlers.push({ event: s.on, body: s.do });
+    else if (typeof s !== 'string' && 'remember' in s) memory.push(slotOfSpec(s));
     else main.push(s);
   }
-  return { main, functions, handlers };
+  return { main, functions, handlers, memory };
 }
 
 export function buildNodes(spec: readonly NodeSpec[], newId: IdFactory): IRNode[] {
   return spec.map((s): IRNode => {
     if (typeof s === 'string') return { id: newId(), kind: s };
-    if ('define' in s) throw new Error(`"define ${s.define}" can only sit at the top of a program`);
-    if ('on' in s) throw new Error(`"on ${s.on}" can only sit at the top of a program`);
+    if ('define' in s || 'on' in s || 'remember' in s) throw new Error(`"${kindOfSpec(s)}" can only sit at the top of a program`);
     // Ids are minted in document order so sequential factories read naturally.
     const id = newId();
     if ('call' in s) return { id, kind: 'call', name: s.call };
     if ('open' in s) return { id, kind: 'openGate', gate: s.open };
     if ('close' in s) return { id, kind: 'closeGate', gate: s.close };
+    if ('set' in s) return { id, kind: 'set', slot: s.set, to: s.to };
+    if ('change' in s) return { id, kind: 'change', slot: s.change, by: s.by };
+    if ('face' in s) return { id, kind: 'face', slot: s.face };
+    if ('unlock' in s) return { id, kind: 'unlock', gate: s.unlock, slot: s.with };
     if ('repeat' in s) return { id, kind: 'repeat', count: s.repeat, body: buildNodes(s.do, newId) };
     if ('until' in s) return { id, kind: 'until', condition: s.until, body: buildNodes(s.do, newId) };
+    if ('forEach' in s) return { id, kind: 'forEach', list: s.forEach, item: s.as, body: buildNodes(s.do, newId) };
     const body = buildNodes(s.do, newId);
     if (s.else) return { id, kind: 'ifElse', condition: s.if, body, elseBody: buildNodes(s.else, newId) };
     return { id, kind: 'if', condition: s.if, body };
@@ -76,12 +141,22 @@ export function specOf(nodes: readonly IRNode[]): NodeSpec[] {
         return { if: n.condition, do: specOf(n.body), else: specOf(n.elseBody) };
       case 'until':
         return { until: n.condition, do: specOf(n.body) };
+      case 'forEach':
+        return { forEach: n.list, as: n.item, do: specOf(n.body) };
       case 'call':
         return { call: n.name };
       case 'openGate':
         return { open: n.gate };
       case 'closeGate':
         return { close: n.gate };
+      case 'set':
+        return { set: n.slot, to: n.to };
+      case 'change':
+        return { change: n.slot, by: n.by };
+      case 'face':
+        return { face: n.slot };
+      case 'unlock':
+        return { unlock: n.gate, with: n.slot };
       default:
         return n.kind;
     }
@@ -90,18 +165,14 @@ export function specOf(nodes: readonly IRNode[]): NodeSpec[] {
 
 /**
  * The cards a spec is made of, in document order, blocks and calls included.
- * A function's cards count; the "define" heading itself is not a card.
+ * A function's or When card's cards count; their headings are not cards, and
+ * neither is a memory slot.
  */
 export function cardsOfSpec(spec: readonly NodeSpec[]): string[] {
   return spec.flatMap((s) => {
-    if (typeof s === 'string') return [s];
-    if ('call' in s) return ['call'];
-    if ('open' in s) return ['openGate'];
-    if ('close' in s) return ['closeGate'];
-    if ('define' in s || 'on' in s) return cardsOfSpec(s.do);
-    if ('repeat' in s) return ['repeat', ...cardsOfSpec(s.do)];
-    if ('until' in s) return ['until', ...cardsOfSpec(s.do)];
-    return [s.else ? 'ifElse' : 'if', ...cardsOfSpec(s.do), ...cardsOfSpec(s.else ?? [])];
+    const kind = kindOfSpec(s);
+    const inner = innerOf(s).flatMap(cardsOfSpec);
+    return kind === 'define' || kind === 'on' || kind === 'remember' ? inner : [kind, ...inner];
   });
 }
 
@@ -114,103 +185,84 @@ export function countSpec(spec: readonly NodeSpec[]): number {
 export function depthOfSpec(spec: readonly NodeSpec[]): number {
   let depth = 0;
   for (const s of spec) {
-    if (typeof s === 'string' || 'call' in s || 'open' in s || 'close' in s) continue;
-    if ('define' in s || 'on' in s) {
-      depth = Math.max(depth, depthOfSpec(s.do));
-      continue;
-    }
-    const inner = 1 + Math.max(depthOfSpec(s.do), 'if' in s && s.else ? depthOfSpec(s.else) : 0);
-    depth = Math.max(depth, inner);
+    const kind = kindOfSpec(s);
+    const inner = Math.max(0, ...innerOf(s).map(depthOfSpec));
+    if (kind === 'define' || kind === 'on') depth = Math.max(depth, inner);
+    else if (innerOf(s).length > 0) depth = Math.max(depth, 1 + inner);
   }
   return depth;
 }
 
-/** Conditions a spec senses, for the validator. */
+/** Conditions a spec checks, senses and memory tests alike, for the validator. */
 export function conditionsOfSpec(spec: readonly NodeSpec[]): ConditionId[] {
-  return spec.flatMap((s) => {
-    if (typeof s === 'string' || 'call' in s || 'open' in s || 'close' in s) return [];
-    if ('repeat' in s || 'define' in s || 'on' in s) return conditionsOfSpec(s.do);
-    if ('until' in s) return [s.until, ...conditionsOfSpec(s.do)];
-    return [s.if, ...conditionsOfSpec(s.do), ...conditionsOfSpec(s.else ?? [])];
+  return spec.flatMap((s): ConditionId[] => {
+    const own = typeof s !== 'string' && ('if' in s || 'until' in s) ? ['if' in s ? s.if : (s as { until: ConditionId }).until] : [];
+    return [...own, ...innerOf(s).flatMap(conditionsOfSpec)];
   });
 }
 
 /** The names a spec calls, in document order, repeats included. */
 export function callsOfSpec(spec: readonly NodeSpec[]): string[] {
+  return spec.flatMap((s): string[] => [...(typeof s !== 'string' && 'call' in s ? [s.call] : []), ...innerOf(s).flatMap(callsOfSpec)]);
+}
+
+/** The gates a spec opens, shuts or unlocks, for the validator. */
+export function gatesOfSpec(spec: readonly NodeSpec[]): string[] {
   return spec.flatMap((s): string[] => {
-    if (typeof s === 'string' || 'open' in s || 'close' in s) return [];
-    if ('call' in s) return [s.call];
-    if ('if' in s) return [...callsOfSpec(s.do), ...callsOfSpec(s.else ?? [])];
-    return callsOfSpec(s.do);
+    const own = typeof s === 'string' ? [] : 'open' in s ? [s.open] : 'close' in s ? [s.close] : 'unlock' in s ? [s.unlock] : [];
+    return [...own, ...innerOf(s).flatMap(gatesOfSpec)];
   });
 }
 
-/** The gates a spec opens or shuts, for the validator. */
-export function gatesOfSpec(spec: readonly NodeSpec[]): string[] {
-  return spec.flatMap((s): string[] => {
-    if (typeof s === 'string' || 'call' in s) return [];
-    if ('open' in s) return [s.open];
-    if ('close' in s) return [s.close];
-    if ('if' in s) return [...gatesOfSpec(s.do), ...gatesOfSpec(s.else ?? [])];
-    return gatesOfSpec(s.do);
-  });
+/** The parameters that make one entry differ from another of the same kind: a count, a condition, a gate, a slot, a value. */
+function paramsOf(s: NodeSpec): string {
+  if (typeof s === 'string') return '';
+  const { do: _do, else: _else, ...rest } = s as Record<string, unknown>;
+  return JSON.stringify(rest);
 }
 
 /**
  * Number of nodes that differ between two specs of the same shape, or -1
  * when the shapes differ. A debug level's starter must differ from the
- * solution in exactly one node: a card, a count or a condition.
+ * solution in exactly one node: a card, a count, a condition, a gate or a
+ * value. Commands swap freely with each other, and Open gate with Shut
+ * gate; a function or When card is found by its name, so a different one is
+ * a different shape. Memory slots are not cards and are compared elsewhere.
  */
 export function specDiff(a: readonly NodeSpec[], b: readonly NodeSpec[]): number {
-  if (a.length !== b.length) return -1;
+  const cards = (spec: readonly NodeSpec[]) => spec.filter((s) => kindOfSpec(s) !== 'remember');
+  const xs = cards(a);
+  const ys = cards(b);
+  if (xs.length !== ys.length) return -1;
   let diffs = 0;
-  for (let i = 0; i < a.length; i++) {
-    const x = a[i]!;
-    const y = b[i]!;
+  for (let i = 0; i < xs.length; i++) {
+    const x = xs[i]!;
+    const y = ys[i]!;
+    const kx = kindOfSpec(x);
+    const ky = kindOfSpec(y);
+    const swappable = (k: string) => typeof k === 'string' && (k === 'openGate' || k === 'closeGate');
     if (typeof x === 'string' || typeof y === 'string') {
       if (typeof x !== typeof y) return -1;
       if (x !== y) diffs++;
       continue;
     }
-    const kindOf = (s: Exclude<NodeSpec, string>) =>
-      'call' in s ? 'call' : 'open' in s ? 'open' : 'close' in s ? 'close' : 'define' in s ? 'define' : 'on' in s ? 'on' : 'repeat' in s ? 'repeat' : 'until' in s ? 'until' : s.else ? 'ifElse' : 'if';
-    // Opening a gate where the solution shuts it is one wrong card, like Rotate the wrong way.
-    const gateOf = (s: Exclude<NodeSpec, string>) => ('open' in s ? s.open : 'close' in s ? s.close : null);
-    if (gateOf(x) !== null && gateOf(y) !== null) {
-      if (kindOf(x) !== kindOf(y) || gateOf(x) !== gateOf(y)) diffs++;
+    if (swappable(kx) && swappable(ky)) {
+      if (kx !== ky || paramsOf(x) !== paramsOf(y)) diffs++;
       continue;
     }
-    if (kindOf(x) !== kindOf(y)) return -1;
-    if ('call' in x) {
-      if (x.call !== (y as { call: string }).call) diffs++;
-      continue;
+    if (kx !== ky) return -1;
+    if (kx === 'define' || kx === 'on') {
+      if (paramsOf(x) !== paramsOf(y)) return -1;
+    } else if (paramsOf(x) !== paramsOf(y)) {
+      diffs++;
     }
-    if ('on' in x) {
-      if (x.on !== (y as OnSpec).on) return -1;
-      const inner = specDiff(x.do, (y as OnSpec).do);
-      if (inner < 0) return -1;
-      diffs += inner;
-      continue;
-    }
-    if ('define' in x) {
-      // A function is found by its name, so a different name is a different shape.
-      if (x.define !== (y as DefineSpec).define) return -1;
-      const inner = specDiff(x.do, (y as DefineSpec).do);
-      if (inner < 0) return -1;
-      diffs += inner;
-      continue;
-    }
-    if (!('do' in x) || 'define' in x || 'on' in x) continue;
-    const param = 'repeat' in x ? x.repeat : 'until' in x ? x.until : (x as { if: ConditionId }).if;
-    const paramY = 'repeat' in y ? y.repeat : 'until' in y ? y.until : (y as { if: ConditionId }).if;
-    if (param !== paramY) diffs++;
-    const inner = specDiff(x.do, (y as { do: NodeSpec[] }).do);
-    if (inner < 0) return -1;
-    diffs += inner;
-    if ('if' in x && 'else' in x && x.else) {
-      const elseDiff = specDiff(x.else, (y as { else?: NodeSpec[] }).else ?? []);
-      if (elseDiff < 0) return -1;
-      diffs += elseDiff;
+    const ix = innerOf(x);
+    const iy = innerOf(y);
+    if (ix.length !== iy.length) return -1;
+    for (let j = 0; j < ix.length; j++) {
+      const d = specDiff(ix[j]!, iy[j]!);
+      if (d < 0) return -1;
+      diffs += d;
     }
   }
   return diffs;

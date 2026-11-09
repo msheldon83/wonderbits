@@ -20,16 +20,36 @@ export function isCommandId(value: unknown): value is CommandId {
 
 /** What the robot can sense about the world, for If and Repeat until. */
 export const CONDITION_IDS = ['pathAhead', 'blockedAhead', 'acornAhead', 'atFlag', 'gateClosedAhead', 'onSwitch'] as const;
-export type ConditionId = (typeof CONDITION_IDS)[number];
+/** A sense: something the robot can find out about the world right now. */
+export type SenseId = (typeof CONDITION_IDS)[number];
+/**
+ * What an If or Repeat until checks: a sense, or a memory test written
+ * `slot:<name>=<value>`, such as `slot:count=3`, `slot:found=yes`,
+ * `slot:way=E` or `slot:spot=here`.
+ */
+export type SlotTest = `slot:${string}`;
+export type ConditionId = SenseId | SlotTest;
 /** What a level offers when it does not list its conditions: the senses every board has. Gate senses are listed by the levels that have gates. */
 export const BASIC_CONDITIONS: readonly ConditionId[] = ['pathAhead', 'blockedAhead', 'acornAhead', 'atFlag'];
 
-export function isConditionId(value: unknown): value is ConditionId {
+export function isSenseId(value: unknown): value is SenseId {
   return typeof value === 'string' && (CONDITION_IDS as readonly string[]).includes(value);
 }
 
+const SLOT_TEST = /^slot:([a-z][A-Za-z0-9]{0,19})=(\d{1,3}|yes|no|[NESW]|here)$/;
+
+/** The parts of a memory test, or null when the string is not one. */
+export function parseSlotTest(value: string): { slot: string; value: string } | null {
+  const m = SLOT_TEST.exec(value);
+  return m ? { slot: m[1]!, value: m[2]! } : null;
+}
+
+export function isConditionId(value: unknown): value is ConditionId {
+  return isSenseId(value) || (typeof value === 'string' && parseSlotTest(value) !== null);
+}
+
 /** Blocks that hold other cards. */
-export const BLOCK_IDS = ['repeat', 'if', 'ifElse', 'until'] as const;
+export const BLOCK_IDS = ['repeat', 'if', 'ifElse', 'until', 'forEach'] as const;
 export type BlockId = (typeof BLOCK_IDS)[number];
 
 /**
@@ -37,6 +57,37 @@ export type BlockId = (typeof BLOCK_IDS)[number];
  * any other, but the palette shows one per function, labelled with its name.
  */
 export const CALL = 'call' as const;
+
+/**
+ * Memory cards: Set a slot, Add to a number slot, Face the direction a slot
+ * holds, and Unlock a gate with the number a slot holds. For each is a
+ * block that walks a list slot.
+ */
+export const MEMORY_CARD_IDS = ['set', 'change', 'face', 'unlock'] as const;
+export type MemoryCardId = (typeof MEMORY_CARD_IDS)[number];
+
+/** The kinds of value a memory slot can hold. A list holds items of one kind. */
+export const VALUE_KINDS = ['number', 'yesNo', 'direction', 'position', 'list'] as const;
+export type ValueKind = (typeof VALUE_KINDS)[number];
+export type ItemKind = 'number' | 'yesNo' | 'direction';
+/** A value in memory: a number, a yes/no, a direction letter (N, E, S, W), a tile, or a list. */
+export type Value = number | boolean | string | { x: number; y: number } | Value[];
+
+/** A named, typed slot in the robot's memory: TypeScript's `let name: type = start`. */
+export interface MemorySlot {
+  name: string;
+  kind: ValueKind;
+  /** The kind of a list's items. */
+  of?: ItemKind;
+  start: Value;
+}
+
+/**
+ * Where a Set card's value comes from: a literal (a number, yes or no as
+ * true or false, a direction letter), or the robot's own reading right now:
+ * `facing`, `here`, `acorns` (how many it holds), or a sense's yes or no.
+ */
+export type Source = number | boolean | string;
 
 /** Cards that act on the world instead of the robot: open or shut a gate by its letter. */
 export const GATE_ACTION_IDS = ['openGate', 'closeGate'] as const;
@@ -47,8 +98,8 @@ export function isGateActionId(value: unknown): value is GateActionId {
 }
 
 /** Everything the palette can hand out: a command, a block, a call or a gate action. */
-export const CARD_IDS = [...COMMAND_IDS, ...BLOCK_IDS, CALL, ...GATE_ACTION_IDS] as const;
-export type CardId = CommandId | BlockId | typeof CALL | GateActionId;
+export const CARD_IDS = [...COMMAND_IDS, ...BLOCK_IDS, CALL, ...GATE_ACTION_IDS, ...MEMORY_CARD_IDS] as const;
+export type CardId = CommandId | BlockId | typeof CALL | GateActionId | MemoryCardId;
 
 export function isCardId(value: unknown): value is CardId {
   return typeof value === 'string' && (CARD_IDS as readonly string[]).includes(value);
@@ -113,8 +164,48 @@ export interface GateActionNode {
   gate: string;
 }
 
-export type BlockNode = RepeatNode | IfNode | IfElseNode | UntilNode;
-export type IRNode = CommandNode | BlockNode | CallNode | GateActionNode;
+/** Puts a value in a slot. */
+export interface SetNode {
+  id: NodeId;
+  kind: 'set';
+  slot: string;
+  to: Source;
+}
+
+/** Adds to (or with a minus, takes from) a number slot. */
+export interface ChangeNode {
+  id: NodeId;
+  kind: 'change';
+  slot: string;
+  by: number;
+}
+
+/** Turns the robot to face the direction a slot holds. A robot action, like a turn. */
+export interface FaceNode {
+  id: NodeId;
+  kind: 'face';
+  slot: string;
+}
+
+/** Opens a gate with a number lock when the slot holds the gate's code; otherwise nothing happens. */
+export interface UnlockNode {
+  id: NodeId;
+  kind: 'unlock';
+  gate: string;
+  slot: string;
+}
+
+/** Runs its body once for each item of a list slot, with the item in another slot. */
+export interface ForEachNode {
+  id: NodeId;
+  kind: 'forEach';
+  list: string;
+  item: string;
+  body: IRNode[];
+}
+
+export type BlockNode = RepeatNode | IfNode | IfElseNode | UntilNode | ForEachNode;
+export type IRNode = CommandNode | BlockNode | CallNode | GateActionNode | SetNode | ChangeNode | FaceNode | UnlockNode;
 
 export function isBlockNode(node: IRNode): node is BlockNode {
   return isBlockId(node.kind);
@@ -162,6 +253,8 @@ export interface ProgramIR {
   version: typeof IR_VERSION;
   procedures: Procedure[];
   handlers: EventHandler[];
+  /** The robot's memory: its named, typed slots. Absent on programs that remember nothing. */
+  memory?: MemorySlot[];
 }
 
 export const MAIN = 'main';

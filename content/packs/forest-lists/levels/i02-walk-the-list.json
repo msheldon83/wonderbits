@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "id": "i02-walk-the-list",
+  "title": "Walk the list",
+  "intro": "The route is in a list. Walk it: for each way, face it and step.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      ".###",
+      ".###",
+      "...#",
+      "##.."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "S"
+    },
+    "goal": {
+      "x": 3,
+      "y": 3
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "lists",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "face",
+      "forEach"
+    ],
+    "maxInstructions": 3,
+    "starterProgram": [
+      {
+        "remember": "route",
+        "kind": "list",
+        "of": "direction",
+        "start": [
+          "S",
+          "S",
+          "E",
+          "E",
+          "S",
+          "E"
+        ]
+      },
+      {
+        "remember": "way",
+        "kind": "direction",
+        "start": "N"
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 3
+        }
+      ],
+      "text": "Six ways in the route."
+    },
+    {
+      "kind": "card",
+      "command": "forEach",
+      "text": "Inside For each: Face way, then Forward."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "forEach",
+      "text": "The loop goes first."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "route",
+      "kind": "list",
+      "of": "direction",
+      "start": [
+        "S",
+        "S",
+        "E",
+        "E",
+        "S",
+        "E"
+      ]
+    },
+    {
+      "remember": "way",
+      "kind": "direction",
+      "start": "N"
+    },
+    {
+      "forEach": "route",
+      "as": "way",
+      "do": [
+        {
+          "face": "way"
+        },
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

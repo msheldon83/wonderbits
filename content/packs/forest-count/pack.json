@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "id": "forest-count",
+  "title": "Keep count",
+  "themeId": "forest",
+  "order": 10,
+  "concepts": [
+    "variables"
+  ],
+  "prerequisites": [
+    "forest-memory"
+  ],
+  "introduction": {
+    "concept": "variables",
+    "title": "Variables",
+    "explanation": "A named slot can change while the program runs.",
+    "demo": {
+      "world": {
+        "rows": [
+          "...."
+        ],
+        "robot": {
+          "x": 0,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 3,
+          "y": 0
+        },
+        "collectibles": [
+          {
+            "x": 1,
+            "y": 0
+          },
+          {
+            "x": 2,
+            "y": 0
+          }
+        ]
+      },
+      "program": [
+        {
+          "remember": "count",
+          "kind": "number",
+          "start": 0
+        },
+        "forward",
+        "forward",
+        "forward",
+        {
+          "on": "acorn",
+          "do": [
+            {
+              "change": "count",
+              "by": 1
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "levels": [
+    "d01-acorn-counter",
+    "d02-three-acorn-gate",
+    "d03-count-down",
+    "d04-follow-the-numbers",
+    "d05-fix-the-counter",
+    "d06-four-steps",
+    "d07-cards-in-order",
+    "d08-found-it",
+    "d09-where-will-it-stop",
+    "d10-count-and-go"
+  ]
+}

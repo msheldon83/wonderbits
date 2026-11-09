@@ -32,20 +32,22 @@ introduced, creation mode, the AI design guide, the build sequence, the
 architecture, and the exit gate for the first child test. Read it before
 starting new work.
 
-The first child test passed on 2026-11-08, and this repository is at
-**build step 11 of the plan: events, input and time**. It has 85 levels in
-nine packs (Forest, five levels that teach the game; Forest trails, ten
+The first child test passed on 2026-11-08, and this repository is part way
+through **build step 12 of the plan: data**. It has 115 levels in twelve
+packs (Forest, five levels that teach the game; Forest trails, ten
 sequencing levels; Around and around, Repeat; Look before you leap, If,
 If / else and Repeat until; Same trick, new place, functions; Flip the
 switch, switches and gates; When it happens, When cards for plates and
-acorns; Remote control, key scripts; Tick tock, logs, beetles and the
-Every tick card), a show-first introduction before each new concept, a card
-book to watch them again, a memory card under the board wherever the world
-can change, prediction of the tile and of the memory card, validators in
-CI, three-rung hint ladders, the level map with stars and badges, progress
-in IndexedDB, and an observation log the grown-up can export. The next
-concepts are representation and kinds of values, in a pack called "Two
-things to remember", which needs a memory budget and typed memory slots. See [docs/design-notes.md](docs/design-notes.md) for what is built, what
+acorns; Remote control, key scripts; Tick tock, logs, beetles and the Every
+tick card; Two things to remember, typed memory slots under a budget; Keep
+count, variables that change; In a row, lists), a show-first introduction
+before each new concept, a card book to watch them again, a memory card
+under the board wherever the world or the robot's memory can change,
+prediction of the tile and of the memory card, validators in CI,
+three-rung hint ladders, the level map with stars and badges, progress in
+IndexedDB, and an observation log the grown-up can export. The rest of
+step 12 comes next: 2D grids (Reading the map), randomness, stored versus
+derived values, persistence, records and objects. See [docs/design-notes.md](docs/design-notes.md) for what is built, what
 is deliberately not, and any deviations from the plan.
 
 ## Run it

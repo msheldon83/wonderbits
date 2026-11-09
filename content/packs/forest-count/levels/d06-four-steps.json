@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "id": "d06-four-steps",
+  "title": "Four steps",
+  "intro": "No checking for the flag here. Walk until count is 4, adding one each step.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "variables",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change",
+      "until"
+    ],
+    "allowedConditions": [
+      "slot:count=4"
+    ],
+    "maxInstructions": 3,
+    "starterProgram": [
+      {
+        "remember": "count",
+        "kind": "number",
+        "start": 0
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "text": "The flag is four steps away."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "Repeat until count is 4: one step and one Add each go."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "until",
+      "text": "Everything goes inside a Repeat until."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "count",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "until": "slot:count=4",
+      "do": [
+        "forward",
+        {
+          "change": "count",
+          "by": 1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

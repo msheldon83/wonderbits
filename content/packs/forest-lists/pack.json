@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "id": "forest-lists",
+  "title": "In a row",
+  "themeId": "forest",
+  "order": 11,
+  "concepts": [
+    "lists"
+  ],
+  "prerequisites": [
+    "forest-count"
+  ],
+  "introduction": {
+    "concept": "lists",
+    "title": "Lists",
+    "explanation": "A list keeps many things in order, and you can check each one.",
+    "demo": {
+      "world": {
+        "rows": [
+          "..",
+          "#."
+        ],
+        "robot": {
+          "x": 0,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 1,
+          "y": 1
+        }
+      },
+      "program": [
+        {
+          "remember": "route",
+          "kind": "list",
+          "of": "direction",
+          "start": [
+            "E",
+            "S"
+          ]
+        },
+        {
+          "remember": "way",
+          "kind": "direction",
+          "start": "N"
+        },
+        {
+          "forEach": "route",
+          "as": "way",
+          "do": [
+            {
+              "face": "way"
+            },
+            "forward"
+          ]
+        }
+      ]
+    }
+  },
+  "levels": [
+    "i01-follow-the-list",
+    "i02-walk-the-list",
+    "i03-count-the-crates",
+    "i04-what-is-the-count",
+    "i05-fix-the-check",
+    "i06-a-long-route",
+    "i07-cards-in-order",
+    "i08-the-first-acorn",
+    "i09-where-will-it-stop",
+    "i10-count-and-open"
+  ]
+}

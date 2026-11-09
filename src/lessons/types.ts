@@ -1,5 +1,5 @@
 import type { NodeSpec } from '../ir/spec';
-import type { CardId, ConditionId, Key } from '../ir/types';
+import type { CardId, ConditionId, Key, MemorySlot, Source } from '../ir/types';
 import type { Cell, Facing, ObjectiveDefinition, WorldDefinition } from '../sim/types';
 
 export const CONTENT_SCHEMA_VERSION = 1 as const;
@@ -19,7 +19,7 @@ export type Activity = 'run' | 'build' | 'reorder' | 'debug' | 'predict' | 'mode
  * A line of the memory card the child can be asked to predict: which way the
  * robot faces, how many acorns it holds, or whether a gate is open.
  */
-export type MemoryField = 'facing' | 'acorns' | `gate:${string}`;
+export type MemoryField = 'facing' | 'acorns' | `gate:${string}` | `slot:${string}`;
 /** A memory card value: a direction, a number, or a yes/no. */
 export type MemoryValue = Facing | number | boolean;
 
@@ -72,6 +72,12 @@ export interface PuzzleDefinition {
     starterProgram: NodeSpec[];
     /** Cards handed to the child on reorder (Parsons) levels. */
     suppliedCards?: CardId[];
+    /** The memory budget: how many slots the robot may keep. */
+    maxMemory?: number;
+    /** Slots the child may choose to keep, under the budget. Without it, the starter program's slots are fixed. */
+    memoryOptions?: MemorySlot[];
+    /** What Set cards may put in a slot. Every value that fits the slot when left out. */
+    allowedSources?: Source[];
   };
   /** When set, the level opens in prediction mode before Run is enabled. */
   prediction?: PredictionSettings;

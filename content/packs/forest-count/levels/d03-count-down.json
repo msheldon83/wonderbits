@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "id": "d03-count-down",
+  "title": "Count down",
+  "intro": "left starts at 5 and the lock wants 2. Take one away with every step.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 0
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 4,
+        "y": 0,
+        "open": false,
+        "code": 2
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "variables",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change",
+      "unlock"
+    ],
+    "maxInstructions": 9,
+    "starterProgram": [
+      {
+        "remember": "left",
+        "kind": "number",
+        "start": 5
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "text": "5 take away 3 is 2."
+    },
+    {
+      "kind": "card",
+      "command": "change",
+      "text": "Choose \u22121 on the Add card to take one away."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 1,
+      "command": "change",
+      "text": "After the first step, take one from left."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "left",
+      "kind": "number",
+      "start": 5
+    },
+    "forward",
+    {
+      "change": "left",
+      "by": -1
+    },
+    "forward",
+    {
+      "change": "left",
+      "by": -1
+    },
+    "forward",
+    {
+      "change": "left",
+      "by": -1
+    },
+    {
+      "unlock": "a",
+      "with": "left"
+    },
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}
