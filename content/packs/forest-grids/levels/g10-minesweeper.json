@@ -1,0 +1,292 @@
+{
+  "schemaVersion": 1,
+  "id": "g10-minesweeper",
+  "title": "Minesweeper",
+  "intro": "Walk the middle row. On each of the first four tiles, count the rocks above and below, and mark the number in counts.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "#.##.",
+      ".....",
+      "##.#."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 1,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 1
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false,
+    "memory": {
+      "counts": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          1,
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    }
+  },
+  "curriculum": {
+    "concept": "grids",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "set",
+      "if",
+      "change",
+      "repeat",
+      "mark"
+    ],
+    "allowedConditions": [
+      "slot:wall=yes"
+    ],
+    "allowedSources": [
+      0,
+      "read:walls@ahead"
+    ],
+    "maxInstructions": 15,
+    "starterProgram": [
+      {
+        "remember": "walls",
+        "kind": "grid",
+        "of": "yesNo",
+        "start": [
+          [
+            true,
+            false,
+            true,
+            true,
+            false
+          ],
+          [
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          [
+            true,
+            true,
+            false,
+            true,
+            false
+          ]
+        ]
+      },
+      {
+        "remember": "counts",
+        "kind": "grid",
+        "of": "number",
+        "start": [
+          [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ]
+      },
+      {
+        "remember": "wall",
+        "kind": "yesNo",
+        "start": false
+      },
+      {
+        "remember": "n",
+        "kind": "number",
+        "start": 0
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 2
+        }
+      ],
+      "text": "Above and below the first tile: two rocks."
+    },
+    {
+      "kind": "card",
+      "command": "mark",
+      "text": "Each go: start n at 0, look up, look down, turn back, mark n, step."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        0
+      ],
+      "slot": 0,
+      "command": "set",
+      "text": "Each tile starts counting from 0."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "walls",
+      "kind": "grid",
+      "of": "yesNo",
+      "start": [
+        [
+          true,
+          false,
+          true,
+          true,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          true,
+          true,
+          false,
+          true,
+          false
+        ]
+      ]
+    },
+    {
+      "remember": "counts",
+      "kind": "grid",
+      "of": "number",
+      "start": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "remember": "wall",
+      "kind": "yesNo",
+      "start": false
+    },
+    {
+      "remember": "n",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "repeat": 4,
+      "do": [
+        {
+          "set": "n",
+          "to": 0
+        },
+        "rotateCCW",
+        {
+          "set": "wall",
+          "to": "read:walls@ahead"
+        },
+        {
+          "if": "slot:wall=yes",
+          "do": [
+            {
+              "change": "n",
+              "by": 1
+            }
+          ]
+        },
+        "rotateCW",
+        "rotateCW",
+        {
+          "set": "wall",
+          "to": "read:walls@ahead"
+        },
+        {
+          "if": "slot:wall=yes",
+          "do": [
+            {
+              "change": "n",
+              "by": 1
+            }
+          ]
+        },
+        "rotateCCW",
+        {
+          "mark": "counts",
+          "at": "here",
+          "with": "n"
+        },
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 14
+  }
+}

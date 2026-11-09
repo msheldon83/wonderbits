@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "id": "forest-grids",
+  "title": "Reading the map",
+  "themeId": "forest",
+  "order": 12,
+  "concepts": [
+    "grids"
+  ],
+  "prerequisites": [
+    "forest-lists"
+  ],
+  "introduction": {
+    "concept": "grids",
+    "title": "Grids",
+    "explanation": "A grid is rows of lists, and every tile has a row and a column.",
+    "demo": {
+      "world": {
+        "rows": [
+          "..#",
+          "#.#",
+          "#.."
+        ],
+        "robot": {
+          "x": 0,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 1,
+          "y": 2
+        }
+      },
+      "program": [
+        {
+          "remember": "walls",
+          "kind": "grid",
+          "of": "yesNo",
+          "start": [
+            [
+              false,
+              false,
+              true
+            ],
+            [
+              true,
+              false,
+              true
+            ],
+            [
+              true,
+              false,
+              false
+            ]
+          ]
+        },
+        {
+          "remember": "wall",
+          "kind": "yesNo",
+          "start": false
+        },
+        {
+          "until": "atFlag",
+          "do": [
+            {
+              "set": "wall",
+              "to": "read:walls@ahead"
+            },
+            {
+              "if": "slot:wall=yes",
+              "do": [
+                "rotateCW"
+              ]
+            },
+            "forward"
+          ]
+        }
+      ]
+    }
+  },
+  "levels": [
+    "g01-read-the-map",
+    "g02-read-before-you-step",
+    "g03-count-around",
+    "g04-the-rock-lock",
+    "g05-fix-the-read",
+    "g06-leave-a-trail",
+    "g07-cards-in-order",
+    "g08-how-many-touch",
+    "g09-where-will-it-stop",
+    "g10-minesweeper"
+  ]
+}

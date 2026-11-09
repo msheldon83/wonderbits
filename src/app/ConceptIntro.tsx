@@ -74,7 +74,13 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
   const [shownState, setShownState] = useState<SimState | null>(null);
   const [round, setRound] = useState(0);
   const sequencer = useRef<Sequencer | null>(null);
-  const [ready, setReady] = useState(false);
+  /** Bumped each time the board builds new controllers, so the demo loop picks them up. */
+  const [boardVersion, setBoardVersion] = useState(0);
+  const ready = boardVersion > 0 && sequencer.current !== null;
+  /** A shuffled demo plays the same program on each version of the board in turn. */
+  const worlds = useMemo(() => [demo.world, ...(demo.shuffles ?? [])], [demo]);
+  const [shuffle, setShuffle] = useState(0);
+  const world = worlds[shuffle] ?? demo.world;
   const program = stages[stage] ?? stages[0]!;
   const cards = useMemo(() => [...new Set([...cardsOfSpec(demo.program), ...cardsOfSpec(demo.before ?? [])])] as CardId[], [demo]);
   const programming = useMemo(() => ({ allowedCommands: cards, starterProgram: [] }), [cards]);
@@ -95,7 +101,7 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
           onPlayed: (e) => setShownState(e.after),
         })
       : null;
-    setReady(c !== null);
+    if (c) setBoardVersion((v) => v + 1);
   }, []);
 
   // The demo loop: each stage runs, rests, and on to the next; then round again.
@@ -104,14 +110,14 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
     if (!ready || !seq || !runtime) return;
     const ac = new AbortController();
     const { signal } = ac;
-    const objective = { reachGoal: true, collectAll: demo.world.collectibles.length > 0 };
+    const objective = { reachGoal: true, collectAll: world.collectibles.length > 0 };
     void (async () => {
-      const results = await Promise.all(stages.map((p) => runtime.run({ program: p, world: demo.world, objective, limits: DEFAULT_LIMITS, ...(demo.input && { input: demo.input }) })));
+      const results = await Promise.all(stages.map((p) => runtime.run({ program: p, world, objective, limits: DEFAULT_LIMITS, ...(demo.input && { input: demo.input }) })));
       while (!signal.aborted) {
         for (let i = 0; i < stages.length && !signal.aborted; i++) {
           setStage(i);
           setFolding(false);
-          seq.load(results[i]!.trace, initialState(demo.world));
+          seq.load(results[i]!.trace, initialState(world, stages[i]!.memory));
           await wait(BEFORE_RUN_MS, signal);
           if (signal.aborted) return;
           await seq.play();
@@ -121,6 +127,11 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
             await wait(FOLD_MS, signal);
           }
         }
+        // A shuffled demo moves on to the next version of the board; the new board starts the loop again.
+        if (worlds.length > 1 && !signal.aborted) {
+          setShuffle((s) => (s + 1) % worlds.length);
+          return;
+        }
       }
     })();
     return () => {
@@ -128,10 +139,12 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
       // The board may be unmounting with us, so stop without redrawing it.
       seq.stop();
     };
-  }, [ready, runtime, stages, demo.world, round]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boardVersion, runtime, stages, world, round]);
 
-  const caption = stages.length > 1 ? (stage === 0 && !folding ? 'The old way' : `With ${introduction.title}`) : null;
-  const label = `A ${demo.world.width} by ${demo.world.height} island where the robot shows ${introduction.title}.`;
+  const caption =
+    stages.length > 1 ? (stage === 0 && !folding ? 'The old way' : `With ${introduction.title}`) : worlds.length > 1 ? `Shuffle ${shuffle + 1} of ${worlds.length}, same program` : null;
+  const label = `A ${world.width} by ${world.height} island where the robot shows ${introduction.title}.`;
 
   return (
     <main className="intro" aria-labelledby="intro-title">
@@ -142,10 +155,10 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
         </h2>
         <div className={`intro-demo ${folding ? 'is-folding' : ''}`}>
           <div className="intro-board">
-            <Board world={demo.world} theme={theme} motion={motion} label={label} onControllers={onControllers} maxScale={1.3} />
+            <Board world={world} theme={theme} motion={motion} label={label} onControllers={onControllers} maxScale={1.3} />
             {demo.input && <KeyScript keys={demo.input} event={activeEvent} />}
-            {(gatesOf(demo.world).length > 0 || moversOf(demo.world).length > 0 || (program.memory?.length ?? 0) > 0) && (
-              <MemoryCard world={demo.world} state={shownState ?? initialState(demo.world, program.memory)} slots={program.memory} />
+            {(gatesOf(world).length > 0 || moversOf(world).length > 0 || (program.memory?.length ?? 0) > 0) && (
+              <MemoryCard world={world} state={shownState ?? initialState(world, program.memory)} slots={program.memory} />
             )}
             {caption && (
               <p className="intro-caption" role="status" aria-live="polite">

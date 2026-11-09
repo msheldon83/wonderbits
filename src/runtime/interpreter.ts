@@ -19,7 +19,7 @@
  */
 import { functionBody, handlerBody, mainBody } from '../ir/program';
 import { handlerContainerId, type Key } from '../ir/types';
-import { advance, faceTo, initialState, evaluate, isTimed, objectiveMet, period, readSource, remember, setGate, stateKey, step, unlockGate, type WorldEvent } from '../sim/world';
+import { advance, faceTo, gridPlace, initialState, markGrid, evaluate, isTimed, objectiveMet, period, readSource, remember, setGate, stateKey, step, unlockGate, type WorldEvent } from '../sim/world';
 import type { Facing } from '../sim/types';
 import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 import type { IRNode, ProgramIR } from '../ir/types';
@@ -134,6 +134,14 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
           const after = unlockGate(world, state, node.gate, state.memory?.[node.slot]);
           const opened = after !== state;
           const ok = yield* emit({ nodeId: node.id, op: 'unlock', gate: node.gate, opened, before: state, after, result: { kind: 'ok' } });
+          if (!ok) return;
+          state = after;
+          break;
+        }
+        case 'mark': {
+          const value = state.memory?.[node.slot];
+          const after = value === undefined ? state : markGrid(state, node.grid, gridPlace(state, node.at), value);
+          const ok = yield* emit({ nodeId: node.id, op: 'set', slot: node.grid, value: value ?? 0, before: state, after, result: { kind: 'ok' } });
           if (!ok) return;
           state = after;
           break;

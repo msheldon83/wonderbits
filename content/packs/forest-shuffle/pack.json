@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "id": "forest-shuffle",
+  "title": "Never the same twice",
+  "themeId": "forest",
+  "order": 13,
+  "concepts": [
+    "randomness"
+  ],
+  "prerequisites": [
+    "forest-grids"
+  ],
+  "introduction": {
+    "concept": "randomness",
+    "title": "Shuffles",
+    "explanation": "Shuffled levels change every time, so your program must work for any version.",
+    "demo": {
+      "world": {
+        "rows": [
+          "....."
+        ],
+        "robot": {
+          "x": 0,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 4,
+          "y": 0
+        }
+      },
+      "shuffles": [
+        {
+          "goal": {
+            "x": 2,
+            "y": 0
+          }
+        },
+        {
+          "goal": {
+            "x": 3,
+            "y": 0
+          }
+        }
+      ],
+      "program": [
+        {
+          "until": "atFlag",
+          "do": [
+            "forward"
+          ]
+        }
+      ]
+    }
+  },
+  "levels": [
+    "n01-how-many-acorns",
+    "n02-any-length",
+    "n03-rock-somewhere",
+    "n04-count-them",
+    "n05-fix-for-every-shuffle",
+    "n06-left-or-right",
+    "n07-cards-in-order",
+    "n08-gate-or-not",
+    "n09-where-will-it-stop",
+    "n10-any-maze"
+  ]
+}

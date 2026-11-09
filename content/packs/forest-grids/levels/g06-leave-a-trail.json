@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "id": "g06-leave-a-trail",
+  "title": "Leave a trail",
+  "intro": "Mark every tile the robot stands on in the trail grid, the flag too. The memory card shows the grid.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false,
+    "memory": {
+      "trail": [
+        [
+          true,
+          true,
+          true,
+          true,
+          true
+        ]
+      ]
+    }
+  },
+  "curriculum": {
+    "concept": "grids",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "mark",
+      "until"
+    ],
+    "allowedConditions": [
+      "atFlag"
+    ],
+    "maxInstructions": 5,
+    "starterProgram": [
+      {
+        "remember": "trail",
+        "kind": "grid",
+        "of": "yesNo",
+        "start": [
+          [
+            false,
+            false,
+            false,
+            false,
+            false
+          ]
+        ]
+      },
+      {
+        "remember": "stamp",
+        "kind": "yesNo",
+        "start": true
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "text": "Five tiles, five marks."
+    },
+    {
+      "kind": "card",
+      "command": "mark",
+      "text": "Mark stamp on trail here writes yes on the tile the robot stands on."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        0
+      ],
+      "slot": 0,
+      "command": "mark",
+      "text": "Each go marks, then steps."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "trail",
+      "kind": "grid",
+      "of": "yesNo",
+      "start": [
+        [
+          false,
+          false,
+          false,
+          false,
+          false
+        ]
+      ]
+    },
+    {
+      "remember": "stamp",
+      "kind": "yesNo",
+      "start": true
+    },
+    {
+      "until": "atFlag",
+      "do": [
+        {
+          "mark": "trail",
+          "at": "here",
+          "with": "stamp"
+        },
+        "forward"
+      ]
+    },
+    {
+      "mark": "trail",
+      "at": "here",
+      "with": "stamp"
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

@@ -4,6 +4,74 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Build step 12, part two: grids and randomness (2026-11-09)
+
+The next two packs of step 12: **Reading the map** (2D grids) and **Never
+the same twice** (randomness), ten levels each, each with its introduction.
+
+### What is built
+
+- **Grid slots.** A memory slot can be a grid: rows of numbers, yes/noes or
+  directions, the board's size, read like the board (row first). It prints
+  as `boolean[][]` or `number[][]`. Set can read a grid at the robot's tile,
+  the tile ahead, or a remembered place: `read:walls@ahead`, printed
+  `at(walls, robot.ahead())`. Off the grid there is nothing: no, or 0.
+- **Mark** writes a slot's value into a grid at the same three places,
+  printed `put(counts, robot.position(), n)`.
+- **An answer in memory.** `objective.memory` lists slots and the values
+  they must end with, so a level can ask for a worked-out grid (the
+  minesweeper counts) as well as the flag. A run that reaches the flag with
+  the wrong answer is incomplete, and the message names the slots.
+- **On screen:** a board read as a grid shows row and column numbers
+  around it (from 1, like the memory card's "column 2, row 1"); a grid slot
+  on the memory card is a small table with the robot's tile ringed.
+- **Shuffles.** A level may list `shuffles`: other versions of its board,
+  each written as only what changes (rows, the flag, acorns, gates) over the
+  main board. The level opens on a random version. Shuffle puts out another
+  one; after a run that worked on one version but not all, Shuffle glows and
+  goes straight to a version it misses. A level is solved only when one
+  program solves every version: after a successful run, the app runs the
+  program on the others before giving stars. The log records each shuffle
+  and each check.
+- **Validator.** Every version must be a valid board of the main board's
+  size and different from the others. The reference solution must solve
+  every version; a run or predict starter must too; a debug or build
+  starter must fail on at least one. Grid starts must be the board's size,
+  and a memory objective must name the solution's slots with values of
+  their kinds. The flat-program warning ignores shuffled levels, since a
+  flat program cannot follow a board that changes.
+- **The introductions.** Reading the map: a robot reads the map before
+  each step and turns at rocks. Never the same twice: one program plays on
+  three versions of a board in turn, under "Shuffle 1 of 3, same program".
+- **The packs.** Reading the map: Read the map (model), Read before you
+  step (senses switched off; the map is the only way to see), Count around
+  (model), The rock lock, Fix the read (debug), Leave a trail (Mark),
+  Cards in order, How many touch?, Where will it stop? and Minesweeper
+  (count the rocks above and below each tile of a row and mark them, under
+  a budget). Never the same twice: How many acorns? (model), Any length, A
+  rock somewhere, Count them (model), Fix it for every shuffle (debug),
+  Left or right, Cards in order, Gate or not (the gate senses finally
+  taught: press the switch only when the gate is shut), Where will it stop?
+  and Any maze (a wall-follower on three mazes, under a budget).
+
+### Deviations and choices
+
+- **Shuffles are listed, not generated.** The plan says seeded randomness
+  with checks across many seeds. A level lists its versions instead, a
+  handful each, so every one is written, validated and replayable, and a
+  child sees exactly the version that failed. A seed that generates boards
+  can come later behind the same `shuffles` list.
+- **Reshuffle on the Shuffle button, not on every Run.** Reshuffling on Run
+  would move the board under a child predicting or building for it. Run
+  plays the version on screen; Shuffle changes it.
+- **Grids count from 1 on screen.** The numbers around the board and the
+  memory card count from 1; the code hides indexing behind `at()` and
+  `put()`, so TypeScript's 0-based arrays never show.
+- **The map is not the board.** A grid slot is the robot's notebook of the
+  board, given by the level. Reading the map instead of looking only
+  matters where the level turns the senses off, as Read before you step
+  does.
+
 ## Build step 12, part one: memory, variables and lists (2026-11-09)
 
 The first three packs of step 12: **Two things to remember**

@@ -7,6 +7,8 @@ export interface Shortfall {
   onGoal: boolean;
   /** Collectibles still on the board when the run ended. */
   missing: number;
+  /** Memory slots that do not yet hold the answer the level asks for. */
+  memory?: string[];
 }
 
 const acorns = (n: number) => (n === 1 ? 'an acorn' : `${n} acorns`);
@@ -18,6 +20,9 @@ export function outcomeMessage(outcome: RunOutcome, stepNumber: number | null, s
     case 'success':
       return { tone: 'success', text: 'You did it! The robot reached the flag.' };
     case 'incomplete':
+      if (shortfall?.memory?.length) {
+        return { tone: 'problem', text: `The robot finished, but ${shortfall.memory.join(' and ')} ${shortfall.memory.length > 1 ? 'do' : 'does'} not hold the answer yet. Look at the memory card.` };
+      }
       if (shortfall?.onGoal && shortfall.missing > 0) {
         return { tone: 'problem', text: `The robot is at the flag, but it left ${acorns(shortfall.missing)} behind. Pick up every acorn, then reach the flag.` };
       }

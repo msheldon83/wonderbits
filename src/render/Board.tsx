@@ -27,10 +27,12 @@ export interface BoardProps {
   hideIndicator?: boolean;
   /** Hide the real flag: on prediction levels the child places one instead. */
   hideGoal?: boolean;
+  /** Number the rows and columns around the board, for levels that read it as a grid. */
+  coordinates?: boolean;
 }
 
-export function Board({ world, theme, motion, label, onControllers, robotCount = 1, maxScale = 1.6, onTileTap, marks = [], highlightCells, hideIndicator = false, hideGoal = false }: BoardProps) {
-  const layout = useMemo(() => layoutFor(world), [world]);
+export function Board({ world, theme, motion, label, onControllers, robotCount = 1, maxScale = 1.6, onTileTap, marks = [], highlightCells, hideIndicator = false, hideGoal = false, coordinates = false }: BoardProps) {
+  const layout = useMemo(() => layoutFor(world, coordinates), [world, coordinates]);
   const viewport = useRef<HTMLDivElement>(null);
   const robotEls = useRef<Partial<RobotElements>[]>([]);
   const gems = useRef(new Map<string, HTMLElement>());
@@ -352,6 +354,20 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
           ))}
           {markerEls}
           {tileButtons}
+          {coordinates && (
+            <>
+              {Array.from({ length: world.width }, (_, x) => (
+                <span key={`cx${x}`} className="board-coord" aria-hidden="true" style={{ left: layout.originX + x * TILE, top: 0, width: TILE, height: layout.originY }}>
+                  {x + 1}
+                </span>
+              ))}
+              {Array.from({ length: world.height }, (_, y) => (
+                <span key={`cy${y}`} className="board-coord" aria-hidden="true" style={{ left: 0, top: layout.originY + y * TILE, width: layout.originX, height: TILE }}>
+                  {y + 1}
+                </span>
+              ))}
+            </>
+          )}
         </div>
       </div>
     </div>

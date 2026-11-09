@@ -332,3 +332,52 @@ describe('interpreter: memory', () => {
     expect(go([{ remember: 'n', kind: 'number' }, { forEach: 'n', as: 'n', do: [] }]).outcome).toEqual({ status: 'error', message: 'n is not a list' });
   });
 });
+
+describe('interpreter: grids', () => {
+  // # . .      the robot at (1,1) facing N, with a rock above it and one to its left
+  // # . .      the flag at (2,1)
+  const board: WorldDefinition = {
+    width: 3,
+    height: 2,
+    tiles: [
+      ['wall', 'wall', 'floor'],
+      ['wall', 'floor', 'floor'],
+    ],
+    robot: { x: 1, y: 1, facing: 'N' },
+    goal: { x: 2, y: 1 },
+    collectibles: [],
+  };
+  const walls = [
+    [true, true, false],
+    [true, false, false],
+  ];
+  const go = (spec: NodeSpec[], objective: ObjectiveDefinition = { reachGoal: true, collectAll: false }) =>
+    interpretAll({ program: programFromSpec(spec, sequentialIdFactory()), world: board, objective, limits: { maxSteps: 200 } });
+
+  it('reads a grid here, ahead and at a remembered place, and marks it', () => {
+    const r = go([
+      { remember: 'walls', kind: 'grid', of: 'yesNo', start: walls },
+      { remember: 'counts', kind: 'grid', of: 'number', start: [[0, 0, 0], [0, 0, 0]] },
+      { remember: 'a', kind: 'yesNo' },
+      { remember: 'b', kind: 'yesNo' },
+      { remember: 'n', kind: 'number' },
+      { remember: 'spot', kind: 'position' },
+      { set: 'a', to: 'read:walls@ahead' },
+      { set: 'b', to: 'read:walls@here' },
+      { set: 'spot', to: 'here' },
+      { change: 'n', by: 2 },
+      { mark: 'counts', at: 'spot', with: 'n' },
+      'rotateCW',
+      'forward',
+    ]);
+    expect(r.outcome).toEqual({ status: 'success' });
+    expect(r.final.memory).toMatchObject({ a: true, b: false, counts: [[0, 0, 0], [0, 2, 0]] });
+  });
+
+  it('meets a memory objective only when the slot holds the answer', () => {
+    const spec = (by: number): NodeSpec[] => [{ remember: 'n', kind: 'number' }, { change: 'n', by }, 'rotateCW', 'forward'];
+    const objective: ObjectiveDefinition = { reachGoal: true, collectAll: false, memory: { n: 2 } };
+    expect(go(spec(2), objective).outcome).toEqual({ status: 'success' });
+    expect(go(spec(1), objective).outcome).toEqual({ status: 'incomplete' });
+  });
+});

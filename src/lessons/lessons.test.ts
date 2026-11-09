@@ -470,6 +470,63 @@ describe('validate: memory', () => {
   });
 });
 
+describe('validate: shuffles and grids', () => {
+  /** A row of four, the flag moving between shuffles: one loop must reach it on every one. */
+  const shuffled = (over: (j: Json) => void = () => {}) =>
+    parsed((j) => {
+      j.curriculum.concept = 'randomness';
+      j.world.rows = ['....'];
+      j.world.goal = { x: 3, y: 0 };
+      j.shuffles = [{ goal: { x: 2, y: 0 } }, { goal: { x: 1, y: 0 } }];
+      j.programming.allowedCommands = ['forward', 'until'];
+      j.programming.allowedConditions = ['atFlag', 'blockedAhead'];
+      j.programming.maxInstructions = 2;
+      j.referenceSolution = [{ until: 'atFlag', do: ['forward'] }];
+      j.hints[2] = { kind: 'fill', path: [], slot: 0, command: 'until', text: 'Loop.' };
+      j.stars.budget = 2;
+      over(j);
+    });
+  const errs = (over: (j: Json) => void) => validatePuzzle(shuffled(over)).errors.join('\n');
+
+  it('lays each shuffle over the main board, and needs one program that solves them all', () => {
+    const p = shuffled();
+    expect(p.shuffles?.map((w) => w.goal)).toEqual([{ x: 2, y: 0 }, { x: 1, y: 0 }]);
+    expect(p.shuffles?.[0]?.width).toBe(4);
+    expect(validatePuzzle(p).errors).toEqual([]);
+    expect(errs((j) => (j.referenceSolution = ['forward', 'forward', 'forward']))).toMatch(/does not solve shuffles\[0\]/);
+  });
+
+  it('rejects a shuffle that repeats a board or changes its size', () => {
+    expect(errs((j) => (j.shuffles = [{ goal: { x: 3, y: 0 } }]))).toMatch(/shuffles\[0\] is the same as another version/);
+    expect(errs((j) => (j.shuffles = [{ rows: ['.....'] }]))).toMatch(/shuffles\[0\] is 5 by 1/);
+  });
+
+  it('lets a debug starter work on one shuffle, so long as it fails on another', () => {
+    const debug = shuffled((j) => {
+      j.curriculum.activity = 'debug';
+      j.programming.starterProgram = [{ until: 'blockedAhead', do: ['forward'] }];
+      j.hints[1] = { kind: 'step', path: [], index: 0, text: 'Check.' };
+    });
+    expect(validatePuzzle(debug).errors).toEqual([]);
+  });
+
+  it('checks grids are the board\'s size and that a memory objective names a real slot', () => {
+    const grid = (start: unknown, memory: Record<string, unknown> = {}) =>
+      validatePuzzle(
+        shuffled((j) => {
+          j.programming.starterProgram = [{ remember: 'trail', kind: 'grid', of: 'yesNo', start }];
+          j.referenceSolution.unshift({ remember: 'trail', kind: 'grid', of: 'yesNo', start });
+          j.objective.memory = memory;
+        }),
+      ).errors.join('\n');
+    expect(grid([[false, false, false, false]])).toBe('');
+    expect(grid([[false, false]])).toMatch(/grid trail is 2 by 1; it must be the board's 4 by 1/);
+    expect(grid([[false, false, false, false]], { trail: [[true, true, true, true]] })).toMatch(/does not solve/);
+    expect(grid([[false, false, false, false]], { other: 1 })).toMatch(/objective.memory asks for other/);
+    expect(() => grid([[false], [false, true]])).toThrow(/start: expected a grid of yesNo value/);
+  });
+});
+
 describe('prediction', () => {
   it('is correct only on the tile the robot ends up on', () => {
     expect(predictionCorrect({ cell: { x: 2, y: 0 } }, { x: 2, y: 0 })).toBe(true);

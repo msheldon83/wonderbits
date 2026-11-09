@@ -83,6 +83,11 @@ export interface PuzzleDefinition {
   prediction?: PredictionSettings;
   /** Input levels: the key presses played after the program, in order. Each fires its When card. */
   inputScript?: Key[];
+  /**
+   * Shuffled levels: other versions of the board. The level is solved only
+   * when one program works on every version, the main board included.
+   */
+  shuffles?: WorldDefinition[];
   hints: [HintStep, HintStep, HintStep];
   /** Required on every level; validators prove it works. */
   referenceSolution: NodeSpec[];
@@ -112,6 +117,8 @@ export interface ConceptIntroduction {
     before?: NodeSpec[];
     /** Key presses played after the program, for the input introduction. */
     input?: Key[];
+    /** Other versions of the board, for the randomness introduction: the same program plays on each. */
+    shuffles?: WorldDefinition[];
   };
 }
 

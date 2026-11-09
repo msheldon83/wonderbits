@@ -1,4 +1,4 @@
-import { isSenseId, parseSlotTest, type CommandId, type ConditionId, type MemorySlot, type SenseId, type Source, type Value } from '../ir/types';
+import { isSenseId, parseRead, parseSlotTest, type CommandId, type ConditionId, type GridPlace, type MemorySlot, type SenseId, type Source, type Value } from '../ir/types';
 import type { Cell, Facing, Gate, Mover, ObjectiveDefinition, Plate, SimState, Switch, TileKind, WorldDefinition } from './types';
 
 export const cellKey = (c: Cell): string => `${c.x},${c.y}`;
@@ -218,8 +218,35 @@ function slotMatches(state: SimState, slot: string, written: string): boolean {
 }
 
 /** What a Set card's source reads right now, given the world and the state. */
+/** The tile a grid card means: the robot's, the one ahead, or the one a position slot holds. Undefined when the slot holds no place. */
+export function gridPlace(state: SimState, at: GridPlace): Cell | undefined {
+  if (at === 'here') return { x: state.robot.x, y: state.robot.y };
+  if (at === 'ahead') return ahead(state.robot, state.robot.facing);
+  const v = state.memory?.[at];
+  return typeof v === 'object' && v !== null && !Array.isArray(v) ? v : undefined;
+}
+
+/** A grid's item at a tile, rows first like the board. Off the grid there is nothing: no, or 0. */
+export function gridItem(grid: Value | undefined, cell: Cell | undefined): Value {
+  const row = Array.isArray(grid) && cell ? grid[cell.y] : undefined;
+  const item = Array.isArray(row) && cell ? row[cell.x] : undefined;
+  if (item !== undefined) return item;
+  const sample = Array.isArray(grid) && Array.isArray(grid[0]) ? grid[0][0] : undefined;
+  return typeof sample === 'number' ? 0 : false;
+}
+
+/** Write a value into a grid slot at a tile. Pure: returns the state unchanged when the tile is off the grid. */
+export function markGrid(state: SimState, grid: string, cell: Cell | undefined, value: Value): SimState {
+  const g = state.memory?.[grid];
+  if (!Array.isArray(g) || !cell || !Array.isArray(g[cell.y]) || cell.x < 0 || cell.x >= (g[cell.y] as Value[]).length) return state;
+  const rows = g.map((row, y) => (y === cell.y ? (row as Value[]).map((v, x) => (x === cell.x ? value : v)) : row));
+  return remember(state, grid, rows);
+}
+
 export function readSource(world: WorldDefinition, state: SimState, source: Source): Value {
   if (typeof source !== 'string') return source;
+  const read = parseRead(source);
+  if (read) return gridItem(state.memory?.[read.grid], gridPlace(state, read.at));
   if (source === 'facing') return state.robot.facing;
   if (source === 'here') return { x: state.robot.x, y: state.robot.y };
   if (source === 'acorns') return state.collected.length;
@@ -244,7 +271,15 @@ export function faceTo(state: SimState, facing: Facing): SimState {
   return { ...state, robot: { ...state.robot, facing } };
 }
 
+/** The slots whose values are not yet the objective's, in the order the objective lists them. */
+export function memoryShortfall(objective: ObjectiveDefinition, state: SimState): string[] {
+  return Object.entries(objective.memory ?? {})
+    .filter(([slot, want]) => JSON.stringify(state.memory?.[slot]) !== JSON.stringify(want))
+    .map(([slot]) => slot);
+}
+
 export function objectiveMet(world: WorldDefinition, objective: ObjectiveDefinition, state: SimState): boolean {
+  if (memoryShortfall(objective, state).length > 0) return false;
   if (objective.reachGoal && (state.robot.x !== world.goal.x || state.robot.y !== world.goal.y)) return false;
   if (objective.collectAll && state.collected.length !== world.collectibles.length) return false;
   return true;

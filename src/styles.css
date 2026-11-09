@@ -446,6 +446,7 @@ a.btn {
 }
 
 .btn-reset,
+.btn-shuffle,
 .btn-step,
 .btn-pause {
   background: var(--paper);
@@ -2405,4 +2406,43 @@ button.function-head {
 .gate-wrap[data-open='true'] .gate-lock {
   opacity: 0;
   transition: opacity 300ms ease-in-out;
+}
+
+/* A grid slot on the memory card: a tiny table like the board, the robot's tile ringed. */
+.memory-grid {
+  border-collapse: collapse;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 13px;
+}
+
+.memory-grid td {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 3px;
+  text-align: center;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.memory-grid td.is-here {
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
+  background: var(--gold-wash);
+}
+
+/* Row and column numbers around a board that is read as a grid. */
+.board-coord {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink-soft);
+  pointer-events: none;
+}
+
+/* After a run that worked on one shuffle but not all, Shuffle glows: that is what to press next. */
+.btn-shuffle.is-hinted {
+  background: var(--gold-wash);
+  box-shadow: 0 4px 0 var(--gold);
 }

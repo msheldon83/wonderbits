@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "id": "g09-where-will-it-stop",
+  "title": "Where will it stop?",
+  "intro": "The robot reads the map before every step and turns at rocks. Follow it, then place the flag.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "##.#",
+      "...#"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 1,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "transfer",
+    "activity": "predict"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "set",
+      "if",
+      "until"
+    ],
+    "allowedConditions": [
+      "atFlag",
+      "slot:wall=yes"
+    ],
+    "maxInstructions": 7,
+    "starterProgram": [
+      {
+        "remember": "walls",
+        "kind": "grid",
+        "of": "yesNo",
+        "start": [
+          [
+            true,
+            true,
+            false,
+            true
+          ],
+          [
+            false,
+            false,
+            false,
+            true
+          ]
+        ]
+      },
+      {
+        "remember": "wall",
+        "kind": "yesNo",
+        "start": false
+      },
+      {
+        "until": "atFlag",
+        "do": [
+          {
+            "set": "wall",
+            "to": "read:walls@ahead"
+          },
+          {
+            "if": "slot:wall=yes",
+            "do": [
+              "rotateCW",
+              "rotateCCW",
+              "rotateCCW"
+            ]
+          },
+          "forward"
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 1
+        }
+      ],
+      "text": "At a rock the robot turns three times: once right, twice back left."
+    },
+    {
+      "kind": "card",
+      "command": "if",
+      "text": "If wall is yes: a right turn, then two left turns, so it ends up turned left."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "until",
+      "text": "The program is one loop."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "walls",
+      "kind": "grid",
+      "of": "yesNo",
+      "start": [
+        [
+          true,
+          true,
+          false,
+          true
+        ],
+        [
+          false,
+          false,
+          false,
+          true
+        ]
+      ]
+    },
+    {
+      "remember": "wall",
+      "kind": "yesNo",
+      "start": false
+    },
+    {
+      "until": "atFlag",
+      "do": [
+        {
+          "set": "wall",
+          "to": "read:walls@ahead"
+        },
+        {
+          "if": "slot:wall=yes",
+          "do": [
+            "rotateCW",
+            "rotateCCW",
+            "rotateCCW"
+          ]
+        },
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true
+  }
+}
