@@ -6,7 +6,7 @@
  * cross-origin sandboxed iframe behind the same messages without the app
  * changing. Keep every message structured-clone safe: plain data only.
  */
-import type { CommandId, ConditionId, GateActionId, Key, NodeId, ProgramIR } from '../ir/types';
+import type { CommandId, ConditionId, GateActionId, Key, NodeId, ProgramIR, Value } from '../ir/types';
 import type { BlockReason } from '../sim/world';
 import type { Cell, ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 
@@ -63,7 +63,7 @@ export interface CheckEvent extends TraceBase {
   value: boolean;
 }
 
-/** A Repeat started one more go round its body. */
+/** A Repeat started one more go round its body, or a For each moved on to the next item (its after state holds the item). */
 export interface LoopEvent extends TraceBase {
   op: 'loop';
   iteration: number;
@@ -108,7 +108,27 @@ export interface TickEvent extends TraceBase {
   op: 'tick';
 }
 
-export type TraceEvent = ActionEvent | CheckEvent | LoopEvent | CallEvent | GateEvent | WhenEvent | PressEvent | TickEvent;
+/** A Set or Add card put a value in a memory slot. Nothing moves on the board. */
+export interface SetEvent extends TraceBase {
+  op: 'set';
+  slot: string;
+  value: Value;
+}
+
+/** A Face card turned the robot to the direction a slot holds. A robot action, like a turn. */
+export interface FaceEvent extends TraceBase {
+  op: 'face';
+  slot: string;
+}
+
+/** An Unlock card tried a gate's number lock with a slot's value. */
+export interface UnlockEvent extends TraceBase {
+  op: 'unlock';
+  gate: string;
+  opened: boolean;
+}
+
+export type TraceEvent = ActionEvent | CheckEvent | LoopEvent | CallEvent | GateEvent | WhenEvent | PressEvent | TickEvent | SetEvent | FaceEvent | UnlockEvent;
 
 export type RunOutcome =
   | { status: 'success' }

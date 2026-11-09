@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "id": "m04-face-the-way-back",
+  "title": "Face the way",
+  "intro": "Fetch the acorn behind you, then carry on. Only two turns: remember which way you faced, and Face it again.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....."
+    ],
+    "robot": {
+      "x": 1,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 0,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "representation",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "set",
+      "face"
+    ],
+    "allowedSources": [
+      "facing"
+    ],
+    "maxInstructions": 10,
+    "maxPerCommand": {
+      "rotateCW": 2
+    },
+    "starterProgram": [
+      {
+        "remember": "way",
+        "kind": "direction",
+        "start": "N"
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "text": "The acorn is behind the robot."
+    },
+    {
+      "kind": "card",
+      "command": "face",
+      "text": "Set way to the way it faces before turning; Face way turns it straight back."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "set",
+      "text": "First, remember the way the robot faces."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "way",
+      "kind": "direction",
+      "start": "N"
+    },
+    {
+      "set": "way",
+      "to": "facing"
+    },
+    "rotateCW",
+    "rotateCW",
+    "forward",
+    {
+      "face": "way"
+    },
+    "forward",
+    "forward",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

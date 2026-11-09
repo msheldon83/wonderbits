@@ -2309,3 +2309,100 @@ button.function-head {
   background: var(--gold-wash);
   box-shadow: 0 3px 0 var(--gold), 0 0 0 3px var(--gold);
 }
+
+.thought-bubble[data-tone='memory'] {
+  color: var(--blue-deep);
+  box-shadow: 0 3px 0 var(--blue), 0 6px 16px rgba(29, 48, 71, 0.2);
+}
+
+/* The robot's own slots read as code: the name in monospace, on a blue wash. */
+.memory-line.is-slot {
+  background: var(--blue-wash);
+}
+
+.memory-line.is-slot .memory-label {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  color: var(--blue-deep);
+}
+
+/* ---------- Memory slots in the program panel ---------- */
+
+.memory-slots {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--blue-wash);
+}
+
+.memory-slots-title {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--blue-deep);
+}
+
+.memory-chips {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.memory-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  padding: 2px 4px 2px 10px;
+  border-radius: 10px;
+  background: var(--paper);
+  font-weight: 700;
+}
+
+.memory-chip.is-empty {
+  padding-right: 10px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.memory-chip code {
+  font-size: 15px;
+  color: var(--blue-deep);
+}
+
+.memory-forget {
+  min-width: 32px;
+  min-height: 32px;
+  font-size: 20px;
+}
+
+.memory-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-weight: 700;
+}
+
+.param-word {
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.card-set .card-icon,
+.card-change .card-icon,
+.card-face .card-icon,
+.card-unlock .card-icon,
+.card-forEach .card-icon {
+  background: var(--blue-deep);
+}
+
+/* The lock goes with the bars when the gate opens. */
+.gate-wrap[data-open='true'] .gate-lock {
+  opacity: 0;
+  transition: opacity 300ms ease-in-out;
+}

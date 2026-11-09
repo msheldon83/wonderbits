@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { sequentialIdFactory } from './ids';
 import { applyOp, isNoOpMove } from './ops';
-import { ancestorsOf, commandsOf, containerAt, countNodes, emptyProgram, locate, mainBody, nestingDepth, procedureOfPlace, programFromCommands, programFromSpec, programSpec, stepNumber, walk } from './program';
+import { ancestorsOf, commandsOf, containerAt, countNodes, emptyProgram, locate, mainBody, nestingDepth, procedureOfPlace, programFromCommands, programFromSpec, programSpec, slotsInUse, stepNumber, walk } from './program';
 import { buildNodes, callsOfSpec, cardsOfSpec, countSpec, depthOfSpec, specDiff, specOf, type NodeSpec } from './spec';
 import { functionContainerId, functionLabel, IR_VERSION, type Place } from './types';
 
@@ -249,5 +249,62 @@ describe('When cards', () => {
     expect(specDiff([{ open: 'a' }], [{ close: 'a' }])).toBe(1);
     expect(specDiff([{ open: 'a' }], [{ open: 'b' }])).toBe(1);
     expect(specDiff([{ on: 'tick', do: [] }], [{ on: 'acorn', do: [] }])).toBe(-1);
+  });
+});
+
+describe('memory slots and their cards', () => {
+  const spec: NodeSpec[] = [
+    { remember: 'count', kind: 'number' },
+    { remember: 'crates', kind: 'list', of: 'yesNo', start: [true, false] },
+    { remember: 'crate', kind: 'yesNo' },
+    { forEach: 'crates', as: 'crate', do: [{ if: 'slot:crate=yes', do: [{ change: 'count', by: 1 }] }] },
+    { set: 'count', to: 'acorns' },
+  ];
+  const make = () => programFromSpec(spec, sequentialIdFactory());
+
+  it('keeps slots in the program, gives each a start, and prints them back first', () => {
+    const p = make();
+    expect(p.memory).toEqual([
+      { name: 'count', kind: 'number', start: 0 },
+      { name: 'crates', kind: 'list', of: 'yesNo', start: [true, false] },
+      { name: 'crate', kind: 'yesNo', start: false },
+    ]);
+    expect(programSpec(p)).toEqual([
+      { remember: 'count', kind: 'number', start: 0 },
+      { remember: 'crates', kind: 'list', of: 'yesNo', start: [true, false] },
+      { remember: 'crate', kind: 'yesNo', start: false },
+      ...spec.slice(3),
+    ]);
+    expect(cardsOfSpec(spec)).toEqual(['forEach', 'if', 'change', 'set']);
+    expect(depthOfSpec(spec)).toBe(2);
+    expect([...slotsInUse(p)].sort()).toEqual(['count', 'crate', 'crates']);
+  });
+
+  it('adds and forgets slots, but not one a card uses', () => {
+    const p = make();
+    const q = applyOp(p, { op: 'addSlot', slot: { name: 'way', kind: 'direction', start: 'N' } });
+    expect(q.memory?.map((m) => m.name)).toEqual(['count', 'crates', 'crate', 'way']);
+    expect(applyOp(q, { op: 'removeSlot', name: 'way' }).memory?.map((m) => m.name)).toEqual(['count', 'crates', 'crate']);
+    expect(() => applyOp(p, { op: 'removeSlot', name: 'count' })).toThrow(/still used/);
+    expect(() => applyOp(p, { op: 'addSlot', slot: { name: 'count', kind: 'number', start: 0 } })).toThrow(/already remembers/);
+    expect(applyOp(emptyProgram(), { op: 'addSlot', slot: { name: 'x', kind: 'number', start: 0 } }).memory).toHaveLength(1);
+  });
+
+  it('changes a memory card\'s slot, value, amount or list', () => {
+    const p = make();
+    expect(specOf(mainBody(applyOp(p, { op: 'set', id: 'n4', to: 3 })))[1]).toEqual({ set: 'count', to: 3 });
+    expect(specOf(mainBody(applyOp(p, { op: 'set', id: 'n3', by: -1 })))[0]).toMatchObject({
+      forEach: 'crates',
+      do: [{ do: [{ change: 'count', by: -1 }] }],
+    });
+    expect(() => applyOp(p, { op: 'set', id: 'n4', by: 2 })).toThrow(/no amount/);
+    expect(() => applyOp(p, { op: 'set', id: 'n3', to: 1 })).toThrow(/no value/);
+  });
+
+  it('counts a changed value or memory test as one difference, and ignores slot lists', () => {
+    expect(specDiff([{ change: 'count', by: 1 }], [{ change: 'count', by: -1 }])).toBe(1);
+    expect(specDiff([{ if: 'slot:crate=yes', do: [] }], [{ if: 'slot:crate=no', do: [] }])).toBe(1);
+    expect(specDiff([{ remember: 'a', kind: 'number' }, 'forward'], ['forward'])).toBe(0);
+    expect(specDiff([{ set: 'a', to: 1 }], [{ change: 'a', by: 1 }])).toBe(-1);
   });
 });

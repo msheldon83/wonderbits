@@ -3,7 +3,7 @@
  * locally behind the storage interface; nothing leaves the device unless an
  * adult exports it.
  */
-import type { ConditionId, NodeId, Place } from '../ir/types';
+import type { ConditionId, NodeId, Place, Source } from '../ir/types';
 import type { MemoryField, MemoryValue } from '../lessons/types';
 import type { Cell } from '../sim/types';
 
@@ -64,7 +64,9 @@ export type ObservationEvent = { t: number; levelId: string } & (
   | { kind: 'card-placed'; command: string; at: Place }
   | { kind: 'card-moved'; nodeId: NodeId; to: Place }
   | { kind: 'card-removed'; nodeId: NodeId }
-  | { kind: 'card-changed'; nodeId: NodeId; count?: number; condition?: ConditionId }
+  | { kind: 'card-changed'; nodeId: NodeId; count?: number; condition?: ConditionId; gate?: string; slot?: string; to?: Source; by?: number; list?: string; item?: string }
+  | { kind: 'slot-added'; slot: string }
+  | { kind: 'slot-removed'; slot: string }
   | { kind: 'run-started'; steps: number }
   | { kind: 'trace-halted'; nodeId: NodeId; reason: string }
   | { kind: 'prediction-made'; cell?: Cell; memory?: Partial<Record<MemoryField, MemoryValue>>; wrongFields?: MemoryField[]; correct: boolean }

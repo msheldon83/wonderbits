@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "id": "d01-acorn-counter",
+  "title": "Acorn counter",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 3,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "variables",
+    "activity": "model"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change"
+    ],
+    "maxInstructions": 6,
+    "starterProgram": [
+      {
+        "remember": "count",
+        "kind": "number",
+        "start": 0
+      },
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      {
+        "on": "acorn",
+        "do": [
+          {
+            "change": "count",
+            "by": 1
+          }
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "Two acorns on the way."
+    },
+    {
+      "kind": "card",
+      "command": "change",
+      "text": "Every time an acorn is picked up, the When card adds one to count."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:acorn"
+      ],
+      "slot": 0,
+      "command": "change",
+      "text": "The When card adds one."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "count",
+      "kind": "number",
+      "start": 0
+    },
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "change": "count",
+          "by": 1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": false,
+    "askMemory": [
+      "slot:count"
+    ]
+  }
+}

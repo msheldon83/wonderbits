@@ -1,4 +1,5 @@
 /** Logical world model. No rendering, no assets: themes map these to art. */
+import type { Value } from '../ir/types';
 
 export type Facing = 'N' | 'E' | 'S' | 'W';
 export const FACINGS: readonly Facing[] = ['N', 'E', 'S', 'W'];
@@ -23,6 +24,8 @@ export interface Gate extends Cell {
   id: string;
   /** How the gate starts. */
   open: boolean;
+  /** A number lock: an Unlock card opens the gate when its slot holds this number. */
+  code?: number;
 }
 
 /** Stepping onto a switch flips every gate it names: open ones close, closed ones open. */
@@ -81,4 +84,6 @@ export interface SimState {
   open: string[];
   /** Ticks gone by. Only boards with movers or an every-tick card count them. */
   tick: number;
+  /** The robot's memory, slot by slot. Absent when the program remembers nothing. */
+  memory?: Record<string, Value>;
 }

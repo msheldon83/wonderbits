@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "id": "m06-cards-in-order",
+  "title": "Cards in order",
+  "intro": "Put the cards in order: step, count, step, count, unlock, and through.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 3,
+        "y": 0,
+        "open": false,
+        "code": 2
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "representation",
+    "activity": "reorder"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change",
+      "unlock"
+    ],
+    "starterProgram": [
+      {
+        "remember": "steps",
+        "kind": "number",
+        "start": 0
+      }
+    ],
+    "suppliedCards": [
+      "forward",
+      "change",
+      "forward",
+      "change",
+      "unlock",
+      "forward",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "The lock opens for 2."
+    },
+    {
+      "kind": "card",
+      "command": "unlock",
+      "text": "Unlock comes after two steps and two Adds."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "forward",
+      "text": "Start with a step."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "steps",
+      "kind": "number",
+      "start": 0
+    },
+    "forward",
+    {
+      "change": "steps",
+      "by": 1
+    },
+    "forward",
+    {
+      "change": "steps",
+      "by": 1
+    },
+    {
+      "unlock": "a",
+      "with": "steps"
+    },
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

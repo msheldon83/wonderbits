@@ -7,7 +7,7 @@
  * function's name, or in a When card when it is "on:<event>". Numbers then enter cards' bodies, and "else" right after
  * a number enters that card's else branch.
  */
-import { splitSpec, type NodeSpec } from '../ir/spec';
+import { kindOfSpec, splitSpec, type NodeSpec } from '../ir/spec';
 import { branchBody, functionBody, handlerBody, mainBody } from '../ir/program';
 import { functionContainerId, handlerContainerId, type Branch, type IRNode, type NodeId, type ProgramIR } from '../ir/types';
 import type { HintPath } from './types';
@@ -80,15 +80,7 @@ export function resolveNodePath(program: ProgramIR, path: HintPath): ResolvedCon
   return current;
 }
 
-/** The card id a spec node is: a command name, the block kind, or "call". */
+/** The card id a spec node is: a command name, the block kind, or the card's kind. */
 export function cardOfSpec(node: NodeSpec): string {
-  if (typeof node === 'string') return node;
-  if ('call' in node) return 'call';
-  if ('open' in node) return 'openGate';
-  if ('close' in node) return 'closeGate';
-  if ('define' in node) return 'define';
-  if ('on' in node) return 'on';
-  if ('repeat' in node) return 'repeat';
-  if ('until' in node) return 'until';
-  return 'else' in node && node.else ? 'ifElse' : 'if';
+  return kindOfSpec(node);
 }

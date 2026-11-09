@@ -6,7 +6,7 @@
  * Top-down: the robot sprite points up and is rotated to its facing. Display
  * angles accumulate across turns so every turn animates exactly 90 degrees.
  */
-import { eventShort } from '../editor/commands';
+import { eventShort, valueWords } from '../editor/commands';
 import { functionLabel } from '../ir/types';
 import type { TraceEvent } from '../runtime/contract';
 import type { Cell, RobotState, SimState, WorldDefinition } from '../sim/types';
@@ -214,7 +214,7 @@ export class BoardController implements Player {
   }
 
   /** The bubble over the robot while it thinks: "yes", "no", "2 of 3", or the name of the function it hands over to. */
-  private showBubble(robot: RobotState, text: string, tone: 'yes' | 'no' | 'loop' | 'call' | 'event', durationMs: number, signal: AbortSignal): Promise<void> {
+  private showBubble(robot: RobotState, text: string, tone: 'yes' | 'no' | 'loop' | 'call' | 'event' | 'memory', durationMs: number, signal: AbortSignal): Promise<void> {
     const bubble = this.robot.bubble;
     const p = toScreen(this.layout, robot);
     bubble.textContent = text;
@@ -280,6 +280,33 @@ export class BoardController implements Player {
     if (event.op === 'openGate' || event.op === 'closeGate') {
       this.showGates(after.open);
       await wait(ms(this.motion.reducedMotion ? REDUCED_PAUSE_MS : 340), signal);
+      return;
+    }
+    // Memory cards: a bubble says what went into the slot, or how the lock answered.
+    if (event.op === 'set') {
+      await this.showBubble(before.robot, `${event.slot} = ${valueWords(event.value)}`, 'memory', ms(THINK_MS), signal);
+      return;
+    }
+    if (event.op === 'unlock') {
+      this.showGates(after.open);
+      await this.showBubble(before.robot, event.opened ? 'click!' : 'wrong number', event.opened ? 'yes' : 'no', ms(THINK_MS), signal);
+      return;
+    }
+    if (event.op === 'face') {
+      // The shortest way round to the new facing, up to a half turn either way.
+      const turn = ((((angleFor(after.robot.facing) - angleFor(before.robot.facing)) % 360) + 540) % 360) - 180;
+      const target = from + turn;
+      if (this.motion.reducedMotion || turn === 0) {
+        this.place(after.robot, target);
+        await wait(ms(REDUCED_PAUSE_MS), signal);
+      } else {
+        const anim = el.animate([{ transform: this.transformFor(before.robot, from) }, { transform: this.transformFor(after.robot, target) }], { duration: ms(TURN_MS), easing: 'ease-in-out', fill: 'forwards' });
+        await settle(anim, signal);
+        if (signal.aborted) return;
+        this.place(after.robot, target);
+        anim.cancel();
+      }
+      this.showIndicator(after.robot);
       return;
     }
     if (event.op === 'wait') {

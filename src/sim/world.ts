@@ -1,4 +1,4 @@
-import type { CommandId, ConditionId } from '../ir/types';
+import { isSenseId, parseSlotTest, type CommandId, type ConditionId, type MemorySlot, type SenseId, type Source, type Value } from '../ir/types';
 import type { Cell, Facing, Gate, Mover, ObjectiveDefinition, Plate, SimState, Switch, TileKind, WorldDefinition } from './types';
 
 export const cellKey = (c: Cell): string => `${c.x},${c.y}`;
@@ -71,7 +71,14 @@ export function passable(world: WorldDefinition, state: SimState, cell: Cell): b
   return tile === 'floor' && !closedGateAt(world, state, cell) && !moverAt(world, state, cell, 'beetle');
 }
 
-export function initialState(world: WorldDefinition): SimState {
+/** The state before the first card. A program's memory slots hold their start values. */
+export function initialState(world: WorldDefinition, memory: readonly MemorySlot[] = []): SimState {
+  const base = initialWorld(world);
+  if (memory.length === 0) return base;
+  return { ...base, memory: Object.fromEntries(memory.map((m) => [m.name, m.start])) };
+}
+
+function initialWorld(world: WorldDefinition): SimState {
   return {
     robot: { ...world.robot },
     collected: [],
@@ -89,7 +96,7 @@ export function initialState(world: WorldDefinition): SimState {
  * they were.
  */
 export function stateKey(s: SimState, worldPeriod = 1): string {
-  return `${s.robot.x},${s.robot.y},${s.robot.facing}|${[...s.collected].sort().join(';')}|${s.open.join(';')}|${s.tick % worldPeriod}`;
+  return `${s.robot.x},${s.robot.y},${s.robot.facing}|${[...s.collected].sort().join(';')}|${s.open.join(';')}|${s.tick % worldPeriod}|${s.memory ? JSON.stringify(s.memory) : ''}`;
 }
 
 /** A board where time passes: something moves, or the program has an every-tick card. */
@@ -181,7 +188,9 @@ export function step(world: WorldDefinition, state: SimState, command: CommandId
 export function evaluate(world: WorldDefinition, state: SimState, condition: ConditionId): boolean {
   const { robot } = state;
   const target = ahead(robot, robot.facing);
-  switch (condition) {
+  const test = parseSlotTest(condition);
+  if (test) return slotMatches(state, test.slot, test.value);
+  switch (condition as SenseId) {
     case 'pathAhead':
       return passable(world, state, target);
     case 'blockedAhead':
@@ -197,6 +206,42 @@ export function evaluate(world: WorldDefinition, state: SimState, condition: Con
     case 'atFlag':
       return robot.x === world.goal.x && robot.y === world.goal.y;
   }
+}
+
+/** The value a memory test compares with: 3, yes, E, or the robot's tile for "here". */
+function slotMatches(state: SimState, slot: string, written: string): boolean {
+  const value = state.memory?.[slot];
+  if (written === 'here') return typeof value === 'object' && value !== null && !Array.isArray(value) && value.x === state.robot.x && value.y === state.robot.y;
+  if (written === 'yes' || written === 'no') return value === (written === 'yes');
+  if (/^\d+$/.test(written)) return value === Number(written);
+  return value === written;
+}
+
+/** What a Set card's source reads right now, given the world and the state. */
+export function readSource(world: WorldDefinition, state: SimState, source: Source): Value {
+  if (typeof source !== 'string') return source;
+  if (source === 'facing') return state.robot.facing;
+  if (source === 'here') return { x: state.robot.x, y: state.robot.y };
+  if (source === 'acorns') return state.collected.length;
+  if (isSenseId(source)) return evaluate(world, state, source);
+  return source;
+}
+
+/** Put a value in a memory slot. Pure. */
+export function remember(state: SimState, slot: string, value: Value): SimState {
+  return { ...state, memory: { ...state.memory, [slot]: value } };
+}
+
+/** Open a numbered gate when the value is its code. Pure: returns the state unchanged otherwise. */
+export function unlockGate(world: WorldDefinition, state: SimState, id: string, value: Value | undefined): SimState {
+  const gate = gatesOf(world).find((g) => g.id === id);
+  if (!gate || gate.code === undefined || value !== gate.code) return state;
+  return setGate(state, id, true);
+}
+
+/** Turn to face a direction, all at once. Pure. */
+export function faceTo(state: SimState, facing: Facing): SimState {
+  return { ...state, robot: { ...state.robot, facing } };
 }
 
 export function objectiveMet(world: WorldDefinition, objective: ObjectiveDefinition, state: SimState): boolean {

@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 1,
+  "id": "i08-the-first-acorn",
+  "title": "The first acorn",
+  "intro": "Stop at the first crate with an acorn. Walk along the list until you have found one.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "lists",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "forEach",
+      "if",
+      "set"
+    ],
+    "allowedConditions": [
+      "slot:crate=yes",
+      "slot:found=no"
+    ],
+    "allowedSources": [
+      true
+    ],
+    "maxInstructions": 6,
+    "maxPerCommand": {
+      "forward": 1
+    },
+    "starterProgram": [
+      {
+        "remember": "crates",
+        "kind": "list",
+        "of": "yesNo",
+        "start": [
+          false,
+          false,
+          true,
+          false,
+          true
+        ]
+      },
+      {
+        "remember": "crate",
+        "kind": "yesNo",
+        "start": false
+      },
+      {
+        "remember": "found",
+        "kind": "yesNo",
+        "start": false
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "text": "The third crate is the first with an acorn."
+    },
+    {
+      "kind": "card",
+      "command": "set",
+      "text": "Set found to yes at the first yes; only step on while found is no."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        0
+      ],
+      "slot": 0,
+      "command": "if",
+      "text": "First check the crate."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "crates",
+      "kind": "list",
+      "of": "yesNo",
+      "start": [
+        false,
+        false,
+        true,
+        false,
+        true
+      ]
+    },
+    {
+      "remember": "crate",
+      "kind": "yesNo",
+      "start": false
+    },
+    {
+      "remember": "found",
+      "kind": "yesNo",
+      "start": false
+    },
+    {
+      "forEach": "crates",
+      "as": "crate",
+      "do": [
+        {
+          "if": "slot:crate=yes",
+          "do": [
+            {
+              "set": "found",
+              "to": true
+            }
+          ]
+        },
+        {
+          "if": "slot:found=no",
+          "do": [
+            "forward"
+          ]
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

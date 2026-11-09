@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "id": "m05-fix-the-count",
+  "title": "Fix the count",
+  "intro": "The lock wants 3, but the gate stays shut. One card counts wrong.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 0
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 4,
+        "y": 0,
+        "open": false,
+        "code": 3
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "representation",
+    "activity": "debug"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change",
+      "unlock"
+    ],
+    "maxInstructions": 9,
+    "starterProgram": [
+      {
+        "remember": "steps",
+        "kind": "number",
+        "start": 0
+      },
+      "forward",
+      {
+        "change": "steps",
+        "by": 1
+      },
+      "forward",
+      {
+        "change": "steps",
+        "by": -1
+      },
+      "forward",
+      {
+        "change": "steps",
+        "by": 1
+      },
+      {
+        "unlock": "a",
+        "with": "steps"
+      },
+      "forward",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "text": "Watch steps on the memory card after each card."
+    },
+    {
+      "kind": "step",
+      "path": [],
+      "index": 3,
+      "text": "Does this card add one, or take one away?"
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 3,
+      "command": "change",
+      "text": "Every step should add one."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "steps",
+      "kind": "number",
+      "start": 0
+    },
+    "forward",
+    {
+      "change": "steps",
+      "by": 1
+    },
+    "forward",
+    {
+      "change": "steps",
+      "by": 1
+    },
+    "forward",
+    {
+      "change": "steps",
+      "by": 1
+    },
+    {
+      "unlock": "a",
+      "with": "steps"
+    },
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

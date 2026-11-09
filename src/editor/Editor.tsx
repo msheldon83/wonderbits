@@ -27,11 +27,11 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import type { IdFactory } from '../ir/ids';
 import { isNoOpMove, type EditOp } from '../ir/ops';
-import { ancestorsOf, branchesOf, branchBody, containerAt, endOfMain, functionsOf, isWithin, locate, mainBody, procedureOfPlace, samePlaceContainer, walk } from '../ir/program';
+import { ancestorsOf, branchesOf, branchBody, containerAt, endOfMain, functionsOf, isWithin, locate, mainBody, memoryOf, procedureOfPlace, samePlaceContainer, slotsInUse, walk } from '../ir/program';
 import { buildNodes } from '../ir/spec';
-import { functionContainerId, functionLabel, functionOfContainer, handlerContainerId, handlerOfContainer, MAIN as MAIN_PROCEDURE, REPEAT_DEFAULT, REPEAT_MAX, REPEAT_MIN, type Branch, type CardId, type CommandId, type IRNode, type NodeId, type Place, type ProgramIR } from '../ir/types';
+import { functionContainerId, functionLabel, functionOfContainer, handlerContainerId, handlerOfContainer, isSenseId, MAIN as MAIN_PROCEDURE, REPEAT_DEFAULT, REPEAT_MAX, REPEAT_MIN, type Branch, type CardId, type CommandId, type IRNode, type MemorySlot, type NodeId, type Place, type ProgramIR, type Source } from '../ir/types';
 import type { TraceEvent } from '../runtime/contract';
-import { cardLabel, COMMANDS, CONDITIONS, describeNode, eventLabel, FunctionIcon, nodeLabel } from './commands';
+import { cardLabel, COMMANDS, conditionLabel, describeNode, eventLabel, FunctionIcon, nodeLabel, sourceWords } from './commands';
 import { gapCentres, slotForY, type RowBox } from './geometry';
 import { conditionsFor, defaultCondition, paletteFor, type Programming } from './palette';
 
@@ -131,6 +131,21 @@ export function Editor({
   /** The function or When card the running step belongs to, if it is in one; a When card also lights while it is being set off. */
   const runningFunction = activeNodeId ? (handlerOfContainer(activeNodeId) !== null ? activeNodeId : (locate(program, activeNodeId)?.procedure ?? null)) : null;
   const functions = functionsOf(program);
+  const memory = memoryOf(program);
+  const usedSlots = slotsInUse(program);
+  /** A picker of slots of some kinds, for a memory card. */
+  const slotSelect = (label: string, value: string, kinds: readonly string[], onPick: (name: string) => void) => {
+    const names = memory.filter((m) => kinds.includes(m.kind)).map((m) => m.name);
+    return (
+      <select className="param-select" aria-label={label} value={value} disabled={locked} onChange={(e) => onPick(e.target.value)}>
+        {(names.includes(value) ? names : [value, ...names]).map((n) => (
+          <option key={n} value={n}>
+            {n}
+          </option>
+        ))}
+      </select>
+    );
+  };
   const handlers = program.handlers;
   /** Functions and When cards: everything listed under the program. */
   const extras = functions.length + handlers.length;
@@ -223,6 +238,21 @@ export function Editor({
     switch (command) {
       case 'call':
         return { id: newId(), kind: 'call', name: name ?? functions[0]?.name ?? MAIN_PROCEDURE };
+      case 'set': {
+        const slot = memory.find((m) => m.kind !== 'list');
+        return { id: newId(), kind: 'set', slot: slot?.name ?? 'count', to: slot ? (sourcesFor(slot.kind, programming)[0] ?? 0) : 0 };
+      }
+      case 'change':
+        return { id: newId(), kind: 'change', slot: memory.find((m) => m.kind === 'number')?.name ?? 'count', by: 1 };
+      case 'face':
+        return { id: newId(), kind: 'face', slot: memory.find((m) => m.kind === 'direction')?.name ?? 'way' };
+      case 'unlock':
+        return { id: newId(), kind: 'unlock', gate: gates[0] ?? 'a', slot: memory.find((m) => m.kind === 'number')?.name ?? 'count' };
+      case 'forEach': {
+        const list = memory.find((m) => m.kind === 'list');
+        const item = memory.find((m) => m.kind === list?.of);
+        return { id: newId(), kind: 'forEach', list: list?.name ?? 'list', item: item?.name ?? 'item', body: [] };
+      }
       case 'openGate':
       case 'closeGate':
         return { id: newId(), kind: command, gate: gates[0] ?? 'a' };
@@ -298,7 +328,7 @@ export function Editor({
     if (moving === id) setCarrying(null);
   };
 
-  const setParam = (id: NodeId, patch: { count?: number; condition?: EditOp extends { op: 'set'; condition?: infer C } ? C : never; gate?: string }) => {
+  const setParam = (id: NodeId, patch: Omit<Extract<EditOp, { op: 'set' }>, 'op' | 'id'>) => {
     onEdit({ op: 'set', id, ...patch });
   };
 
@@ -710,6 +740,62 @@ export function Editor({
               </button>
             </span>
           )}
+          {node.kind === 'set' && (
+            <span className="block-param block-condition">
+              {slotSelect(`Which slot, step ${number}`, node.slot, ['number', 'yesNo', 'direction', 'position'], (slot) => {
+                const kind = memory.find((m) => m.name === slot)?.kind ?? 'number';
+                setParam(node.id, { slot, to: sourcesFor(kind, programming)[0] ?? 0 });
+              })}
+              <select
+                className="param-select"
+                aria-label={`Set it to what, step ${number}`}
+                value={JSON.stringify(node.to)}
+                disabled={locked}
+                onChange={(e) => setParam(node.id, { to: JSON.parse(e.target.value) as Source })}
+              >
+                {(() => {
+                  const options = sourcesFor(memory.find((m) => m.name === node.slot)?.kind ?? 'number', programming);
+                  return (options.some((o) => o === node.to) ? options : [node.to, ...options]).map((o) => (
+                    <option key={JSON.stringify(o)} value={JSON.stringify(o)}>
+                      {sourceWords(o)}
+                    </option>
+                  ));
+                })()}
+              </select>
+            </span>
+          )}
+          {node.kind === 'change' && (
+            <span className="block-param block-condition">
+              <select className="param-select" aria-label={`How much, step ${number}`} value={node.by} disabled={locked} onChange={(e) => setParam(node.id, { by: Number(e.target.value) })}>
+                {[...new Set([node.by, 1, -1])].map((b) => (
+                  <option key={b} value={b}>
+                    {b > 0 ? `+${b}` : `−${-b}`}
+                  </option>
+                ))}
+              </select>
+              {slotSelect(`To which slot, step ${number}`, node.slot, ['number'], (slot) => setParam(node.id, { slot }))}
+            </span>
+          )}
+          {node.kind === 'face' && <span className="block-param block-condition">{slotSelect(`Which slot, step ${number}`, node.slot, ['direction'], (slot) => setParam(node.id, { slot }))}</span>}
+          {node.kind === 'unlock' && (
+            <span className="block-param block-condition">
+              <select className="param-select" aria-label={`Which gate, step ${number}`} value={node.gate} disabled={locked} onChange={(e) => setParam(node.id, { gate: e.target.value })}>
+                {(gates.includes(node.gate) ? gates : [node.gate, ...gates]).map((g) => (
+                  <option key={g} value={g}>
+                    {g.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+              {slotSelect(`With which slot, step ${number}`, node.slot, ['number'], (slot) => setParam(node.id, { slot }))}
+            </span>
+          )}
+          {node.kind === 'forEach' && (
+            <span className="block-param block-condition">
+              {slotSelect(`Which item slot, step ${number}`, node.item, [memory.find((m) => m.name === node.list)?.of ?? 'number'], (item) => setParam(node.id, { item }))}
+              <span className="param-word">in</span>
+              {slotSelect(`Which list, step ${number}`, node.list, ['list'], (list) => setParam(node.id, { list }))}
+            </span>
+          )}
           {(node.kind === 'openGate' || node.kind === 'closeGate') && (
             <span className="block-param block-condition">
               <select className="param-select" aria-label={`Which gate, step ${number}`} value={node.gate} disabled={locked} onChange={(e) => setParam(node.id, { gate: e.target.value })}>
@@ -732,7 +818,7 @@ export function Editor({
               >
                 {conditionsFor(programming).map((c) => (
                   <option key={c} value={c}>
-                    {CONDITIONS[c].label}
+                    {conditionLabel(c)}
                   </option>
                 ))}
               </select>
@@ -792,6 +878,73 @@ export function Editor({
           </div>
         ))}
       </li>
+    );
+  };
+
+  /** The robot's memory: its slots as typed chips, and on budget levels a way to choose which to keep. */
+  const renderMemory = () => {
+    const options = (programming.memoryOptions ?? []).filter((o) => !memory.some((m) => m.name === o.name));
+    const budget = programming.maxMemory;
+    const atBudget = budget !== undefined && memory.length >= budget;
+    return (
+      <section className="memory-slots" aria-label="The robot's memory">
+        <h3 className="memory-slots-title">
+          Memory
+          {budget !== undefined && (
+            <span className={`capacity ${atBudget ? 'is-full' : ''}`}>
+              {' '}
+              {memory.length} of {budget} slots
+            </span>
+          )}
+        </h3>
+        <ul className="memory-chips">
+          {memory.map((m) => {
+            const inUse = usedSlots.has(m.name);
+            return (
+              <li key={m.name} className={`memory-chip kind-${m.kind}`}>
+                <code>
+                  {m.name}: {kindWords(m)}
+                </code>
+                {programming.memoryOptions && !readOnly && (
+                  <button
+                    type="button"
+                    className="btn-icon memory-forget"
+                    aria-label={inUse ? `${m.name} is used by a card, so it cannot be forgotten` : `Forget ${m.name}`}
+                    title={inUse ? 'Remove the cards that use it first' : 'Forget this slot'}
+                    disabled={locked || inUse}
+                    onClick={() => onEdit({ op: 'removeSlot', name: m.name })}
+                  >
+                    ×
+                  </button>
+                )}
+              </li>
+            );
+          })}
+          {memory.length === 0 && <li className="memory-chip is-empty">Nothing remembered yet</li>}
+        </ul>
+        {!readOnly && options.length > 0 && (
+          <label className="memory-add">
+            <span>Remember</span>
+            <select
+              className="param-select"
+              aria-label={atBudget ? 'Memory is full. Forget a slot to remember another' : 'Choose a slot to remember'}
+              value=""
+              disabled={locked || atBudget}
+              onChange={(e) => {
+                const slot = options.find((o) => o.name === e.target.value);
+                if (slot) onEdit({ op: 'addSlot', slot });
+              }}
+            >
+              <option value="">{atBudget ? 'memory full' : 'choose…'}</option>
+              {options.map((o) => (
+                <option key={o.name} value={o.name}>
+                  {o.name}: {kindWords(o)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+      </section>
     );
   };
 
@@ -884,6 +1037,7 @@ export function Editor({
                 Tap an arrow to put {carriedName} there.
               </p>
             )}
+            {(memory.length > 0 || programming.memoryOptions) && renderMemory()}
             {renderList(MAIN, 0)}
             {functions.map((f) => {
               const container: Container = { parent: functionContainerId(f.name), branch: 'body' };
@@ -976,6 +1130,23 @@ export function Editor({
       )}
     </div>
   );
+}
+
+const KIND_WORDS: Record<string, string> = { number: 'number', yesNo: 'yes/no', direction: 'direction', position: 'place', list: 'list' };
+/** A slot's kind in words: "number", "list of yes/no". */
+const kindWords = (m: MemorySlot) => (m.kind === 'list' ? `list of ${KIND_WORDS[m.of ?? 'number']}` : KIND_WORDS[m.kind]);
+
+/** The values a Set card may put in a slot of a kind: the level's allowed sources, or every one that fits. */
+function sourcesFor(kind: string, programming: Programming): Source[] {
+  const all: Record<string, Source[]> = {
+    number: [0, 1, 2, 3, 'acorns'],
+    yesNo: [true, false, ...conditionsFor(programming).filter(isSenseId)],
+    direction: ['N', 'E', 'S', 'W', 'facing'],
+    position: ['here'],
+  };
+  const fits = all[kind] ?? [];
+  const allowed = programming.allowedSources;
+  return allowed ? allowed.filter((a) => (kind === 'number' ? typeof a === 'number' || a === 'acorns' : fits.includes(a))) : fits;
 }
 
 /** A lightning bolt: something happens, and a When card answers. */

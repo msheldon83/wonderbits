@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { functionLabel, type CardId, type ConditionId, type IRNode } from '../ir/types';
+import { functionLabel, isSenseId, parseSlotTest, type CardId, type ConditionId, type IRNode, type SenseId, type Source, type Value } from '../ir/types';
 import { TurnArrow } from '../render/art';
 
 export interface CommandInfo {
@@ -109,6 +109,54 @@ export const COMMANDS: Record<CardId, CommandInfo> = {
       </svg>
     ),
   },
+  forEach: {
+    label: 'For each',
+    description: 'Run the cards inside once for each item of a list',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <path d="M6 8h4M6 16h4M6 24h4M14 8h12M14 16h12M14 24h12" {...stroke} />
+      </svg>
+    ),
+  },
+  set: {
+    label: 'Set',
+    description: 'Put a value in a memory slot',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <rect x="5" y="8" width="22" height="16" rx="4" {...stroke} strokeWidth={2.6} />
+        <path d="M11 16h10M17 12l4 4-4 4" {...stroke} strokeWidth={2.6} />
+      </svg>
+    ),
+  },
+  change: {
+    label: 'Add',
+    description: 'Add to a number slot',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <path d="M16 7v18M7 16h18" {...stroke} />
+      </svg>
+    ),
+  },
+  face: {
+    label: 'Face',
+    description: 'Turn to face the direction in a slot',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <circle cx="16" cy="16" r="11" {...stroke} strokeWidth={2.6} />
+        <path d="M16 8l5 11h-10z" fill="currentColor" />
+      </svg>
+    ),
+  },
+  unlock: {
+    label: 'Unlock',
+    description: 'Try a number lock with the number in a slot',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <rect x="7" y="14" width="18" height="13" rx="3" {...stroke} strokeWidth={2.6} />
+        <path d="M11 14v-3a5 5 0 0 1 9.6-2" {...stroke} strokeWidth={2.6} />
+      </svg>
+    ),
+  },
   call: {
     label: 'Function',
     description: 'Run the cards of a function',
@@ -134,7 +182,7 @@ export function cardLabel(kind: CardId, name?: string): string {
 
 export const nodeLabel = (node: IRNode): string => cardLabel(node.kind, node.kind === 'call' ? node.name : undefined);
 
-export const CONDITIONS: Record<ConditionId, { label: string; description: string }> = {
+export const CONDITIONS: Record<SenseId, { label: string; description: string }> = {
   pathAhead: { label: 'path ahead', description: 'the tile ahead is free' },
   blockedAhead: { label: 'blocked ahead', description: 'the tile ahead is blocked' },
   acornAhead: { label: 'acorn ahead', description: 'an acorn is on the tile ahead' },
@@ -143,17 +191,56 @@ export const CONDITIONS: Record<ConditionId, { label: string; description: strin
   onSwitch: { label: 'on a switch', description: 'the robot is standing on a switch' },
 };
 
+const DIRECTION_WORDS: Record<string, string> = { N: 'up', E: 'right', S: 'down', W: 'left' };
+
+/** A value in words: 3, yes, right, column 2 row 1, a list of them. */
+export function valueWords(v: Value): string {
+  if (Array.isArray(v)) return v.length === 0 ? 'nothing yet' : v.map(valueWords).join(', ');
+  if (typeof v === 'boolean') return v ? 'yes' : 'no';
+  if (typeof v === 'object') return `column ${v.x + 1}, row ${v.y + 1}`;
+  if (typeof v === 'string') return DIRECTION_WORDS[v] ?? v;
+  return String(v);
+}
+
+/** What a Set card reads, in words: "3", "yes", "the way it faces", "where it is", "acorns held", "acorn ahead?". */
+export function sourceWords(source: Source): string {
+  if (typeof source !== 'string') return valueWords(source);
+  if (source === 'facing') return 'the way it faces';
+  if (source === 'here') return 'where it is';
+  if (source === 'acorns') return 'acorns held';
+  if (isSenseId(source)) return `${CONDITIONS[source].label}?`;
+  return valueWords(source);
+}
+
+/** A check in words: "blocked ahead", "count is 3", "found is yes", "way is right", "spot is here". */
+export function conditionLabel(c: ConditionId): string {
+  if (isSenseId(c)) return CONDITIONS[c].label;
+  const t = parseSlotTest(c);
+  if (!t) return c;
+  return `${t.slot} is ${t.value === 'here' ? 'here' : (DIRECTION_WORDS[t.value] ?? t.value)}`;
+}
+
 /** A block's own words, with its count or condition filled in. */
 export function describeNode(node: IRNode): string {
   switch (node.kind) {
     case 'repeat':
       return `Repeat ${node.count} times`;
     case 'if':
-      return `If ${CONDITIONS[node.condition].label}`;
+      return `If ${conditionLabel(node.condition)}`;
     case 'ifElse':
-      return `If ${CONDITIONS[node.condition].label}, else`;
+      return `If ${conditionLabel(node.condition)}, else`;
     case 'until':
-      return `Repeat until ${CONDITIONS[node.condition].label}`;
+      return `Repeat until ${conditionLabel(node.condition)}`;
+    case 'forEach':
+      return `For each ${node.item} in ${node.list}`;
+    case 'set':
+      return `Set ${node.slot} to ${sourceWords(node.to)}`;
+    case 'change':
+      return node.by < 0 ? `Take ${-node.by} from ${node.slot}` : `Add ${node.by} to ${node.slot}`;
+    case 'face':
+      return `Face the way ${node.slot} holds`;
+    case 'unlock':
+      return `Unlock gate ${node.gate.toUpperCase()} with ${node.slot}`;
     case 'call':
       return `Run the cards of ${functionLabel(node.name)}`;
     case 'openGate':

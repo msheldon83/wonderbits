@@ -115,7 +115,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   const asksTile = asking?.askTile ?? false;
   const askedFields = asking?.askMemory ?? [];
   /** The memory card shows from the switch pack on: wherever there are gates, or the level asks about memory. */
-  const showMemory = gatesOf(level.world).length > 0 || moversOf(level.world).length > 0 || askedFields.length > 0;
+  const showMemory = gatesOf(level.world).length > 0 || moversOf(level.world).length > 0 || askedFields.length > 0 || (program.memory?.length ?? 0) > 0 || level.programming.memoryOptions !== undefined;
 
   // The log: opened on mount, abandoned on unmount unless completed.
   useEffect(() => {
@@ -270,7 +270,11 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
       change((h) => push(h, applyOp(h.present, op)));
       if (op.op === 'insert') store.record({ levelId: level.id, kind: 'card-placed', command: op.node.kind, at: op.at });
       else if (op.op === 'move') store.record({ levelId: level.id, kind: 'card-moved', nodeId: op.id, to: op.to });
-      else if (op.op === 'set') store.record({ levelId: level.id, kind: 'card-changed', nodeId: op.id, ...(op.count !== undefined && { count: op.count }), ...(op.condition !== undefined && { condition: op.condition }) });
+      else if (op.op === 'set') {
+        const { op: _op, id, ...change } = op;
+        store.record({ levelId: level.id, kind: 'card-changed', nodeId: id, ...change });
+      } else if (op.op === 'addSlot') store.record({ levelId: level.id, kind: 'slot-added', slot: op.slot.name });
+      else if (op.op === 'removeSlot') store.record({ levelId: level.id, kind: 'slot-removed', slot: op.name });
       else store.record({ levelId: level.id, kind: 'card-removed', nodeId: op.id });
     },
     [change, store, level.id],
@@ -437,7 +441,8 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
         {showMemory && (
           <MemoryCard
             world={level.world}
-            state={shownState ?? initialState(level.world)}
+            state={shownState ?? initialState(level.world, program.memory)}
+            slots={program.memory}
             asking={predicting ? askedFields : []}
             answers={prediction?.memory}
             wrong={wrongFields}

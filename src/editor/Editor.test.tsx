@@ -506,3 +506,33 @@ describe('Editor: When cards and gate cards', () => {
   });
 });
 
+describe('Editor: memory', () => {
+  it('lists the robot\'s slots, remembers one from the options, and forgets one no card uses', () => {
+    let last: ProgramIR | null = null;
+    render(
+      <Harness
+        start={[{ remember: 'steps', kind: 'number' }, { change: 'steps', by: 1 }]}
+        allowed={['forward', 'change', 'set']}
+        programming={{ memoryOptions: [{ name: 'steps', kind: 'number', start: 0 }, { name: 'way', kind: 'direction', start: 'N' }, { name: 'seen', kind: 'yesNo', start: false }], maxMemory: 2 }}
+        onChange={(p) => (last = p)}
+      />,
+    );
+    expect(screen.getByText('steps: number')).toBeTruthy();
+    expect((screen.getByRole('button', { name: /steps is used by a card/ }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Choose a slot to remember' }), { target: { value: 'way' } });
+    expect(last!.memory?.map((m) => m.name)).toEqual(['steps', 'way']);
+    expect((screen.getByRole('combobox', { name: /Memory is full/ }) as HTMLSelectElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Forget way' }));
+    expect(last!.memory?.map((m) => m.name)).toEqual(['steps']);
+  });
+
+  it('lets a Set card choose a slot and a value that fits it', () => {
+    let last: ProgramIR | null = null;
+    render(<Harness start={[{ remember: 'way', kind: 'direction' }, { set: 'way', to: 'N' }]} allowed={['set']} onChange={(p) => (last = p)} />);
+    const to = screen.getByRole('combobox', { name: 'Set it to what, step 1' }) as HTMLSelectElement;
+    expect([...to.options].map((o) => o.textContent)).toEqual(['up', 'right', 'down', 'left', 'the way it faces']);
+    fireEvent.change(to, { target: { value: JSON.stringify('facing') } });
+    expect(specOf(mainBody(last!))).toEqual([{ set: 'way', to: 'facing' }]);
+  });
+});
+

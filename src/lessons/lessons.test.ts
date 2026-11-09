@@ -225,7 +225,7 @@ describe('validate: blocks', () => {
 
   it('parses block specs and reports bad ones by path', () => {
     expect(() => parsed((j) => (j.referenceSolution = [{ repeat: 1, do: [] }]))).toThrow(/referenceSolution\[0\]\.repeat/);
-    expect(() => parsed((j) => (j.referenceSolution = [{ loop: 3, do: [] }]))).toThrow(/needs "repeat", "if", "until", "call", "open", "close", "define" or "on"/);
+    expect(() => parsed((j) => (j.referenceSolution = [{ loop: 3, do: [] }]))).toThrow(/a block needs "repeat"/);
     expect(() => parsed((j) => (j.referenceSolution = [{ if: 'sunny', do: [] }]))).toThrow(/referenceSolution\[0\]\.if: unknown condition/);
     expect(() => parsed((j) => (j.hints[2] = { kind: 'fill', path: ['else'], slot: 0, command: 'forward', text: 't' }))).toThrow(/"else" must follow a card index/);
   });
@@ -403,6 +403,70 @@ describe('validate: When cards, keys and movers', () => {
     expect(errs([{ id: 'l', kind: 'log', path: [{ x: 2, y: 0 }] }])).toMatch(/must float on water/);
     expect(errs([{ id: 'b', kind: 'beetle', path: [{ x: 2, y: 0 }, { x: 4, y: 0 }] }])).toMatch(/jumps from 2,0 to 4,0/);
     expect(errs([{ id: 'b', kind: 'beetle', path: [{ x: 0, y: 0 }] }])).toMatch(/starts on the robot/);
+  });
+});
+
+describe('validate: memory', () => {
+  /** Count two steps in steps, then unlock gate a (code 2) with it: . . . G . */
+  const mem = (over: (j: Json) => void = () => {}) =>
+    parsed((j) => {
+      j.curriculum.concept = 'representation';
+      j.world.rows = ['.....'];
+      j.world.goal = { x: 4, y: 0 };
+      j.world.gates = [{ id: 'a', x: 3, y: 0, code: 2 }];
+      j.programming.allowedCommands = ['forward', 'change', 'unlock'];
+      j.programming.maxInstructions = 7;
+      j.programming.starterProgram = [{ remember: 'steps', kind: 'number' }];
+      j.referenceSolution = [{ remember: 'steps', kind: 'number' }, 'forward', { change: 'steps', by: 1 }, 'forward', { change: 'steps', by: 1 }, { unlock: 'a', with: 'steps' }, 'forward', 'forward'];
+      j.hints[1] = { kind: 'card', command: 'unlock', text: 'Unlock with steps.' };
+      j.hints[2] = { kind: 'fill', path: [], slot: 1, command: 'change', text: 'Count the step.' };
+      j.stars.budget = 7;
+      over(j);
+    });
+  const errs = (over: (j: Json) => void) => validatePuzzle(mem(over)).errors.join('\n');
+
+  it('accepts a level whose numbered gate needs no switch', () => {
+    expect(validatePuzzle(mem()).errors).toEqual([]);
+  });
+
+  it('checks that cards name slots the robot has, of the right kind', () => {
+    expect(errs((j) => (j.referenceSolution[5].with = 'count'))).toMatch(/Unlock uses count, which the robot does not remember/);
+    expect(errs((j) => (j.referenceSolution[0].kind = 'yesNo') && (j.programming.starterProgram[0].kind = 'yesNo'))).toMatch(/Add needs steps to hold a number, but it holds a yesNo/);
+    expect(errs((j) => j.referenceSolution.push({ set: 'steps', to: true }))).toMatch(/Set needs steps to hold a yesNo/);
+    expect(errs((j) => (j.world.gates[0].code = undefined))).toMatch(/gate a, which has no number lock/);
+  });
+
+  it('keeps the starter\'s slots unless the level offers a choice under a budget', () => {
+    expect(errs((j) => (j.programming.starterProgram = []))).toMatch(/must remember the same slots/);
+    const choose = (over: (j: Json) => void) =>
+      errs((j) => {
+        j.programming.starterProgram = [];
+        j.programming.memoryOptions = [{ remember: 'steps', kind: 'number' }, { remember: 'way', kind: 'direction' }];
+        j.programming.maxMemory = 1;
+        over(j);
+      });
+    expect(choose(() => {})).toBe('');
+    expect(choose((j) => j.referenceSolution.unshift({ remember: 'way', kind: 'direction' }))).toMatch(/keeps 2 slots, over the memory budget of 1/);
+    expect(choose((j) => (j.referenceSolution[0] = { remember: 'count', kind: 'number' }))).toMatch(/count, which is not one of the memoryOptions/);
+  });
+
+  it('parses slots and memory cards, and reports bad ones by path', () => {
+    expect(() => mem((j) => (j.referenceSolution[0] = { remember: 'steps', kind: 'colour' }))).toThrow(/referenceSolution\[0\]\.kind/);
+    expect(() => mem((j) => (j.referenceSolution[0] = { remember: 'steps', kind: 'number', start: 'lots' }))).toThrow(/\.start: expected a number value/);
+    expect(() => mem((j) => (j.referenceSolution[2] = { change: 'steps', by: 0 }))).toThrow(/\.by: expected a whole number/);
+    expect(() => mem((j) => (j.referenceSolution[2] = { set: 'steps', to: 'lots' }))).toThrow(/\.to: expected a value to set/);
+    expect(() => mem((j) => (j.referenceSolution = [{ if: 'slot:steps=many', do: [] }]))).toThrow(/unknown condition/);
+  });
+
+  it('asks a model level only for slots it can answer', () => {
+    const model = (ask: string[]) =>
+      mem((j) => {
+        j.curriculum.activity = 'model';
+        j.programming.starterProgram = j.referenceSolution;
+        j.prediction = { askTile: false, askMemory: ask };
+      });
+    expect(validatePuzzle(model(['slot:steps'])).errors).toEqual([]);
+    expect(validatePuzzle(model(['slot:count'])).errors.join('\n')).toMatch(/asks for slot:count/);
   });
 });
 

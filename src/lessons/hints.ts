@@ -4,7 +4,7 @@
  * only has to show it.
  */
 import type { EditOp } from '../ir/ops';
-import { functionNames } from '../ir/program';
+import { functionNames, memoryOf } from '../ir/program';
 import { buildNodes, type NodeSpec } from '../ir/spec';
 import type { CardId, CommandId, IRNode, NodeId, ProgramIR } from '../ir/types';
 import type { Cell } from '../sim/types';
@@ -21,30 +21,28 @@ export interface HintEffect {
 }
 
 /**
- * The card the fill rung places: a block comes with its count or condition
- * from the solution, but empty; a call names the function the solution
- * calls there.
+ * The card the fill rung places: the solution's card there, with its count,
+ * condition, gate, slot or value, but a block comes empty.
  */
 function scaffoldNode(level: PuzzleDefinition, program: ProgramIR, path: HintPath, slot: number, command: CardId, newId: () => NodeId): IRNode {
   const cards = resolveSpecPath(level.referenceSolution, path);
   const there = cards?.[slot];
   let spec: NodeSpec;
   if (there !== undefined && typeof there !== 'string' && cardOfSpec(there) === command) {
-    if ('call' in there) spec = { call: there.call };
-    else if ('open' in there) spec = { open: there.open };
-    else if ('close' in there) spec = { close: there.close };
-    else if ('repeat' in there) spec = { repeat: there.repeat, do: [] };
-    else if ('until' in there) spec = { until: there.until, do: [] };
-    else if ('if' in there) spec = there.else ? { if: there.if, do: [], else: [] } : { if: there.if, do: [] };
-    else spec = command as CommandId;
-  } else if (command === 'openGate') spec = { open: 'a' };
+    // The same card as the solution's, with its settings, but any block empty.
+    spec = { ...there, ...('do' in there && { do: [] }), ...('if' in there && there.else && { else: [] }) } as NodeSpec;
+  } else if (there !== undefined && typeof there === 'string' && there === command) spec = there;
+  else if (command === 'openGate') spec = { open: 'a' };
   else if (command === 'closeGate') spec = { close: 'a' };
   else if (command === 'call') spec = { call: functionNames(program)[0] ?? 'main' };
   else if (command === 'repeat') spec = { repeat: 3, do: [] };
   else if (command === 'until') spec = { until: 'atFlag', do: [] };
   else if (command === 'if') spec = { if: 'blockedAhead', do: [] };
   else if (command === 'ifElse') spec = { if: 'pathAhead', do: [], else: [] };
-  else spec = command as CommandId;
+  else if (command === 'set' || command === 'change' || command === 'face' || command === 'unlock' || command === 'forEach') {
+    const slot = memoryOf(program)[0]?.name ?? 'count';
+    spec = command === 'set' ? { set: slot, to: 0 } : command === 'change' ? { change: slot, by: 1 } : command === 'face' ? { face: slot } : command === 'unlock' ? { unlock: 'a', with: slot } : { forEach: slot, as: slot, do: [] };
+  } else spec = command as CommandId;
   return buildNodes([spec], newId)[0]!;
 }
 

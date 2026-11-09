@@ -2,10 +2,26 @@
  * Parse untrusted content JSON into typed definitions. Content is data that
  * contributors may write by hand, so errors name the exact path at fault.
  */
-import type { NodeSpec } from '../ir/spec';
-import { FUNCTION_NAME, isCardId, isCommandId, isConditionId, isEventId, KEYS, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, type CardId, type ConditionId, type Key } from '../ir/types';
+import { slotOfSpec, type NodeSpec } from '../ir/spec';
+import { FUNCTION_NAME, isCardId, isCommandId, isConditionId, isEventId, isSenseId, KEYS, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, VALUE_KINDS, type CardId, type ConditionId, type ItemKind, type Key, type Source, type Value, type ValueKind } from '../ir/types';
 import { FACINGS, type Cell, type Facing, type Gate, type Mover, type Plate, type Switch, type TileKind, type WorldDefinition } from '../sim/types';
 import { CONTENT_SCHEMA_VERSION, type MemoryField, type Activity, type ConceptIntroduction, type HintPath, type HintStep, type PackManifest, type PuzzleDefinition } from './types';
+
+/** True when a value is of a slot's kind: a list's items of its item kind. */
+export function valueFits(v: unknown, kind: ValueKind, of?: ItemKind): boolean {
+  switch (kind) {
+    case 'number':
+      return typeof v === 'number' && Number.isInteger(v) && v >= 0;
+    case 'yesNo':
+      return typeof v === 'boolean';
+    case 'direction':
+      return v === 'N' || v === 'E' || v === 'S' || v === 'W';
+    case 'position':
+      return typeof v === 'object' && v !== null && Number.isInteger((v as Cell).x) && Number.isInteger((v as Cell).y);
+    case 'list':
+      return Array.isArray(v) && v.every((x) => valueFits(x, of ?? 'number'));
+  }
+}
 
 export class ContentError extends Error {
   constructor(
@@ -108,6 +124,18 @@ class Reader {
         return [];
       }
       if ('call' in s) return [{ call: this.functionName(s.call, `${at}.call`) }];
+      if ('remember' in s) {
+        if (!top) this.fail(at, 'a memory slot can only sit at the top of a program');
+        return [this.remember(s, at)];
+      }
+      if ('set' in s) return [{ set: this.functionName(s.set, `${at}.set`), to: this.source(s.to, `${at}.to`) }];
+      if ('change' in s) {
+        const by = Number.isInteger(s.by) && s.by !== 0 && Math.abs(s.by as number) <= 9 ? (s.by as number) : (this.fail(`${at}.by`, 'expected a whole number from -9 to 9, not 0'), 1);
+        return [{ change: this.functionName(s.change, `${at}.change`), by }];
+      }
+      if ('face' in s) return [{ face: this.functionName(s.face, `${at}.face`) }];
+      if ('unlock' in s) return [{ unlock: this.gateId(s.unlock, `${at}.unlock`), with: this.functionName(s.with, `${at}.with`) }];
+      if ('forEach' in s) return [{ forEach: this.functionName(s.forEach, `${at}.forEach`), as: this.functionName(s.as, `${at}.as`), do: this.spec(s.do, `${at}.do`, false) }];
       if ('open' in s) return [{ open: this.gateId(s.open, `${at}.open`) }];
       if ('close' in s) return [{ close: this.gateId(s.close, `${at}.close`) }];
       if ('on' in s) {
@@ -136,7 +164,7 @@ class Reader {
         if (s.else !== undefined) node.else = this.spec(s.else, `${at}.else`, false);
         return [node];
       }
-      this.fail(at, 'a block needs "repeat", "if", "until", "call", "open", "close", "define" or "on"');
+      this.fail(at, 'a block needs "repeat", "if", "until", "forEach", "call", "open", "close", "set", "change", "face", "unlock", "define", "on" or "remember"');
       return [];
     });
   }
@@ -193,7 +221,32 @@ class Reader {
   gate(v: unknown, path: string): Gate {
     const o = this.obj(v, path);
     const id = typeof o.id === 'string' && GATE_ID.test(o.id) ? o.id : (this.fail(`${path}.id`, 'expected one lower case letter'), 'a');
-    return { id, ...this.cell(o, path), open: o.open === undefined ? false : this.bool(o.open, `${path}.open`) };
+    return {
+      id,
+      ...this.cell(o, path),
+      open: o.open === undefined ? false : this.bool(o.open, `${path}.open`),
+      ...(o.code !== undefined && { code: this.int(o.code, `${path}.code`) }),
+    };
+  }
+  /** A memory slot: { "remember": "count", "kind": "number", "start": 0 }; a list also says what "of". */
+  remember(o: Obj, path: string): Extract<NodeSpec, { remember: string }> {
+    const name = this.functionName(o.remember, `${path}.remember`);
+    const kind = (VALUE_KINDS as readonly unknown[]).includes(o.kind) ? (o.kind as ValueKind) : (this.fail(`${path}.kind`, `expected one of ${VALUE_KINDS.join(', ')}`), 'number');
+    const of = kind === 'list' ? (['number', 'yesNo', 'direction'].includes(o.of as string) ? (o.of as ItemKind) : (this.fail(`${path}.of`, 'a list needs "of": number, yesNo or direction'), 'number')) : undefined;
+    const spec: Extract<NodeSpec, { remember: string }> = { remember: name, kind, ...(of && { of }) };
+    if (o.start !== undefined) {
+      if (!valueFits(o.start, kind, of)) this.fail(`${path}.start`, `expected a ${kind}${of ? ` of ${of}` : ''} value`);
+      else spec.start = o.start as Value;
+    }
+    return spec;
+  }
+  /** Where a Set card's value comes from: a number, true or false, N E S or W, facing, here, acorns, or a sense. */
+  source(v: unknown, path: string): Source {
+    if (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 999) return v;
+    if (typeof v === 'boolean') return v;
+    if (typeof v === 'string' && (['N', 'E', 'S', 'W', 'facing', 'here', 'acorns'].includes(v) || isSenseId(v))) return v;
+    this.fail(path, `expected a value to set: a number, true or false, N, E, S or W, "facing", "here", "acorns" or a sense, got ${JSON.stringify(v)}`);
+    return 0;
   }
   /** A switch: { "x": 1, "y": 0, "toggles": ["a"] }. */
   switch(v: unknown, path: string): Switch {
@@ -225,8 +278,8 @@ class Reader {
   }
   memoryField(v: unknown, path: string): MemoryField {
     if (v === 'facing' || v === 'acorns') return v;
-    if (typeof v === 'string' && /^gate:[a-z]$/.test(v)) return v as MemoryField;
-    this.fail(path, `expected "facing", "acorns" or "gate:<id>", got ${JSON.stringify(v)}`);
+    if (typeof v === 'string' && /^(gate:[a-z]|slot:[a-z][A-Za-z0-9]{0,19})$/.test(v)) return v as MemoryField;
+    this.fail(path, `expected "facing", "acorns", "gate:<id>" or "slot:<name>", got ${JSON.stringify(v)}`);
     return 'facing';
   }
   /** A list of ids: concepts a pack teaches, or packs it needs first. */
@@ -365,6 +418,13 @@ export function parsePuzzle(json: unknown, source: string): PuzzleDefinition {
       ...(maxPerCommand && { maxPerCommand }),
       ...(programming.maxNestingDepth !== undefined && {
         maxNestingDepth: r.int(programming.maxNestingDepth, 'programming.maxNestingDepth', 1),
+      }),
+      ...(programming.allowedSources !== undefined && {
+        allowedSources: r.list(programming.allowedSources, 'programming.allowedSources', (v, at) => r.source(v, at)),
+      }),
+      ...(programming.maxMemory !== undefined && { maxMemory: r.int(programming.maxMemory, 'programming.maxMemory', 1) }),
+      ...(programming.memoryOptions !== undefined && {
+        memoryOptions: r.list(programming.memoryOptions, 'programming.memoryOptions', (o, at) => slotOfSpec(r.remember(r.obj(o, at), at))),
       }),
       starterProgram: programming.starterProgram === undefined ? [] : r.spec(programming.starterProgram, 'programming.starterProgram'),
       ...(programming.suppliedCards !== undefined && {

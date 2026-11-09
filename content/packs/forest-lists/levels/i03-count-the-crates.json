@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "id": "i03-count-the-crates",
+  "title": "Count the crates",
+  "intro": "The list says which crates hold acorns. Count the yeses, and open the lock with the count.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 0
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 1,
+        "y": 0,
+        "open": false,
+        "code": 5
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "lists",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "forEach",
+      "if",
+      "change",
+      "unlock"
+    ],
+    "allowedConditions": [
+      "slot:crate=yes",
+      "slot:crate=no"
+    ],
+    "maxInstructions": 6,
+    "starterProgram": [
+      {
+        "remember": "crates",
+        "kind": "list",
+        "of": "yesNo",
+        "start": [
+          true,
+          false,
+          true,
+          true,
+          false,
+          true,
+          false,
+          true
+        ]
+      },
+      {
+        "remember": "crate",
+        "kind": "yesNo",
+        "start": false
+      },
+      {
+        "remember": "count",
+        "kind": "number",
+        "start": 0
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        }
+      ],
+      "text": "The lock opens for the number of yeses in the list."
+    },
+    {
+      "kind": "card",
+      "command": "forEach",
+      "text": "For each crate: if crate is yes, add one to count."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "forEach",
+      "text": "Go through the list first."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "crates",
+      "kind": "list",
+      "of": "yesNo",
+      "start": [
+        true,
+        false,
+        true,
+        true,
+        false,
+        true,
+        false,
+        true
+      ]
+    },
+    {
+      "remember": "crate",
+      "kind": "yesNo",
+      "start": false
+    },
+    {
+      "remember": "count",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "forEach": "crates",
+      "as": "crate",
+      "do": [
+        {
+          "if": "slot:crate=yes",
+          "do": [
+            {
+              "change": "count",
+              "by": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unlock": "a",
+      "with": "count"
+    },
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

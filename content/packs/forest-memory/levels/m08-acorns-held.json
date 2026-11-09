@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "id": "m08-acorns-held",
+  "title": "Acorns held",
+  "intro": "The robot can read how many acorns it holds. Put that number in got, and unlock the gate with it.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      },
+      {
+        "x": 3,
+        "y": 0
+      }
+    ],
+    "gates": [
+      {
+        "id": "a",
+        "x": 4,
+        "y": 0,
+        "open": false,
+        "code": 3
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "representation",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "set",
+      "unlock"
+    ],
+    "allowedSources": [
+      "acorns"
+    ],
+    "maxInstructions": 7,
+    "starterProgram": [
+      {
+        "remember": "got",
+        "kind": "number",
+        "start": 0
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "text": "The lock opens for 3, and there are three acorns on the way."
+    },
+    {
+      "kind": "card",
+      "command": "set",
+      "text": "Set got to acorns held copies the robot's acorn count into got."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 3,
+      "command": "set",
+      "text": "After the third acorn, set got."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "got",
+      "kind": "number",
+      "start": 0
+    },
+    "forward",
+    "forward",
+    "forward",
+    {
+      "set": "got",
+      "to": "acorns"
+    },
+    {
+      "unlock": "a",
+      "with": "got"
+    },
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

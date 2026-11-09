@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "id": "i09-where-will-it-stop",
+  "title": "Where will it stop?",
+  "intro": "Follow the list on the memory card, one way at a time. Place the flag.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....",
+      "....",
+      "....",
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 3,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 2,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "transfer",
+    "activity": "predict"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "face",
+      "forEach"
+    ],
+    "maxInstructions": 3,
+    "starterProgram": [
+      {
+        "remember": "route",
+        "kind": "list",
+        "of": "direction",
+        "start": [
+          "N",
+          "E",
+          "N",
+          "E",
+          "N",
+          "W",
+          "E"
+        ]
+      },
+      {
+        "remember": "way",
+        "kind": "direction",
+        "start": "N"
+      },
+      {
+        "forEach": "route",
+        "as": "way",
+        "do": [
+          {
+            "face": "way"
+          },
+          "forward"
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 3
+        }
+      ],
+      "text": "Start here."
+    },
+    {
+      "kind": "card",
+      "command": "forEach",
+      "text": "Each way in the list is one step that way."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "forEach",
+      "text": "The loop walks the list."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "route",
+      "kind": "list",
+      "of": "direction",
+      "start": [
+        "N",
+        "E",
+        "N",
+        "E",
+        "N",
+        "W",
+        "E"
+      ]
+    },
+    {
+      "remember": "way",
+      "kind": "direction",
+      "start": "N"
+    },
+    {
+      "forEach": "route",
+      "as": "way",
+      "do": [
+        {
+          "face": "way"
+        },
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "id": "d08-found-it",
+  "title": "Found it",
+  "intro": "Walk until you have found the acorn. A When card can say when.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 5,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "variables",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "set",
+      "until"
+    ],
+    "allowedConditions": [
+      "slot:found=yes"
+    ],
+    "allowedSources": [
+      true
+    ],
+    "maxInstructions": 3,
+    "starterProgram": [
+      {
+        "remember": "found",
+        "kind": "yesNo",
+        "start": false
+      },
+      {
+        "on": "acorn",
+        "do": []
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 5,
+          "y": 0
+        }
+      ],
+      "text": "The acorn is at the far end."
+    },
+    {
+      "kind": "card",
+      "command": "set",
+      "text": "When the acorn is picked up, set found to yes. The loop stops then."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:acorn"
+      ],
+      "slot": 0,
+      "command": "set",
+      "text": "The When card sets found to yes."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "found",
+      "kind": "yesNo",
+      "start": false
+    },
+    {
+      "until": "slot:found=yes",
+      "do": [
+        "forward"
+      ]
+    },
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "set": "found",
+          "to": true
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

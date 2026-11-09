@@ -11,15 +11,18 @@
  * in a When card but never inside a function, which also rules out a
  * function calling itself.
  */
-import { branchBody, containerAt, functionNames, isWithin, locate, procedureOfPlace, samePlaceContainer } from './program';
-import { functionOfContainer, handlerOfContainer, MAIN, REPEAT_MAX, REPEAT_MIN, type Branch, type ConditionId, type IRNode, type NodeId, type Place, type ProgramIR } from './types';
+import { branchBody, containerAt, functionNames, isWithin, locate, memoryOf, procedureOfPlace, samePlaceContainer, slotsInUse } from './program';
+import { functionOfContainer, handlerOfContainer, MAIN, type MemorySlot, type Source, REPEAT_MAX, REPEAT_MIN, type Branch, type ConditionId, type IRNode, type NodeId, type Place, type ProgramIR } from './types';
 
 export type EditOp =
   | { op: 'insert'; at: Place; node: IRNode }
   | { op: 'move'; id: NodeId; to: Place }
   | { op: 'delete'; id: NodeId }
   /** Change a block's parameter: a Repeat's count or an If's or Until's condition. */
-  | { op: 'set'; id: NodeId; count?: number; condition?: ConditionId; gate?: string };
+  | { op: 'set'; id: NodeId; count?: number; condition?: ConditionId; gate?: string; slot?: string; to?: Source; by?: number; list?: string; item?: string }
+  /** Give the robot a memory slot, or forget one no card uses. */
+  | { op: 'addSlot'; slot: MemorySlot }
+  | { op: 'removeSlot'; name: string };
 
 /** Rebuild every procedure's and every When card's body. Handlers are named `on:<event>` here. */
 function mapBodies(program: ProgramIR, update: (body: readonly IRNode[], name: string) => IRNode[]): ProgramIR {
@@ -71,13 +74,14 @@ function updateContainer(nodes: readonly IRNode[], parent: NodeId | null, branch
   return nodes.map((n) => {
     if (n.id === parent) {
       if (branch === 'else' && n.kind === 'ifElse') return { ...n, elseBody: update([...n.elseBody]) };
-      if (branch === 'body' && (n.kind === 'repeat' || n.kind === 'if' || n.kind === 'ifElse' || n.kind === 'until')) return { ...n, body: update([...n.body]) };
+      if (branch === 'body' && (n.kind === 'repeat' || n.kind === 'if' || n.kind === 'ifElse' || n.kind === 'until' || n.kind === 'forEach')) return { ...n, body: update([...n.body]) };
       throw new Error(`Node ${parent} has no ${branch} branch`);
     }
     switch (n.kind) {
       case 'repeat':
       case 'if':
       case 'until':
+      case 'forEach':
         return { ...n, body: updateContainer(n.body, parent, branch, update) };
       case 'ifElse':
         return { ...n, body: updateContainer(n.body, parent, branch, update), elseBody: updateContainer(n.elseBody, parent, branch, update) };
@@ -95,6 +99,7 @@ function removeNode(nodes: readonly IRNode[], id: NodeId): IRNode[] {
         case 'repeat':
         case 'if':
         case 'until':
+        case 'forEach':
           return { ...n, body: removeNode(n.body, id) };
         case 'ifElse':
           return { ...n, body: removeNode(n.body, id), elseBody: removeNode(n.elseBody, id) };
@@ -117,6 +122,16 @@ function idsIn(nodes: readonly IRNode[], out: Set<NodeId> = new Set()): Set<Node
 
 export function applyOp(program: ProgramIR, edit: EditOp): ProgramIR {
   switch (edit.op) {
+    case 'addSlot': {
+      if (memoryOf(program).some((m) => m.name === edit.slot.name)) throw new Error(`The robot already remembers ${edit.slot.name}`);
+      return { ...program, memory: [...memoryOf(program), edit.slot] };
+    }
+    case 'removeSlot': {
+      if (slotsInUse(program).has(edit.name)) throw new Error(`${edit.name} is still used by a card`);
+      const memory = memoryOf(program).filter((m) => m.name !== edit.name);
+      const { memory: _old, ...rest } = program;
+      return memory.length > 0 ? { ...rest, memory } : rest;
+    }
     case 'insert': {
       const container = containerAt(program, edit.at);
       if (!container) throw new Error(`No container at ${edit.at.parent}/${edit.at.branch}`);
@@ -161,9 +176,21 @@ export function applyOp(program: ProgramIR, edit: EditOp): ProgramIR {
       if (edit.condition !== undefined && node.kind !== 'if' && node.kind !== 'ifElse' && node.kind !== 'until') {
         throw new Error(`Node ${edit.id} has no condition`);
       }
-      if (edit.gate !== undefined && node.kind !== 'openGate' && node.kind !== 'closeGate') throw new Error(`Node ${edit.id} has no gate`);
+      if (edit.gate !== undefined && node.kind !== 'openGate' && node.kind !== 'closeGate' && node.kind !== 'unlock') throw new Error(`Node ${edit.id} has no gate`);
+      if (edit.slot !== undefined && !('slot' in node)) throw new Error(`Node ${edit.id} has no slot`);
+      if (edit.to !== undefined && node.kind !== 'set') throw new Error(`Node ${edit.id} has no value`);
+      if (edit.by !== undefined && node.kind !== 'change') throw new Error(`Node ${edit.id} has no amount`);
+      if ((edit.list !== undefined || edit.item !== undefined) && node.kind !== 'forEach') throw new Error(`Node ${edit.id} has no list`);
       const patch = (n: IRNode): IRNode => {
         if (n.id !== edit.id) return n;
+        if (n.kind === 'set' || n.kind === 'change' || n.kind === 'face' || n.kind === 'unlock') {
+          let out: IRNode = { ...n, ...(edit.slot !== undefined && { slot: edit.slot }) };
+          if (out.kind === 'set' && edit.to !== undefined) out = { ...out, to: edit.to };
+          if (out.kind === 'change' && edit.by !== undefined) out = { ...out, by: edit.by };
+          if (out.kind === 'unlock' && edit.gate !== undefined) out = { ...out, gate: edit.gate };
+          return out;
+        }
+        if (n.kind === 'forEach') return { ...n, ...(edit.list !== undefined && { list: edit.list }), ...(edit.item !== undefined && { item: edit.item }) };
         if ((n.kind === 'openGate' || n.kind === 'closeGate') && edit.gate !== undefined) return { ...n, gate: edit.gate };
         if (n.kind === 'repeat' && edit.count !== undefined) return { ...n, count: edit.count };
         if ((n.kind === 'if' || n.kind === 'ifElse' || n.kind === 'until') && edit.condition !== undefined) return { ...n, condition: edit.condition };
@@ -176,6 +203,7 @@ export function applyOp(program: ProgramIR, edit: EditOp): ProgramIR {
             case 'repeat':
             case 'if':
             case 'until':
+            case 'forEach':
               return { ...p, body: replaceIn(p.body) };
             case 'ifElse':
               return { ...p, body: replaceIn(p.body), elseBody: replaceIn(p.elseBody) };

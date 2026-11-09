@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "id": "d04-follow-the-numbers",
+  "title": "Follow the numbers",
+  "intro": "Set, Add, Add, Add. What does count hold at the end?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 3,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "variables",
+    "activity": "model"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "set",
+      "change"
+    ],
+    "maxInstructions": 7,
+    "starterProgram": [
+      {
+        "remember": "count",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "set": "count",
+        "to": 2
+      },
+      "forward",
+      {
+        "change": "count",
+        "by": 1
+      },
+      "forward",
+      {
+        "change": "count",
+        "by": 1
+      },
+      {
+        "change": "count",
+        "by": -1
+      },
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "text": "count starts at 0, but the first card sets it."
+    },
+    {
+      "kind": "card",
+      "command": "set",
+      "text": "Set puts a new value in, whatever was there. Add changes what is there."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "set",
+      "text": "First count becomes 2."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "count",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "set": "count",
+      "to": 2
+    },
+    "forward",
+    {
+      "change": "count",
+      "by": 1
+    },
+    "forward",
+    {
+      "change": "count",
+      "by": 1
+    },
+    {
+      "change": "count",
+      "by": -1
+    },
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": false,
+    "askMemory": [
+      "slot:count"
+    ]
+  }
+}

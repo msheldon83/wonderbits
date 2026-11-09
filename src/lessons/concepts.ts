@@ -3,7 +3,7 @@
  * the packs that come first, and a show-first introduction. This module reads
  * those declarations; nothing about a concept is hardcoded in the app.
  */
-import { BLOCK_IDS, COMMAND_IDS, type CardId } from '../ir/types';
+import { COMMAND_IDS, type CardId } from '../ir/types';
 import type { LoadedPack } from './content';
 import type { ConceptIntroduction } from './types';
 
@@ -15,9 +15,13 @@ export function cardsTeaching(concept: string): readonly CardId[] | null {
     case 'loops':
       return ['repeat'];
     case 'conditionals':
-      return BLOCK_IDS.filter((b) => b !== 'repeat');
+      return ['if', 'ifElse', 'until'];
     case 'functions':
       return ['call'];
+    case 'variables':
+      return ['set', 'change'];
+    case 'lists':
+      return ['forEach'];
     default:
       return null;
   }

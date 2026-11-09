@@ -123,7 +123,7 @@ export function Collectible({ theme }: { theme: Theme }) {
  * comes from CSS on the wrapper's data-open, so the controller only flips
  * an attribute.
  */
-export function GateArt({ color, letter }: { color: string; letter: string }) {
+export function GateArt({ color, letter, code }: { color: string; letter: string; code?: number }) {
   return (
     <g className="gate-art">
       <g className="gate-bars">
@@ -137,6 +137,15 @@ export function GateArt({ color, letter }: { color: string; letter: string }) {
       <text x={0} y={-29} textAnchor="middle" fontSize={16} fontWeight={800} fill={color} fontFamily="inherit">
         {letter}
       </text>
+      {code !== undefined && (
+        // A number lock hangs on the bars: the code that opens it.
+        <g className="gate-lock">
+          <rect x={-14} y={-10} width={28} height={22} rx={5} fill="#3b3f4a" />
+          <text x={0} y={7} textAnchor="middle" fontSize={16} fontWeight={800} fill="#fff" fontFamily="inherit">
+            {code}
+          </text>
+        </g>
+      )}
     </g>
   );
 }

@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "id": "m09-where-will-it-stop",
+  "title": "Where will it stop?",
+  "intro": "The robot remembers a way, wanders, then faces that way again. Place the flag.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....",
+      "....",
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 2
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "transfer",
+    "activity": "predict"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "set",
+      "face"
+    ],
+    "maxInstructions": 8,
+    "starterProgram": [
+      {
+        "remember": "way",
+        "kind": "direction",
+        "start": "N"
+      },
+      {
+        "set": "way",
+        "to": "facing"
+      },
+      "rotateCW",
+      "forward",
+      "forward",
+      {
+        "face": "way"
+      },
+      "forward",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "text": "The robot starts here, facing right."
+    },
+    {
+      "kind": "card",
+      "command": "face",
+      "text": "Face way turns the robot to whatever way it remembered, all at once."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "set",
+      "text": "First the robot remembers the way it faces."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "way",
+      "kind": "direction",
+      "start": "N"
+    },
+    {
+      "set": "way",
+      "to": "facing"
+    },
+    "rotateCW",
+    "forward",
+    "forward",
+    {
+      "face": "way"
+    },
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true
+  }
+}

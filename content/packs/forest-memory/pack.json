@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "id": "forest-memory",
+  "title": "Two things to remember",
+  "themeId": "forest",
+  "order": 9,
+  "concepts": [
+    "representation"
+  ],
+  "prerequisites": [
+    "forest-time"
+  ],
+  "introduction": {
+    "concept": "representation",
+    "title": "Memory",
+    "explanation": "The robot can only remember a few things, and each slot holds one kind: a number, a yes or no, a direction or a place.",
+    "demo": {
+      "world": {
+        "rows": [
+          "..."
+        ],
+        "robot": {
+          "x": 0,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 2,
+          "y": 0
+        },
+        "collectibles": [
+          {
+            "x": 1,
+            "y": 0
+          }
+        ]
+      },
+      "program": [
+        {
+          "remember": "seen",
+          "kind": "yesNo",
+          "start": false
+        },
+        {
+          "remember": "steps",
+          "kind": "number",
+          "start": 0
+        },
+        {
+          "set": "seen",
+          "to": "acornAhead"
+        },
+        "forward",
+        {
+          "change": "steps",
+          "by": 1
+        },
+        "forward",
+        {
+          "change": "steps",
+          "by": 1
+        }
+      ]
+    }
+  },
+  "levels": [
+    "m01-read-the-card",
+    "m02-count-the-steps",
+    "m03-what-kind",
+    "m04-face-the-way-back",
+    "m05-fix-the-count",
+    "m06-cards-in-order",
+    "m07-the-whole-card",
+    "m08-acorns-held",
+    "m09-where-will-it-stop",
+    "m10-only-two"
+  ]
+}
