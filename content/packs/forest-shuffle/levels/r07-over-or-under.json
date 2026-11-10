@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "id": "r07-over-or-under",
+  "title": "Over or under",
+  "intro": "Flip a coin to choose the way round the rock: heads goes along the top, tails goes down the side. Either way must reach the flag.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...",
+      ".#.",
+      "..."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 2
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false,
+    "covers": {
+      "of": "heads",
+      "values": [
+        true,
+        false
+      ]
+    }
+  },
+  "curriculum": {
+    "concept": "randomness",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "set",
+      "ifElse"
+    ],
+    "allowedConditions": [
+      "slot:heads=yes"
+    ],
+    "allowedSources": [
+      "coin"
+    ],
+    "maxInstructions": 13,
+    "starterProgram": [
+      {
+        "remember": "heads",
+        "kind": "yesNo",
+        "start": false
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 1
+        }
+      ],
+      "text": "Two ways round the rock, and the coin picks one."
+    },
+    {
+      "kind": "card",
+      "command": "ifElse",
+      "text": "If heads is yes, go along the top; else go down the side."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 1,
+      "command": "ifElse",
+      "text": "After the flip, an If / else on heads."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "heads",
+      "kind": "yesNo",
+      "start": false
+    },
+    {
+      "set": "heads",
+      "to": "coin"
+    },
+    {
+      "if": "slot:heads=yes",
+      "do": [
+        "forward",
+        "forward",
+        "rotateCW",
+        "forward",
+        "forward"
+      ],
+      "else": [
+        "rotateCW",
+        "forward",
+        "forward",
+        "rotateCCW",
+        "forward",
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

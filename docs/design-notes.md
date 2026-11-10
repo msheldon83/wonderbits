@@ -168,14 +168,18 @@ Randomness now comes first (order 12), then Reading the map (order 13).
 - **Packs.** Never the same twice: Roll the die, Flip a coin, The spinner
   (pick the right range), Random steps (roll, then count down), Heads or
   tails (a coin decides the way), Pick a way (build a list, pick from it),
-  Guess the code (random guesses until the lock opens, on shuffled codes),
-  Lost in the woods (a random walk) and Dice race. Reading the map: Go to
+  Over or under (a coin picks one of two routes, both reach the flag), Try
+  every code (counting up beats guessing: at most four tries, on shuffled
+  codes) and Dice race. Every random choice is made once and every outcome
+  ends in a few steps: no level waits on a lucky streak, since a child
+  cannot tell whether a long random run will ever finish. Reading the map: Go to
   column, Row and column, Which way first, Stepping stones, Every other
   column (a slot as the column), Mow the field (a slot as the row, on
   shuffled acorns), Point and look (model: the finger), Gap in the wall
   (scan the map down a column for the gap), Count the acorns (nested loops
   scanning a shuffled map) and Minesweeper.
-- Levels that do not ask for the flag hide it.
+- Levels that do not ask for the flag hide it. The introduction plays Over
+  or under, taking a different route on different loops.
 
 ### Deviations and choices
 
