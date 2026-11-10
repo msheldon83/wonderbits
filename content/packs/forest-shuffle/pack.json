@@ -33,26 +33,30 @@
       },
       "program": [
         {
-          "remember": "way",
-          "kind": "direction",
-          "start": "E"
+          "remember": "heads",
+          "kind": "yesNo",
+          "start": false
         },
         {
-          "until": "atFlag",
+          "set": "heads",
+          "to": "coin"
+        },
+        {
+          "if": "slot:heads=yes",
           "do": [
-            {
-              "set": "way",
-              "to": "randomWay"
-            },
-            {
-              "face": "way"
-            },
-            {
-              "if": "pathAhead",
-              "do": [
-                "forward"
-              ]
-            }
+            "forward",
+            "forward",
+            "rotateCW",
+            "forward",
+            "forward"
+          ],
+          "else": [
+            "rotateCW",
+            "forward",
+            "forward",
+            "rotateCCW",
+            "forward",
+            "forward"
           ]
         }
       ]
@@ -65,8 +69,8 @@
     "r04-random-steps",
     "r05-heads-or-tails",
     "r06-pick-a-way",
-    "r07-guess-the-code",
-    "r08-lost-in-the-woods",
+    "r07-over-or-under",
+    "r08-try-every-code",
     "r09-dice-race"
   ]
 }

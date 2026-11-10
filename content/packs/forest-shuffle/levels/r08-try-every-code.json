@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "id": "r07-guess-the-code",
-  "title": "Guess the code",
-  "intro": "The lock wants a number from 1 to 4, and it changes each shuffle. Keep guessing at random until the gate opens.",
+  "id": "r08-try-every-code",
+  "title": "Try every code",
+  "intro": "The lock wants 1, 2, 3 or 4, and it changes each shuffle. Guessing at random could take ages. Try 1, then 2, then 3: you are sure to get it in four tries.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -39,23 +39,19 @@
   "programming": {
     "allowedCommands": [
       "forward",
-      "set",
       "until",
-      "unlock"
+      "unlock",
+      "change"
     ],
     "allowedConditions": [
       "pathAhead"
-    ],
-    "allowedSources": [
-      "random:1-4",
-      1
     ],
     "maxInstructions": 6,
     "starterProgram": [
       {
         "remember": "guess",
         "kind": "number",
-        "start": 0
+        "start": 1
       }
     ]
   },
@@ -92,37 +88,37 @@
           "y": 0
         }
       ],
-      "text": "The code is 1, 2, 3 or 4, but which one changes."
+      "text": "At most four codes to try."
     },
     {
       "kind": "card",
       "command": "until",
-      "text": "Repeat until path ahead: guess at random, then try the lock."
+      "text": "Repeat until path ahead: try the lock with guess, then add 1 to guess."
     },
     {
       "kind": "fill",
       "path": [],
       "slot": 0,
       "command": "until",
-      "text": "A loop of guesses first."
+      "text": "A loop of tries first."
     }
   ],
   "referenceSolution": [
     {
       "remember": "guess",
       "kind": "number",
-      "start": 0
+      "start": 1
     },
     {
       "until": "pathAhead",
       "do": [
         {
-          "set": "guess",
-          "to": "random:1-4"
-        },
-        {
           "unlock": "a",
           "with": "guess"
+        },
+        {
+          "change": "guess",
+          "by": 1
         }
       ]
     },
