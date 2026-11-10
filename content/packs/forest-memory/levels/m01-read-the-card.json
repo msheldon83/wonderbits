@@ -2,11 +2,12 @@
   "schemaVersion": 1,
   "id": "m01-read-the-card",
   "title": "Read the card",
-  "intro": "The robot takes three steps, but only one card changes steps. Nothing in memory changes unless a card changes it.",
+  "intro": "A slot keeps what it was given until a card changes it. The robot turns after filling in way: what does way hold at the end?",
   "themeId": "forest",
   "world": {
     "rows": [
-      "...."
+      "...",
+      "..."
     ],
     "robot": {
       "x": 0,
@@ -14,8 +15,8 @@
       "facing": "E"
     },
     "goal": {
-      "x": 3,
-      "y": 0
+      "x": 2,
+      "y": 1
     },
     "collectibles": []
   },
@@ -30,32 +31,36 @@
   "programming": {
     "allowedCommands": [
       "forward",
-      "change",
+      "rotateCW",
+      "rotateCCW",
       "set"
     ],
-    "maxInstructions": 6,
+    "maxInstructions": 8,
     "starterProgram": [
-      {
-        "remember": "steps",
-        "kind": "number",
-        "start": 0
-      },
       {
         "remember": "way",
         "kind": "direction",
         "start": "N"
       },
-      "forward",
-      "forward",
-      "forward",
       {
-        "change": "steps",
-        "by": 1
+        "remember": "clear",
+        "kind": "yesNo",
+        "start": true
       },
       {
         "set": "way",
         "to": "facing"
-      }
+      },
+      "rotateCW",
+      "forward",
+      {
+        "set": "clear",
+        "to": "pathAhead"
+      },
+      "rotateCCW",
+      "forward",
+      "forward",
+      "rotateCW"
     ]
   },
   "hints": [
@@ -63,55 +68,50 @@
       "kind": "region",
       "cells": [
         {
-          "x": 1,
-          "y": 0
-        },
-        {
-          "x": 2,
-          "y": 0
-        },
-        {
-          "x": 3,
+          "x": 0,
           "y": 0
         }
       ],
-      "text": "Three steps on the board. Walking does not touch the memory card."
+      "text": "way is filled in here, before the robot turns."
     },
     {
       "kind": "card",
-      "command": "change",
-      "text": "Only the Add card changes steps, and there is just one."
+      "command": "set",
+      "text": "Set copies what the robot reads at that moment. Turning later does not change the slot."
     },
     {
       "kind": "fill",
       "path": [],
-      "slot": 3,
-      "command": "change",
-      "text": "steps goes up once, here."
+      "slot": 0,
+      "command": "set",
+      "text": "way is set first, while the robot faces right."
     }
   ],
   "referenceSolution": [
-    {
-      "remember": "steps",
-      "kind": "number",
-      "start": 0
-    },
     {
       "remember": "way",
       "kind": "direction",
       "start": "N"
     },
-    "forward",
-    "forward",
-    "forward",
     {
-      "change": "steps",
-      "by": 1
+      "remember": "clear",
+      "kind": "yesNo",
+      "start": true
     },
     {
       "set": "way",
       "to": "facing"
-    }
+    },
+    "rotateCW",
+    "forward",
+    {
+      "set": "clear",
+      "to": "pathAhead"
+    },
+    "rotateCCW",
+    "forward",
+    "forward",
+    "rotateCW"
   ],
   "stars": {
     "noHints": true
@@ -119,8 +119,8 @@
   "prediction": {
     "askTile": false,
     "askMemory": [
-      "slot:steps",
-      "slot:way"
+      "slot:way",
+      "slot:clear"
     ]
   }
 }

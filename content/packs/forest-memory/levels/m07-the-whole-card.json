@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "m07-the-whole-card",
   "title": "The whole card",
-  "intro": "Three slots and a gate. The Add cards are not next to the steps: follow every card, then fill in the whole memory card.",
+  "intro": "A direction, a number, a yes or no and a place, each filled in at a different moment. Follow every card, then fill in the card.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -17,20 +17,20 @@
       "x": 5,
       "y": 0
     },
-    "collectibles": [],
-    "gates": [
+    "collectibles": [
       {
-        "id": "a",
-        "x": 4,
-        "y": 0,
-        "open": false,
-        "code": 2
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
       }
     ]
   },
   "objective": {
     "reachGoal": true,
-    "collectAll": false
+    "collectAll": true
   },
   "curriculum": {
     "concept": "representation",
@@ -39,50 +39,56 @@
   "programming": {
     "allowedCommands": [
       "forward",
-      "change",
-      "set",
-      "unlock"
+      "rotateCW",
+      "rotateCCW",
+      "set"
     ],
-    "maxInstructions": 10,
+    "maxInstructions": 11,
     "starterProgram": [
-      {
-        "remember": "steps",
-        "kind": "number",
-        "start": 0
-      },
-      {
-        "remember": "clear",
-        "kind": "yesNo",
-        "start": false
-      },
       {
         "remember": "way",
         "kind": "direction",
         "start": "N"
       },
       {
-        "change": "steps",
-        "by": 1
-      },
-      "forward",
-      "forward",
-      "forward",
-      {
-        "change": "steps",
-        "by": 1
+        "remember": "got",
+        "kind": "number",
+        "start": 0
       },
       {
-        "set": "clear",
-        "to": "pathAhead"
+        "remember": "clear",
+        "kind": "yesNo",
+        "start": true
+      },
+      {
+        "remember": "spot",
+        "kind": "position",
+        "start": {
+          "x": 0,
+          "y": 0
+        }
       },
       {
         "set": "way",
         "to": "facing"
       },
       {
-        "unlock": "a",
-        "with": "steps"
+        "set": "spot",
+        "to": "here"
       },
+      "forward",
+      "forward",
+      {
+        "set": "got",
+        "to": "acorns"
+      },
+      "rotateCW",
+      {
+        "set": "clear",
+        "to": "pathAhead"
+      },
+      "rotateCCW",
+      "forward",
       "forward",
       "forward"
     ]
@@ -92,64 +98,74 @@
       "kind": "region",
       "cells": [
         {
-          "x": 4,
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
           "y": 0
         }
       ],
-      "text": "The lock opens for 2: count the Add cards, not the steps."
+      "text": "Two acorns are picked up before got is filled in."
     },
     {
       "kind": "card",
-      "command": "unlock",
-      "text": "If steps holds the code, the gate opens and stays open."
+      "command": "set",
+      "text": "clear is filled in while the robot faces down, off the edge of the island."
     },
     {
       "kind": "fill",
       "path": [],
       "slot": 0,
-      "command": "change",
-      "text": "The first card adds one before the robot moves at all."
+      "command": "set",
+      "text": "way is set before anything else."
     }
   ],
   "referenceSolution": [
-    {
-      "remember": "steps",
-      "kind": "number",
-      "start": 0
-    },
-    {
-      "remember": "clear",
-      "kind": "yesNo",
-      "start": false
-    },
     {
       "remember": "way",
       "kind": "direction",
       "start": "N"
     },
     {
-      "change": "steps",
-      "by": 1
-    },
-    "forward",
-    "forward",
-    "forward",
-    {
-      "change": "steps",
-      "by": 1
+      "remember": "got",
+      "kind": "number",
+      "start": 0
     },
     {
-      "set": "clear",
-      "to": "pathAhead"
+      "remember": "clear",
+      "kind": "yesNo",
+      "start": true
+    },
+    {
+      "remember": "spot",
+      "kind": "position",
+      "start": {
+        "x": 0,
+        "y": 0
+      }
     },
     {
       "set": "way",
       "to": "facing"
     },
     {
-      "unlock": "a",
-      "with": "steps"
+      "set": "spot",
+      "to": "here"
     },
+    "forward",
+    "forward",
+    {
+      "set": "got",
+      "to": "acorns"
+    },
+    "rotateCW",
+    {
+      "set": "clear",
+      "to": "pathAhead"
+    },
+    "rotateCCW",
+    "forward",
     "forward",
     "forward"
   ],
@@ -159,10 +175,9 @@
   "prediction": {
     "askTile": false,
     "askMemory": [
-      "slot:steps",
-      "slot:clear",
       "slot:way",
-      "gate:a"
+      "slot:got",
+      "slot:clear"
     ]
   }
 }

@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "id": "m02-back-to-the-start",
+  "title": "Back to the start",
+  "intro": "Pick up both acorns on the way round the pond, stop where you began, then go up to the flag. Remember the place you start from.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "#.#",
+      "...",
+      ".#.",
+      "..."
+    ],
+    "robot": {
+      "x": 1,
+      "y": 1,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 1,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 2,
+        "y": 3
+      },
+      {
+        "x": 0,
+        "y": 2
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "representation",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "set",
+      "if",
+      "until"
+    ],
+    "allowedConditions": [
+      "blockedAhead",
+      "slot:spot=here"
+    ],
+    "allowedSources": [
+      "here"
+    ],
+    "maxInstructions": 9,
+    "starterProgram": [
+      {
+        "remember": "spot",
+        "kind": "position",
+        "start": {
+          "x": 0,
+          "y": 0
+        }
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 1
+        }
+      ],
+      "text": "The robot starts here, and must come back here."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "Set spot to where it is, step off, then walk round until spot is here again."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "set",
+      "text": "First, remember the place."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "spot",
+      "kind": "position",
+      "start": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "set": "spot",
+      "to": "here"
+    },
+    "forward",
+    {
+      "until": "slot:spot=here",
+      "do": [
+        {
+          "if": "blockedAhead",
+          "do": [
+            "rotateCW"
+          ]
+        },
+        "forward"
+      ]
+    },
+    "rotateCCW",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

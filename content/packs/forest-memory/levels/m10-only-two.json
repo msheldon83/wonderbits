@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "m10-only-two",
   "title": "Only two",
-  "intro": "Four slots on offer, room for two. Fetch the acorn behind you, then count your way to the lock.",
+  "intro": "Four slots on offer, room for two. Fetch the acorn behind you, collect the rest, and open the lock with the acorns you hold.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -20,6 +20,14 @@
     "collectibles": [
       {
         "x": 0,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      },
+      {
+        "x": 3,
         "y": 0
       }
     ],
@@ -47,27 +55,17 @@
       "rotateCW",
       "set",
       "face",
-      "change",
-      "unlock",
-      "until"
-    ],
-    "allowedConditions": [
-      "blockedAhead"
+      "unlock"
     ],
     "allowedSources": [
-      "facing"
+      "facing",
+      "acorns"
     ],
-    "maxInstructions": 12,
+    "maxInstructions": 13,
     "maxPerCommand": {
-      "rotateCW": 2,
-      "change": 1
+      "rotateCW": 2
     },
     "memoryOptions": [
-      {
-        "remember": "steps",
-        "kind": "number",
-        "start": 0
-      },
       {
         "remember": "spot",
         "kind": "position",
@@ -77,7 +75,12 @@
         }
       },
       {
-        "remember": "seen",
+        "remember": "got",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "remember": "clear",
         "kind": "yesNo",
         "start": false
       },
@@ -103,12 +106,12 @@
           "y": 0
         }
       ],
-      "text": "An acorn behind you, a lock for 3 ahead."
+      "text": "An acorn behind you, and a lock that opens for 3."
     },
     {
       "kind": "card",
       "command": "face",
-      "text": "One slot to face the way back, one to count the steps. A place or a yes/no will not help."
+      "text": "A direction to turn back, and a number for the lock. A place or a yes/no will not help."
     },
     {
       "kind": "fill",
@@ -120,14 +123,14 @@
   ],
   "referenceSolution": [
     {
-      "remember": "steps",
-      "kind": "number",
-      "start": 0
-    },
-    {
       "remember": "way",
       "kind": "direction",
       "start": "N"
+    },
+    {
+      "remember": "got",
+      "kind": "number",
+      "start": 0
     },
     {
       "set": "way",
@@ -139,25 +142,22 @@
     {
       "face": "way"
     },
+    "forward",
+    "forward",
+    "forward",
     {
-      "until": "blockedAhead",
-      "do": [
-        "forward",
-        {
-          "change": "steps",
-          "by": 1
-        }
-      ]
+      "set": "got",
+      "to": "acorns"
     },
     {
       "unlock": "a",
-      "with": "steps"
+      "with": "got"
     },
     "forward",
     "forward"
   ],
   "stars": {
     "noHints": true,
-    "budget": 11
+    "budget": 12
   }
 }

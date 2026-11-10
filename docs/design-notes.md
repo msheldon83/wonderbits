@@ -4,6 +4,31 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Change: Two things to remember is about what, Keep count about change (2026-11-10)
+
+The memory pack also counted (a counter for a number lock in four levels),
+so it repeated Keep count and left little room for its own idea. Now the
+two packs split cleanly:
+
+- **Two things to remember** (representation and kinds of values) is about
+  *what* to remember and *what kind* it is: a slot is filled in once, from
+  what the robot reads at that moment, and keeps it while the robot moves
+  on. Read the card asks for a direction remembered before a turn; Back to
+  the start remembers a place and walks round a pond until it is there
+  again; Fix the snapshot has a yes/no filled in from the wrong sense; Cards
+  in order is the face-the-way-back program; The whole card fills in a
+  direction, a number, a yes/no and a place at different moments; Only two
+  pairs a direction with a number read from the acorns held. No Add card
+  appears anywhere in the pack, and the introduction remembers a sense and
+  the acorns held instead of counting.
+- **Keep count** (variables) is the only pack where a slot changes over and
+  over: adding and taking away, counters run by When cards, and loops that
+  stop on a value.
+
+Two level ids were retired with the counting levels: m02-count-the-steps
+and m05-fix-the-count (replaced by m02-back-to-the-start and
+m05-fix-the-snapshot). Saved stars on them are kept but no longer shown.
+
 ## Change: counting is a card, not a side effect of moving (2026-11-10)
 
 Play-testing feedback: Count the steps and its neighbours paired every

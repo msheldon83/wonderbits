@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "id": "m06-cards-in-order",
   "title": "Cards in order",
-  "intro": "Put the cards in order: a loop that walks and counts, then unlock. Inside the loop, try the Add both before and after the Forward.",
+  "intro": "Put the cards in order: remember the way, turn round for the acorn, then face the way again.",
   "themeId": "forest",
   "world": {
     "rows": [
       "....."
     ],
     "robot": {
-      "x": 0,
+      "x": 1,
       "y": 0,
       "facing": "E"
     },
@@ -17,20 +17,16 @@
       "x": 4,
       "y": 0
     },
-    "collectibles": [],
-    "gates": [
+    "collectibles": [
       {
-        "id": "a",
-        "x": 3,
-        "y": 0,
-        "open": false,
-        "code": 2
+        "x": 0,
+        "y": 0
       }
     ]
   },
   "objective": {
     "reachGoal": true,
-    "collectAll": false
+    "collectAll": true
   },
   "curriculum": {
     "concept": "representation",
@@ -39,25 +35,28 @@
   "programming": {
     "allowedCommands": [
       "forward",
-      "change",
-      "unlock",
-      "until"
+      "rotateCW",
+      "set",
+      "face"
     ],
-    "allowedConditions": [
-      "blockedAhead"
+    "allowedSources": [
+      "facing"
     ],
     "starterProgram": [
       {
-        "remember": "steps",
-        "kind": "number",
-        "start": 0
+        "remember": "way",
+        "kind": "direction",
+        "start": "N"
       }
     ],
     "suppliedCards": [
-      "until",
+      "set",
+      "rotateCW",
+      "rotateCW",
       "forward",
-      "change",
-      "unlock",
+      "face",
+      "forward",
+      "forward",
       "forward",
       "forward"
     ]
@@ -67,45 +66,43 @@
       "kind": "region",
       "cells": [
         {
-          "x": 3,
+          "x": 0,
           "y": 0
         }
       ],
-      "text": "The lock opens for 2."
+      "text": "The acorn is behind the robot."
     },
     {
       "kind": "card",
-      "command": "until",
-      "text": "The Forward and the Add both go inside the loop; Unlock comes after it."
+      "command": "set",
+      "text": "Set way comes before the turns, Face way after the acorn."
     },
     {
       "kind": "fill",
       "path": [],
       "slot": 0,
-      "command": "until",
-      "text": "Start with the loop."
+      "command": "set",
+      "text": "Start by remembering the way."
     }
   ],
   "referenceSolution": [
     {
-      "remember": "steps",
-      "kind": "number",
-      "start": 0
+      "remember": "way",
+      "kind": "direction",
+      "start": "N"
     },
     {
-      "until": "blockedAhead",
-      "do": [
-        "forward",
-        {
-          "change": "steps",
-          "by": 1
-        }
-      ]
+      "set": "way",
+      "to": "facing"
     },
+    "rotateCW",
+    "rotateCW",
+    "forward",
     {
-      "unlock": "a",
-      "with": "steps"
+      "face": "way"
     },
+    "forward",
+    "forward",
     "forward",
     "forward"
   ],
