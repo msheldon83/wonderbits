@@ -3,7 +3,7 @@
  * contributors may write by hand, so errors name the exact path at fault.
  */
 import { slotOfSpec, type NodeSpec } from '../ir/spec';
-import { FUNCTION_NAME, isCardId, isCommandId, isConditionId, isEventId, isSenseId, KEYS, parseLength, parseRead, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, VALUE_KINDS, type CardId, type ConditionId, type ItemKind, type Key, type Source, type Value, type ValueKind } from '../ir/types';
+import { FUNCTION_NAME, isCardId, isCommandId, isConditionId, isEventId, isSenseId, KEYS, BOARD_MAPS, parseLength, parseRandom, parseRead, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, VALUE_KINDS, type CardId, type ConditionId, type ItemKind, type Key, type Source, type Value, type ValueKind } from '../ir/types';
 import { FACINGS, type Cell, type Facing, type Gate, type Mover, type Plate, type Switch, type TileKind, type WorldDefinition } from '../sim/types';
 import { CONTENT_SCHEMA_VERSION, type MemoryField, type Activity, type ConceptIntroduction, type HintPath, type HintStep, type PackManifest, type PuzzleDefinition } from './types';
 
@@ -140,6 +140,12 @@ class Reader {
       if ('unlock' in s) return [{ unlock: this.gateId(s.unlock, `${at}.unlock`), with: this.functionName(s.with, `${at}.with`) }];
       if ('push' in s) return [{ push: this.functionName(s.push, `${at}.push`), to: this.source(s.to, `${at}.to`) }];
       if ('mark' in s) return [{ mark: this.functionName(s.mark, `${at}.mark`), at: this.place(s.at, `${at}.at`), with: this.functionName(s.with, `${at}.with`) }];
+      if ('goRow' in s) return [{ goRow: this.target(s.goRow, `${at}.goRow`) }];
+      if ('goColumn' in s) return [{ goColumn: this.target(s.goColumn, `${at}.goColumn`) }];
+      if ('shift' in s) {
+        const dir = FACINGS.includes(s.dir as Facing) ? (s.dir as Facing) : (this.fail(`${at}.dir`, 'expected N, E, S or W'), 'E');
+        return [{ shift: this.functionName(s.shift, `${at}.shift`), dir }];
+      }
       if ('forEach' in s) return [{ forEach: this.functionName(s.forEach, `${at}.forEach`), as: this.functionName(s.as, `${at}.as`), do: this.spec(s.do, `${at}.do`, false) }];
       if ('open' in s) return [{ open: this.gateId(s.open, `${at}.open`) }];
       if ('close' in s) return [{ close: this.gateId(s.close, `${at}.close`) }];
@@ -240,10 +246,18 @@ class Reader {
     const of = kind === 'list' || kind === 'grid' ? (['number', 'yesNo', 'direction'].includes(o.of as string) ? (o.of as ItemKind) : (this.fail(`${path}.of`, `a ${kind} needs "of": number, yesNo or direction`), 'number')) : undefined;
     const spec: Extract<NodeSpec, { remember: string }> = { remember: name, kind, ...(of && { of }) };
     if (o.start !== undefined) {
-      if (!valueFits(o.start, kind, of)) this.fail(`${path}.start`, `expected a ${kind}${of ? ` of ${of}` : ''} value`);
+      const map = kind === 'grid' && of === 'yesNo' && (BOARD_MAPS as readonly unknown[]).includes(o.start);
+      if (!map && !valueFits(o.start, kind, of)) this.fail(`${path}.start`, `expected a ${kind}${of ? ` of ${of}` : ''} value`);
       else spec.start = o.start as Value;
     }
     return spec;
+  }
+  /** Where a Go card walks to: a row or column number from 1, or a number slot's name. */
+  target(v: unknown, path: string): number | string {
+    if (Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 16) return v as number;
+    if (typeof v === 'string' && FUNCTION_NAME.test(v)) return v;
+    this.fail(path, 'expected a row or column number from 1 to 16, or a number slot');
+    return 1;
   }
   /** Where on a grid: "here", "ahead", or a position slot's name. */
   place(v: unknown, path: string): string {
@@ -255,9 +269,16 @@ class Reader {
   source(v: unknown, path: string): Source {
     if (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 999) return v;
     if (typeof v === 'boolean') return v;
-    if (typeof v === 'string' && (['N', 'E', 'S', 'W', 'facing', 'here', 'acorns'].includes(v) || isSenseId(v) || parseRead(v) || parseLength(v))) return v;
-    this.fail(path, `expected a value to set: a number, true or false, N, E, S or W, "facing", "here", "acorns" or a sense, got ${JSON.stringify(v)}`);
+    if (typeof v === 'string' && (['N', 'E', 'S', 'W', 'facing', 'here', 'acorns'].includes(v) || isSenseId(v) || parseRead(v) || parseLength(v) || parseRandom(v))) return v;
+    this.fail(path, `expected a value to set: a number, true or false, N, E, S or W, "facing", "here", "acorns", a sense or a random source, got ${JSON.stringify(v)}`);
     return 0;
+  }
+  /** A random level's outcomes: { "of": "roll", "values": [1, 2, 3] }; of is a slot or "column". */
+  covers(v: unknown, path: string): { of: string; values: Value[] } {
+    const o = this.obj(v, path);
+    const of = typeof o.of === 'string' && FUNCTION_NAME.test(o.of) ? o.of : (this.fail(`${path}.of`, 'expected a slot name or "column"'), 'column');
+    const values = Array.isArray(o.values) && o.values.length >= 2 ? (o.values as Value[]) : (this.fail(`${path}.values`, 'expected at least two outcomes'), []);
+    return { of, values };
   }
   /** A switch: { "x": 1, "y": 0, "toggles": ["a"] }. */
   switch(v: unknown, path: string): Switch {
@@ -425,6 +446,7 @@ export function parsePuzzle(json: unknown, source: string): PuzzleDefinition {
       reachGoal: r.bool(objective.reachGoal, 'objective.reachGoal'),
       collectAll: r.bool(objective.collectAll, 'objective.collectAll'),
       ...(objective.memory !== undefined && { memory: r.obj(objective.memory, 'objective.memory') as Record<string, Value> }),
+      ...(objective.covers !== undefined && { covers: r.covers(objective.covers, 'objective.covers') }),
     },
     curriculum: { concept: r.str(curriculum.concept, 'curriculum.concept'), activity },
     programming: {

@@ -75,6 +75,12 @@ export interface ObjectiveDefinition {
   collectAll: boolean;
   /** End with these values in these memory slots: the answer the robot worked out. */
   memory?: Record<string, Value>;
+  /**
+   * A random level: every run must end with this value among these outcomes,
+   * and across many runs each outcome must turn up. Of is a memory slot's
+   * name, or "column" for the robot's column counted from 1.
+   */
+  covers?: { of: string; values: Value[] };
 }
 
 /** Full simulation state: the robot plus anything the run changes. */
@@ -88,4 +94,6 @@ export interface SimState {
   tick: number;
   /** The robot's memory, slot by slot. Absent when the program remembers nothing. */
   memory?: Record<string, Value>;
+  /** The random generator's state, when the run was given a seed. */
+  rng?: number;
 }

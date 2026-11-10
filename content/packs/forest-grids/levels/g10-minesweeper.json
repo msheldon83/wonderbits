@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "g10-minesweeper",
   "title": "Minesweeper",
-  "intro": "Walk the middle row. On each of the first four tiles, count the rocks above and below, and mark the number in counts.",
+  "intro": "Walk the middle row. On each of the first four tiles, point above and below on the map, count the rocks, and mark the number in counts.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -56,51 +56,29 @@
   },
   "programming": {
     "allowedCommands": [
-      "forward",
-      "rotateCW",
-      "rotateCCW",
       "set",
       "if",
       "change",
+      "shift",
       "repeat",
-      "mark"
+      "mark",
+      "goColumn"
     ],
     "allowedConditions": [
-      "slot:wall=yes"
+      "slot:rock=yes"
     ],
     "allowedSources": [
       0,
-      "read:walls@ahead"
+      "here",
+      "read:walls@spot"
     ],
-    "maxInstructions": 15,
+    "maxInstructions": 16,
     "starterProgram": [
       {
         "remember": "walls",
         "kind": "grid",
         "of": "yesNo",
-        "start": [
-          [
-            true,
-            false,
-            true,
-            true,
-            false
-          ],
-          [
-            false,
-            false,
-            false,
-            false,
-            false
-          ],
-          [
-            true,
-            true,
-            false,
-            true,
-            false
-          ]
-        ]
+        "start": "board:walls"
       },
       {
         "remember": "counts",
@@ -131,7 +109,15 @@
         ]
       },
       {
-        "remember": "wall",
+        "remember": "spot",
+        "kind": "position",
+        "start": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "remember": "rock",
         "kind": "yesNo",
         "start": false
       },
@@ -139,6 +125,11 @@
         "remember": "n",
         "kind": "number",
         "start": 0
+      },
+      {
+        "remember": "col",
+        "kind": "number",
+        "start": 1
       }
     ]
   },
@@ -159,17 +150,17 @@
     },
     {
       "kind": "card",
-      "command": "mark",
-      "text": "Each go: start n at 0, look up, look down, turn back, mark n, step."
+      "command": "shift",
+      "text": "Each go: n to 0, spot to here, finger up, read, finger down twice, read, mark, move on."
     },
     {
       "kind": "fill",
       "path": [
         0
       ],
-      "slot": 0,
+      "slot": 1,
       "command": "set",
-      "text": "Each tile starts counting from 0."
+      "text": "Put the finger where the robot is."
     }
   ],
   "referenceSolution": [
@@ -177,29 +168,7 @@
       "remember": "walls",
       "kind": "grid",
       "of": "yesNo",
-      "start": [
-        [
-          true,
-          false,
-          true,
-          true,
-          false
-        ],
-        [
-          false,
-          false,
-          false,
-          false,
-          false
-        ],
-        [
-          true,
-          true,
-          false,
-          true,
-          false
-        ]
-      ]
+      "start": "board:walls"
     },
     {
       "remember": "counts",
@@ -230,7 +199,15 @@
       ]
     },
     {
-      "remember": "wall",
+      "remember": "spot",
+      "kind": "position",
+      "start": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "remember": "rock",
       "kind": "yesNo",
       "start": false
     },
@@ -240,19 +217,31 @@
       "start": 0
     },
     {
+      "remember": "col",
+      "kind": "number",
+      "start": 1
+    },
+    {
       "repeat": 4,
       "do": [
         {
           "set": "n",
           "to": 0
         },
-        "rotateCCW",
         {
-          "set": "wall",
-          "to": "read:walls@ahead"
+          "set": "spot",
+          "to": "here"
         },
         {
-          "if": "slot:wall=yes",
+          "shift": "spot",
+          "dir": "N"
+        },
+        {
+          "set": "rock",
+          "to": "read:walls@spot"
+        },
+        {
+          "if": "slot:rock=yes",
           "do": [
             {
               "change": "n",
@@ -260,14 +249,20 @@
             }
           ]
         },
-        "rotateCW",
-        "rotateCW",
         {
-          "set": "wall",
-          "to": "read:walls@ahead"
+          "shift": "spot",
+          "dir": "S"
         },
         {
-          "if": "slot:wall=yes",
+          "shift": "spot",
+          "dir": "S"
+        },
+        {
+          "set": "rock",
+          "to": "read:walls@spot"
+        },
+        {
+          "if": "slot:rock=yes",
           "do": [
             {
               "change": "n",
@@ -275,18 +270,22 @@
             }
           ]
         },
-        "rotateCCW",
         {
           "mark": "counts",
           "at": "here",
           "with": "n"
         },
-        "forward"
+        {
+          "change": "col",
+          "by": 1
+        },
+        {
+          "goColumn": "col"
+        }
       ]
     }
   ],
   "stars": {
-    "noHints": true,
-    "budget": 14
+    "noHints": true
   }
 }

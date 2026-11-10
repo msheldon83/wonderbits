@@ -9,6 +9,8 @@ export interface Shortfall {
   missing: number;
   /** Memory slots that do not yet hold the answer the level asks for. */
   memory?: string[];
+  /** A random level's run that ended outside the outcomes asked for, in words. */
+  outside?: string;
 }
 
 const acorns = (n: number) => (n === 1 ? 'an acorn' : `${n} acorns`);
@@ -20,6 +22,7 @@ export function outcomeMessage(outcome: RunOutcome, stepNumber: number | null, s
     case 'success':
       return { tone: 'success', text: 'You did it! The robot reached the flag.' };
     case 'incomplete':
+      if (shortfall?.outside) return { tone: 'problem', text: shortfall.outside };
       if (shortfall?.memory?.length) {
         return { tone: 'problem', text: `The robot finished, but ${shortfall.memory.join(' and ')} ${shortfall.memory.length > 1 ? 'do' : 'does'} not hold the answer yet. Look at the memory card.` };
       }

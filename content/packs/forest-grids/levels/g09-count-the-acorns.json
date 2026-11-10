@@ -1,0 +1,248 @@
+{
+  "schemaVersion": 1,
+  "id": "g09-count-the-acorns",
+  "title": "Count the acorns",
+  "intro": "Count the acorns without walking: run your finger along each row of the map, then back and down to the next row.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....",
+      "....",
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 0,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 3,
+        "y": 0
+      },
+      {
+        "x": 0,
+        "y": 1
+      },
+      {
+        "x": 2,
+        "y": 2
+      },
+      {
+        "x": 3,
+        "y": 2
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": false,
+    "collectAll": false,
+    "memory": {
+      "count": 5
+    }
+  },
+  "curriculum": {
+    "concept": "grids",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "set",
+      "if",
+      "change",
+      "shift",
+      "repeat"
+    ],
+    "allowedConditions": [
+      "slot:acorn=yes"
+    ],
+    "allowedSources": [
+      "read:acorns@spot"
+    ],
+    "maxInstructions": 10,
+    "maxPerCommand": {
+      "change": 1
+    },
+    "starterProgram": [
+      {
+        "remember": "acorns",
+        "kind": "grid",
+        "of": "yesNo",
+        "start": "board:acorns"
+      },
+      {
+        "remember": "spot",
+        "kind": "position",
+        "start": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "remember": "acorn",
+        "kind": "yesNo",
+        "start": false
+      },
+      {
+        "remember": "count",
+        "kind": "number",
+        "start": 0
+      }
+    ]
+  },
+  "shuffles": [
+    {
+      "collectibles": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 3,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 2
+        }
+      ]
+    },
+    {
+      "collectibles": [
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 2
+        }
+      ]
+    }
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "One row: read, count, move right, four times."
+    },
+    {
+      "kind": "card",
+      "command": "repeat",
+      "text": "A Repeat 4 for one row, inside a Repeat 3 for the rows."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "repeat",
+      "text": "The outside loop: three rows."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "acorns",
+      "kind": "grid",
+      "of": "yesNo",
+      "start": "board:acorns"
+    },
+    {
+      "remember": "spot",
+      "kind": "position",
+      "start": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "remember": "acorn",
+      "kind": "yesNo",
+      "start": false
+    },
+    {
+      "remember": "count",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "repeat": 3,
+      "do": [
+        {
+          "repeat": 4,
+          "do": [
+            {
+              "set": "acorn",
+              "to": "read:acorns@spot"
+            },
+            {
+              "if": "slot:acorn=yes",
+              "do": [
+                {
+                  "change": "count",
+                  "by": 1
+                }
+              ]
+            },
+            {
+              "shift": "spot",
+              "dir": "E"
+            }
+          ]
+        },
+        {
+          "repeat": 4,
+          "do": [
+            {
+              "shift": "spot",
+              "dir": "W"
+            }
+          ]
+        },
+        {
+          "shift": "spot",
+          "dir": "S"
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

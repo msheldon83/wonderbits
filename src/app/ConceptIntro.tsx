@@ -113,8 +113,10 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
     const { signal } = ac;
     const objective = { reachGoal: true, collectAll: world.collectibles.length > 0 };
     void (async () => {
-      const results = await Promise.all(stages.map((p) => runtime.run({ program: p, world, objective, limits: DEFAULT_LIMITS, ...(demo.input && { input: demo.input }) })));
-      while (!signal.aborted) {
+      // A random demo rolls afresh each time round, so the loop shows different outcomes.
+      for (let round = 1; !signal.aborted; round++) {
+        const results = await Promise.all(stages.map((p) => runtime.run({ program: p, world, objective, limits: DEFAULT_LIMITS, seed: round * 7919, ...(demo.input && { input: demo.input }) })));
+        if (signal.aborted) return;
         for (let i = 0; i < stages.length && !signal.aborted; i++) {
           setStage(i);
           setFolding(false);
@@ -156,7 +158,7 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
         </h2>
         <div className={`intro-demo ${folding ? 'is-folding' : ''}`}>
           <div className="intro-board">
-            <Board world={world} theme={theme} motion={motion} label={label} onControllers={onControllers} maxScale={1.3} />
+            <Board world={world} theme={theme} motion={motion} label={label} onControllers={onControllers} maxScale={1.3} coordinates={cards.some((c) => c === 'goRow' || c === 'goColumn' || c === 'shift') || (program.memory ?? []).some((m) => m.kind === 'grid')} />
             <TickRules world={world} state={shownState ?? initialState(world, program.memory)} event={activeEvent} />
             {caption && (
               <p className="intro-caption" role="status" aria-live="polite">
@@ -186,6 +188,7 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
                 </>
               }
               gates={gatesOf(demo.world).map((g) => g.id)}
+          boardSize={{ width: demo.world.width, height: demo.world.height }}
               showCode
             />
           </div>

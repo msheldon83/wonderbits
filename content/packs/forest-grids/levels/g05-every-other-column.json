@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "id": "g05-every-other-column",
+  "title": "Every other column",
+  "intro": "Acorns sit in columns 3, 5, 7 and 9. One Go to column card, with a number from memory, can reach them all.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "........."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 8,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 2,
+        "y": 0
+      },
+      {
+        "x": 4,
+        "y": 0
+      },
+      {
+        "x": 6,
+        "y": 0
+      },
+      {
+        "x": 8,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "grids",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "goColumn",
+      "repeat",
+      "change"
+    ],
+    "maxInstructions": 3,
+    "maxPerCommand": {
+      "goColumn": 1
+    },
+    "starterProgram": [
+      {
+        "remember": "col",
+        "kind": "number",
+        "start": 3
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 6,
+          "y": 0
+        },
+        {
+          "x": 8,
+          "y": 0
+        }
+      ],
+      "text": "Each acorn is 2 columns past the last."
+    },
+    {
+      "kind": "card",
+      "command": "change",
+      "text": "Go to column col, then add 2 to col."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "repeat",
+      "text": "Four goes round a Repeat."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "col",
+      "kind": "number",
+      "start": 3
+    },
+    {
+      "repeat": 4,
+      "do": [
+        {
+          "goColumn": "col"
+        },
+        {
+          "change": "col",
+          "by": 2
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

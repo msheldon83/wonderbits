@@ -3,7 +3,7 @@
  * readable TypeScript. Read-only through Phase 3; Phase 4 adds a parser that
  * lifts hand-edited code back into the IR using the @node comments.
  */
-import { isSenseId, MAIN, parseLength, parseRead, parseSlotTest, type CommandId, type ConditionId, type IRNode, type MemorySlot, type ProgramIR, type SenseId, type Source, type Value } from '../ir/types';
+import { isSenseId, MAIN, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type IRNode, type MemorySlot, type ProgramIR, type SenseId, type Source, type Value } from '../ir/types';
 
 const CALL: Record<CommandId, string> = {
   forward: 'robot.forward();',
@@ -35,6 +35,12 @@ export function valueCode(v: Value): string {
 const TYPE: Record<string, string> = { number: 'number', yesNo: 'boolean', direction: 'Direction', position: 'Position' };
 const typeCode = (m: MemorySlot) => (m.kind === 'list' ? `${TYPE[m.of ?? 'number']}[]` : m.kind === 'grid' ? `${TYPE[m.of ?? 'number']}[][]` : TYPE[m.kind]!);
 
+/** A slot's start: a value, or a copy of the board's map. */
+function startCode(start: Value): string {
+  if (typeof start === 'string' && start.startsWith('board:')) return `robot.map('${start.slice(6)}')`;
+  return valueCode(start);
+}
+
 /** A grid place as TypeScript: the robot's position, the tile ahead, or a position variable. */
 function placeCode(at: string): string {
   return at === 'here' ? 'robot.position()' : at === 'ahead' ? 'robot.ahead()' : at;
@@ -47,6 +53,11 @@ function sourceCode(source: Source): string {
   if (read) return `at(${read.grid}, ${placeCode(read.at)})`;
   const counted = parseLength(source);
   if (counted) return `${counted}.length`;
+  const random = parseRandom(source);
+  if (random?.kind === 'range') return `random(${random.low}, ${random.high})`;
+  if (random?.kind === 'coin') return 'coinFlip()';
+  if (random?.kind === 'way') return 'randomDirection()';
+  if (random?.kind === 'pick') return `pick(${random.list})`;
   if (source === 'facing') return 'robot.facing()';
   if (source === 'here') return 'robot.position()';
   if (source === 'acorns') return 'robot.acorns()';
@@ -71,7 +82,21 @@ function typeImports(program: ProgramIR): string {
   const types = [...(kinds.has('direction') ? ['Direction'] : []), ...(kinds.has('position') ? ['Position'] : [])];
   // Grids are read with at() and written with put(), which count rows and columns from the top left.
   const grids = (program.memory ?? []).some((m) => m.kind === 'grid') ? ['at', 'put'] : [];
-  return [...grids.map((g) => `, ${g}`), ...types.map((t) => `, type ${t}`)].join('');
+  // Random sources come from the library too: random(), coinFlip(), randomDirection(), pick().
+  const used = new Set<string>();
+  const visit = (nodes: readonly IRNode[]): void => {
+    for (const n of nodes) {
+      const source = n.kind === 'set' || n.kind === 'push' ? n.to : undefined;
+      const r = source === undefined ? null : parseRandom(source);
+      if (r) used.add(r.kind === 'range' ? 'random' : r.kind === 'coin' ? 'coinFlip' : r.kind === 'way' ? 'randomDirection' : 'pick');
+      if ('body' in n) visit(n.body);
+      if (n.kind === 'ifElse') visit(n.elseBody);
+    }
+  };
+  for (const p of program.procedures) visit(p.body);
+  for (const h of program.handlers) visit(h.body);
+  const randoms = ['random', 'coinFlip', 'randomDirection', 'pick'].filter((r) => used.has(r));
+  return [...grids, ...randoms].map((g) => `, ${g}`).concat(types.map((t) => `, type ${t}`)).join('');
 }
 
 /** A negated check, written the way a person would. */
@@ -136,6 +161,17 @@ function printNode(node: IRNode, depth: number, lines: string[]): void {
     case 'push':
       lines.push(`${pad}${node.list}.push(${sourceCode(node.to)}); ${tag}`);
       return;
+    case 'goRow':
+      lines.push(`${pad}robot.goToRow(${node.to}); ${tag}`);
+      return;
+    case 'goColumn':
+      lines.push(`${pad}robot.goToColumn(${node.to}); ${tag}`);
+      return;
+    case 'shift': {
+      const [axis, sign] = ({ N: ['y', '-'], S: ['y', '+'], E: ['x', '+'], W: ['x', '-'] } as const)[node.dir];
+      lines.push(`${pad}${node.slot}.${axis} ${sign}= 1; ${tag}`);
+      return;
+    }
     case 'mark':
       lines.push(`${pad}put(${node.grid}, ${placeCode(node.at)}, ${node.slot}); ${tag}`);
       return;
@@ -146,7 +182,7 @@ function printNode(node: IRNode, depth: number, lines: string[]): void {
       lines.push(`${pad}robot.closeGate('${node.gate}'); ${tag}`);
       return;
     default:
-      lines.push(`${pad}${CALL[node.kind]} ${tag}`);
+      lines.push(`${pad}${CALL[node.kind as CommandId]} ${tag}`);
   }
 }
 
@@ -167,7 +203,7 @@ export function printProgram(program: ProgramIR): string {
   // The robot's memory: one typed variable per slot, before anything uses it.
   if (program.memory?.length) {
     lines.push('');
-    for (const m of program.memory) lines.push(`let ${m.name}: ${typeCode(m)} = ${valueCode(m.start)};`);
+    for (const m of program.memory) lines.push(`let ${m.name}: ${typeCode(m)} = ${startCode(m.start)};`);
   }
   // Main is the program the robot runs; each function is a helper beside it.
   for (const proc of program.procedures) {

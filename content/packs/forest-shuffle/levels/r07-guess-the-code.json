@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "id": "r07-guess-the-code",
+  "title": "Guess the code",
+  "intro": "The lock wants a number from 1 to 4, and it changes each shuffle. Keep guessing at random until the gate opens.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 3,
+      "y": 0
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 1,
+        "y": 0,
+        "open": false,
+        "code": 3
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "randomness",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "set",
+      "until",
+      "unlock"
+    ],
+    "allowedConditions": [
+      "pathAhead"
+    ],
+    "allowedSources": [
+      "random:1-4",
+      1
+    ],
+    "maxInstructions": 6,
+    "starterProgram": [
+      {
+        "remember": "guess",
+        "kind": "number",
+        "start": 0
+      }
+    ]
+  },
+  "shuffles": [
+    {
+      "gates": [
+        {
+          "id": "a",
+          "x": 1,
+          "y": 0,
+          "open": false,
+          "code": 1
+        }
+      ]
+    },
+    {
+      "gates": [
+        {
+          "id": "a",
+          "x": 1,
+          "y": 0,
+          "open": false,
+          "code": 4
+        }
+      ]
+    }
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        }
+      ],
+      "text": "The code is 1, 2, 3 or 4, but which one changes."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "Repeat until path ahead: guess at random, then try the lock."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "until",
+      "text": "A loop of guesses first."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "guess",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "until": "pathAhead",
+      "do": [
+        {
+          "set": "guess",
+          "to": "random:1-4"
+        },
+        {
+          "unlock": "a",
+          "with": "guess"
+        }
+      ]
+    },
+    "forward",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

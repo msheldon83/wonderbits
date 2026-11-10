@@ -130,6 +130,61 @@ foreign. Now the pattern is on screen before anything moves:
   speeds are met before Three lanes, and Two rivers and Three lanes point at
   the outline and the strip.
 
+## Play-test rework: randomness and coordinates (2026-11-10)
+
+Two packs rebuilt after play-testing. Shuffled boards taught a child to
+*react* to randomness; the point is to *use* a random generator. And the
+grid pack mostly showed coordinates more clearly without new learning.
+Randomness now comes first (order 12), then Reading the map (order 13).
+
+### What is built
+
+- **A seeded random generator.** The robot carries a generator
+  (mulberry32) in its state, seeded per run. Random sources for Set and Add
+  to list: `random:1-6` (a whole number in a range), `coin` (yes or no),
+  `randomWay` (up, right, down or left) and `pick:<list>` (a random item of
+  a list). They print as `random(1, 6)`, `coinFlip()`,
+  `randomDirection()` and `pick(ways)`. The same seed gives the same rolls,
+  so every run can be replayed.
+- **Outcomes.** `objective.covers: { of, values }` names a slot (or
+  `column`, the robot's column from 1) and the outcomes a level wants.
+  Every run must end on one of them, and across many runs each must turn
+  up. "Set roll to 6" fails because 1 to 5 never come out; "random 1 to 8"
+  fails because a 7 is not a die.
+- **Checking a random level.** Each Run rolls a fresh seed. After a
+  successful run the app runs the program on 48 fixed seeds (times every
+  shuffle); a failing seed is replayed on the next Run, and outcomes no
+  seed gave are named ("I ran it 48 times, and roll never came out as 6").
+  The validator runs the same checks on the reference solution.
+- **Go to row, Go to column.** Coordinates as moves: the robot turns to
+  face the way and walks straight to a row or column, counted from 1 like
+  the numbers round the board. The number is on the card or comes from a
+  number slot, so a counter can be a row. Rocks still stop it; a row off
+  the board is an error. Printed `robot.goToRow(3)`.
+- **A finger on the map.** Move finger moves a position slot one tile
+  (`spot.x += 1`) while the robot stays put, so a program can scan the map.
+  A grid slot can start as a copy of the board: `board:walls` or
+  `board:acorns`, printed `robot.map('walls')`, so maps follow shuffles.
+- **Packs.** Never the same twice: Roll the die, Flip a coin, The spinner
+  (pick the right range), Random steps (roll, then count down), Heads or
+  tails (a coin decides the way), Pick a way (build a list, pick from it),
+  Guess the code (random guesses until the lock opens, on shuffled codes),
+  Lost in the woods (a random walk) and Dice race. Reading the map: Go to
+  column, Row and column, Which way first, Stepping stones, Every other
+  column (a slot as the column), Mow the field (a slot as the row, on
+  shuffled acorns), Point and look (model: the finger), Gap in the wall
+  (scan the map down a column for the gap), Count the acorns (nested loops
+  scanning a shuffled map) and Minesweeper.
+- Levels that do not ask for the flag hide it.
+
+### Deviations and choices
+
+- **Fixed check seeds.** 48 seeds, the same every time, so a level's
+  verdict never flickers; a child's own Run uses a fresh seed.
+- **A grid's items are not iterated.** For each still walks lists; rows
+  and columns are walked with counters and the finger, which is the idea
+  the pack teaches.
+
 ## Build step 12, part two: grids and randomness (2026-11-09)
 
 The next two packs of step 12: **Reading the map** (2D grids) and **Never

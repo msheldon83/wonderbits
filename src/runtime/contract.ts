@@ -31,6 +31,8 @@ export interface RunRequest {
   limits: RunLimits;
   /** Key presses played after main, in order, on input levels. */
   input?: Key[];
+  /** Seeds the robot's random generator: the same seed, the same rolls. */
+  seed?: number;
 }
 
 export type TraceResult =

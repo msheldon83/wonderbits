@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "id": "r09-dice-race",
+  "title": "Dice race",
+  "intro": "Race to the flag: roll 1 to 3, walk that many steps, and roll again until you get there. Do not run off the end!",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "........"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 7,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "randomness",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "set",
+      "until",
+      "if",
+      "change"
+    ],
+    "allowedConditions": [
+      "atFlag",
+      "pathAhead",
+      "slot:steps=0"
+    ],
+    "allowedSources": [
+      "random:1-3"
+    ],
+    "maxInstructions": 6,
+    "starterProgram": [
+      {
+        "remember": "steps",
+        "kind": "number",
+        "start": 0
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 7,
+          "y": 0
+        }
+      ],
+      "text": "A big roll near the end must not walk off the board."
+    },
+    {
+      "kind": "card",
+      "command": "if",
+      "text": "Inside the steps loop: step only if the path is clear, and always take 1 from steps."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        0
+      ],
+      "slot": 1,
+      "command": "until",
+      "text": "After each roll, a loop that counts the steps down."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "steps",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "until": "atFlag",
+      "do": [
+        {
+          "set": "steps",
+          "to": "random:1-3"
+        },
+        {
+          "until": "slot:steps=0",
+          "do": [
+            {
+              "if": "pathAhead",
+              "do": [
+                "forward"
+              ]
+            },
+            {
+              "change": "steps",
+              "by": -1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

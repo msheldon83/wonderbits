@@ -35,6 +35,9 @@ export type NodeSpec =
   | { unlock: string; with: string }
   | { mark: string; at: string; with: string }
   | { push: string; to: Source }
+  | { goRow: number | string }
+  | { goColumn: number | string }
+  | { shift: string; dir: 'N' | 'E' | 'S' | 'W' }
   | { define: string; do: NodeSpec[] }
   | { on: string; do: NodeSpec[] }
   | { remember: string; kind: ValueKind; of?: ItemKind; start?: Value };
@@ -61,6 +64,9 @@ export function kindOfSpec(s: NodeSpec): SpecKind {
   if ('unlock' in s) return 'unlock';
   if ('mark' in s) return 'mark';
   if ('push' in s) return 'push';
+  if ('goRow' in s) return 'goRow';
+  if ('goColumn' in s) return 'goColumn';
+  if ('shift' in s) return 'shift';
   if ('define' in s) return 'define';
   if ('on' in s) return 'on';
   return 'remember';
@@ -128,6 +134,9 @@ export function buildNodes(spec: readonly NodeSpec[], newId: IdFactory): IRNode[
     if ('unlock' in s) return { id, kind: 'unlock', gate: s.unlock, slot: s.with };
     if ('mark' in s) return { id, kind: 'mark', grid: s.mark, at: s.at, slot: s.with };
     if ('push' in s) return { id, kind: 'push', list: s.push, to: s.to };
+    if ('goRow' in s) return { id, kind: 'goRow', to: s.goRow };
+    if ('goColumn' in s) return { id, kind: 'goColumn', to: s.goColumn };
+    if ('shift' in s) return { id, kind: 'shift', slot: s.shift, dir: s.dir };
     if ('repeat' in s) return { id, kind: 'repeat', count: s.repeat, body: buildNodes(s.do, newId) };
     if ('until' in s) return { id, kind: 'until', condition: s.until, body: buildNodes(s.do, newId) };
     if ('forEach' in s) return { id, kind: 'forEach', list: s.forEach, item: s.as, body: buildNodes(s.do, newId) };
@@ -168,6 +177,12 @@ export function specOf(nodes: readonly IRNode[]): NodeSpec[] {
         return { mark: n.grid, at: n.at, with: n.slot };
       case 'push':
         return { push: n.list, to: n.to };
+      case 'goRow':
+        return { goRow: n.to };
+      case 'goColumn':
+        return { goColumn: n.to };
+      case 'shift':
+        return { shift: n.slot, dir: n.dir };
       default:
         return n.kind;
     }

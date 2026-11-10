@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "id": "g06-mow-the-field",
+  "title": "Mow the field",
+  "intro": "The acorns move each shuffle. Sweep every row: a row number in memory tells the robot which row is next.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....",
+      "....",
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 0,
+      "y": 2
+    },
+    "collectibles": [
+      {
+        "x": 2,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 1
+      },
+      {
+        "x": 3,
+        "y": 2
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "grids",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "goRow",
+      "goColumn",
+      "repeat",
+      "change"
+    ],
+    "maxInstructions": 5,
+    "maxPerCommand": {
+      "goRow": 1,
+      "goColumn": 2
+    },
+    "starterProgram": [
+      {
+        "remember": "row",
+        "kind": "number",
+        "start": 1
+      }
+    ]
+  },
+  "shuffles": [
+    {
+      "collectibles": [
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 2
+        }
+      ]
+    },
+    {
+      "collectibles": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 2
+        }
+      ]
+    }
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "A sweep: along to column 4 and back to column 1."
+    },
+    {
+      "kind": "card",
+      "command": "goRow",
+      "text": "Each go: Go to row row, sweep, then add 1 to row."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "repeat",
+      "text": "Three rows, three goes."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "row",
+      "kind": "number",
+      "start": 1
+    },
+    {
+      "repeat": 3,
+      "do": [
+        {
+          "goRow": "row"
+        },
+        {
+          "goColumn": 4
+        },
+        {
+          "goColumn": 1
+        },
+        {
+          "change": "row",
+          "by": 1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

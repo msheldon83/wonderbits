@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { functionLabel, isSenseId, parseLength, parseRead, parseSlotTest, type CardId, type ConditionId, type IRNode, type SenseId, type Source, type Value } from '../ir/types';
+import { functionLabel, isSenseId, parseLength, parseRandom, parseRead, parseSlotTest, type CardId, type RandomSource, type ConditionId, type IRNode, type SenseId, type Source, type Value } from '../ir/types';
 import { TurnArrow } from '../render/art';
 
 export interface CommandInfo {
@@ -176,6 +176,36 @@ export const COMMANDS: Record<CardId, CommandInfo> = {
       </svg>
     ),
   },
+  shift: {
+    label: 'Move finger',
+    description: 'Move a remembered place one tile on the map',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <path d="M12 26v-9a2.5 2.5 0 0 1 5 0v-8a2.5 2.5 0 0 1 5 0v14c0 2-1.5 3-3 3z" {...stroke} strokeWidth={2.4} />
+        <path d="M4 9h6M7 6l3 3-3 3" {...stroke} strokeWidth={2.4} />
+      </svg>
+    ),
+  },
+  goRow: {
+    label: 'Go to row',
+    description: 'Walk straight up or down to a row',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <path d="M4 22h24" {...stroke} strokeWidth={2.4} strokeDasharray="3 3" />
+        <path d="M16 5v14M11 14l5 5 5-5" {...stroke} />
+      </svg>
+    ),
+  },
+  goColumn: {
+    label: 'Go to column',
+    description: 'Walk straight left or right to a column',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <path d="M22 4v24" {...stroke} strokeWidth={2.4} strokeDasharray="3 3" />
+        <path d="M5 16h14M14 11l5 5-5 5" {...stroke} />
+      </svg>
+    ),
+  },
   call: {
     label: 'Function',
     description: 'Run the cards of a function',
@@ -233,11 +263,21 @@ export function sourceWords(source: Source): string {
   if (read) return `${read.grid} ${placeWords(read.at)}`;
   const counted = parseLength(source);
   if (counted) return `how many in ${counted}`;
+  const random = parseRandom(source);
+  if (random) return randomWords(random);
   if (source === 'facing') return 'the way it faces';
   if (source === 'here') return 'where it is';
   if (source === 'acorns') return 'acorns held';
   if (isSenseId(source)) return `${CONDITIONS[source].label}?`;
   return valueWords(source);
+}
+
+/** A random source in words: "a random number 1 to 6", "a coin flip", "a random way", "a random item of prizes". */
+export function randomWords(r: RandomSource): string {
+  if (r.kind === 'range') return `a random number ${r.low} to ${r.high}`;
+  if (r.kind === 'coin') return 'a coin flip';
+  if (r.kind === 'way') return 'a random way';
+  return `a random item of ${r.list}`;
 }
 
 /** A check in words: "blocked ahead", "count is 3", "found is yes", "way is right", "spot is here". */
@@ -271,6 +311,12 @@ export function describeNode(node: IRNode): string {
       return `Unlock gate ${node.gate.toUpperCase()} with ${node.slot}`;
     case 'push':
       return `Add ${sourceWords(node.to)} to the end of ${node.list}`;
+    case 'goRow':
+      return `Go to row ${node.to}`;
+    case 'goColumn':
+      return `Go to column ${node.to}`;
+    case 'shift':
+      return `Move ${node.slot} ${DIRECTION_WORDS[node.dir]}`;
     case 'mark':
       return `Mark ${node.slot} on ${node.grid} ${placeWords(node.at)}`;
     case 'call':

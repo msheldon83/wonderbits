@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "id": "g07-point-and-look",
+  "title": "Point and look",
+  "intro": "spot is a finger on the map: moving it does not move the robot. Where does it end up, and is there a rock there?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..#.",
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 0,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": false,
+    "collectAll": false,
+    "memory": {
+      "rock": true
+    }
+  },
+  "curriculum": {
+    "concept": "grids",
+    "activity": "model"
+  },
+  "programming": {
+    "allowedCommands": [
+      "shift",
+      "set"
+    ],
+    "starterProgram": [
+      {
+        "remember": "walls",
+        "kind": "grid",
+        "of": "yesNo",
+        "start": "board:walls"
+      },
+      {
+        "remember": "spot",
+        "kind": "position",
+        "start": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "remember": "rock",
+        "kind": "yesNo",
+        "start": false
+      },
+      {
+        "shift": "spot",
+        "dir": "E"
+      },
+      {
+        "shift": "spot",
+        "dir": "E"
+      },
+      {
+        "set": "rock",
+        "to": "read:walls@spot"
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "text": "Two to the right of column 1."
+    },
+    {
+      "kind": "card",
+      "command": "shift",
+      "text": "Move finger moves spot one tile; the robot stays put."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 2,
+      "command": "set",
+      "text": "Then it reads the map at spot."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "walls",
+      "kind": "grid",
+      "of": "yesNo",
+      "start": "board:walls"
+    },
+    {
+      "remember": "spot",
+      "kind": "position",
+      "start": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "remember": "rock",
+      "kind": "yesNo",
+      "start": false
+    },
+    {
+      "shift": "spot",
+      "dir": "E"
+    },
+    {
+      "shift": "spot",
+      "dir": "E"
+    },
+    {
+      "set": "rock",
+      "to": "read:walls@spot"
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": false,
+    "askMemory": [
+      "slot:rock"
+    ]
+  }
+}

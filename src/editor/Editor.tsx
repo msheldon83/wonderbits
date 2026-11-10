@@ -29,9 +29,9 @@ import type { IdFactory } from '../ir/ids';
 import { isNoOpMove, type EditOp } from '../ir/ops';
 import { ancestorsOf, branchesOf, branchBody, containerAt, endOfMain, functionsOf, isWithin, locate, mainBody, memoryOf, procedureOfPlace, samePlaceContainer, slotsInUse, walk } from '../ir/program';
 import { buildNodes } from '../ir/spec';
-import { functionContainerId, functionLabel, functionOfContainer, handlerContainerId, handlerOfContainer, isSenseId, lengthOf, MAIN as MAIN_PROCEDURE, readFrom, REPEAT_DEFAULT, REPEAT_MAX, REPEAT_MIN, type Branch, type CardId, type CommandId, type IRNode, type MemorySlot, type NodeId, type Place, type ProgramIR, type Source } from '../ir/types';
+import { functionContainerId, functionLabel, functionOfContainer, handlerContainerId, handlerOfContainer, isSenseId, lengthOf, MAIN as MAIN_PROCEDURE, parseRandom, readFrom, REPEAT_DEFAULT, REPEAT_MAX, REPEAT_MIN, type Branch, type CardId, type CommandId, type IRNode, type MemorySlot, type NodeId, type Place, type ProgramIR, type Source } from '../ir/types';
 import type { TraceEvent } from '../runtime/contract';
-import { cardLabel, COMMANDS, conditionLabel, describeNode, eventLabel, FunctionIcon, nodeLabel, placeWords, sourceWords } from './commands';
+import { cardLabel, COMMANDS, conditionLabel, describeNode, eventLabel, FunctionIcon, nodeLabel, placeWords, sourceWords, valueWords } from './commands';
 import { gapCentres, slotForY, type RowBox } from './geometry';
 import { conditionsFor, defaultCondition, paletteFor, type Programming } from './palette';
 
@@ -68,6 +68,8 @@ export interface EditorProps {
   onToggleCode?(): void;
   /** The board's gate letters, for Open gate and Shut gate cards to choose from. */
   gates?: readonly string[];
+  /** The board's columns and rows, for Go to column and Go to row cards to choose from. */
+  boardSize?: { width: number; height: number };
 }
 
 /** What is being carried to a gap: a palette card, a program block, or the cursor. */
@@ -114,6 +116,7 @@ export function Editor({
   showCode = false,
   onToggleCode,
   gates = [],
+  boardSize,
 }: EditorProps) {
   const locked = lockedProp || readOnly;
   const body = mainBody(program);
@@ -267,6 +270,11 @@ export function Editor({
       case 'openGate':
       case 'closeGate':
         return { id: newId(), kind: command, gate: gates[0] ?? 'a' };
+      case 'goRow':
+      case 'goColumn':
+        return { id: newId(), kind: command, to: 1 };
+      case 'shift':
+        return { id: newId(), kind: 'shift', slot: memory.find((m) => m.kind === 'position')?.name ?? 'spot', dir: 'E' };
       case 'repeat':
         return buildNodes([{ repeat: REPEAT_DEFAULT, do: [] }], newId)[0]!;
       case 'if':
@@ -778,7 +786,7 @@ export function Editor({
           {node.kind === 'change' && (
             <span className="block-param block-condition">
               <select className="param-select" aria-label={`How much, step ${number}`} value={node.by} disabled={locked} onChange={(e) => setParam(node.id, { by: Number(e.target.value) })}>
-                {[...new Set([node.by, 1, -1])].map((b) => (
+                {[...new Set([node.by, 1, 2, -1])].map((b) => (
                   <option key={b} value={b}>
                     {b > 0 ? `+${b}` : `−${-b}`}
                   </option>
@@ -821,6 +829,39 @@ export function Editor({
                 {['here', 'ahead', ...memory.filter((m) => m.kind === 'position').map((m) => m.name)].map((at) => (
                   <option key={at} value={at}>
                     {placeWords(at)}
+                  </option>
+                ))}
+              </select>
+            </span>
+          )}
+          {(node.kind === 'goRow' || node.kind === 'goColumn') && (
+            <span className="block-param block-condition">
+              <select
+                className="param-select"
+                aria-label={`Which ${node.kind === 'goRow' ? 'row' : 'column'}, step ${number}`}
+                value={JSON.stringify(node.to)}
+                disabled={locked}
+                onChange={(e) => setParam(node.id, { target: JSON.parse(e.target.value) as number | string })}
+              >
+                {(() => {
+                  const size = node.kind === 'goRow' ? (boardSize?.height ?? 8) : (boardSize?.width ?? 8);
+                  const options: (number | string)[] = [...Array.from({ length: size }, (_, i) => i + 1), ...memory.filter((m) => m.kind === 'number').map((m) => m.name)];
+                  return (options.includes(node.to) ? options : [node.to, ...options]).map((o) => (
+                    <option key={String(o)} value={JSON.stringify(o)}>
+                      {o}
+                    </option>
+                  ));
+                })()}
+              </select>
+            </span>
+          )}
+          {node.kind === 'shift' && (
+            <span className="block-param block-condition">
+              {slotSelect(`Which place, step ${number}`, node.slot, ['position'], (slot) => setParam(node.id, { slot }))}
+              <select className="param-select" aria-label={`Which way, step ${number}`} value={node.dir} disabled={locked} onChange={(e) => setParam(node.id, { dir: e.target.value as 'N' | 'E' | 'S' | 'W' })}>
+                {(['N', 'E', 'S', 'W'] as const).map((d) => (
+                  <option key={d} value={d}>
+                    {valueWords(d)}
                   </option>
                 ))}
               </select>
@@ -1195,10 +1236,10 @@ function sourcesFor(kind: string, programming: Programming, memory: readonly Mem
   const reads = memory.filter((m) => m.kind === 'grid' && m.of === kind).flatMap((g) => places.map((at) => readFrom(g.name, at)));
   // How many items a list holds is a number.
   const lengths = kind === 'number' ? memory.filter((m) => m.kind === 'list').map((m) => lengthOf(m.name)) : [];
-  return [...ownSources(kind, programming), ...[...reads, ...lengths].filter((r) => !programming.allowedSources || programming.allowedSources.includes(r))];
+  return [...ownSources(kind, programming, memory), ...[...reads, ...lengths].filter((r) => !programming.allowedSources || programming.allowedSources.includes(r))];
 }
 
-function ownSources(kind: string, programming: Programming): Source[] {
+function ownSources(kind: string, programming: Programming, memory: readonly MemorySlot[]): Source[] {
   const all: Record<string, Source[]> = {
     number: [0, 1, 2, 3, 'acorns'],
     yesNo: [true, false, ...conditionsFor(programming).filter(isSenseId)],
@@ -1207,7 +1248,17 @@ function ownSources(kind: string, programming: Programming): Source[] {
   };
   const fits = all[kind] ?? [];
   const allowed = programming.allowedSources;
-  return allowed ? allowed.filter((a) => (kind === 'number' ? typeof a === 'number' || a === 'acorns' : fits.includes(a))) : fits;
+  if (!allowed) return fits;
+  // A random source gives a number, a yes or no, or a way; a pick from a list gives one of its items.
+  const randomKind = (a: Source): string | undefined => {
+    const r = parseRandom(a);
+    if (!r) return undefined;
+    if (r.kind === 'range') return 'number';
+    if (r.kind === 'coin') return 'yesNo';
+    if (r.kind === 'way') return 'direction';
+    return memory.find((m) => m.name === r.list)?.of ?? 'number';
+  };
+  return allowed.filter((a) => (parseRandom(a) ? randomKind(a) === kind : kind === 'number' ? typeof a === 'number' || a === 'acorns' : fits.includes(a)));
 }
 
 /** A lightning bolt: something happens, and a When card answers. */

@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "id": "g03-which-way-first",
+  "title": "Which way first",
+  "intro": "Rocks still stop the robot. Go round them one straight line at a time.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      ".....",
+      "###..",
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 0,
+      "y": 2
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "grids",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "goRow",
+      "goColumn"
+    ],
+    "maxInstructions": 3,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 1
+        }
+      ],
+      "text": "Straight down is blocked. Go along first."
+    },
+    {
+      "kind": "card",
+      "command": "goColumn",
+      "text": "Column 4 is clear all the way down."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "goColumn",
+      "text": "Start with Go to column 4."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "goColumn": 4
+    },
+    {
+      "goRow": 3
+    },
+    {
+      "goColumn": 1
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}
