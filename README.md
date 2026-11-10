@@ -62,8 +62,9 @@ Open the printed URL. On an iPad on the same network, use the "Network" URL.
 The level map is the home screen (`#/`). A level is `#/level/<id>`; the
 first level of a pack opens with the pack's introduction, once. The card
 book is `#/book`, and one of its pages is `#/book/<pack id>`. `#/settings`
-has reduced motion, "open every level" for the grown-up, the progress export
-and a reset.
+has reduced motion, "open every level" for the grown-up (on by default for
+now, while the curriculum is being tested; turn it off to unlock levels in
+order), the progress export and a reset.
 
 | Command | What it does |
 | --- | --- |

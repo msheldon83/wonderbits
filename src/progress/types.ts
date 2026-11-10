@@ -49,7 +49,7 @@ export interface Settings {
   openAllLevels: boolean;
 }
 
-export const DEFAULT_SETTINGS: Settings = { muted: false, reducedMotion: 'system', themeId: 'forest', openAllLevels: false };
+export const DEFAULT_SETTINGS: Settings = { muted: false, reducedMotion: 'system', themeId: 'forest', openAllLevels: true };
 
 /**
  * One structured event per thing the child did. Timestamps are epoch ms.
