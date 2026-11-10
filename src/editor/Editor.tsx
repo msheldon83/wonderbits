@@ -61,6 +61,8 @@ export interface EditorProps {
   highlightNodeId?: NodeId | null;
   /** The program as code, shown inside the program panel beside the blocks when showCode is on. */
   codePanel?: ReactNode;
+  /** Shown at the top of the program panel, above the cards: the key script on input levels. */
+  aboveProgram?: ReactNode;
   showCode?: boolean;
   /** Toggle the code view. The button lives in the program panel's header. */
   onToggleCode?(): void;
@@ -108,6 +110,7 @@ export function Editor({
   highlightCommand = null,
   highlightNodeId = null,
   codePanel,
+  aboveProgram,
   showCode = false,
   onToggleCode,
   gates = [],
@@ -1050,6 +1053,7 @@ export function Editor({
         </h2>
         <div className={`program-body ${codePanel && showCode ? 'has-code' : ''}`}>
           <div className="program-blocks">
+            {aboveProgram}
             {carrying && (
               <p className="program-note" role="status">
                 Tap an arrow to put {carriedName} there.

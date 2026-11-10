@@ -492,7 +492,6 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
             {message.text}
           </p>
         </div>
-        {level.inputScript && <KeyScript keys={level.inputScript} event={activeEvent} played={phase === 'done'} />}
         {showMemory && (
           <MemoryCard
             world={world}
@@ -528,6 +527,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           onRedo={onRedo}
           onRestart={restart}
           codePanel={<CodePanel program={program} activeNodeId={activeNode} />}
+          aboveProgram={level.inputScript && <KeyScript keys={level.inputScript} event={activeEvent} played={phase === 'done'} />}
           gates={gatesOf(world).map((g) => g.id)}
           showCode={showCode}
           onToggleCode={() => setShowCode((v) => !v)}

@@ -186,8 +186,10 @@ program's shape since step 2.
   inside the Every tick card do not tick again. Gate cards take no tick.
 - **Key scripts.** A level's `inputScript` plays after main: one `press`
   event per key, then that key's When card. The runtime contract carries
-  the script as `input`. A strip of key caps under the board lights the
-  press playing now and fades the ones played.
+  the script as `input`. A strip of key caps at the top of the Program
+  panel, just above the When cards it drives, lights the press playing now
+  and fades the ones played. (It sat under the board at first; moved
+  2026-11-10 so the keys and their cards are read together.)
 - **On the board:** plates as numbered stone pads; logs glide and carry the
   robot; beetles patrol; the bubble says "plate 1!", "acorn!" or the key;
   the When card's heading glows while its cards run. The memory card adds a

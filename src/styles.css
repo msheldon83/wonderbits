@@ -2276,9 +2276,10 @@ button.function-head {
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  padding: 8px 14px;
-  border-radius: var(--radius);
-  background: var(--paper);
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: var(--gold-wash);
 }
 
 .key-script-title {
