@@ -5,7 +5,7 @@
 import { sequentialIdFactory } from '../ir/ids';
 import { programFromSpec } from '../ir/program';
 import { callsOfSpec, cardsOfSpec, conditionsOfSpec, countSpec, depthOfSpec, gatesOfSpec, specDiff, splitSpec, type NodeSpec } from '../ir/spec';
-import { BASIC_CONDITIONS, MEMORY_CARD_IDS, isBlockId, isCommandId, isGateActionId, isSenseId, parseRead, parseSlotTest, type CardId, type CommandId, type Key, type Source, type ValueKind } from '../ir/types';
+import { BASIC_CONDITIONS, MEMORY_CARD_IDS, isBlockId, isCommandId, isGateActionId, isSenseId, parseLength, parseRead, parseSlotTest, type CardId, type CommandId, type Key, type Source, type ValueKind } from '../ir/types';
 import { interpretAll } from '../runtime/interpreter';
 import { advance, cellKey, gatesOf, initialState, isTimed, moverCell, moversOf, objectiveMet, period, platesOf, stateKey, step, switchesOf, tileAt } from '../sim/world';
 import { hasField } from './memory';
@@ -299,14 +299,14 @@ function validateHandlers(puzzle: PuzzleDefinition, errors: string[]): void {
 function setSources(spec: readonly NodeSpec[]): Source[] {
   return spec.flatMap((s): Source[] => {
     if (typeof s === 'string') return [];
-    const own = 'set' in s ? [s.to] : [];
+    const own = 'set' in s || 'push' in s ? [s.to] : [];
     return [...own, ...('do' in s ? setSources(s.do) : []), ...('if' in s && s.else ? setSources(s.else) : [])];
   });
 }
 
 /** What kind of value a Set card's source gives. */
 function sourceKind(source: Source): ValueKind {
-  if (typeof source === 'number' || source === 'acorns') return 'number';
+  if (typeof source === 'number' || source === 'acorns' || parseLength(source)) return 'number';
   if (typeof source === 'boolean' || isSenseId(source)) return 'yesNo';
   if (source === 'here') return 'position';
   return 'direction';
@@ -321,11 +321,16 @@ function testKind(value: string): ValueKind {
 }
 
 /** Every card that names a slot, and the kind it needs there, walking a spec. */
-function slotUses(spec: readonly NodeSpec[]): { slot: string; kind: ValueKind | 'item'; card: string; list?: string }[] {
+function slotUses(spec: readonly NodeSpec[]): { slot: string; kind: ValueKind | 'item'; card: string; list?: string; of?: ValueKind }[] {
   return spec.flatMap((s) => {
     if (typeof s === 'string') return [];
     const inner = 'do' in s ? [...slotUses(s.do), ...('if' in s && s.else ? slotUses(s.else) : [])] : [];
-    const own: { slot: string; kind: ValueKind | 'item'; card: string; list?: string }[] = [];
+    const own: { slot: string; kind: ValueKind | 'item'; card: string; list?: string; of?: ValueKind }[] = [];
+    if ('push' in s) own.push({ slot: s.push, kind: 'list', card: 'Add to list', of: sourceKind(s.to) });
+    for (const to of 'set' in s ? [s.to] : 'push' in s ? [s.to] : []) {
+      const counted = parseLength(to);
+      if (counted) own.push({ slot: counted, kind: 'list', card: 'a length' });
+    }
     const read = 'set' in s ? parseRead(s.to) : null;
     if ('set' in s && read) {
       own.push({ slot: s.set, kind: 'item', card: 'Set', list: read.grid }, { slot: read.grid, kind: 'grid', card: 'Set' });
@@ -376,6 +381,7 @@ function validateMemory(puzzle: PuzzleDefinition, errors: string[]): void {
       }
       const want = use.kind === 'item' ? byName.get(use.list ?? '')?.of : use.kind;
       if (want !== undefined && slot.kind !== want) errors.push(`${label}: ${use.card} needs ${use.slot} to hold a ${want}, but it holds a ${slot.kind}`);
+      else if (use.of && slot.of !== use.of) errors.push(`${label}: ${use.card} puts a ${use.of} in ${use.slot}, a list of ${slot.of}`);
     }
     if (programming.allowedSources) {
       const allowed = new Set(programming.allowedSources.map((x) => JSON.stringify(x)));

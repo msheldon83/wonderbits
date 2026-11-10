@@ -180,5 +180,12 @@ describe('printProgram', () => {
       "
     `);
   });
+
+  it('prints adding to a list as push, and its length as .length', () => {
+    const p = programFromSpec([{ remember: 'seen', kind: 'list', of: 'yesNo' }, { remember: 'n', kind: 'number' }, { push: 'seen', to: 'acornAhead' }, { set: 'n', to: 'length:seen' }], sequentialIdFactory());
+    expect(printProgram(p)).toContain('seen.push(robot.acornAhead()); // @node n1');
+    expect(printProgram(p)).toContain('n = seen.length; // @node n2');
+    expect(printProgram(p)).toContain('let seen: boolean[] = [];');
+  });
 });
 

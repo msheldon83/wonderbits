@@ -63,7 +63,7 @@ export const CALL = 'call' as const;
  * holds, and Unlock a gate with the number a slot holds. For each is a
  * block that walks a list slot.
  */
-export const MEMORY_CARD_IDS = ['set', 'change', 'face', 'unlock', 'mark'] as const;
+export const MEMORY_CARD_IDS = ['set', 'change', 'face', 'unlock', 'mark', 'push'] as const;
 export type MemoryCardId = (typeof MEMORY_CARD_IDS)[number];
 
 /** The kinds of value a memory slot can hold. A list holds items of one kind. */
@@ -85,8 +85,9 @@ export interface MemorySlot {
 /**
  * Where a Set card's value comes from: a literal (a number, yes or no as
  * true or false, a direction letter), or the robot's own reading right now:
- * `facing`, `here`, `acorns` (how many it holds), a sense's yes or no, or
- * an item of a grid slot, written `read:<grid>@<where>`.
+ * `facing`, `here`, `acorns` (how many it holds), a sense's yes or no, an
+ * item of a grid slot, written `read:<grid>@<where>`, or how many items a
+ * list holds, written `length:<list>`.
  */
 export type Source = number | boolean | string;
 
@@ -105,6 +106,16 @@ export function parseRead(source: Source): { grid: string; at: GridPlace } | nul
 }
 
 export const readFrom = (grid: string, at: GridPlace): Source => `read:${grid}@${at}`;
+
+const LENGTH = /^length:([a-z][A-Za-z0-9]{0,19})$/;
+
+/** The list a `length:` source counts, or null when it is not one. */
+export function parseLength(source: Source): string | null {
+  const m = typeof source === 'string' ? LENGTH.exec(source) : null;
+  return m ? m[1]! : null;
+}
+
+export const lengthOf = (list: string): Source => `length:${list}`;
 
 /** Cards that act on the world instead of the robot: open or shut a gate by its letter. */
 export const GATE_ACTION_IDS = ['openGate', 'closeGate'] as const;
@@ -221,6 +232,14 @@ export interface MarkNode {
   slot: string;
 }
 
+/** Puts a value on the end of a list slot: the list grows by one. */
+export interface PushNode {
+  id: NodeId;
+  kind: 'push';
+  list: string;
+  to: Source;
+}
+
 /** Runs its body once for each item of a list slot, with the item in another slot. */
 export interface ForEachNode {
   id: NodeId;
@@ -231,7 +250,7 @@ export interface ForEachNode {
 }
 
 export type BlockNode = RepeatNode | IfNode | IfElseNode | UntilNode | ForEachNode;
-export type IRNode = CommandNode | BlockNode | CallNode | GateActionNode | SetNode | ChangeNode | FaceNode | UnlockNode | MarkNode;
+export type IRNode = CommandNode | BlockNode | CallNode | GateActionNode | SetNode | ChangeNode | FaceNode | UnlockNode | MarkNode | PushNode;
 
 export function isBlockNode(node: IRNode): node is BlockNode {
   return isBlockId(node.kind);

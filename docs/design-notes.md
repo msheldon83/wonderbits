@@ -4,6 +4,35 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Change: memory beside the program, and lists that are built (2026-11-10)
+
+Play-testing feedback: the route list in the first list level sat on the
+memory card under the board, far from the cards that use it; walking a
+ready-made list of directions was a hard first list; and lists are more
+than going through one somebody else wrote.
+
+- **The memory card lives in the Program panel**, at the top, above the
+  cards that read and change it (with the key script, when there is one),
+  on every level and in the introductions. Each of the robot's slots shows
+  its kind beside its name ("route list of directions"). The Memory chips
+  with Remember and Forget now appear only on levels that offer slots to
+  choose from, so a slot is never listed twice. The Every tick strip stays
+  under the board: it describes the world, not the program.
+- **Lists can be built.** A new card, Add to list, puts a value on the end
+  of a list slot (`route.push(robot.facing())`), and Set can read how many
+  items a list holds (`length:<list>`, printed `route.length`). The
+  validator checks that what goes on a list is of the list's kind.
+- **In a row builds before it reads.** A list grows (model: the robot
+  writes down what it sees at each tile; how long is the list?), Write down
+  the route (a loop records each way walked; the level is solved only when
+  the list says right, right, down, down), then Follow the list and Walk
+  the list read a route list, the crate levels go through a list of
+  yes/noes, and A bag of acorns collects with a When card and opens a lock
+  with the bag's length. The introduction now shows a list growing. Three
+  levels were retired to make room: What is the count?, A long route
+  (merged into Walk the list) and Cards in order; the first five levels
+  were renumbered, so earlier stars on In a row are not shown.
+
 ## Change: Two things to remember is about what, Keep count about change (2026-11-10)
 
 The memory pack also counted (a counter for a number lock in four levels),

@@ -527,6 +527,19 @@ describe('validate: shuffles and grids', () => {
   });
 });
 
+describe('validate: building lists', () => {
+  it('checks that what goes on a list is of the list\'s kind', () => {
+    const p = parsed((j) => {
+      j.programming.allowedCommands = ['forward', 'push'];
+      j.programming.starterProgram = [{ remember: 'seen', kind: 'list', of: 'direction' }];
+      j.referenceSolution = [{ remember: 'seen', kind: 'list', of: 'direction' }, { push: 'seen', to: 'acornAhead' }, 'forward', 'forward'];
+      j.hints[2] = { kind: 'fill', path: [], slot: 1, command: 'forward', text: 'Step.' };
+      j.stars.budget = 3;
+    });
+    expect(validatePuzzle(p).errors.join('\n')).toMatch(/Add to list puts a yesNo in seen, a list of direction/);
+  });
+});
+
 describe('prediction', () => {
   it('is correct only on the tile the robot ends up on', () => {
     expect(predictionCorrect({ cell: { x: 2, y: 0 } }, { x: 2, y: 0 })).toBe(true);

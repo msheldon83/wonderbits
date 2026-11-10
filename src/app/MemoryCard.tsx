@@ -56,6 +56,14 @@ const KIND_ICON: Record<MemoryKind, ReactElement> = {
 
 const KIND_WORDS: Record<MemoryKind, string> = { position: 'a place', direction: 'a direction', number: 'a number', yesNo: 'a yes or no', list: 'a list', grid: 'a grid of rows and columns' };
 
+const ITEM_WORDS: Record<string, string> = { number: 'numbers', yesNo: 'yes/noes', direction: 'directions' };
+/** A slot's kind as a short tag beside its name: "number", "list of yes/noes", "grid of numbers". */
+function kindWord(m: MemorySlot | undefined): string {
+  if (!m) return '';
+  if (m.kind === 'list' || m.kind === 'grid') return `${m.kind} of ${ITEM_WORDS[m.of ?? 'number']}`;
+  return { number: 'number', yesNo: 'yes/no', direction: 'direction', position: 'place' }[m.kind] ?? m.kind;
+}
+
 /** A grid slot drawn as a little table, rows like the board's, the robot's tile ringed. */
 function GridTable({ rows, here }: { rows: Value[]; here: { x: number; y: number } }) {
   const cell = (v: Value) => (typeof v === 'boolean' ? (v ? '■' : '·') : String(v));
@@ -169,6 +177,7 @@ export function MemoryCard({ world, state, slots = [], asking = [], answers = {}
                 <span className="visually-hidden">Holds {KIND_WORDS[line.kind]}.</span>
               </span>
               <span className="memory-label">{line.label}</span>
+              {line.slot && <span className="memory-kindword">{kindWord(slots.find((m) => slotOfField(line.field) === m.name))}</span>}
               {asked ? (
                 <span className="memory-question" role="group" aria-label={`${line.label} at the end? ${isWrong ? 'Not that one last time.' : ''}`}>
                   {question(line.field as MemoryField, line.label, askedKind(line))}

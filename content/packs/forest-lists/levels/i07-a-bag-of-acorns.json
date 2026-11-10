@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "id": "i07-a-bag-of-acorns",
+  "title": "A bag of acorns",
+  "intro": "Put every acorn you pick up in the bag list, with a When card. Then the bag knows how many: unlock the gate with its length.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 6,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      },
+      {
+        "x": 4,
+        "y": 0
+      }
+    ],
+    "gates": [
+      {
+        "id": "a",
+        "x": 5,
+        "y": 0,
+        "open": false,
+        "code": 3
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "lists",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "push",
+      "set",
+      "unlock"
+    ],
+    "allowedSources": [
+      "acorns",
+      "length:bag"
+    ],
+    "maxInstructions": 9,
+    "starterProgram": [
+      {
+        "remember": "bag",
+        "kind": "list",
+        "of": "number",
+        "start": []
+      },
+      {
+        "remember": "n",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "on": "acorn",
+        "do": []
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "text": "Three acorns before the gate: the bag should hold three things."
+    },
+    {
+      "kind": "card",
+      "command": "push",
+      "text": "When an acorn is picked up, add something to bag. Its length is how many went in."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:acorn"
+      ],
+      "slot": 0,
+      "command": "push",
+      "text": "The When card adds to the bag."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "bag",
+      "kind": "list",
+      "of": "number",
+      "start": []
+    },
+    {
+      "remember": "n",
+      "kind": "number",
+      "start": 0
+    },
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    {
+      "set": "n",
+      "to": "length:bag"
+    },
+    {
+      "unlock": "a",
+      "with": "n"
+    },
+    "forward",
+    "forward",
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "push": "bag",
+          "to": "acorns"
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

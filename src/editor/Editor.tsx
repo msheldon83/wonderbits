@@ -29,7 +29,7 @@ import type { IdFactory } from '../ir/ids';
 import { isNoOpMove, type EditOp } from '../ir/ops';
 import { ancestorsOf, branchesOf, branchBody, containerAt, endOfMain, functionsOf, isWithin, locate, mainBody, memoryOf, procedureOfPlace, samePlaceContainer, slotsInUse, walk } from '../ir/program';
 import { buildNodes } from '../ir/spec';
-import { functionContainerId, functionLabel, functionOfContainer, handlerContainerId, handlerOfContainer, isSenseId, MAIN as MAIN_PROCEDURE, readFrom, REPEAT_DEFAULT, REPEAT_MAX, REPEAT_MIN, type Branch, type CardId, type CommandId, type IRNode, type MemorySlot, type NodeId, type Place, type ProgramIR, type Source } from '../ir/types';
+import { functionContainerId, functionLabel, functionOfContainer, handlerContainerId, handlerOfContainer, isSenseId, lengthOf, MAIN as MAIN_PROCEDURE, readFrom, REPEAT_DEFAULT, REPEAT_MAX, REPEAT_MIN, type Branch, type CardId, type CommandId, type IRNode, type MemorySlot, type NodeId, type Place, type ProgramIR, type Source } from '../ir/types';
 import type { TraceEvent } from '../runtime/contract';
 import { cardLabel, COMMANDS, conditionLabel, describeNode, eventLabel, FunctionIcon, nodeLabel, placeWords, sourceWords } from './commands';
 import { gapCentres, slotForY, type RowBox } from './geometry';
@@ -251,6 +251,10 @@ export function Editor({
         return { id: newId(), kind: 'face', slot: memory.find((m) => m.kind === 'direction')?.name ?? 'way' };
       case 'unlock':
         return { id: newId(), kind: 'unlock', gate: gates[0] ?? 'a', slot: memory.find((m) => m.kind === 'number')?.name ?? 'count' };
+      case 'push': {
+        const list = memory.find((m) => m.kind === 'list');
+        return { id: newId(), kind: 'push', list: list?.name ?? 'list', to: sourcesFor(list?.of ?? 'yesNo', programming, memory)[0] ?? true };
+      }
       case 'mark': {
         const grid = memory.find((m) => m.kind === 'grid');
         return { id: newId(), kind: 'mark', grid: grid?.name ?? 'map', at: 'here', slot: memory.find((m) => m.kind === grid?.of)?.name ?? 'count' };
@@ -783,6 +787,31 @@ export function Editor({
               {slotSelect(`To which slot, step ${number}`, node.slot, ['number'], (slot) => setParam(node.id, { slot }))}
             </span>
           )}
+          {node.kind === 'push' && (
+            <span className="block-param block-condition">
+              <select
+                className="param-select"
+                aria-label={`Add what, step ${number}`}
+                value={JSON.stringify(node.to)}
+                disabled={locked}
+                onChange={(e) => setParam(node.id, { to: JSON.parse(e.target.value) as Source })}
+              >
+                {(() => {
+                  const options = sourcesFor(memory.find((m) => m.name === node.list)?.of ?? 'yesNo', programming, memory);
+                  return (options.some((o) => o === node.to) ? options : [node.to, ...options]).map((o) => (
+                    <option key={JSON.stringify(o)} value={JSON.stringify(o)}>
+                      {sourceWords(o)}
+                    </option>
+                  ));
+                })()}
+              </select>
+              <span className="param-word">to</span>
+              {slotSelect(`To which list, step ${number}`, node.list, ['list'], (list) => {
+                const of = memory.find((m) => m.name === list)?.of ?? 'yesNo';
+                setParam(node.id, { list, to: sourcesFor(of, programming, memory)[0] ?? true });
+              })}
+            </span>
+          )}
           {node.kind === 'mark' && (
             <span className="block-param block-condition">
               {slotSelect(`Which value, step ${number}`, node.slot, [memory.find((m) => m.name === node.grid)?.of ?? 'number'], (slot) => setParam(node.id, { slot }))}
@@ -1059,7 +1088,8 @@ export function Editor({
                 Tap an arrow to put {carriedName} there.
               </p>
             )}
-            {(memory.length > 0 || programming.memoryOptions) && renderMemory()}
+            {/* Choosing which slots to keep, on budget levels. The slots themselves show on the memory card above. */}
+            {programming.memoryOptions && !readOnly && renderMemory()}
             {renderList(MAIN, 0)}
             {functions.map((f) => {
               const container: Container = { parent: functionContainerId(f.name), branch: 'body' };
@@ -1163,7 +1193,9 @@ function sourcesFor(kind: string, programming: Programming, memory: readonly Mem
   // Reading a grid gives an item of the grid's kind: here, ahead, or at a remembered place.
   const places = ['here', 'ahead', ...memory.filter((m) => m.kind === 'position').map((m) => m.name)];
   const reads = memory.filter((m) => m.kind === 'grid' && m.of === kind).flatMap((g) => places.map((at) => readFrom(g.name, at)));
-  return [...ownSources(kind, programming), ...reads.filter((r) => !programming.allowedSources || programming.allowedSources.includes(r))];
+  // How many items a list holds is a number.
+  const lengths = kind === 'number' ? memory.filter((m) => m.kind === 'list').map((m) => lengthOf(m.name)) : [];
+  return [...ownSources(kind, programming), ...[...reads, ...lengths].filter((r) => !programming.allowedSources || programming.allowedSources.includes(r))];
 }
 
 function ownSources(kind: string, programming: Programming): Source[] {

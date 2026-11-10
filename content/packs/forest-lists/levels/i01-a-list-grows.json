@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "id": "i01-a-list-grows",
+  "title": "A list grows",
+  "intro": "At each tile the robot writes down whether an acorn is ahead. Watch seen grow on the memory card. How many things will it hold?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 2,
+        "y": 0
+      },
+      {
+        "x": 4,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "lists",
+    "activity": "model"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "push",
+      "set"
+    ],
+    "maxInstructions": 8,
+    "starterProgram": [
+      {
+        "remember": "seen",
+        "kind": "list",
+        "of": "yesNo",
+        "start": []
+      },
+      {
+        "remember": "n",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "push": "seen",
+        "to": "acornAhead"
+      },
+      "forward",
+      {
+        "push": "seen",
+        "to": "acornAhead"
+      },
+      "forward",
+      {
+        "push": "seen",
+        "to": "acornAhead"
+      },
+      "forward",
+      "forward",
+      {
+        "set": "n",
+        "to": "length:seen"
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "text": "seen starts empty. Each Add to list puts one more thing on the end."
+    },
+    {
+      "kind": "card",
+      "command": "push",
+      "text": "Count the Add to list cards: that is how long seen gets."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "push",
+      "text": "The first thing written down is what the robot sees from the start."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "seen",
+      "kind": "list",
+      "of": "yesNo",
+      "start": []
+    },
+    {
+      "remember": "n",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "push": "seen",
+      "to": "acornAhead"
+    },
+    "forward",
+    {
+      "push": "seen",
+      "to": "acornAhead"
+    },
+    "forward",
+    {
+      "push": "seen",
+      "to": "acornAhead"
+    },
+    "forward",
+    "forward",
+    {
+      "set": "n",
+      "to": "length:seen"
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": false,
+    "askMemory": [
+      "slot:n"
+    ]
+  }
+}

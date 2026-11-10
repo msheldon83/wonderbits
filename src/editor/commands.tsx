@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { functionLabel, isSenseId, parseRead, parseSlotTest, type CardId, type ConditionId, type IRNode, type SenseId, type Source, type Value } from '../ir/types';
+import { functionLabel, isSenseId, parseLength, parseRead, parseSlotTest, type CardId, type ConditionId, type IRNode, type SenseId, type Source, type Value } from '../ir/types';
 import { TurnArrow } from '../render/art';
 
 export interface CommandInfo {
@@ -167,6 +167,15 @@ export const COMMANDS: Record<CardId, CommandInfo> = {
       </svg>
     ),
   },
+  push: {
+    label: 'Add to list',
+    description: 'Put a value on the end of a list',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <path d="M5 8h14M5 15h14M5 22h8M22 18v10M17 23h10" {...stroke} />
+      </svg>
+    ),
+  },
   call: {
     label: 'Function',
     description: 'Run the cards of a function',
@@ -222,6 +231,8 @@ export function sourceWords(source: Source): string {
   if (typeof source !== 'string') return valueWords(source);
   const read = parseRead(source);
   if (read) return `${read.grid} ${placeWords(read.at)}`;
+  const counted = parseLength(source);
+  if (counted) return `how many in ${counted}`;
   if (source === 'facing') return 'the way it faces';
   if (source === 'here') return 'where it is';
   if (source === 'acorns') return 'acorns held';
@@ -258,6 +269,8 @@ export function describeNode(node: IRNode): string {
       return `Face the way ${node.slot} holds`;
     case 'unlock':
       return `Unlock gate ${node.gate.toUpperCase()} with ${node.slot}`;
+    case 'push':
+      return `Add ${sourceWords(node.to)} to the end of ${node.list}`;
     case 'mark':
       return `Mark ${node.slot} on ${node.grid} ${placeWords(node.at)}`;
     case 'call':

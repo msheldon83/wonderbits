@@ -3,7 +3,7 @@
  * readable TypeScript. Read-only through Phase 3; Phase 4 adds a parser that
  * lifts hand-edited code back into the IR using the @node comments.
  */
-import { isSenseId, MAIN, parseRead, parseSlotTest, type CommandId, type ConditionId, type IRNode, type MemorySlot, type ProgramIR, type SenseId, type Source, type Value } from '../ir/types';
+import { isSenseId, MAIN, parseLength, parseRead, parseSlotTest, type CommandId, type ConditionId, type IRNode, type MemorySlot, type ProgramIR, type SenseId, type Source, type Value } from '../ir/types';
 
 const CALL: Record<CommandId, string> = {
   forward: 'robot.forward();',
@@ -45,6 +45,8 @@ function sourceCode(source: Source): string {
   if (typeof source !== 'string') return String(source);
   const read = parseRead(source);
   if (read) return `at(${read.grid}, ${placeCode(read.at)})`;
+  const counted = parseLength(source);
+  if (counted) return `${counted}.length`;
   if (source === 'facing') return 'robot.facing()';
   if (source === 'here') return 'robot.position()';
   if (source === 'acorns') return 'robot.acorns()';
@@ -130,6 +132,9 @@ function printNode(node: IRNode, depth: number, lines: string[]): void {
       return;
     case 'unlock':
       lines.push(`${pad}robot.unlock('${node.gate}', ${node.slot}); ${tag}`);
+      return;
+    case 'push':
+      lines.push(`${pad}${node.list}.push(${sourceCode(node.to)}); ${tag}`);
       return;
     case 'mark':
       lines.push(`${pad}put(${node.grid}, ${placeCode(node.at)}, ${node.slot}); ${tag}`);

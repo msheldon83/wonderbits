@@ -1,4 +1,4 @@
-import { isSenseId, parseRead, parseSlotTest, type CommandId, type ConditionId, type GridPlace, type MemorySlot, type SenseId, type Source, type Value } from '../ir/types';
+import { isSenseId, parseLength, parseRead, parseSlotTest, type CommandId, type ConditionId, type GridPlace, type MemorySlot, type SenseId, type Source, type Value } from '../ir/types';
 import type { Cell, Facing, Gate, Mover, ObjectiveDefinition, Plate, SimState, Switch, TileKind, WorldDefinition } from './types';
 
 export const cellKey = (c: Cell): string => `${c.x},${c.y}`;
@@ -268,6 +268,11 @@ export function readSource(world: WorldDefinition, state: SimState, source: Sour
   if (typeof source !== 'string') return source;
   const read = parseRead(source);
   if (read) return gridItem(state.memory?.[read.grid], gridPlace(state, read.at));
+  const counted = parseLength(source);
+  if (counted) {
+    const list = state.memory?.[counted];
+    return Array.isArray(list) ? list.length : 0;
+  }
   if (source === 'facing') return state.robot.facing;
   if (source === 'here') return { x: state.robot.x, y: state.robot.y };
   if (source === 'acorns') return state.collected.length;

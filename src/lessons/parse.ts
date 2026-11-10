@@ -3,7 +3,7 @@
  * contributors may write by hand, so errors name the exact path at fault.
  */
 import { slotOfSpec, type NodeSpec } from '../ir/spec';
-import { FUNCTION_NAME, isCardId, isCommandId, isConditionId, isEventId, isSenseId, KEYS, parseRead, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, VALUE_KINDS, type CardId, type ConditionId, type ItemKind, type Key, type Source, type Value, type ValueKind } from '../ir/types';
+import { FUNCTION_NAME, isCardId, isCommandId, isConditionId, isEventId, isSenseId, KEYS, parseLength, parseRead, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, VALUE_KINDS, type CardId, type ConditionId, type ItemKind, type Key, type Source, type Value, type ValueKind } from '../ir/types';
 import { FACINGS, type Cell, type Facing, type Gate, type Mover, type Plate, type Switch, type TileKind, type WorldDefinition } from '../sim/types';
 import { CONTENT_SCHEMA_VERSION, type MemoryField, type Activity, type ConceptIntroduction, type HintPath, type HintStep, type PackManifest, type PuzzleDefinition } from './types';
 
@@ -138,6 +138,7 @@ class Reader {
       }
       if ('face' in s) return [{ face: this.functionName(s.face, `${at}.face`) }];
       if ('unlock' in s) return [{ unlock: this.gateId(s.unlock, `${at}.unlock`), with: this.functionName(s.with, `${at}.with`) }];
+      if ('push' in s) return [{ push: this.functionName(s.push, `${at}.push`), to: this.source(s.to, `${at}.to`) }];
       if ('mark' in s) return [{ mark: this.functionName(s.mark, `${at}.mark`), at: this.place(s.at, `${at}.at`), with: this.functionName(s.with, `${at}.with`) }];
       if ('forEach' in s) return [{ forEach: this.functionName(s.forEach, `${at}.forEach`), as: this.functionName(s.as, `${at}.as`), do: this.spec(s.do, `${at}.do`, false) }];
       if ('open' in s) return [{ open: this.gateId(s.open, `${at}.open`) }];
@@ -254,7 +255,7 @@ class Reader {
   source(v: unknown, path: string): Source {
     if (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 999) return v;
     if (typeof v === 'boolean') return v;
-    if (typeof v === 'string' && (['N', 'E', 'S', 'W', 'facing', 'here', 'acorns'].includes(v) || isSenseId(v) || parseRead(v))) return v;
+    if (typeof v === 'string' && (['N', 'E', 'S', 'W', 'facing', 'here', 'acorns'].includes(v) || isSenseId(v) || parseRead(v) || parseLength(v))) return v;
     this.fail(path, `expected a value to set: a number, true or false, N, E, S or W, "facing", "here", "acorns" or a sense, got ${JSON.stringify(v)}`);
     return 0;
   }

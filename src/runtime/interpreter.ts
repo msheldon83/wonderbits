@@ -138,6 +138,15 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
           state = after;
           break;
         }
+        case 'push': {
+          const old = state.memory?.[node.list];
+          const list = [...(Array.isArray(old) ? old : []), readSource(world, state, node.to)];
+          const after = remember(state, node.list, list);
+          const ok = yield* emit({ nodeId: node.id, op: 'set', slot: node.list, value: list, before: state, after, result: { kind: 'ok' } });
+          if (!ok) return;
+          state = after;
+          break;
+        }
         case 'mark': {
           const value = state.memory?.[node.slot];
           const after = value === undefined ? state : markGrid(state, node.grid, gridPlace(state, node.at), value);

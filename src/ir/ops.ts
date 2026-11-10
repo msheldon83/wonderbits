@@ -178,12 +178,14 @@ export function applyOp(program: ProgramIR, edit: EditOp): ProgramIR {
       }
       if (edit.gate !== undefined && node.kind !== 'openGate' && node.kind !== 'closeGate' && node.kind !== 'unlock') throw new Error(`Node ${edit.id} has no gate`);
       if (edit.slot !== undefined && !('slot' in node)) throw new Error(`Node ${edit.id} has no slot`);
-      if (edit.to !== undefined && node.kind !== 'set') throw new Error(`Node ${edit.id} has no value`);
+      if (edit.to !== undefined && node.kind !== 'set' && node.kind !== 'push') throw new Error(`Node ${edit.id} has no value`);
       if (edit.by !== undefined && node.kind !== 'change') throw new Error(`Node ${edit.id} has no amount`);
-      if ((edit.list !== undefined || edit.item !== undefined) && node.kind !== 'forEach') throw new Error(`Node ${edit.id} has no list`);
+      if (edit.list !== undefined && node.kind !== 'forEach' && node.kind !== 'push') throw new Error(`Node ${edit.id} has no list`);
+      if (edit.item !== undefined && node.kind !== 'forEach') throw new Error(`Node ${edit.id} has no item`);
       if ((edit.grid !== undefined || edit.at !== undefined) && node.kind !== 'mark') throw new Error(`Node ${edit.id} has no grid`);
       const patch = (n: IRNode): IRNode => {
         if (n.id !== edit.id) return n;
+        if (n.kind === 'push') return { ...n, ...(edit.list !== undefined && { list: edit.list }), ...(edit.to !== undefined && { to: edit.to }) };
         if (n.kind === 'mark') return { ...n, ...(edit.slot !== undefined && { slot: edit.slot }), ...(edit.grid !== undefined && { grid: edit.grid }), ...(edit.at !== undefined && { at: edit.at }) };
         if (n.kind === 'set' || n.kind === 'change' || n.kind === 'face' || n.kind === 'unlock') {
           let out: IRNode = { ...n, ...(edit.slot !== undefined && { slot: edit.slot }) };

@@ -2612,3 +2612,38 @@ button.function-head {
 .mover-badge-beetle {
   color: #3d3f73;
 }
+
+/* ---------- The memory card inside the Program panel ---------- */
+
+.program-blocks .memory-card {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: var(--page);
+}
+
+.program-blocks .memory-line {
+  background: var(--paper);
+}
+
+.program-blocks .memory-line.is-slot {
+  background: var(--blue-wash);
+  box-shadow: inset 0 0 0 1px rgba(50, 145, 214, 0.25);
+}
+
+.memory-kindword {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+/* Asked and wrong lines keep their colours inside the Program panel too. */
+.program-blocks .memory-line.is-asked {
+  background: var(--gold-wash);
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+
+.program-blocks .memory-line.is-wrong {
+  background: var(--red-wash);
+  box-shadow: inset 0 0 0 2px var(--red);
+}

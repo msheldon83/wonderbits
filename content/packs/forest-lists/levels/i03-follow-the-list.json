@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "id": "i07-cards-in-order",
-  "title": "Cards in order",
-  "intro": "Put the three cards in order to walk the list.",
+  "id": "i03-follow-the-list",
+  "title": "Follow the list",
+  "intro": "Now the other way round: a route written down already. For each way in the list, the robot faces it and steps.",
   "themeId": "forest",
   "world": {
     "rows": [
-      "..",
-      "#.",
-      "#."
+      "...#",
+      "##.#",
+      "##.."
     ],
     "robot": {
       "x": 0,
@@ -16,7 +16,7 @@
       "facing": "E"
     },
     "goal": {
-      "x": 1,
+      "x": 3,
       "y": 2
     },
     "collectibles": []
@@ -27,7 +27,7 @@
   },
   "curriculum": {
     "concept": "lists",
-    "activity": "reorder"
+    "activity": "run"
   },
   "programming": {
     "allowedCommands": [
@@ -37,6 +37,7 @@
       "face",
       "forEach"
     ],
+    "maxInstructions": 3,
     "starterProgram": [
       {
         "remember": "route",
@@ -44,20 +45,27 @@
         "of": "direction",
         "start": [
           "E",
+          "E",
           "S",
-          "S"
+          "S",
+          "E"
         ]
       },
       {
         "remember": "way",
         "kind": "direction",
         "start": "N"
+      },
+      {
+        "forEach": "route",
+        "as": "way",
+        "do": [
+          {
+            "face": "way"
+          },
+          "forward"
+        ]
       }
-    ],
-    "suppliedCards": [
-      "forEach",
-      "face",
-      "forward"
     ]
   },
   "hints": [
@@ -65,23 +73,27 @@
       "kind": "region",
       "cells": [
         {
-          "x": 1,
+          "x": 0,
           "y": 0
+        },
+        {
+          "x": 3,
+          "y": 2
         }
       ],
-      "text": "Right, then down twice."
+      "text": "Five ways in the list, five steps."
     },
     {
       "kind": "card",
-      "command": "face",
-      "text": "Face comes before Forward, both inside the loop."
+      "command": "forEach",
+      "text": "For each way in route: face it, then step."
     },
     {
       "kind": "fill",
       "path": [],
       "slot": 0,
       "command": "forEach",
-      "text": "The loop holds the other two."
+      "text": "One loop walks the whole list."
     }
   ],
   "referenceSolution": [
@@ -91,8 +103,10 @@
       "of": "direction",
       "start": [
         "E",
+        "E",
         "S",
-        "S"
+        "S",
+        "E"
       ]
     },
     {
@@ -113,5 +127,8 @@
   ],
   "stars": {
     "noHints": true
+  },
+  "prediction": {
+    "askTile": true
   }
 }

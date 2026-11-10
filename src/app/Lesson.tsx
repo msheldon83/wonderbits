@@ -494,21 +494,6 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           </p>
         </div>
         <TickRules world={world} state={shownState ?? initialState(world, program.memory)} event={activeEvent} />
-        {showMemory && (
-          <MemoryCard
-            world={world}
-            state={shownState ?? initialState(world, program.memory)}
-            slots={program.memory}
-            asking={predicting ? askedFields : []}
-            answers={prediction?.memory}
-            wrong={wrongFields}
-            disabled={phase !== 'editing'}
-            onAnswer={(field: MemoryField, value: MemoryValue) => {
-              setPrediction((p) => ({ ...p, memory: { ...p?.memory, [field]: value } }));
-              setWrongFields((w) => w.filter((f) => f !== field));
-            }}
-          />
-        )}
       </div>
       <div className="side-col">
         <Editor
@@ -529,7 +514,27 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           onRedo={onRedo}
           onRestart={restart}
           codePanel={<CodePanel program={program} activeNodeId={activeNode} />}
-          aboveProgram={level.inputScript && <KeyScript keys={level.inputScript} event={activeEvent} played={phase === 'done'} />}
+          aboveProgram={
+            // Keys and memory sit at the top of the Program panel, next to the cards that use and change them.
+            <>
+              {level.inputScript && <KeyScript keys={level.inputScript} event={activeEvent} played={phase === 'done'} />}
+              {showMemory && (
+          <MemoryCard
+            world={world}
+            state={shownState ?? initialState(world, program.memory)}
+            slots={program.memory}
+            asking={predicting ? askedFields : []}
+            answers={prediction?.memory}
+            wrong={wrongFields}
+            disabled={phase !== 'editing'}
+            onAnswer={(field: MemoryField, value: MemoryValue) => {
+              setPrediction((p) => ({ ...p, memory: { ...p?.memory, [field]: value } }));
+              setWrongFields((w) => w.filter((f) => f !== field));
+            }}
+          />
+              )}
+            </>
+          }
           gates={gatesOf(world).map((g) => g.id)}
           showCode={showCode}
           onToggleCode={() => setShowCode((v) => !v)}

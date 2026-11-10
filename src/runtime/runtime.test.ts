@@ -381,3 +381,30 @@ describe('interpreter: grids', () => {
     expect(go(spec(1), objective).outcome).toEqual({ status: 'incomplete' });
   });
 });
+
+describe('interpreter: building lists', () => {
+  const row: WorldDefinition = {
+    width: 3,
+    height: 1,
+    tiles: [['floor', 'floor', 'floor']],
+    robot: { x: 0, y: 0, facing: 'E' },
+    goal: { x: 2, y: 0 },
+    collectibles: [{ x: 1, y: 0 }],
+  };
+
+  it('adds to the end of a list, and reads how many it holds', () => {
+    const spec: NodeSpec[] = [
+      { remember: 'seen', kind: 'list', of: 'yesNo' },
+      { remember: 'n', kind: 'number' },
+      { push: 'seen', to: 'acornAhead' },
+      'forward',
+      { push: 'seen', to: 'acornAhead' },
+      'forward',
+      { set: 'n', to: 'length:seen' },
+    ];
+    const r = interpretAll({ program: programFromSpec(spec, sequentialIdFactory()), world: row, objective, limits: { maxSteps: 100 } });
+    expect(r.outcome).toEqual({ status: 'success' });
+    expect(r.final.memory).toEqual({ seen: [true, false], n: 2 });
+    expect(r.trace.filter((e) => e.op === 'set').map((e) => e.op === 'set' && e.value)).toEqual([[true], [true, false], 2]);
+  });
+});

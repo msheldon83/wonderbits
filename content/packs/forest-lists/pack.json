@@ -13,12 +13,11 @@
   "introduction": {
     "concept": "lists",
     "title": "Lists",
-    "explanation": "A list keeps many things in order, and you can check each one.",
+    "explanation": "A list keeps many things in order. You can add to the end of it, and go through it one thing at a time.",
     "demo": {
       "world": {
         "rows": [
-          "..",
-          "#."
+          "..."
         ],
         "robot": {
           "x": 0,
@@ -26,46 +25,48 @@
           "facing": "E"
         },
         "goal": {
-          "x": 1,
-          "y": 1
-        }
+          "x": 2,
+          "y": 0
+        },
+        "collectibles": [
+          {
+            "x": 2,
+            "y": 0
+          }
+        ]
       },
       "program": [
         {
-          "remember": "route",
+          "remember": "seen",
           "kind": "list",
-          "of": "direction",
-          "start": [
-            "E",
-            "S"
-          ]
+          "of": "yesNo",
+          "start": []
         },
         {
-          "remember": "way",
-          "kind": "direction",
-          "start": "N"
+          "push": "seen",
+          "to": "acornAhead"
         },
+        "forward",
         {
-          "forEach": "route",
-          "as": "way",
-          "do": [
-            {
-              "face": "way"
-            },
-            "forward"
-          ]
+          "push": "seen",
+          "to": "acornAhead"
+        },
+        "forward",
+        {
+          "push": "seen",
+          "to": "acornAhead"
         }
       ]
     }
   },
   "levels": [
-    "i01-follow-the-list",
-    "i02-walk-the-list",
-    "i03-count-the-crates",
-    "i04-what-is-the-count",
-    "i05-fix-the-check",
-    "i06-a-long-route",
-    "i07-cards-in-order",
+    "i01-a-list-grows",
+    "i02-write-down-the-route",
+    "i03-follow-the-list",
+    "i04-walk-the-list",
+    "i05-count-the-crates",
+    "i06-fix-the-check",
+    "i07-a-bag-of-acorns",
     "i08-the-first-acorn",
     "i09-where-will-it-stop",
     "i10-count-and-open"
