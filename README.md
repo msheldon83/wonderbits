@@ -59,7 +59,8 @@ npm run dev
 ```
 
 Open the printed URL. On an iPad on the same network, use the "Network" URL.
-The level map is the home screen (`#/`). A level is `#/level/<id>`; the
+The level map is the home screen (`#/`), one island at a time; an island is
+`#/map/<pack id>`. A level is `#/level/<id>`; the
 first level of a pack opens with the pack's introduction, once. The card
 book is `#/book`, and one of its pages is `#/book/<pack id>`. `#/settings`
 has reduced motion, "open every level" for the grown-up (on by default for

@@ -4,6 +4,34 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Change: the map as a journey of islands (2026-11-10)
+
+The map was one long scroll of identical trails. It is now a journey, one
+island at a time (`src/app/MapScreen.tsx`, `#/map/<pack id>`):
+
+- **Each island has its own look** (`src/app/mapThemes.tsx`): a sky and
+  ground, a landmark at the top of its trail (a meadow, pine woods, a
+  windmill for Around and around, cliffs for Look before you leap, a
+  village, a castle for Flip the switch, a temple of plates, a remote
+  control lab, a clock tower on the river for Tick tock, a library, a
+  market, a lighthouse and crates for In a row, a map room, a carnival),
+  and scenery down the sides of its trail. Windmill sails, the clock's hand
+  and the big wheel turn; they stop for reduced motion.
+- **Each island has its own way on.** At the end of the trail a big button
+  travels to the next island in the island's style: walk the path, cross
+  the log bridge, roll down the hill, take the rope bridge, climb the
+  stairs, go through the castle gate, ride the lift, drive the remote cart,
+  sail down the river, float in the balloon, ride the market wagon, take
+  the ferry, fly the kite. The next island slides in. When it is not
+  reached yet, the button says which island to finish first; the last
+  island says more are on the way.
+- **A strip of islands** across the top, each a small sky-and-ground dot
+  with its number, jumps anywhere, marks the one on screen and rings the
+  finished ones. A back link at the top returns to the island before.
+- The map opens on the island being played, scrolled to its stone, as
+  before. Themes are presentation only, keyed by pack id; a pack without one
+  borrows a theme by its place on the map.
+
 ## Change: memory beside the program, and lists that are built (2026-11-10)
 
 Play-testing feedback: the route list in the first list level sat on the

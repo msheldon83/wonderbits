@@ -2647,3 +2647,257 @@ button.function-head {
   background: var(--red-wash);
   box-shadow: inset 0 0 0 2px var(--red);
 }
+
+/* ---------- The map as a journey of islands ---------- */
+
+.island-strip {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding: 6px 0 10px;
+  background: linear-gradient(var(--page) 70%, transparent);
+}
+
+.island-strip ol {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.island-dot {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(var(--island-sky) 45%, var(--island-ground) 46%);
+  color: var(--ink);
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: inset 0 0 0 2px var(--line);
+  transition: transform 120ms ease;
+}
+
+.island-dot:hover {
+  transform: translateY(-2px);
+}
+
+.island-dot.is-done {
+  box-shadow: inset 0 0 0 3px var(--green);
+}
+
+.island-dot.is-here {
+  box-shadow: inset 0 0 0 3px var(--gold), 0 0 0 3px var(--gold-wash);
+  transform: scale(1.12);
+}
+
+.island-dot.is-far {
+  opacity: 0.5;
+}
+
+/* One island: its sky up top fading into its ground, sliding in when you arrive. */
+.island {
+  position: relative;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 8px 12px 20px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, var(--island-sky) 0, var(--island-sky-low) 220px, var(--island-ground) 300px, var(--island-ground) 100%);
+  box-shadow: 0 6px 0 rgba(138, 106, 74, 0.35), 0 14px 28px rgba(40, 70, 60, 0.12);
+  overflow: hidden;
+  animation: island-arrive 520ms ease-out;
+}
+
+@keyframes island-arrive {
+  from {
+    opacity: 0;
+    transform: translateX(48px);
+  }
+}
+
+.island-head {
+  position: relative;
+  text-align: center;
+  padding-top: 4px;
+}
+
+.island-back {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* The landmark spans the island: its hills reach both edges, its building stays centred. */
+.island-landmark {
+  margin: 0 -12px;
+  overflow: hidden;
+}
+
+.island-landmark svg {
+  display: block;
+  width: 100%;
+  height: 180px;
+}
+
+/* Empty stars stay visible on light ground. */
+.island .map-stars {
+  color: rgba(29, 48, 71, 0.3);
+}
+
+.island-kicker {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.island-title {
+  margin: 0 0 4px;
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.island-decor {
+  position: absolute;
+  width: 76px;
+  height: 76px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.island-decor svg {
+  width: 100%;
+  height: 100%;
+}
+
+.island .map-stone.is-locked {
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.island .map-stone-title {
+  padding: 0 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--ink);
+}
+
+.island-travel {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+/* The way on: a big friendly button in the island's own style of travel. */
+.travel-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  min-height: 64px;
+  padding: 10px 22px 10px 12px;
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 5px 0 var(--gold), 0 10px 20px rgba(40, 70, 60, 0.16);
+  transition: transform 120ms ease;
+}
+
+a.travel-button:hover {
+  transform: translateY(-2px);
+}
+
+a.travel-button .travel-icon {
+  animation: travel-bob 2.4s ease-in-out infinite;
+}
+
+@keyframes travel-bob {
+  50% {
+    transform: translateY(-3px) rotate(-4deg);
+  }
+}
+
+.travel-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--gold-wash);
+  color: #7a5a06;
+}
+
+.travel-button.is-locked,
+.travel-button.is-end {
+  box-shadow: 0 5px 0 var(--line);
+  color: var(--ink-soft);
+}
+
+.travel-button.is-locked .travel-icon,
+.travel-button.is-end .travel-icon {
+  background: var(--page);
+  color: var(--ink-soft);
+}
+
+/* Moving parts of the landmarks: windmill sails, clock hands, the big wheel. */
+.map-spin {
+  animation: map-spin 9s linear infinite;
+}
+
+.map-spin-slow {
+  animation: map-spin 24s linear infinite;
+}
+
+.map-blink {
+  animation: map-blink 1.6s ease-in-out infinite;
+}
+
+@keyframes map-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes map-blink {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .island,
+  .map-spin,
+  .map-spin-slow,
+  .map-blink,
+  a.travel-button .travel-icon {
+    animation: none;
+  }
+}
+
+/* Arriving on an island scrolls to its landmark, below the sticky island strip. */
+.island-head {
+  scroll-margin-top: 72px;
+}
+
+@media (max-width: 760px) {
+  .island-head {
+    scroll-margin-top: 112px;
+  }
+}

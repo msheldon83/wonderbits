@@ -94,7 +94,7 @@ export function App() {
           </a>
         )}
       </header>
-      {route.screen === 'map' && <MapScreen choices={choices} book={book} store={store} badges={snap.progress.badges} />}
+      {route.screen === 'map' && <MapScreen choices={choices} book={book} store={store} badges={snap.progress.badges} packId={route.packId} />}
       {route.screen === 'settings' && <SettingsScreen store={store} settings={snap.settings} />}
       {route.screen === 'book' && !page && <CardBookScreen book={book} store={store} from={cameFrom.current} />}
       {route.screen === 'book' && page && pageOpen && (
