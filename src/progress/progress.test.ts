@@ -76,8 +76,10 @@ describe('ProgressStore', () => {
     return { store, storage };
   };
 
-  it('unlocks levels in order, or all of them when the adult says so', async () => {
+  it('opens every level by default, and unlocks them in order when the adult turns that off', async () => {
     const { store } = await make();
+    expect(store.isUnlocked('l6')).toBe(true);
+    store.updateSettings({ openAllLevels: false });
     expect(store.isUnlocked('l1')).toBe(true);
     expect(store.isUnlocked('l2')).toBe(false);
     store.complete({ levelId: 'l1', usedHints: false, steps: 2, budget: undefined });
