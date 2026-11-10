@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "m07-the-whole-card",
   "title": "The whole card",
-  "intro": "Three slots and a gate. Follow every card, then fill in the whole memory card.",
+  "intro": "Three slots and a gate. The Add cards are not next to the steps: follow every card, then fill in the whole memory card.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -60,11 +60,12 @@
         "kind": "direction",
         "start": "N"
       },
-      "forward",
       {
         "change": "steps",
         "by": 1
       },
+      "forward",
+      "forward",
       "forward",
       {
         "change": "steps",
@@ -83,7 +84,6 @@
         "with": "steps"
       },
       "forward",
-      "forward",
       "forward"
     ]
   },
@@ -96,7 +96,7 @@
           "y": 0
         }
       ],
-      "text": "The lock opens for 2: does steps reach 2 before Unlock?"
+      "text": "The lock opens for 2: count the Add cards, not the steps."
     },
     {
       "kind": "card",
@@ -107,8 +107,8 @@
       "kind": "fill",
       "path": [],
       "slot": 0,
-      "command": "forward",
-      "text": "Two steps, two Adds."
+      "command": "change",
+      "text": "The first card adds one before the robot moves at all."
     }
   ],
   "referenceSolution": [
@@ -127,11 +127,12 @@
       "kind": "direction",
       "start": "N"
     },
-    "forward",
     {
       "change": "steps",
       "by": 1
     },
+    "forward",
+    "forward",
     "forward",
     {
       "change": "steps",
@@ -149,7 +150,6 @@
       "unlock": "a",
       "with": "steps"
     },
-    "forward",
     "forward",
     "forward"
   ],

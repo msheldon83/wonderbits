@@ -48,14 +48,19 @@
       "set",
       "face",
       "change",
-      "unlock"
+      "unlock",
+      "until"
+    ],
+    "allowedConditions": [
+      "blockedAhead"
     ],
     "allowedSources": [
       "facing"
     ],
-    "maxInstructions": 15,
+    "maxInstructions": 12,
     "maxPerCommand": {
-      "rotateCW": 2
+      "rotateCW": 2,
+      "change": 1
     },
     "memoryOptions": [
       {
@@ -134,20 +139,15 @@
     {
       "face": "way"
     },
-    "forward",
     {
-      "change": "steps",
-      "by": 1
-    },
-    "forward",
-    {
-      "change": "steps",
-      "by": 1
-    },
-    "forward",
-    {
-      "change": "steps",
-      "by": 1
+      "until": "blockedAhead",
+      "do": [
+        "forward",
+        {
+          "change": "steps",
+          "by": 1
+        }
+      ]
     },
     {
       "unlock": "a",
@@ -158,6 +158,6 @@
   ],
   "stars": {
     "noHints": true,
-    "budget": 14
+    "budget": 11
   }
 }

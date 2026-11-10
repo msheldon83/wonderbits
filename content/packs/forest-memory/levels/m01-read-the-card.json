@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "id": "m01-read-the-card",
   "title": "Read the card",
+  "intro": "The robot takes three steps, but only one card changes steps. Nothing in memory changes unless a card changes it.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -45,10 +46,7 @@
         "start": "N"
       },
       "forward",
-      {
-        "change": "steps",
-        "by": 1
-      },
+      "forward",
       "forward",
       {
         "change": "steps",
@@ -57,8 +55,7 @@
       {
         "set": "way",
         "to": "facing"
-      },
-      "forward"
+      }
     ]
   },
   "hints": [
@@ -72,21 +69,25 @@
         {
           "x": 2,
           "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
         }
       ],
-      "text": "Count the Add cards, and look which way the robot faces when it fills in way."
+      "text": "Three steps on the board. Walking does not touch the memory card."
     },
     {
       "kind": "card",
       "command": "change",
-      "text": "Each Add card puts one more in steps. Set copies the way the robot faces into way."
+      "text": "Only the Add card changes steps, and there is just one."
     },
     {
       "kind": "fill",
       "path": [],
-      "slot": 1,
+      "slot": 3,
       "command": "change",
-      "text": "After each step, steps goes up by one."
+      "text": "steps goes up once, here."
     }
   ],
   "referenceSolution": [
@@ -101,10 +102,7 @@
       "start": "N"
     },
     "forward",
-    {
-      "change": "steps",
-      "by": 1
-    },
+    "forward",
     "forward",
     {
       "change": "steps",
@@ -113,8 +111,7 @@
     {
       "set": "way",
       "to": "facing"
-    },
-    "forward"
+    }
   ],
   "stars": {
     "noHints": true

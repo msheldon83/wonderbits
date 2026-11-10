@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "m06-cards-in-order",
   "title": "Cards in order",
-  "intro": "Put the cards in order: step, count, step, count, unlock, and through.",
+  "intro": "Put the cards in order: a loop that walks and counts, then unlock. Inside the loop, try the Add both before and after the Forward.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -40,7 +40,11 @@
     "allowedCommands": [
       "forward",
       "change",
-      "unlock"
+      "unlock",
+      "until"
+    ],
+    "allowedConditions": [
+      "blockedAhead"
     ],
     "starterProgram": [
       {
@@ -50,8 +54,7 @@
       }
     ],
     "suppliedCards": [
-      "forward",
-      "change",
+      "until",
       "forward",
       "change",
       "unlock",
@@ -72,15 +75,15 @@
     },
     {
       "kind": "card",
-      "command": "unlock",
-      "text": "Unlock comes after two steps and two Adds."
+      "command": "until",
+      "text": "The Forward and the Add both go inside the loop; Unlock comes after it."
     },
     {
       "kind": "fill",
       "path": [],
       "slot": 0,
-      "command": "forward",
-      "text": "Start with a step."
+      "command": "until",
+      "text": "Start with the loop."
     }
   ],
   "referenceSolution": [
@@ -89,15 +92,15 @@
       "kind": "number",
       "start": 0
     },
-    "forward",
     {
-      "change": "steps",
-      "by": 1
-    },
-    "forward",
-    {
-      "change": "steps",
-      "by": 1
+      "until": "blockedAhead",
+      "do": [
+        "forward",
+        {
+          "change": "steps",
+          "by": 1
+        }
+      ]
     },
     {
       "unlock": "a",

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "m02-count-the-steps",
   "title": "Count the steps",
-  "intro": "The gate has a number lock. Count your steps in the steps slot, then unlock the gate with it.",
+  "intro": "The gate has a number lock. Steps do not count themselves: walk in a loop, and add one to steps on every go.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -40,9 +40,16 @@
     "allowedCommands": [
       "forward",
       "change",
-      "unlock"
+      "unlock",
+      "until"
     ],
-    "maxInstructions": 9,
+    "allowedConditions": [
+      "blockedAhead"
+    ],
+    "maxInstructions": 6,
+    "maxPerCommand": {
+      "change": 1
+    },
     "starterProgram": [
       {
         "remember": "steps",
@@ -60,19 +67,21 @@
           "y": 0
         }
       ],
-      "text": "The lock opens for 3. The robot stands in front of it after three steps."
+      "text": "The lock opens for 3. The robot walks until the gate stops it."
     },
     {
       "kind": "card",
-      "command": "unlock",
-      "text": "Add one to steps after every step, then Unlock gate A with steps."
+      "command": "change",
+      "text": "One Add inside the loop counts every go. Before or after the Forward, it adds one each time round."
     },
     {
       "kind": "fill",
-      "path": [],
+      "path": [
+        0
+      ],
       "slot": 1,
       "command": "change",
-      "text": "After the first step, add one to steps."
+      "text": "Inside the loop, add one to steps."
     }
   ],
   "referenceSolution": [
@@ -81,20 +90,15 @@
       "kind": "number",
       "start": 0
     },
-    "forward",
     {
-      "change": "steps",
-      "by": 1
-    },
-    "forward",
-    {
-      "change": "steps",
-      "by": 1
-    },
-    "forward",
-    {
-      "change": "steps",
-      "by": 1
+      "until": "blockedAhead",
+      "do": [
+        "forward",
+        {
+          "change": "steps",
+          "by": 1
+        }
+      ]
     },
     {
       "unlock": "a",

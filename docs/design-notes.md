@@ -4,6 +4,28 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Change: counting is a card, not a side effect of moving (2026-11-10)
+
+Play-testing feedback: Count the steps and its neighbours paired every
+Forward with an Add (Forward, Add, Forward, Add...), which reads as if
+stepping did the counting and the Add had to follow the Forward. Neither is
+true: memory changes only when a card changes it, and an Add counts the same
+before a step as after it. The levels now say that instead:
+
+- **Read the card** opens on three steps and a single Add, and asks how
+  much steps holds: one, not three.
+- **Counting comes from a loop.** Count the steps, Count down and Only two
+  walk to the gate in a Repeat until with one Add inside (a quota of one
+  Add card rules out writing them out by hand). The Add works before or
+  after the Forward, and the hint says so; Cards in order invites trying
+  both.
+- **Fix the count** is now about changing the right slot: the loop adds to
+  turns, so steps stays 0 and the lock stays shut.
+- **The whole card**, **Follow the numbers** and the pack's introduction
+  put their Add cards away from the steps, so the count is read from the
+  cards, not from the walking. Counting by events (the acorn When card)
+  stays in Keep count.
+
 ## Change: showing what each mover does on a tick (2026-11-10)
 
 Play-testing feedback: Tick tock never showed how each log or beetle

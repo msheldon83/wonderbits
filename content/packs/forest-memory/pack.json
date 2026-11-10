@@ -51,14 +51,10 @@
           "to": "acornAhead"
         },
         "forward",
-        {
-          "change": "steps",
-          "by": 1
-        },
         "forward",
         {
           "change": "steps",
-          "by": 1
+          "by": 2
         }
       ]
     }

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "m05-fix-the-count",
   "title": "Fix the count",
-  "intro": "The lock wants 3, but the gate stays shut. One card counts wrong.",
+  "intro": "The robot walks the right way, but steps stays 0 and the lock stays shut. One card changes the wrong slot.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -40,29 +40,36 @@
     "allowedCommands": [
       "forward",
       "change",
-      "unlock"
+      "unlock",
+      "until"
     ],
-    "maxInstructions": 9,
+    "allowedConditions": [
+      "blockedAhead"
+    ],
+    "maxInstructions": 6,
+    "maxPerCommand": {
+      "change": 1
+    },
     "starterProgram": [
       {
         "remember": "steps",
         "kind": "number",
         "start": 0
       },
-      "forward",
       {
-        "change": "steps",
-        "by": 1
+        "remember": "turns",
+        "kind": "number",
+        "start": 0
       },
-      "forward",
       {
-        "change": "steps",
-        "by": -1
-      },
-      "forward",
-      {
-        "change": "steps",
-        "by": 1
+        "until": "blockedAhead",
+        "do": [
+          "forward",
+          {
+            "change": "turns",
+            "by": 1
+          }
+        ]
       },
       {
         "unlock": "a",
@@ -81,20 +88,24 @@
           "y": 0
         }
       ],
-      "text": "Watch steps on the memory card after each card."
+      "text": "Watch steps and turns on the memory card as the robot walks."
     },
     {
       "kind": "step",
-      "path": [],
-      "index": 3,
-      "text": "Does this card add one, or take one away?"
+      "path": [
+        0
+      ],
+      "index": 1,
+      "text": "Which slot does this card add to?"
     },
     {
       "kind": "fill",
-      "path": [],
-      "slot": 3,
+      "path": [
+        0
+      ],
+      "slot": 1,
       "command": "change",
-      "text": "Every step should add one."
+      "text": "Add to steps, the slot the lock reads."
     }
   ],
   "referenceSolution": [
@@ -103,20 +114,20 @@
       "kind": "number",
       "start": 0
     },
-    "forward",
     {
-      "change": "steps",
-      "by": 1
+      "remember": "turns",
+      "kind": "number",
+      "start": 0
     },
-    "forward",
     {
-      "change": "steps",
-      "by": 1
-    },
-    "forward",
-    {
-      "change": "steps",
-      "by": 1
+      "until": "blockedAhead",
+      "do": [
+        "forward",
+        {
+          "change": "steps",
+          "by": 1
+        }
+      ]
     },
     {
       "unlock": "a",
