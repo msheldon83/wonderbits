@@ -37,16 +37,17 @@ export function nextLevelId(choices: readonly LevelChoice[], id: string): string
   return index >= 0 ? (choices[index + 1]?.level.id ?? null) : null;
 }
 
-export type Route = { screen: 'map' } | { screen: 'settings' } | { screen: 'level'; id: string } | { screen: 'book'; packId?: string };
+/** The map shows one island at a time; with no island named it opens on the one being played. */
+export type Route = { screen: 'map'; packId?: string } | { screen: 'settings' } | { screen: 'level'; id: string } | { screen: 'book'; packId?: string };
 
 export function parseRoute(hash: string): Route {
   const path = hash.replace(/^#\/?/, '');
   if (path === 'settings') return { screen: 'settings' };
   if (path === 'book') return { screen: 'book' };
-  const m = /^(level|book)\/([^/]+)$/.exec(path);
+  const m = /^(level|book|map)\/([^/]+)$/.exec(path);
   if (m) {
     const id = decodeURIComponent(m[2]!);
-    return m[1] === 'level' ? { screen: 'level', id } : { screen: 'book', packId: id };
+    return m[1] === 'level' ? { screen: 'level', id } : m[1] === 'map' ? { screen: 'map', packId: id } : { screen: 'book', packId: id };
   }
   return { screen: 'map' };
 }
@@ -54,7 +55,7 @@ export function parseRoute(hash: string): Route {
 export function hashFor(route: Route): string {
   switch (route.screen) {
     case 'map':
-      return '#/';
+      return route.packId === undefined ? '#/' : `#/map/${encodeURIComponent(route.packId)}`;
     case 'settings':
       return '#/settings';
     case 'level':
