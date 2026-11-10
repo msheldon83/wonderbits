@@ -4,6 +4,28 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Change: showing what each mover does on a tick (2026-11-10)
+
+Play-testing feedback: Tick tock never showed how each log or beetle
+answers a tick, so by Three lanes, where the logs move at different speeds,
+the idea of each thing acting in its own way on the same tick was still
+foreign. Now the pattern is on screen before anything moves:
+
+- **On the board** each mover's round is a dotted track, and a dashed
+  outline with an arrow marks the tile it moves to on the next tick (none
+  when it stays put). When there is more than one of a kind, each carries
+  its number.
+- **The Every tick strip** under the board (`src/app/TickRules.tsx`) has a
+  row per mover spelling out its round, tick by tick: arrows for steps, a
+  dot for a pause, then round again. A slow log reads `• ↑ • ↓`, a fast one
+  `↑ ↓`. The move the next tick will make is ringed; while a tick plays, the
+  moves being made light up in every row at once, beside a tick counter.
+- **The levels say so.** The introduction now shows two logs, one moving
+  every tick and one every other tick. A new level, Fast and slow, replaces
+  Cards in order (a reorder of four cards that taught little) so different
+  speeds are met before Three lanes, and Two rivers and Three lanes point at
+  the outline and the strip.
+
 ## Build step 12, part two: grids and randomness (2026-11-09)
 
 The next two packs of step 12: **Reading the map** (2D grids) and **Never

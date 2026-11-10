@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import type { Cell, WorldDefinition } from '../sim/types';
-import { cellKey, gatesOf, initialState, moverCell, moversOf, platesOf, switchesOf, tileAt } from '../sim/world';
+import { cellKey, gatesOf, initialState, moverCell, moverLabel, moversOf, platesOf, switchesOf, tileAt } from '../sim/world';
 import { Anchored, ARROW_POINTS, BeetleArt, Collectible, CUE_BOX, FloorTile, GateArt, GhostRobot, GoalFlag, Lip, LogArt, PlateArt, Robot, ROBOT_BOX, Rock, SwitchArt, Tree, TurnCue, Water } from './art';
 import { BoardController, type MotionSettings, type RobotElements } from './controller';
 import { LAYER, LIP, layoutFor, TILE, toScreen } from './grid';
@@ -39,6 +39,7 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
   const gateEls = useRef(new Map<string, HTMLElement>());
   const switchEls = useRef(new Map<string, HTMLElement>());
   const moverEls = useRef(new Map<string, HTMLElement>());
+  const ghostEls = useRef(new Map<string, HTMLElement>());
   const controllers = useRef<BoardController[]>([]);
   const elsFor = (i: number) => (robotEls.current[i] ??= {});
   const [scale, setScale] = useState(1);
@@ -61,7 +62,7 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
   useLayoutEffect(() => {
     const cs = Array.from({ length: robotCount }, (_, i) => {
       const els = robotEls.current[i] as RobotElements;
-      const c = new BoardController(world, layout, els, i === 0 ? gems.current : new Map(), theme.indicator, motion, i === 0 ? { gates: gateEls.current, switches: switchEls.current, movers: moverEls.current } : undefined);
+      const c = new BoardController(world, layout, els, i === 0 ? gems.current : new Map(), theme.indicator, motion, i === 0 ? { gates: gateEls.current, switches: switchEls.current, movers: moverEls.current, ghosts: ghostEls.current } : undefined);
       c.showState(initialState(world));
       return c;
     });
@@ -210,6 +211,24 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
   }
   for (const m of moversOf(world)) {
     const start = toScreen(layout, moverCell(m, 0));
+    // Where it will be on the next tick: a dashed outline with an arrow, placed by the controller.
+    objects.push(
+      <div
+        key={`gh${m.id}`}
+        ref={(el) => {
+          if (el) ghostEls.current.set(m.id, el);
+          else ghostEls.current.delete(m.id);
+        }}
+        className={`mover-ghost mover-ghost-${m.kind}`}
+        aria-hidden="true"
+        style={{ position: 'absolute', left: 0, top: 0, width: TILE, height: TILE, opacity: 0, zIndex: m.kind === 'log' ? LAYER.goal - 3 : LAYER.indicator }}
+      >
+        <svg width={TILE} height={TILE} viewBox={`${-TILE / 2} ${-TILE / 2} ${TILE} ${TILE}`}>
+          <rect x={-40} y={-30} width={80} height={60} rx={22} fill="none" strokeWidth={4} strokeDasharray="9 7" />
+          <path className="mover-ghost-arrow" d="M0 14 V-12 M-9 -3 L0 -13 L9 -3" fill="none" strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>,
+    );
     objects.push(
       <div
         key={`mv${m.id}`}
@@ -223,6 +242,12 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
         <Anchored x={TILE / 2} y={TILE / 2} size={TILE} z={0} label={m.kind === 'log' ? 'A floating log' : 'A beetle on patrol'}>
           {m.kind === 'log' ? <LogArt /> : <BeetleArt />}
         </Anchored>
+        {/* Its number, matching its row in the Every tick strip, when there is more than one of its kind. */}
+        {moverLabel(world, m).includes(' ') && (
+          <span className={`mover-badge mover-badge-${m.kind}`} aria-hidden="true">
+            {moverLabel(world, m).split(' ')[1]}
+          </span>
+        )}
       </div>,
     );
   }
@@ -299,6 +324,21 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
             <g>{floors}</g>
             <g>{lips}</g>
             <g>{walls}</g>
+            {/* Each mover's round as a dotted track, so the way it goes is on the board before it moves. */}
+            <g className="mover-tracks">
+              {moversOf(world).map((m) => (
+                <polygon
+                  key={`tr${m.id}`}
+                  className={`mover-track mover-track-${m.kind}`}
+                  points={m.path.map((c) => toScreen(layout, c)).map((p) => `${p.x},${p.y}`).join(' ')}
+                  fill="none"
+                  strokeWidth={6}
+                  strokeDasharray="2 14"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              ))}
+            </g>
           </svg>
           {Array.from({ length: robotCount }, (_, i) => (
             <div

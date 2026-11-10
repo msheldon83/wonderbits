@@ -17,8 +17,8 @@
     "demo": {
       "world": {
         "rows": [
-          "._.",
-          "._."
+          "._._.",
+          "._._."
         ],
         "robot": {
           "x": 0,
@@ -26,7 +26,7 @@
           "facing": "E"
         },
         "goal": {
-          "x": 2,
+          "x": 4,
           "y": 1
         },
         "movers": [
@@ -43,10 +43,35 @@
                 "y": 0
               }
             ]
+          },
+          {
+            "id": "log2",
+            "kind": "log",
+            "path": [
+              {
+                "x": 3,
+                "y": 1
+              },
+              {
+                "x": 3,
+                "y": 1
+              },
+              {
+                "x": 3,
+                "y": 0
+              },
+              {
+                "x": 3,
+                "y": 0
+              }
+            ]
           }
         ]
       },
       "program": [
+        "wait",
+        "forward",
+        "forward",
         "wait",
         "forward",
         "forward"
@@ -60,7 +85,7 @@
     "t04-ride-the-log",
     "t05-fix-the-timing",
     "t06-every-tick",
-    "t07-cards-in-order",
+    "t07-fast-and-slow",
     "t08-two-beetles",
     "t09-where-will-it-stop",
     "t10-three-lanes"

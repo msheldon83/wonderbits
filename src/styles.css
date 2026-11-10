@@ -2447,3 +2447,168 @@ button.function-head {
   background: var(--gold-wash);
   box-shadow: 0 4px 0 var(--gold);
 }
+
+/* ---------- Ticks: tracks, ghosts and the Every tick strip ---------- */
+
+.mover-track-log {
+  stroke: rgba(255, 255, 255, 0.75);
+}
+
+.mover-track-beetle {
+  stroke: rgba(61, 63, 115, 0.45);
+}
+
+.mover-ghost {
+  transition: opacity 160ms ease;
+}
+
+.mover-ghost rect,
+.mover-ghost path {
+  stroke: rgba(255, 255, 255, 0.95);
+}
+
+.mover-ghost-beetle rect,
+.mover-ghost-beetle path {
+  stroke: rgba(61, 63, 115, 0.7);
+}
+
+/* The arrow points the way the mover goes next. */
+.mover-ghost .mover-ghost-arrow {
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+.mover-ghost[data-dir='E'] .mover-ghost-arrow {
+  transform: rotate(90deg);
+}
+
+.mover-ghost[data-dir='S'] .mover-ghost-arrow {
+  transform: rotate(180deg);
+}
+
+.mover-ghost[data-dir='W'] .mover-ghost-arrow {
+  transform: rotate(270deg);
+}
+
+.tick-rules {
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+
+.tick-rules-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.tick-count {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--page);
+  color: var(--ink);
+  letter-spacing: 0;
+  text-transform: none;
+  transition: background 160ms ease;
+}
+
+.tick-rules.is-ticking .tick-count {
+  background: var(--gold);
+}
+
+.tick-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.tick-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tick-name {
+  min-width: 72px;
+  font-weight: 800;
+}
+
+.tick-row.kind-log .tick-name {
+  color: #7a5432;
+}
+
+.tick-row.kind-beetle .tick-name {
+  color: #3d3f73;
+}
+
+.tick-steps {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tick-step,
+.tick-again {
+  min-width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--page);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.tick-step.is-stay {
+  color: var(--ink-soft);
+}
+
+.tick-again {
+  background: none;
+  color: var(--ink-soft);
+}
+
+/* The move the next tick will make: ringed. */
+.tick-step.is-next {
+  box-shadow: inset 0 0 0 2px var(--gold);
+  background: var(--gold-wash);
+}
+
+/* The move being made right now, by every mover at once. */
+.tick-step.is-now {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+/* A mover's number on the board, matching its row in the Every tick strip. */
+.mover-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  min-width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--paper);
+  font-size: 18px;
+  font-weight: 800;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+}
+
+.mover-badge-log {
+  color: #7a5432;
+}
+
+.mover-badge-beetle {
+  color: #3d3f73;
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WorldDefinition } from './types';
-import { advance, evaluate, initialState, isTimed, objectiveMet, passable, period, stateKey, step } from './world';
+import { advance, evaluate, initialState, isTimed, moverLabel, moverSteps, objectiveMet, passable, period, stateKey, step } from './world';
 
 // 4x3 board:   . . # .
 //              R . . G     robot at (0,1) facing E, goal at (3,1)
@@ -177,5 +177,18 @@ describe('plates, logs and beetles', () => {
     expect(isTimed({ ...timed, movers: [] }, true)).toBe(true);
     expect(stateKey(at(0, 0, 1), 6)).toBe(stateKey(at(0, 0, 7), 6));
     expect(stateKey(at(0, 0, 1), 6)).not.toBe(stateKey(at(0, 0, 2), 6));
+  });
+});
+
+describe('reading a mover\'s round', () => {
+  it('spells out each tick\'s move, a pause as stay, and names movers by kind', () => {
+    const slow = { id: 's', kind: 'log' as const, path: [{ x: 3, y: 1 }, { x: 3, y: 1 }, { x: 3, y: 0 }, { x: 3, y: 0 }] };
+    const fast = { id: 'f', kind: 'log' as const, path: [{ x: 1, y: 1 }, { x: 1, y: 0 }] };
+    const bug = { id: 'b', kind: 'beetle' as const, path: [{ x: 0, y: 0 }, { x: 1, y: 0 }] };
+    expect(moverSteps(slow)).toEqual(['stay', 'up', 'stay', 'down']);
+    expect(moverSteps(fast)).toEqual(['up', 'down']);
+    expect(moverSteps(bug)).toEqual(['right', 'left']);
+    const world = { width: 4, height: 2, tiles: [], robot: { x: 0, y: 0, facing: 'E' as const }, goal: { x: 1, y: 1 }, collectibles: [], movers: [fast, bug, slow] };
+    expect([fast, slow, bug].map((m) => moverLabel(world, m))).toEqual(['Log 1', 'Log 2', 'Beetle']);
   });
 });

@@ -52,6 +52,27 @@ export function moverAt(world: WorldDefinition, state: SimState, cell: Cell, kin
   return moversOf(world).find((m) => m.kind === kind && sameCell(moverCell(m, state.tick), cell));
 }
 
+export type MoverStep = 'up' | 'down' | 'left' | 'right' | 'stay';
+
+/** What a mover does on each tick of its round: step one way, or stay put. Step i takes it from path[i] to path[i + 1]. */
+export function moverSteps(mover: Mover): MoverStep[] {
+  return mover.path.map((c, i) => {
+    const n = mover.path[(i + 1) % mover.path.length]!;
+    if (n.x > c.x) return 'right';
+    if (n.x < c.x) return 'left';
+    if (n.y > c.y) return 'down';
+    if (n.y < c.y) return 'up';
+    return 'stay';
+  });
+}
+
+/** A mover's name as the child reads it: "Log 1", "Beetle 2", numbered by kind in the board's order. */
+export function moverLabel(world: WorldDefinition, mover: Mover): string {
+  const same = moversOf(world).filter((m) => m.kind === mover.kind);
+  const name = mover.kind === 'log' ? 'Log' : 'Beetle';
+  return same.length > 1 ? `${name} ${same.indexOf(mover) + 1}` : name;
+}
+
 /** Ticks before every mover is back where it started: the world repeats after this many. */
 export function period(world: WorldDefinition): number {
   const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));

@@ -1,14 +1,13 @@
 {
   "schemaVersion": 1,
-  "id": "t07-cards-in-order",
-  "title": "Cards in order",
-  "intro": "Put the cards in order: when to wait, and when to step.",
+  "id": "t07-fast-and-slow",
+  "title": "Fast and slow",
+  "intro": "Log 1 moves every tick; Log 2 only every other tick. Read their patterns in the Every tick strip, then place the flag.",
   "themeId": "forest",
   "world": {
     "rows": [
-      "._.",
-      "._.",
-      "._."
+      "._._.",
+      "._._."
     ],
     "robot": {
       "x": 0,
@@ -16,7 +15,7 @@
       "facing": "E"
     },
     "goal": {
-      "x": 2,
+      "x": 4,
       "y": 1
     },
     "collectibles": [],
@@ -27,19 +26,33 @@
         "path": [
           {
             "x": 1,
-            "y": 2
-          },
-          {
-            "x": 1,
             "y": 1
           },
           {
             "x": 1,
             "y": 0
+          }
+        ]
+      },
+      {
+        "id": "log2",
+        "kind": "log",
+        "path": [
+          {
+            "x": 3,
+            "y": 1
           },
           {
-            "x": 1,
+            "x": 3,
             "y": 1
+          },
+          {
+            "x": 3,
+            "y": 0
+          },
+          {
+            "x": 3,
+            "y": 0
           }
         ]
       }
@@ -51,7 +64,7 @@
   },
   "curriculum": {
     "concept": "time",
-    "activity": "reorder"
+    "activity": "run"
   },
   "programming": {
     "allowedCommands": [
@@ -60,9 +73,11 @@
       "rotateCCW",
       "wait"
     ],
-    "starterProgram": [],
-    "suppliedCards": [
+    "maxInstructions": 6,
+    "starterProgram": [
       "wait",
+      "forward",
+      "forward",
       "wait",
       "forward",
       "forward"
@@ -75,30 +90,39 @@
         {
           "x": 1,
           "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
         }
       ],
-      "text": "The log reaches the top row after two ticks."
+      "text": "Both logs go up and down, but Log 2 waits a tick at each end."
     },
     {
       "kind": "card",
       "command": "wait",
-      "text": "Both waits come first."
+      "text": "On every card, every log takes its next move at the same time, each its own way."
     },
     {
       "kind": "fill",
       "path": [],
       "slot": 0,
       "command": "wait",
-      "text": "Start with a Wait."
+      "text": "First the robot waits for Log 1."
     }
   ],
   "referenceSolution": [
     "wait",
+    "forward",
+    "forward",
     "wait",
     "forward",
     "forward"
   ],
   "stars": {
     "noHints": true
+  },
+  "prediction": {
+    "askTile": true
   }
 }

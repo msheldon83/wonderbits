@@ -26,6 +26,7 @@ import { useMotion } from './hooks';
 import { hashFor } from './levels';
 import { KeyScript } from './KeyScript';
 import { MemoryCard } from './MemoryCard';
+import { TickRules } from './TickRules';
 
 /** Pauses between runs, so the eye can rest on the end and the start. */
 const BEFORE_RUN_MS = 700;
@@ -156,6 +157,7 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
         <div className={`intro-demo ${folding ? 'is-folding' : ''}`}>
           <div className="intro-board">
             <Board world={world} theme={theme} motion={motion} label={label} onControllers={onControllers} maxScale={1.3} />
+            <TickRules world={world} state={shownState ?? initialState(world, program.memory)} event={activeEvent} />
             {(gatesOf(world).length > 0 || moversOf(world).length > 0 || (program.memory?.length ?? 0) > 0) && (
               <MemoryCard world={world} state={shownState ?? initialState(world, program.memory)} slots={program.memory} />
             )}
