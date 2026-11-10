@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "id": "g02-row-and-column",
+  "title": "Row and column",
+  "intro": "Every tile has a column (along the top) and a row (down the side). Find the flag's two numbers.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      ".....",
+      ".....",
+      ".....",
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 3,
+      "y": 2
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "grids",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "goRow",
+      "goColumn"
+    ],
+    "maxInstructions": 2,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 2
+        }
+      ],
+      "text": "Column 4, row 3."
+    },
+    {
+      "kind": "card",
+      "command": "goRow",
+      "text": "Go to row walks straight up or down."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 1,
+      "command": "goRow",
+      "text": "Column first, then row."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "goColumn": 4
+    },
+    {
+      "goRow": 3
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

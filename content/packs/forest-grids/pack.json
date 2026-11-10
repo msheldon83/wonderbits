@@ -3,23 +3,23 @@
   "id": "forest-grids",
   "title": "Reading the map",
   "themeId": "forest",
-  "order": 12,
+  "order": 13,
   "concepts": [
     "grids"
   ],
   "prerequisites": [
-    "forest-lists"
+    "forest-shuffle"
   ],
   "introduction": {
     "concept": "grids",
     "title": "Grids",
-    "explanation": "A grid is rows of lists, and every tile has a row and a column.",
+    "explanation": "Every tile has a column number and a row number. Go to column and Go to row walk straight there.",
     "demo": {
       "world": {
         "rows": [
-          "..#",
+          "...",
           "#.#",
-          "#.."
+          "..."
         ],
         "robot": {
           "x": 0,
@@ -27,67 +27,33 @@
           "facing": "E"
         },
         "goal": {
-          "x": 1,
+          "x": 2,
           "y": 2
         }
       },
       "program": [
         {
-          "remember": "walls",
-          "kind": "grid",
-          "of": "yesNo",
-          "start": [
-            [
-              false,
-              false,
-              true
-            ],
-            [
-              true,
-              false,
-              true
-            ],
-            [
-              true,
-              false,
-              false
-            ]
-          ]
+          "goColumn": 2
         },
         {
-          "remember": "wall",
-          "kind": "yesNo",
-          "start": false
+          "goRow": 3
         },
         {
-          "until": "atFlag",
-          "do": [
-            {
-              "set": "wall",
-              "to": "read:walls@ahead"
-            },
-            {
-              "if": "slot:wall=yes",
-              "do": [
-                "rotateCW"
-              ]
-            },
-            "forward"
-          ]
+          "goColumn": 3
         }
       ]
     }
   },
   "levels": [
-    "g01-read-the-map",
-    "g02-read-before-you-step",
-    "g03-count-around",
-    "g04-the-rock-lock",
-    "g05-fix-the-read",
-    "g06-leave-a-trail",
-    "g07-cards-in-order",
-    "g08-how-many-touch",
-    "g09-where-will-it-stop",
+    "g01-go-to-column",
+    "g02-row-and-column",
+    "g03-which-way-first",
+    "g04-stepping-stones",
+    "g05-every-other-column",
+    "g06-mow-the-field",
+    "g07-point-and-look",
+    "g08-gap-in-the-wall",
+    "g09-count-the-acorns",
     "g10-minesweeper"
   ]
 }

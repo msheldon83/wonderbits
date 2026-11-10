@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "id": "r04-random-steps",
+  "title": "Random steps",
+  "intro": "Roll how far to go, from 1 to 5 steps. Then walk that many: the robot should be able to end in any column from 2 to 6.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 0,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": false,
+    "collectAll": false,
+    "covers": {
+      "of": "column",
+      "values": [
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    }
+  },
+  "curriculum": {
+    "concept": "randomness",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "set",
+      "until",
+      "change"
+    ],
+    "allowedConditions": [
+      "slot:steps=0"
+    ],
+    "allowedSources": [
+      3,
+      "random:1-5"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": [
+      {
+        "remember": "steps",
+        "kind": "number",
+        "start": 0
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        }
+      ],
+      "text": "Any of these columns, depending on the roll."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "Repeat until steps is 0: step, then take 1 from steps."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 1,
+      "command": "until",
+      "text": "After the roll, a loop that counts the steps down."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "steps",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "set": "steps",
+      "to": "random:1-5"
+    },
+    {
+      "until": "slot:steps=0",
+      "do": [
+        "forward",
+        {
+          "change": "steps",
+          "by": -1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

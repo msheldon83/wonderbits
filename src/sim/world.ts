@@ -1,4 +1,5 @@
-import { isSenseId, parseLength, parseRead, parseSlotTest, type CommandId, type ConditionId, type GridPlace, type MemorySlot, type SenseId, type Source, type Value } from '../ir/types';
+import { randomInt } from './random';
+import { isSenseId, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type GridPlace, type MemorySlot, type SenseId, type Source, type Value } from '../ir/types';
 import type { Cell, Facing, Gate, Mover, ObjectiveDefinition, Plate, SimState, Switch, TileKind, WorldDefinition } from './types';
 
 export const cellKey = (c: Cell): string => `${c.x},${c.y}`;
@@ -93,10 +94,20 @@ export function passable(world: WorldDefinition, state: SimState, cell: Cell): b
 }
 
 /** The state before the first card. A program's memory slots hold their start values. */
-export function initialState(world: WorldDefinition, memory: readonly MemorySlot[] = []): SimState {
-  const base = initialWorld(world);
+export function initialState(world: WorldDefinition, memory: readonly MemorySlot[] = [], seed?: number): SimState {
+  const base = { ...initialWorld(world), ...(seed !== undefined && { rng: seed }) };
   if (memory.length === 0) return base;
-  return { ...base, memory: Object.fromEntries(memory.map((m) => [m.name, m.start])) };
+  return { ...base, memory: Object.fromEntries(memory.map((m) => [m.name, startValue(world, m.start)])) };
+}
+
+/** A slot's start: its own value, or, for a map, a copy of the board as rows of yes and no. */
+export function startValue(world: WorldDefinition, start: Value): Value {
+  if (start === 'board:walls') return world.tiles.map((row) => row.map((t) => t !== 'floor'));
+  if (start === 'board:acorns') {
+    const keys = new Set(world.collectibles.map(cellKey));
+    return world.tiles.map((row, y) => row.map((_, x) => keys.has(`${x},${y}`)));
+  }
+  return start;
 }
 
 function initialWorld(world: WorldDefinition): SimState {
@@ -117,7 +128,7 @@ function initialWorld(world: WorldDefinition): SimState {
  * they were.
  */
 export function stateKey(s: SimState, worldPeriod = 1): string {
-  return `${s.robot.x},${s.robot.y},${s.robot.facing}|${[...s.collected].sort().join(';')}|${s.open.join(';')}|${s.tick % worldPeriod}|${s.memory ? JSON.stringify(s.memory) : ''}`;
+  return `${s.robot.x},${s.robot.y},${s.robot.facing}|${[...s.collected].sort().join(';')}|${s.open.join(';')}|${s.tick % worldPeriod}|${s.memory ? JSON.stringify(s.memory) : ''}|${s.rng ?? ''}`;
 }
 
 /** A board where time passes: something moves, or the program has an every-tick card. */
@@ -264,6 +275,39 @@ export function markGrid(state: SimState, grid: string, cell: Cell | undefined, 
   return remember(state, grid, rows);
 }
 
+/**
+ * What a source gives right now, and the state after: a random source moves
+ * the generator on, so the next roll is a new one. Without a seed the
+ * generator starts at 0. Pure.
+ */
+export function drawSource(world: WorldDefinition, state: SimState, source: Source): { value: Value; state: SimState } {
+  const random = parseRandom(source);
+  if (!random) return { value: readSource(world, state, source), state };
+  const seed = state.rng ?? 0;
+  if (random.kind === 'range') {
+    const r = randomInt(seed, random.low, random.high);
+    return { value: r.value, state: { ...state, rng: r.state } };
+  }
+  if (random.kind === 'coin') {
+    const r = randomInt(seed, 0, 1);
+    return { value: r.value === 1, state: { ...state, rng: r.state } };
+  }
+  if (random.kind === 'way') {
+    const r = randomInt(seed, 0, 3);
+    return { value: (['N', 'E', 'S', 'W'] as const)[r.value]!, state: { ...state, rng: r.state } };
+  }
+  const list = state.memory?.[random.list];
+  if (!Array.isArray(list) || list.length === 0) return { value: false, state };
+  const r = randomInt(seed, 0, list.length - 1);
+  return { value: list[r.value]!, state: { ...state, rng: r.state } };
+}
+
+/** A remembered place moved one tile in a direction. Pure. */
+export function shiftPlace(value: Value | undefined, dir: Facing): Value | undefined {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined;
+  return ahead(value, dir);
+}
+
 export function readSource(world: WorldDefinition, state: SimState, source: Source): Value {
   if (typeof source !== 'string') return source;
   const read = parseRead(source);
@@ -304,8 +348,21 @@ export function memoryShortfall(objective: ObjectiveDefinition, state: SimState)
     .map(([slot]) => slot);
 }
 
+/** What a random level looks at once a run ends: a slot's value, or the robot's column counted from 1. */
+export function coveredValue(of: string, state: SimState): Value | undefined {
+  return of === 'column' ? state.robot.x + 1 : state.memory?.[of];
+}
+
+/** True when a run ended on one of a random level's outcomes, or the level has none. */
+export function withinOutcomes(objective: ObjectiveDefinition, state: SimState): boolean {
+  if (!objective.covers) return true;
+  const got = JSON.stringify(coveredValue(objective.covers.of, state));
+  return objective.covers.values.some((v) => JSON.stringify(v) === got);
+}
+
 export function objectiveMet(world: WorldDefinition, objective: ObjectiveDefinition, state: SimState): boolean {
   if (memoryShortfall(objective, state).length > 0) return false;
+  if (!withinOutcomes(objective, state)) return false;
   if (objective.reachGoal && (state.robot.x !== world.goal.x || state.robot.y !== world.goal.y)) return false;
   if (objective.collectAll && state.collected.length !== world.collectibles.length) return false;
   return true;

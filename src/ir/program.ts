@@ -1,6 +1,6 @@
 import type { IdFactory } from './ids';
 import { buildNodes, specOf, splitSpec, type NodeSpec } from './spec';
-import { functionContainerId, functionOfContainer, handlerContainerId, handlerOfContainer, IR_VERSION, MAIN, parseLength, parseRead, parseSlotTest, type Branch, type CommandId, type EventHandler, type IRNode, type MemorySlot, type NodeId, type Place, type Procedure, type ProgramIR } from './types';
+import { functionContainerId, functionOfContainer, handlerContainerId, handlerOfContainer, IR_VERSION, MAIN, parseLength, parseRandom, parseRead, parseSlotTest, type Branch, type CommandId, type EventHandler, type IRNode, type MemorySlot, type NodeId, type Place, type Procedure, type ProgramIR } from './types';
 
 export function emptyProgram(): ProgramIR {
   return { version: IR_VERSION, procedures: [{ name: MAIN, body: [] }], handlers: [] };
@@ -55,9 +55,13 @@ export function slotsInUse(program: ProgramIR): Set<string> {
       if (node.at !== 'here' && node.at !== 'ahead') used.add(node.at);
     }
     if (node.kind === 'push') used.add(node.list);
+    if (node.kind === 'shift') used.add(node.slot);
+    if ((node.kind === 'goRow' || node.kind === 'goColumn') && typeof node.to === 'string') used.add(node.to);
     if (node.kind === 'set' || node.kind === 'push') {
       const counted = parseLength(node.to);
       if (counted) used.add(counted);
+      const random = parseRandom(node.to);
+      if (random?.kind === 'pick') used.add(random.list);
     }
     if (node.kind === 'set') {
       const read = parseRead(node.to);

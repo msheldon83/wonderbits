@@ -40,8 +40,8 @@ If / else and Repeat until; Same trick, new place, functions; Flip the
 switch, switches and gates; When it happens, When cards for plates and
 acorns; Remote control, key scripts; Tick tock, logs, beetles and the Every
 tick card; Two things to remember, typed memory slots under a budget; Keep
-count, variables that change; In a row, lists; Reading the map, grids;
-Never the same twice, shuffled boards), a show-first introduction before
+count, variables that change; In a row, lists; Never the same twice, a
+random generator; Reading the map, coordinates and a finger on the map), a show-first introduction before
 each new concept, a card book to watch them again, a memory card under the
 board wherever the world or the robot's memory can change, prediction of
 the tile and of the memory card, validators in CI, three-rung hint ladders,

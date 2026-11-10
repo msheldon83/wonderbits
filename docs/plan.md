@@ -196,8 +196,8 @@ Repeat was motivated by the instruction budget the child felt on level 15, and t
 | 9 | Representation and kinds of values | Two things to remember | Built |
 | 10 | Variables | Keep count (planned as Into the dark) | Built |
 | 11 | Lists | In a row | Built |
-| 12 | 2D grids | Reading the map | Built |
-| 13 | Randomness | Never the same twice | Built |
+| 12 | Randomness | Never the same twice | Built |
+| 13 | 2D grids | Reading the map | Built |
 | 14 | Stored vs. derived | Two scoreboards | Proposed |
 | 15 | Persistence | Overnight | Proposed |
 | 16 | Records and shapes | The notebook | Proposed |
@@ -220,8 +220,8 @@ Each new concept is a rule of the world that makes the previous approach fail. T
 | Shaped slots | Kinds of values (types) | Each memory slot only accepts one kind: number, yes/no, direction or position. Debug levels hide a yes/no in a counter; predict levels ask for the kind before the value. |
 | The dark | Variables | Tiles go dark after the robot passes, or a gate needs three acorns. The robot must remember what it saw or count what it holds. |
 | Rows of crates | Lists | Crates sit in a numbered row. The robot checks each in turn, counts matches, or finds the first one that fits. |
-| Reading the map | 2D grids | The robot gets the board as rows and columns. It counts walls around a tile, minesweeper-style, or finds its way by coordinates. |
-| Never the same twice | Randomness | Acorns and walls shuffle every run, and one program must work every time. Programs that memorise a route fail; general ones pass. |
+| Never the same twice | Randomness | The robot rolls dice, flips coins and picks from lists. Each outcome must be possible, so a fixed value fails; the program is checked on many rolls. |
+| Reading the map | 2D grids | The robot moves by coordinates (Go to row, Go to column), uses slots as rows and columns, and scans a copy of the board with a finger, up to minesweeper. |
 | Two scoreboards | Stored vs. derived | A debug level where two stored values disagree. The fix is deleting one and calculating it from the other. |
 | Overnight | Persistence | A two-run puzzle. The robot explores on day one, then sleeps, and only its backpack survives. Day two must succeed with what was saved. |
 | The notebook | Records and shapes | Labelled crates that all share one shape: label, colour, contents. A crate missing a field breaks the search, which shows why the shape matters. |
@@ -246,8 +246,8 @@ Fourteen packs follow Look before you leap, at least ten levels each, like the e
 | Two things to remember | Fill in the memory card for a paused robot, matching each value to its kind | A level where only two slots fit, the obvious pair fails, and the right pair needs a different kind of slot. Sets up: the robot needs to change what it remembers. |
 | Into the dark | Count acorns with a counter card to open a three-acorn gate | Dark tiles the robot must remember to avoid on the way back. Sets up: more things than slots, all alike. |
 | In a row | Find the first crate with an acorn in a row of five | Count how many crates match and open the gate with that number. Sets up: rows stacked into a whole board. |
-| Reading the map | Read from the map which tiles around the robot are walls | A minesweeper-style board where the robot marks each tile with how many hazards touch it. Sets up: boards that change every time. |
-| Never the same twice | Acorns move each run, and one program must collect them all | A shuffled maze where only a general wall-follower works on every shuffle. Sets up: values that can drift apart. |
+| Never the same twice | Roll a die so that every number can come up | A dice race: roll, walk that many, roll again, without running off the end. Sets up: boards that change, scanned by coordinates. |
+| Reading the map | Go straight to a row or column by its number | A minesweeper-style board where a finger on the map counts the rocks around each tile and marks them. Sets up: values that can drift apart. |
 | Two scoreboards | Debug a robot whose "acorns held" and "acorns left" disagree | Predict which stored value goes wrong first. Sets up: what should outlive a run? |
 | Overnight | Choose what goes in the backpack before the robot sleeps | A three-day route where day three depends on what days one and two saved. Sets up: too many saved things to scan. |
 | The notebook | Find the crate with the key from a list of crates that share one shape | Answer a riddle that needs two lists joined by a crate number. Sets up: many things that each remember and act. |

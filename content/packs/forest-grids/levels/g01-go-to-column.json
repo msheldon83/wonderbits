@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "id": "g01-go-to-column",
+  "title": "Go to column",
+  "intro": "The numbers along the top count the columns. Send the robot straight to the flag's column.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "grids",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "goColumn"
+    ],
+    "maxInstructions": 1,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "text": "The flag is in column 5."
+    },
+    {
+      "kind": "card",
+      "command": "goColumn",
+      "text": "Go to column walks straight there."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "goColumn",
+      "text": "One card: Go to column 5."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "goColumn": 5
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

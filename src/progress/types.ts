@@ -68,6 +68,7 @@ export type ObservationEvent = { t: number; levelId: string } & (
   | { kind: 'slot-added'; slot: string }
   | { kind: 'shuffled'; shuffle: number }
   | { kind: 'shuffles-checked'; passed: number; total: number }
+  | { kind: 'rolls-checked'; passed: number; total: number; unseen: number }
   | { kind: 'slot-removed'; slot: string }
   | { kind: 'run-started'; steps: number }
   | { kind: 'trace-halted'; nodeId: NodeId; reason: string }

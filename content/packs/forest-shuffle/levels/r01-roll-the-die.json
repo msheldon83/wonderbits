@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "id": "r01-roll-the-die",
+  "title": "Roll the die",
+  "intro": "A die can land on any number from 1 to 6. Set roll so it could be any of them, not the same one every time.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 0,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": false,
+    "collectAll": false,
+    "covers": {
+      "of": "roll",
+      "values": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    }
+  },
+  "curriculum": {
+    "concept": "randomness",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "set"
+    ],
+    "allowedSources": [
+      6,
+      "random:1-6"
+    ],
+    "maxInstructions": 1,
+    "starterProgram": [
+      {
+        "remember": "roll",
+        "kind": "number",
+        "start": 0
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "text": "Setting roll to 6 gives 6 every time. A die is not like that."
+    },
+    {
+      "kind": "card",
+      "command": "set",
+      "text": "Set roll to a random number 1 to 6: a new number each run."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "set",
+      "text": "One Set card, with a random number."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "roll",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "set": "roll",
+      "to": "random:1-6"
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

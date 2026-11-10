@@ -3,21 +3,23 @@
   "id": "forest-shuffle",
   "title": "Never the same twice",
   "themeId": "forest",
-  "order": 13,
+  "order": 12,
   "concepts": [
     "randomness"
   ],
   "prerequisites": [
-    "forest-grids"
+    "forest-lists"
   ],
   "introduction": {
     "concept": "randomness",
-    "title": "Shuffles",
-    "explanation": "Shuffled levels change every time, so your program must work for any version.",
+    "title": "Random",
+    "explanation": "A random card picks a value by chance, like rolling a die. Run it again and you get a new roll.",
     "demo": {
       "world": {
         "rows": [
-          "....."
+          "...",
+          ".#.",
+          "..."
         ],
         "robot": {
           "x": 0,
@@ -25,44 +27,46 @@
           "facing": "E"
         },
         "goal": {
-          "x": 4,
-          "y": 0
+          "x": 2,
+          "y": 2
         }
       },
-      "shuffles": [
-        {
-          "goal": {
-            "x": 2,
-            "y": 0
-          }
-        },
-        {
-          "goal": {
-            "x": 3,
-            "y": 0
-          }
-        }
-      ],
       "program": [
+        {
+          "remember": "way",
+          "kind": "direction",
+          "start": "E"
+        },
         {
           "until": "atFlag",
           "do": [
-            "forward"
+            {
+              "set": "way",
+              "to": "randomWay"
+            },
+            {
+              "face": "way"
+            },
+            {
+              "if": "pathAhead",
+              "do": [
+                "forward"
+              ]
+            }
           ]
         }
       ]
     }
   },
   "levels": [
-    "n01-how-many-acorns",
-    "n02-any-length",
-    "n03-rock-somewhere",
-    "n04-count-them",
-    "n05-fix-for-every-shuffle",
-    "n06-left-or-right",
-    "n07-cards-in-order",
-    "n08-gate-or-not",
-    "n09-where-will-it-stop",
-    "n10-any-maze"
+    "r01-roll-the-die",
+    "r02-flip-a-coin",
+    "r03-the-spinner",
+    "r04-random-steps",
+    "r05-heads-or-tails",
+    "r06-pick-a-way",
+    "r07-guess-the-code",
+    "r08-lost-in-the-woods",
+    "r09-dice-race"
   ]
 }

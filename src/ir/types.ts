@@ -63,7 +63,15 @@ export const CALL = 'call' as const;
  * holds, and Unlock a gate with the number a slot holds. For each is a
  * block that walks a list slot.
  */
-export const MEMORY_CARD_IDS = ['set', 'change', 'face', 'unlock', 'mark', 'push'] as const;
+export const MEMORY_CARD_IDS = ['set', 'change', 'face', 'unlock', 'mark', 'push', 'shift'] as const;
+
+/**
+ * Moves by coordinates: walk straight along to a row or a column, counted
+ * from 1 like the numbers round the board. The robot turns to face the way
+ * and steps tile by tile, so walls and gates still stop it.
+ */
+export const GO_IDS = ['goRow', 'goColumn'] as const;
+export type GoId = (typeof GO_IDS)[number];
 export type MemoryCardId = (typeof MEMORY_CARD_IDS)[number];
 
 /** The kinds of value a memory slot can hold. A list holds items of one kind. */
@@ -86,8 +94,8 @@ export interface MemorySlot {
  * Where a Set card's value comes from: a literal (a number, yes or no as
  * true or false, a direction letter), or the robot's own reading right now:
  * `facing`, `here`, `acorns` (how many it holds), a sense's yes or no, an
- * item of a grid slot, written `read:<grid>@<where>`, or how many items a
- * list holds, written `length:<list>`.
+ * item of a grid slot, written `read:<grid>@<where>`, how many items a
+ * list holds, written `length:<list>`, or a random value: see parseRandom.
  */
 export type Source = number | boolean | string;
 
@@ -117,6 +125,28 @@ export function parseLength(source: Source): string | null {
 
 export const lengthOf = (list: string): Source => `length:${list}`;
 
+const RANDOM_RANGE = /^random:(\d{1,2})-(\d{1,2})$/;
+const PICK = /^pick:([a-z][A-Za-z0-9]{0,19})$/;
+
+/**
+ * A random source: a whole number from low to high (`random:1-6`), a coin
+ * flip (`coin`, yes or no), a random way (`randomWay`), or a random item of
+ * a list (`pick:<list>`). Null when the source is not random.
+ */
+export type RandomSource = { kind: 'range'; low: number; high: number } | { kind: 'coin' } | { kind: 'way' } | { kind: 'pick'; list: string };
+
+export function parseRandom(source: Source): RandomSource | null {
+  if (source === 'coin') return { kind: 'coin' };
+  if (source === 'randomWay') return { kind: 'way' };
+  if (typeof source !== 'string') return null;
+  const r = RANDOM_RANGE.exec(source);
+  if (r && Number(r[1]) <= Number(r[2])) return { kind: 'range', low: Number(r[1]), high: Number(r[2]) };
+  const p = PICK.exec(source);
+  return p ? { kind: 'pick', list: p[1]! } : null;
+}
+
+export const randomRange = (low: number, high: number): Source => `random:${low}-${high}`;
+
 /** Cards that act on the world instead of the robot: open or shut a gate by its letter. */
 export const GATE_ACTION_IDS = ['openGate', 'closeGate'] as const;
 export type GateActionId = (typeof GATE_ACTION_IDS)[number];
@@ -126,8 +156,8 @@ export function isGateActionId(value: unknown): value is GateActionId {
 }
 
 /** Everything the palette can hand out: a command, a block, a call or a gate action. */
-export const CARD_IDS = [...COMMAND_IDS, ...BLOCK_IDS, CALL, ...GATE_ACTION_IDS, ...MEMORY_CARD_IDS] as const;
-export type CardId = CommandId | BlockId | typeof CALL | GateActionId | MemoryCardId;
+export const CARD_IDS = [...COMMAND_IDS, ...BLOCK_IDS, CALL, ...GATE_ACTION_IDS, ...MEMORY_CARD_IDS, ...GO_IDS] as const;
+export type CardId = CommandId | BlockId | typeof CALL | GateActionId | MemoryCardId | GoId;
 
 export function isCardId(value: unknown): value is CardId {
   return typeof value === 'string' && (CARD_IDS as readonly string[]).includes(value);
@@ -240,7 +270,25 @@ export interface PushNode {
   to: Source;
 }
 
-/** Runs its body once for each item of a list slot, with the item in another slot. */
+/** Walks to a row or a column: a number on the card, or a number slot's value. */
+export interface GoNode {
+  id: NodeId;
+  kind: GoId;
+  to: number | string;
+}
+
+/** Moves a remembered place one tile, like a finger on the map; the robot stays put. */
+export interface ShiftNode {
+  id: NodeId;
+  kind: 'shift';
+  slot: string;
+  dir: 'N' | 'E' | 'S' | 'W';
+}
+
+/** A grid slot that starts as a copy of the board: where the rocks are, or the acorns. */
+export const BOARD_MAPS = ['board:walls', 'board:acorns'] as const;
+
+/** Runs its body once for each item of a list slot, with the item in another slot. A grid's items are its rows. */
 export interface ForEachNode {
   id: NodeId;
   kind: 'forEach';
@@ -250,7 +298,7 @@ export interface ForEachNode {
 }
 
 export type BlockNode = RepeatNode | IfNode | IfElseNode | UntilNode | ForEachNode;
-export type IRNode = CommandNode | BlockNode | CallNode | GateActionNode | SetNode | ChangeNode | FaceNode | UnlockNode | MarkNode | PushNode;
+export type IRNode = CommandNode | BlockNode | CallNode | GateActionNode | SetNode | ChangeNode | FaceNode | UnlockNode | MarkNode | PushNode | GoNode | ShiftNode;
 
 export function isBlockNode(node: IRNode): node is BlockNode {
   return isBlockId(node.kind);

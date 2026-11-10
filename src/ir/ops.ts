@@ -19,7 +19,7 @@ export type EditOp =
   | { op: 'move'; id: NodeId; to: Place }
   | { op: 'delete'; id: NodeId }
   /** Change a block's parameter: a Repeat's count or an If's or Until's condition. */
-  | { op: 'set'; id: NodeId; count?: number; condition?: ConditionId; gate?: string; slot?: string; to?: Source; by?: number; list?: string; item?: string; grid?: string; at?: string }
+  | { op: 'set'; id: NodeId; count?: number; condition?: ConditionId; gate?: string; slot?: string; to?: Source; by?: number; list?: string; item?: string; grid?: string; at?: string; target?: number | string; dir?: 'N' | 'E' | 'S' | 'W' }
   /** Give the robot a memory slot, or forget one no card uses. */
   | { op: 'addSlot'; slot: MemorySlot }
   | { op: 'removeSlot'; name: string };
@@ -183,8 +183,12 @@ export function applyOp(program: ProgramIR, edit: EditOp): ProgramIR {
       if (edit.list !== undefined && node.kind !== 'forEach' && node.kind !== 'push') throw new Error(`Node ${edit.id} has no list`);
       if (edit.item !== undefined && node.kind !== 'forEach') throw new Error(`Node ${edit.id} has no item`);
       if ((edit.grid !== undefined || edit.at !== undefined) && node.kind !== 'mark') throw new Error(`Node ${edit.id} has no grid`);
+      if (edit.target !== undefined && node.kind !== 'goRow' && node.kind !== 'goColumn') throw new Error(`Node ${edit.id} has no row or column`);
+      if (edit.dir !== undefined && node.kind !== 'shift') throw new Error(`Node ${edit.id} has no direction`);
       const patch = (n: IRNode): IRNode => {
         if (n.id !== edit.id) return n;
+        if (n.kind === 'goRow' || n.kind === 'goColumn') return { ...n, ...(edit.target !== undefined && { to: edit.target }) };
+        if (n.kind === 'shift') return { ...n, ...(edit.slot !== undefined && { slot: edit.slot }), ...(edit.dir !== undefined && { dir: edit.dir }) };
         if (n.kind === 'push') return { ...n, ...(edit.list !== undefined && { list: edit.list }), ...(edit.to !== undefined && { to: edit.to }) };
         if (n.kind === 'mark') return { ...n, ...(edit.slot !== undefined && { slot: edit.slot }), ...(edit.grid !== undefined && { grid: edit.grid }), ...(edit.at !== undefined && { at: edit.at }) };
         if (n.kind === 'set' || n.kind === 'change' || n.kind === 'face' || n.kind === 'unlock') {

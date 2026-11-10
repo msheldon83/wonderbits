@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "id": "g04-stepping-stones",
+  "title": "Stepping stones",
+  "intro": "Pick up every acorn on the way to the flag. Plan each straight line by its number.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...#.",
+      "##.#.",
+      ".....",
+      ".###.",
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 0,
+        "y": 2
+      },
+      {
+        "x": 0,
+        "y": 4
+      },
+      {
+        "x": 4,
+        "y": 4
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "grids",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "goRow",
+      "goColumn"
+    ],
+    "maxInstructions": 6,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 1
+        }
+      ],
+      "text": "Column 3 is the way down from the top row."
+    },
+    {
+      "kind": "card",
+      "command": "goRow",
+      "text": "Down column 3 to row 3, then along to the first acorn."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "goColumn",
+      "text": "First: Go to column 3."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "goColumn": 3
+    },
+    {
+      "goRow": 3
+    },
+    {
+      "goColumn": 1
+    },
+    {
+      "goRow": 5
+    },
+    {
+      "goColumn": 5
+    },
+    {
+      "goRow": 1
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

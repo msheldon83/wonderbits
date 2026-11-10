@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "id": "r03-the-spinner",
+  "title": "The spinner",
+  "intro": "This spinner has four parts: 1, 2, 3 and 4. Pick the random card that gives exactly those.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 0,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": false,
+    "collectAll": false,
+    "covers": {
+      "of": "spin",
+      "values": [
+        1,
+        2,
+        3,
+        4
+      ]
+    }
+  },
+  "curriculum": {
+    "concept": "randomness",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "set"
+    ],
+    "allowedSources": [
+      "random:1-6",
+      "random:0-4",
+      "random:1-4",
+      "random:2-5"
+    ],
+    "maxInstructions": 1,
+    "starterProgram": [
+      {
+        "remember": "spin",
+        "kind": "number",
+        "start": 0
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "text": "The lowest is 1 and the highest is 4."
+    },
+    {
+      "kind": "card",
+      "command": "set",
+      "text": "A random number from the lowest to the highest."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "set",
+      "text": "Set spin to a random number 1 to 4."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "spin",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "set": "spin",
+      "to": "random:1-4"
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

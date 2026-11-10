@@ -19,7 +19,7 @@
  */
 import { functionBody, handlerBody, mainBody } from '../ir/program';
 import { handlerContainerId, type Key } from '../ir/types';
-import { advance, faceTo, gridPlace, initialState, markGrid, evaluate, isTimed, objectiveMet, period, readSource, remember, setGate, stateKey, step, unlockGate, type WorldEvent } from '../sim/world';
+import { advance, drawSource, faceTo, gridPlace, initialState, markGrid, shiftPlace, evaluate, isTimed, objectiveMet, period, remember, setGate, stateKey, step, unlockGate, type WorldEvent } from '../sim/world';
 import type { Facing } from '../sim/types';
 import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 import type { IRNode, ProgramIR } from '../ir/types';
@@ -31,6 +31,7 @@ export interface InterpretInput {
   objective: ObjectiveDefinition;
   limits: Pick<RunLimits, 'maxSteps'>;
   input?: readonly Key[];
+  seed?: number;
 }
 
 export interface InterpretSummary {
@@ -48,7 +49,7 @@ const MAX_CALL_DEPTH = 16;
 
 export function* interpret(input: InterpretInput): Generator<TraceEvent, InterpretSummary, void> {
   const { program, world, objective, limits } = input;
-  let state = initialState(world, program.memory);
+  let state = initialState(world, program.memory, input.seed);
   const timed = isTimed(world, handlerBody(program, 'tick') !== undefined);
   const worldPeriod = period(world);
   /** True while the Every tick card runs, so its own actions do not tick again. */
@@ -110,8 +111,9 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
         case 'set':
         case 'change': {
           const old = state.memory?.[node.slot];
-          const value = node.kind === 'set' ? readSource(world, state, node.to) : (typeof old === 'number' ? old : 0) + node.by;
-          const after = remember(state, node.slot, value);
+          const drawn = node.kind === 'set' ? drawSource(world, state, node.to) : { value: (typeof old === 'number' ? old : 0) + node.by, state };
+          const value = drawn.value;
+          const after = remember(drawn.state, node.slot, value);
           const ok = yield* emit({ nodeId: node.id, op: 'set', slot: node.slot, value, before: state, after, result: { kind: 'ok' } });
           if (!ok) return;
           state = after;
@@ -140,11 +142,65 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
         }
         case 'push': {
           const old = state.memory?.[node.list];
-          const list = [...(Array.isArray(old) ? old : []), readSource(world, state, node.to)];
-          const after = remember(state, node.list, list);
+          const drawn = drawSource(world, state, node.to);
+          const list = [...(Array.isArray(old) ? old : []), drawn.value];
+          const after = remember(drawn.state, node.list, list);
           const ok = yield* emit({ nodeId: node.id, op: 'set', slot: node.list, value: list, before: state, after, result: { kind: 'ok' } });
           if (!ok) return;
           state = after;
+          break;
+        }
+        case 'shift': {
+          const moved = shiftPlace(state.memory?.[node.slot], node.dir);
+          if (moved === undefined) {
+            stop = { status: 'error', message: `${node.slot} holds no place` };
+            return;
+          }
+          const after = remember(state, node.slot, moved);
+          const ok = yield* emit({ nodeId: node.id, op: 'set', slot: node.slot, value: moved, before: state, after, result: { kind: 'ok' } });
+          if (!ok) return;
+          state = after;
+          break;
+        }
+        case 'goRow':
+        case 'goColumn': {
+          // Walk straight to a row or a column, counted from 1: turn to face the way, then step by step.
+          const raw = typeof node.to === 'number' ? node.to : state.memory?.[node.to];
+          const size = node.kind === 'goRow' ? world.height : world.width;
+          if (typeof raw !== 'number' || !Number.isInteger(raw) || raw < 1 || raw > size) {
+            stop = { status: 'error', message: `There is no ${node.kind === 'goRow' ? 'row' : 'column'} ${String(raw)}` };
+            return;
+          }
+          const target = raw - 1;
+          const at = node.kind === 'goRow' ? state.robot.y : state.robot.x;
+          if (target === at) break;
+          const facing: Facing = node.kind === 'goRow' ? (target > at ? 'S' : 'N') : target > at ? 'E' : 'W';
+          if (state.robot.facing !== facing) {
+            const after = faceTo(state, facing);
+            const ok = yield* emit({ nodeId: node.id, op: 'face', slot: '', before: state, after, result: { kind: 'ok' } });
+            if (!ok) return;
+            state = after;
+          }
+          for (let k = 0; k < Math.abs(target - at) && !stop; k++) {
+            const result = step(world, state, 'forward');
+            const ok = yield* emit({
+              nodeId: node.id,
+              op: 'forward',
+              before: state,
+              after: result.state,
+              result:
+                result.kind === 'ok'
+                  ? { kind: 'ok', ...(result.collected && { collected: result.collected }), ...(result.toggled && { toggled: result.toggled }) }
+                  : { kind: 'blocked', reason: result.reason, at: result.at },
+            });
+            if (!ok) return;
+            if (result.kind === 'blocked') {
+              stop = { status: 'blocked', nodeId: node.id, reason: result.reason };
+              return;
+            }
+            state = result.state;
+            yield* afterAction(node.id, result.events ?? []);
+          }
           break;
         }
         case 'mark': {

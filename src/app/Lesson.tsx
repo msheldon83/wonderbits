@@ -12,7 +12,10 @@ import { canRedo, canUndo, createHistory, push, redo, undo, type History } from 
 import { randomIdFactory } from '../ir/ids';
 import { applyOp, type EditOp } from '../ir/ops';
 import { countNodes, programFromSpec, stepNumber } from '../ir/program';
-import type { NodeId, ProgramIR } from '../ir/types';
+import type { NodeId, ProgramIR, Value } from '../ir/types';
+import { valueWords } from '../editor/commands';
+import { coveredValue, withinOutcomes } from '../sim/world';
+import type { ObjectiveDefinition } from '../sim/types';
 import { hintEffect, type HintEffect } from '../lessons/hints';
 import { gateLabel, gateOfField } from '../lessons/memory';
 import { checkPrediction, predictionComplete } from '../lessons/prediction';
@@ -27,6 +30,7 @@ import { DEFAULT_LIMITS, type RunOutcome, type RunResult, type Runtime, type Tra
 import type { Cell, Facing, SimState, WorldDefinition } from '../sim/types';
 import { gatesOf, initialState, memoryShortfall, moversOf } from '../sim/world';
 import { worldsOf } from '../lessons/shuffles';
+import { checksOf, isRandomLevel, missingOutcomes } from '../lessons/checks';
 import { useMotion } from './hooks';
 import { BADGE_INFO, BadgeIcon, Star } from './icons';
 import { hashFor } from './levels';
@@ -70,6 +74,17 @@ interface Completion {
   newBadges: BadgeId[];
 }
 
+/** A fresh seed for the robot's random generator. */
+const newSeed = () => 1 + Math.floor(Math.random() * 1_000_000);
+
+/** Why a random level's run missed: the value it ended on, and the outcomes asked for. */
+function outsideWords(covers: NonNullable<ObjectiveDefinition['covers']>, end: SimState): string {
+  const got = coveredValue(covers.of, end);
+  const want = covers.values.map(valueWords).join(', ');
+  if (covers.of === 'column') return `The robot ended in column ${String(got)}. It should end in one of columns ${want}.`;
+  return `${covers.of} ended as ${got === undefined ? 'nothing' : valueWords(got)}. It should be one of ${want}.`;
+}
+
 export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }: LessonProps) {
   const theme = themeFor(level.themeId);
   const newId = useMemo(() => randomIdFactory(), []);
@@ -83,6 +98,11 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   const [shuffle, setShuffle] = useState(() => Math.floor(Math.random() * worlds.length));
   const world = worlds[shuffle] ?? level.world;
   const [failedShuffle, setFailedShuffle] = useState<number | null>(null);
+  /** Random levels: the seed of this run's rolls, a seed the program failed on, and outcomes no roll gave. */
+  const random = useMemo(() => isRandomLevel(level), [level]);
+  const seedRef = useRef(newSeed());
+  const [failedRoll, setFailedRoll] = useState<number | null>(null);
+  const [unseen, setUnseen] = useState<Value[] | null>(null);
   const [activeNode, setActiveNode] = useState<NodeId | null>(null);
   /** The event playing now, so blocks can show their count or answer. */
   const [activeEvent, setActiveEvent] = useState<TraceEvent | null>(null);
@@ -107,7 +127,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   const runToken = useRef(0);
   const celebration = useRef<AbortController | null>(null);
   /** The trace for the current program, computed once per edit. */
-  const cache = useRef<{ program: ProgramIR; world: WorldDefinition; result: RunResult } | null>(null);
+  const cache = useRef<{ program: ProgramIR; world: WorldDefinition; seed: number; result: RunResult } | null>(null);
   const phaseRef = useRef<Phase>('editing');
   phaseRef.current = phase;
   const completedRef = useRef(false);
@@ -122,7 +142,9 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   const askedFields = asking?.askMemory ?? [];
   /** The memory card shows from the switch pack on: wherever there are gates, or the level asks about memory. */
   /** Number the board's rows and columns when the robot's memory holds a grid. */
-  const coordinates = [...(program.memory ?? []), ...(level.programming.memoryOptions ?? [])].some((m) => m.kind === 'grid');
+  const coordinates =
+    [...(program.memory ?? []), ...(level.programming.memoryOptions ?? [])].some((m) => m.kind === 'grid') ||
+    level.programming.allowedCommands.some((c) => c === 'goRow' || c === 'goColumn' || c === 'shift');
   const showMemory = gatesOf(world).length > 0 || moversOf(world).length > 0 || askedFields.length > 0 || (program.memory?.length ?? 0) > 0 || level.programming.memoryOptions !== undefined;
 
   // The log: opened on mount, abandoned on unmount unless completed.
@@ -164,6 +186,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
     setWrongFields([]);
     setShownState(null);
     setFailedShuffle(null);
+    setUnseen(null);
   }, []);
 
   /** Another version of the board: the one the program failed on, if any, otherwise a different one at random. */
@@ -188,12 +211,13 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   }, [reset, level, newId, store]);
 
   const ensureResult = useCallback(async (): Promise<RunResult | null> => {
-    if (cache.current?.program === program && cache.current.world === world) return cache.current.result;
+    const seed = seedRef.current;
+    if (cache.current?.program === program && cache.current.world === world && cache.current.seed === seed) return cache.current.result;
     if (!runtime) return null;
-    const result = await runtime.run({ program, world, objective: level.objective, limits: DEFAULT_LIMITS, ...(level.inputScript && { input: level.inputScript }) });
-    cache.current = { program, world, result };
+    const result = await runtime.run({ program, world, objective: level.objective, limits: DEFAULT_LIMITS, ...(level.inputScript && { input: level.inputScript }), ...(random && { seed }) });
+    cache.current = { program, world, seed, result };
     return result;
-  }, [runtime, program, level, world]);
+  }, [runtime, program, level, world, random]);
 
   /** Run plays to the end; Step plays one event. Both continue from a pause. */
   const start = useCallback(
@@ -208,6 +232,11 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
       setHint(null);
       setCompletion(null);
       if (!resuming) store.record({ levelId: level.id, kind: 'run-started', steps: countNodes(program) });
+      // A random level rolls afresh on every new run, unless it is replaying a roll it failed on.
+      if (!resuming && random && !predicting) {
+        seedRef.current = failedRoll ?? newSeed();
+        setFailedRoll(null);
+      }
       const result = await ensureResult();
       if (!result || token !== runToken.current) return;
       // A wrong flag does not get a run: mark the tile and ask again.
@@ -252,12 +281,36 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
         onGoal: end.robot.x === world.goal.x && end.robot.y === world.goal.y,
         missing: world.collectibles.length - end.collected.length,
         memory: memoryShortfall(level.objective, end),
+        ...(level.objective.covers && !withinOutcomes(level.objective, end) && { outside: outsideWords(level.objective.covers, end) }),
       });
 
       if (result.outcome.status === 'blocked') {
         store.record({ levelId: level.id, kind: 'trace-halted', nodeId: result.outcome.nodeId, reason: result.outcome.reason });
       }
-      if (result.outcome.status === 'success' && worlds.length > 1) {
+      if (result.outcome.status === 'success' && random) {
+        // One roll is not enough: the program must work on every roll, and the rolls must give every outcome.
+        const checks = checksOf(level);
+        const runs = await Promise.all(
+          checks.map((c) =>
+            runtime.run({ program, world: worlds[c.world]!, objective: level.objective, limits: DEFAULT_LIMITS, ...(level.inputScript && { input: level.inputScript }), ...(c.seed !== undefined && { seed: c.seed }) }),
+          ),
+        );
+        if (token !== runToken.current) return;
+        const failed = runs.findIndex((r) => r.outcome.status !== 'success');
+        const finals = runs.flatMap((r) => (r.final ? [r.final] : []));
+        const missing = missingOutcomes(level.objective, finals);
+        store.record({ levelId: level.id, kind: 'rolls-checked', passed: runs.filter((r) => r.outcome.status === 'success').length, total: runs.length, unseen: missing.length });
+        if (failed >= 0) {
+          const check = checks[failed]!;
+          if (check.world !== shuffle) setFailedShuffle(check.world);
+          else setFailedRoll(check.seed ?? null);
+          return;
+        }
+        if (missing.length > 0) {
+          setUnseen(missing);
+          return;
+        }
+      } else if (result.outcome.status === 'success' && worlds.length > 1) {
         // One shuffle is not enough: the same program must solve every version of the board.
         const others = await Promise.all(
           worlds.map((w, i) =>
@@ -286,7 +339,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
         setCompletion({ stars, newBadges: after.filter((b) => !before.includes(b)) });
       }
     },
-    [runtime, phase, ensureResult, level, store, program, prediction, predicting, predictionOk, hintsUsed, asking, world, worlds, shuffle],
+    [runtime, phase, ensureResult, level, store, program, prediction, predicting, predictionOk, hintsUsed, asking, world, worlds, shuffle, random, failedRoll],
   );
 
   const run = useCallback(() => void start('play'), [start]);
@@ -395,10 +448,18 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
     const base =
       outcome.status === 'incomplete' && countNodes(program) === 0
         ? { tone: 'problem' as const, text: 'Your program is empty. Tap an instruction to add a step.' }
-        : outcomeMessage(outcome, errorNode ? stepNumber(program, errorNode) : null, shortfall);
+        : outcome.status === 'success' && !level.objective.reachGoal
+          ? { tone: 'success' as const, text: 'You did it!' }
+          : outcomeMessage(outcome, errorNode ? stepNumber(program, errorNode) : null, shortfall);
     const guess = !guessedRight ? '' : asksTile && askedFields.length > 0 ? 'Your flag and your memory card were right! ' : asksTile ? 'Your flag was in the right spot! ' : 'Your memory card was right! ';
     message = { tone: base.tone, text: guess + base.text };
     if (failedShuffle !== null) message = { tone: 'problem', text: 'That worked on this shuffle, but not on every one. Press Shuffle to see a version it misses.' };
+    if (failedRoll !== null) message = { tone: 'problem', text: 'That worked on this roll, but not on every roll. Press Run to see a roll it misses.' };
+    if (unseen && level.objective.covers) {
+      const of = level.objective.covers.of === 'column' ? 'the robot' : level.objective.covers.of;
+      const ending = level.objective.covers.of === 'column' ? `ended in column ${unseen.join(' or ')}` : `came out as ${unseen.map(valueWords).join(' or ')}`;
+      message = { tone: 'problem', text: `I ran it ${checksOf(level).length} times, and ${of} never ${ending}. Every outcome should be able to happen.` };
+    }
   } else if (predicting) message = predictionPrompt();
   else message = { tone: 'info', text: level.intro ?? 'Help the robot reach the flag. Tap an instruction to add it to your program.' };
   if (worlds.length > 1 && phase === 'editing' && !hint && !outcome && !predicting) message = { tone: 'info', text: `${message.text} Shuffle ${shuffle + 1} of ${worlds.length}: the program must work on every one.` };
@@ -428,7 +489,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           marks={marks}
           highlightCells={hint?.cells}
           hideIndicator={predicting}
-          hideGoal={predicting && asksTile}
+          hideGoal={(predicting && asksTile) || !level.objective.reachGoal}
         />
         <div className="toolbar" role="toolbar" aria-label="Run controls">
           <button
@@ -536,6 +597,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
             </>
           }
           gates={gatesOf(world).map((g) => g.id)}
+          boardSize={{ width: world.width, height: world.height }}
           showCode={showCode}
           onToggleCode={() => setShowCode((v) => !v)}
         />

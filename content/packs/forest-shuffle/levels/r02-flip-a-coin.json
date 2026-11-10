@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "id": "r02-flip-a-coin",
+  "title": "Flip a coin",
+  "intro": "A coin lands heads or tails. Set heads so it is sometimes yes and sometimes no.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 0,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": false,
+    "collectAll": false,
+    "covers": {
+      "of": "heads",
+      "values": [
+        true,
+        false
+      ]
+    }
+  },
+  "curriculum": {
+    "concept": "randomness",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "set"
+    ],
+    "allowedSources": [
+      true,
+      false,
+      "coin"
+    ],
+    "maxInstructions": 1,
+    "starterProgram": [
+      {
+        "remember": "heads",
+        "kind": "yesNo",
+        "start": false
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "text": "Yes every time is not a coin flip."
+    },
+    {
+      "kind": "card",
+      "command": "set",
+      "text": "Set heads to a coin flip."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "set",
+      "text": "One Set card, with a coin flip."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "heads",
+      "kind": "yesNo",
+      "start": false
+    },
+    {
+      "set": "heads",
+      "to": "coin"
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "id": "r06-pick-a-way",
+  "title": "Pick a way",
+  "intro": "Make a list of the ways the robot can go, then pick one at random and step that way. Up and down are rock.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....."
+    ],
+    "robot": {
+      "x": 2,
+      "y": 0,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 2,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": false,
+    "collectAll": false,
+    "covers": {
+      "of": "column",
+      "values": [
+        2,
+        4
+      ]
+    }
+  },
+  "curriculum": {
+    "concept": "randomness",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "set",
+      "push",
+      "face"
+    ],
+    "allowedSources": [
+      "N",
+      "E",
+      "S",
+      "W",
+      "pick:ways"
+    ],
+    "maxInstructions": 5,
+    "starterProgram": [
+      {
+        "remember": "ways",
+        "kind": "list",
+        "of": "direction",
+        "start": []
+      },
+      {
+        "remember": "way",
+        "kind": "direction",
+        "start": "N"
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "Only left and right are open."
+    },
+    {
+      "kind": "card",
+      "command": "push",
+      "text": "Add left and right to ways. Then set way to a random item of ways."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "push",
+      "text": "Start by building the list."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "ways",
+      "kind": "list",
+      "of": "direction",
+      "start": []
+    },
+    {
+      "remember": "way",
+      "kind": "direction",
+      "start": "N"
+    },
+    {
+      "push": "ways",
+      "to": "W"
+    },
+    {
+      "push": "ways",
+      "to": "E"
+    },
+    {
+      "set": "way",
+      "to": "pick:ways"
+    },
+    {
+      "face": "way"
+    },
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}
