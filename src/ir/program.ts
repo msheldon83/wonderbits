@@ -1,6 +1,6 @@
 import type { IdFactory } from './ids';
 import { buildNodes, specOf, splitSpec, type NodeSpec } from './spec';
-import { functionContainerId, functionOfContainer, handlerContainerId, handlerOfContainer, IR_VERSION, MAIN, parseSlotTest, type Branch, type CommandId, type EventHandler, type IRNode, type MemorySlot, type NodeId, type Place, type Procedure, type ProgramIR } from './types';
+import { functionContainerId, functionOfContainer, handlerContainerId, handlerOfContainer, IR_VERSION, MAIN, parseLength, parseRead, parseSlotTest, type Branch, type CommandId, type EventHandler, type IRNode, type MemorySlot, type NodeId, type Place, type Procedure, type ProgramIR } from './types';
 
 export function emptyProgram(): ProgramIR {
   return { version: IR_VERSION, procedures: [{ name: MAIN, body: [] }], handlers: [] };
@@ -49,7 +49,23 @@ export function slotOf(program: ProgramIR, name: string): MemorySlot | undefined
 export function slotsInUse(program: ProgramIR): Set<string> {
   const used = new Set<string>();
   for (const { node } of walk(program)) {
-    if (node.kind === 'set' || node.kind === 'change' || node.kind === 'face' || node.kind === 'unlock') used.add(node.slot);
+    if (node.kind === 'set' || node.kind === 'change' || node.kind === 'face' || node.kind === 'unlock' || node.kind === 'mark') used.add(node.slot);
+    if (node.kind === 'mark') {
+      used.add(node.grid);
+      if (node.at !== 'here' && node.at !== 'ahead') used.add(node.at);
+    }
+    if (node.kind === 'push') used.add(node.list);
+    if (node.kind === 'set' || node.kind === 'push') {
+      const counted = parseLength(node.to);
+      if (counted) used.add(counted);
+    }
+    if (node.kind === 'set') {
+      const read = parseRead(node.to);
+      if (read) {
+        used.add(read.grid);
+        if (read.at !== 'here' && read.at !== 'ahead') used.add(read.at);
+      }
+    }
     if (node.kind === 'forEach') {
       used.add(node.list);
       used.add(node.item);

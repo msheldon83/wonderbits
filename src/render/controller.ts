@@ -89,7 +89,7 @@ export class BoardController implements Player {
     private colors: { ok: string; blocked: string },
     public motion: MotionSettings,
     /** Gate elements by id, switch plates by cell key and movers by id, when the board has them. */
-    private worldEls: { gates: Map<string, HTMLElement>; switches: Map<string, HTMLElement>; movers?: Map<string, HTMLElement> } = { gates: new Map(), switches: new Map() },
+    private worldEls: { gates: Map<string, HTMLElement>; switches: Map<string, HTMLElement>; movers?: Map<string, HTMLElement>; ghosts?: Map<string, HTMLElement> } = { gates: new Map(), switches: new Map() },
   ) {}
 
   private moverTransform(cell: Cell): string {
@@ -103,12 +103,24 @@ export class BoardController implements Player {
     for (const m of moversOf(this.world)) {
       const el = this.worldEls.movers?.get(m.id);
       if (el) el.style.transform = this.moverTransform(moverCell(m, tick));
+      // A faint ghost on the tile it moves to on the next tick; none when it stays put.
+      const ghost = this.worldEls.ghosts?.get(m.id);
+      if (ghost) {
+        const now = moverCell(m, tick);
+        const next = moverCell(m, tick + 1);
+        const moves = now.x !== next.x || now.y !== next.y;
+        ghost.style.transform = this.moverTransform(next);
+        ghost.style.opacity = moves ? '1' : '0';
+        ghost.dataset.dir = next.x > now.x ? 'E' : next.x < now.x ? 'W' : next.y > now.y ? 'S' : 'N';
+      }
     }
   }
 
   /** One tick: every mover glides one step, and a robot on a log rides with it. */
   private async playTick(before: SimState, after: SimState, durationMs: number, signal: AbortSignal): Promise<void> {
     const anims: Animation[] = [];
+    // The ghosts step aside while the movers glide; placeMovers shows them again for the tick after.
+    for (const g of this.worldEls.ghosts?.values() ?? []) g.style.opacity = '0';
     for (const m of moversOf(this.world)) {
       const el = this.worldEls.movers?.get(m.id);
       if (!el) continue;

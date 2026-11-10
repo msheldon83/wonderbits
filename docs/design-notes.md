@@ -4,6 +4,172 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Change: memory beside the program, and lists that are built (2026-11-10)
+
+Play-testing feedback: the route list in the first list level sat on the
+memory card under the board, far from the cards that use it; walking a
+ready-made list of directions was a hard first list; and lists are more
+than going through one somebody else wrote.
+
+- **The memory card lives in the Program panel**, at the top, above the
+  cards that read and change it (with the key script, when there is one),
+  on every level and in the introductions. Each of the robot's slots shows
+  its kind beside its name ("route list of directions"). The Memory chips
+  with Remember and Forget now appear only on levels that offer slots to
+  choose from, so a slot is never listed twice. The Every tick strip stays
+  under the board: it describes the world, not the program.
+- **Lists can be built.** A new card, Add to list, puts a value on the end
+  of a list slot (`route.push(robot.facing())`), and Set can read how many
+  items a list holds (`length:<list>`, printed `route.length`). The
+  validator checks that what goes on a list is of the list's kind.
+- **In a row builds before it reads.** A list grows (model: the robot
+  writes down what it sees at each tile; how long is the list?), Write down
+  the route (a loop records each way walked; the level is solved only when
+  the list says right, right, down, down), then Follow the list and Walk
+  the list read a route list, the crate levels go through a list of
+  yes/noes, and A bag of acorns collects with a When card and opens a lock
+  with the bag's length. The introduction now shows a list growing. Three
+  levels were retired to make room: What is the count?, A long route
+  (merged into Walk the list) and Cards in order; the first five levels
+  were renumbered, so earlier stars on In a row are not shown.
+
+## Change: Two things to remember is about what, Keep count about change (2026-11-10)
+
+The memory pack also counted (a counter for a number lock in four levels),
+so it repeated Keep count and left little room for its own idea. Now the
+two packs split cleanly:
+
+- **Two things to remember** (representation and kinds of values) is about
+  *what* to remember and *what kind* it is: a slot is filled in once, from
+  what the robot reads at that moment, and keeps it while the robot moves
+  on. Read the card asks for a direction remembered before a turn; Back to
+  the start remembers a place and walks round a pond until it is there
+  again; Fix the snapshot has a yes/no filled in from the wrong sense; Cards
+  in order is the face-the-way-back program; The whole card fills in a
+  direction, a number, a yes/no and a place at different moments; Only two
+  pairs a direction with a number read from the acorns held. No Add card
+  appears anywhere in the pack, and the introduction remembers a sense and
+  the acorns held instead of counting.
+- **Keep count** (variables) is the only pack where a slot changes over and
+  over: adding and taking away, counters run by When cards, and loops that
+  stop on a value.
+
+Two level ids were retired with the counting levels: m02-count-the-steps
+and m05-fix-the-count (replaced by m02-back-to-the-start and
+m05-fix-the-snapshot). Saved stars on them are kept but no longer shown.
+
+## Change: counting is a card, not a side effect of moving (2026-11-10)
+
+Play-testing feedback: Count the steps and its neighbours paired every
+Forward with an Add (Forward, Add, Forward, Add...), which reads as if
+stepping did the counting and the Add had to follow the Forward. Neither is
+true: memory changes only when a card changes it, and an Add counts the same
+before a step as after it. The levels now say that instead:
+
+- **Read the card** opens on three steps and a single Add, and asks how
+  much steps holds: one, not three.
+- **Counting comes from a loop.** Count the steps, Count down and Only two
+  walk to the gate in a Repeat until with one Add inside (a quota of one
+  Add card rules out writing them out by hand). The Add works before or
+  after the Forward, and the hint says so; Cards in order invites trying
+  both.
+- **Fix the count** is now about changing the right slot: the loop adds to
+  turns, so steps stays 0 and the lock stays shut.
+- **The whole card**, **Follow the numbers** and the pack's introduction
+  put their Add cards away from the steps, so the count is read from the
+  cards, not from the walking. Counting by events (the acorn When card)
+  stays in Keep count.
+
+## Change: showing what each mover does on a tick (2026-11-10)
+
+Play-testing feedback: Tick tock never showed how each log or beetle
+answers a tick, so by Three lanes, where the logs move at different speeds,
+the idea of each thing acting in its own way on the same tick was still
+foreign. Now the pattern is on screen before anything moves:
+
+- **On the board** each mover's round is a dotted track, and a dashed
+  outline with an arrow marks the tile it moves to on the next tick (none
+  when it stays put). When there is more than one of a kind, each carries
+  its number.
+- **The Every tick strip** under the board (`src/app/TickRules.tsx`) has a
+  row per mover spelling out its round, tick by tick: arrows for steps, a
+  dot for a pause, then round again. A slow log reads `• ↑ • ↓`, a fast one
+  `↑ ↓`. The move the next tick will make is ringed; while a tick plays, the
+  moves being made light up in every row at once, beside a tick counter.
+- **The levels say so.** The introduction now shows two logs, one moving
+  every tick and one every other tick. A new level, Fast and slow, replaces
+  Cards in order (a reorder of four cards that taught little) so different
+  speeds are met before Three lanes, and Two rivers and Three lanes point at
+  the outline and the strip.
+
+## Build step 12, part two: grids and randomness (2026-11-09)
+
+The next two packs of step 12: **Reading the map** (2D grids) and **Never
+the same twice** (randomness), ten levels each, each with its introduction.
+
+### What is built
+
+- **Grid slots.** A memory slot can be a grid: rows of numbers, yes/noes or
+  directions, the board's size, read like the board (row first). It prints
+  as `boolean[][]` or `number[][]`. Set can read a grid at the robot's tile,
+  the tile ahead, or a remembered place: `read:walls@ahead`, printed
+  `at(walls, robot.ahead())`. Off the grid there is nothing: no, or 0.
+- **Mark** writes a slot's value into a grid at the same three places,
+  printed `put(counts, robot.position(), n)`.
+- **An answer in memory.** `objective.memory` lists slots and the values
+  they must end with, so a level can ask for a worked-out grid (the
+  minesweeper counts) as well as the flag. A run that reaches the flag with
+  the wrong answer is incomplete, and the message names the slots.
+- **On screen:** a board read as a grid shows row and column numbers
+  around it (from 1, like the memory card's "column 2, row 1"); a grid slot
+  on the memory card is a small table with the robot's tile ringed.
+- **Shuffles.** A level may list `shuffles`: other versions of its board,
+  each written as only what changes (rows, the flag, acorns, gates) over the
+  main board. The level opens on a random version. Shuffle puts out another
+  one; after a run that worked on one version but not all, Shuffle glows and
+  goes straight to a version it misses. A level is solved only when one
+  program solves every version: after a successful run, the app runs the
+  program on the others before giving stars. The log records each shuffle
+  and each check.
+- **Validator.** Every version must be a valid board of the main board's
+  size and different from the others. The reference solution must solve
+  every version; a run or predict starter must too; a debug or build
+  starter must fail on at least one. Grid starts must be the board's size,
+  and a memory objective must name the solution's slots with values of
+  their kinds. The flat-program warning ignores shuffled levels, since a
+  flat program cannot follow a board that changes.
+- **The introductions.** Reading the map: a robot reads the map before
+  each step and turns at rocks. Never the same twice: one program plays on
+  three versions of a board in turn, under "Shuffle 1 of 3, same program".
+- **The packs.** Reading the map: Read the map (model), Read before you
+  step (senses switched off; the map is the only way to see), Count around
+  (model), The rock lock, Fix the read (debug), Leave a trail (Mark),
+  Cards in order, How many touch?, Where will it stop? and Minesweeper
+  (count the rocks above and below each tile of a row and mark them, under
+  a budget). Never the same twice: How many acorns? (model), Any length, A
+  rock somewhere, Count them (model), Fix it for every shuffle (debug),
+  Left or right, Cards in order, Gate or not (the gate senses finally
+  taught: press the switch only when the gate is shut), Where will it stop?
+  and Any maze (a wall-follower on three mazes, under a budget).
+
+### Deviations and choices
+
+- **Shuffles are listed, not generated.** The plan says seeded randomness
+  with checks across many seeds. A level lists its versions instead, a
+  handful each, so every one is written, validated and replayable, and a
+  child sees exactly the version that failed. A seed that generates boards
+  can come later behind the same `shuffles` list.
+- **Reshuffle on the Shuffle button, not on every Run.** Reshuffling on Run
+  would move the board under a child predicting or building for it. Run
+  plays the version on screen; Shuffle changes it.
+- **Grids count from 1 on screen.** The numbers around the board and the
+  memory card count from 1; the code hides indexing behind `at()` and
+  `put()`, so TypeScript's 0-based arrays never show.
+- **The map is not the board.** A grid slot is the robot's notebook of the
+  board, given by the level. Reading the map instead of looking only
+  matters where the level turns the senses off, as Read before you step
+  does.
+
 ## Build step 12, part one: memory, variables and lists (2026-11-09)
 
 The first three packs of step 12: **Two things to remember**
@@ -118,8 +284,10 @@ program's shape since step 2.
   inside the Every tick card do not tick again. Gate cards take no tick.
 - **Key scripts.** A level's `inputScript` plays after main: one `press`
   event per key, then that key's When card. The runtime contract carries
-  the script as `input`. A strip of key caps under the board lights the
-  press playing now and fades the ones played.
+  the script as `input`. A strip of key caps at the top of the Program
+  panel, just above the When cards it drives, lights the press playing now
+  and fades the ones played. (It sat under the board at first; moved
+  2026-11-10 so the keys and their cards are read together.)
 - **On the board:** plates as numbered stone pads; logs glide and carry the
   robot; beetles patrol; the bubble says "plate 1!", "acorn!" or the key;
   the When card's heading glows while its cards run. The memory card adds a

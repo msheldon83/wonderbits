@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "id": "n05-fix-for-every-shuffle",
+  "title": "Fix it for every shuffle",
+  "intro": "This program works on one shuffle and walks past the flag on the others. Fix its check.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 6,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "randomness",
+    "activity": "debug"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "until"
+    ],
+    "allowedConditions": [
+      "atFlag",
+      "blockedAhead"
+    ],
+    "maxInstructions": 2,
+    "starterProgram": [
+      {
+        "until": "blockedAhead",
+        "do": [
+          "forward"
+        ]
+      }
+    ]
+  },
+  "shuffles": [
+    {
+      "goal": {
+        "x": 3,
+        "y": 0
+      }
+    },
+    {
+      "goal": {
+        "x": 4,
+        "y": 0
+      }
+    }
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 6,
+          "y": 0
+        }
+      ],
+      "text": "Walking until blocked always ends here, flag or no flag."
+    },
+    {
+      "kind": "step",
+      "path": [],
+      "index": 0,
+      "text": "What should the loop wait for?"
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "until",
+      "text": "Walk until at the flag."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "until": "atFlag",
+      "do": [
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

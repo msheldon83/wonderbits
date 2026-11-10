@@ -73,6 +73,8 @@ export interface ObjectiveDefinition {
   reachGoal: boolean;
   /** Collect every collectible before the run ends. */
   collectAll: boolean;
+  /** End with these values in these memory slots: the answer the robot worked out. */
+  memory?: Record<string, Value>;
 }
 
 /** Full simulation state: the robot plus anything the run changes. */

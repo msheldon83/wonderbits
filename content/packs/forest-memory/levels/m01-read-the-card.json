@@ -2,10 +2,12 @@
   "schemaVersion": 1,
   "id": "m01-read-the-card",
   "title": "Read the card",
+  "intro": "A slot keeps what it was given until a card changes it. The robot turns after filling in way: what does way hold at the end?",
   "themeId": "forest",
   "world": {
     "rows": [
-      "...."
+      "...",
+      "..."
     ],
     "robot": {
       "x": 0,
@@ -13,8 +15,8 @@
       "facing": "E"
     },
     "goal": {
-      "x": 3,
-      "y": 0
+      "x": 2,
+      "y": 1
     },
     "collectibles": []
   },
@@ -29,36 +31,36 @@
   "programming": {
     "allowedCommands": [
       "forward",
-      "change",
+      "rotateCW",
+      "rotateCCW",
       "set"
     ],
-    "maxInstructions": 6,
+    "maxInstructions": 8,
     "starterProgram": [
-      {
-        "remember": "steps",
-        "kind": "number",
-        "start": 0
-      },
       {
         "remember": "way",
         "kind": "direction",
         "start": "N"
       },
-      "forward",
       {
-        "change": "steps",
-        "by": 1
-      },
-      "forward",
-      {
-        "change": "steps",
-        "by": 1
+        "remember": "clear",
+        "kind": "yesNo",
+        "start": true
       },
       {
         "set": "way",
         "to": "facing"
       },
-      "forward"
+      "rotateCW",
+      "forward",
+      {
+        "set": "clear",
+        "to": "pathAhead"
+      },
+      "rotateCCW",
+      "forward",
+      "forward",
+      "rotateCW"
     ]
   },
   "hints": [
@@ -66,55 +68,50 @@
       "kind": "region",
       "cells": [
         {
-          "x": 1,
-          "y": 0
-        },
-        {
-          "x": 2,
+          "x": 0,
           "y": 0
         }
       ],
-      "text": "Count the Add cards, and look which way the robot faces when it fills in way."
+      "text": "way is filled in here, before the robot turns."
     },
     {
       "kind": "card",
-      "command": "change",
-      "text": "Each Add card puts one more in steps. Set copies the way the robot faces into way."
+      "command": "set",
+      "text": "Set copies what the robot reads at that moment. Turning later does not change the slot."
     },
     {
       "kind": "fill",
       "path": [],
-      "slot": 1,
-      "command": "change",
-      "text": "After each step, steps goes up by one."
+      "slot": 0,
+      "command": "set",
+      "text": "way is set first, while the robot faces right."
     }
   ],
   "referenceSolution": [
-    {
-      "remember": "steps",
-      "kind": "number",
-      "start": 0
-    },
     {
       "remember": "way",
       "kind": "direction",
       "start": "N"
     },
-    "forward",
     {
-      "change": "steps",
-      "by": 1
-    },
-    "forward",
-    {
-      "change": "steps",
-      "by": 1
+      "remember": "clear",
+      "kind": "yesNo",
+      "start": true
     },
     {
       "set": "way",
       "to": "facing"
     },
-    "forward"
+    "rotateCW",
+    "forward",
+    {
+      "set": "clear",
+      "to": "pathAhead"
+    },
+    "rotateCCW",
+    "forward",
+    "forward",
+    "rotateCW"
   ],
   "stars": {
     "noHints": true
@@ -122,8 +119,8 @@
   "prediction": {
     "askTile": false,
     "askMemory": [
-      "slot:steps",
-      "slot:way"
+      "slot:way",
+      "slot:clear"
     ]
   }
 }

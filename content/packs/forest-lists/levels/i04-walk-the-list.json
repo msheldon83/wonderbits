@@ -1,24 +1,25 @@
 {
   "schemaVersion": 1,
-  "id": "i02-walk-the-list",
+  "id": "i04-walk-the-list",
   "title": "Walk the list",
-  "intro": "The route is in a list. Walk it: for each way, face it and step.",
+  "intro": "Eight ways in the route, one Forward card. Let the list do the walking.",
   "themeId": "forest",
   "world": {
     "rows": [
-      ".###",
-      ".###",
-      "...#",
-      "##.."
+      "..###",
+      "#.###",
+      "#...#",
+      "###..",
+      "####."
     ],
     "robot": {
       "x": 0,
       "y": 0,
-      "facing": "S"
+      "facing": "E"
     },
     "goal": {
-      "x": 3,
-      "y": 3
+      "x": 4,
+      "y": 4
     },
     "collectibles": []
   },
@@ -39,18 +40,23 @@
       "forEach"
     ],
     "maxInstructions": 3,
+    "maxPerCommand": {
+      "forward": 1
+    },
     "starterProgram": [
       {
         "remember": "route",
         "kind": "list",
         "of": "direction",
         "start": [
+          "E",
           "S",
           "S",
           "E",
           "E",
           "S",
-          "E"
+          "E",
+          "S"
         ]
       },
       {
@@ -69,23 +75,23 @@
           "y": 0
         },
         {
-          "x": 3,
-          "y": 3
+          "x": 4,
+          "y": 4
         }
       ],
-      "text": "Six ways in the route."
+      "text": "The route list goes all the way."
     },
     {
       "kind": "card",
       "command": "forEach",
-      "text": "Inside For each: Face way, then Forward."
+      "text": "Put the only Forward inside For each, after Face."
     },
     {
       "kind": "fill",
       "path": [],
       "slot": 0,
       "command": "forEach",
-      "text": "The loop goes first."
+      "text": "Start with the loop."
     }
   ],
   "referenceSolution": [
@@ -94,12 +100,14 @@
       "kind": "list",
       "of": "direction",
       "start": [
+        "E",
         "S",
         "S",
         "E",
         "E",
         "S",
-        "E"
+        "E",
+        "S"
       ]
     },
     {

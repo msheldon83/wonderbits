@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "id": "n03-rock-somewhere",
+  "title": "A rock somewhere",
+  "intro": "A rock blocks the path, in a different place each shuffle. Go round it wherever it is.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......",
+      "..#..."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 1,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 1
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "randomness",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "until",
+      "ifElse"
+    ],
+    "allowedConditions": [
+      "atFlag",
+      "blockedAhead"
+    ],
+    "maxInstructions": 13,
+    "starterProgram": []
+  },
+  "shuffles": [
+    {
+      "rows": [
+        "......",
+        "...#.."
+      ]
+    },
+    {
+      "rows": [
+        "......",
+        ".#...."
+      ]
+    }
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 1
+        }
+      ],
+      "text": "The rock moves, but the way round it is always the same."
+    },
+    {
+      "kind": "card",
+      "command": "ifElse",
+      "text": "If blocked ahead, go round; else, step."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        0
+      ],
+      "slot": 0,
+      "command": "ifElse",
+      "text": "Inside the loop: If / else."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "until": "atFlag",
+      "do": [
+        {
+          "if": "blockedAhead",
+          "do": [
+            "rotateCCW",
+            "forward",
+            "rotateCW",
+            "forward",
+            "forward",
+            "rotateCW",
+            "forward",
+            "rotateCCW"
+          ],
+          "else": [
+            "forward"
+          ]
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

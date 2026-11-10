@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "id": "i03-count-the-crates",
-  "title": "Count the crates",
-  "intro": "The list says which crates hold acorns. Count the yeses, and open the lock with the count.",
+  "id": "i06-fix-the-check",
+  "title": "Fix the check",
+  "intro": "The count comes out wrong and the lock stays shut. One check is wrong.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -34,7 +34,7 @@
   },
   "curriculum": {
     "concept": "lists",
-    "activity": "build"
+    "activity": "debug"
   },
   "programming": {
     "allowedCommands": [
@@ -74,7 +74,28 @@
         "remember": "count",
         "kind": "number",
         "start": 0
-      }
+      },
+      {
+        "forEach": "crates",
+        "as": "crate",
+        "do": [
+          {
+            "if": "slot:crate=no",
+            "do": [
+              {
+                "change": "count",
+                "by": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "unlock": "a",
+        "with": "count"
+      },
+      "forward",
+      "forward"
     ]
   },
   "hints": [
@@ -86,19 +107,24 @@
           "y": 0
         }
       ],
-      "text": "The lock opens for the number of yeses in the list."
+      "text": "The lock wants the number of crates with acorns."
     },
     {
-      "kind": "card",
-      "command": "forEach",
-      "text": "For each crate: if crate is yes, add one to count."
+      "kind": "step",
+      "path": [
+        0
+      ],
+      "index": 0,
+      "text": "Which crates does this check count?"
     },
     {
       "kind": "fill",
-      "path": [],
+      "path": [
+        0
+      ],
       "slot": 0,
-      "command": "forEach",
-      "text": "Go through the list first."
+      "command": "if",
+      "text": "Count the yeses."
     }
   ],
   "referenceSolution": [

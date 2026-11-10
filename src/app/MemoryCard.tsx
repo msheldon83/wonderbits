@@ -7,7 +7,7 @@
  */
 import type { ReactElement } from 'react';
 import { valueWords } from '../editor/commands';
-import type { MemorySlot } from '../ir/types';
+import type { MemorySlot, Value } from '../ir/types';
 import { describeValue, FACING_WORDS, gateOfField, memoryLines, memoryValue, slotOfField, type MemoryKind, type MemoryLine } from '../lessons/memory';
 import type { MemoryField, MemoryValue } from '../lessons/types';
 import { gateColor } from '../render/themes';
@@ -46,9 +46,43 @@ const KIND_ICON: Record<MemoryKind, ReactElement> = {
       <path d="M4 6h2M4 12h2M4 18h2M9 6h11M9 12h11M9 18h11" {...stroke} />
     </svg>
   ),
+  grid: (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <rect x="3.5" y="3.5" width="17" height="17" rx="2" {...stroke} />
+      <path d="M3.5 9.5h17M3.5 14.5h17M9.5 3.5v17M14.5 3.5v17" {...stroke} strokeWidth={1.8} />
+    </svg>
+  ),
 };
 
-const KIND_WORDS: Record<MemoryKind, string> = { position: 'a place', direction: 'a direction', number: 'a number', yesNo: 'a yes or no', list: 'a list' };
+const KIND_WORDS: Record<MemoryKind, string> = { position: 'a place', direction: 'a direction', number: 'a number', yesNo: 'a yes or no', list: 'a list', grid: 'a grid of rows and columns' };
+
+const ITEM_WORDS: Record<string, string> = { number: 'numbers', yesNo: 'yes/noes', direction: 'directions' };
+/** A slot's kind as a short tag beside its name: "number", "list of yes/noes", "grid of numbers". */
+function kindWord(m: MemorySlot | undefined): string {
+  if (!m) return '';
+  if (m.kind === 'list' || m.kind === 'grid') return `${m.kind} of ${ITEM_WORDS[m.of ?? 'number']}`;
+  return { number: 'number', yesNo: 'yes/no', direction: 'direction', position: 'place' }[m.kind] ?? m.kind;
+}
+
+/** A grid slot drawn as a little table, rows like the board's, the robot's tile ringed. */
+function GridTable({ rows, here }: { rows: Value[]; here: { x: number; y: number } }) {
+  const cell = (v: Value) => (typeof v === 'boolean' ? (v ? '■' : '·') : String(v));
+  return (
+    <table className="memory-grid">
+      <tbody>
+        {rows.map((row, y) => (
+          <tr key={y}>
+            {(Array.isArray(row) ? row : []).map((v, x) => (
+              <td key={x} className={here.x === x && here.y === y ? 'is-here' : ''}>
+                {cell(v)}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
 const ARROW: Record<Facing, string> = { N: '↑', E: '→', S: '↓', W: '←' };
 
 export interface MemoryCardProps {
@@ -143,9 +177,15 @@ export function MemoryCard({ world, state, slots = [], asking = [], answers = {}
                 <span className="visually-hidden">Holds {KIND_WORDS[line.kind]}.</span>
               </span>
               <span className="memory-label">{line.label}</span>
+              {line.slot && <span className="memory-kindword">{kindWord(slots.find((m) => slotOfField(line.field) === m.name))}</span>}
               {asked ? (
                 <span className="memory-question" role="group" aria-label={`${line.label} at the end? ${isWrong ? 'Not that one last time.' : ''}`}>
                   {question(line.field as MemoryField, line.label, askedKind(line))}
+                </span>
+              ) : line.kind === 'grid' && Array.isArray(state.memory?.[slotOfField(line.field) ?? '']) ? (
+                <span className="memory-value">
+                  <GridTable rows={state.memory![slotOfField(line.field)!] as Value[]} here={state.robot} />
+                  <span className="visually-hidden">{valueOf(line)}</span>
                 </span>
               ) : (
                 <span className="memory-value" aria-live="off">

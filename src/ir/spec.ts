@@ -33,6 +33,8 @@ export type NodeSpec =
   | { change: string; by: number }
   | { face: string }
   | { unlock: string; with: string }
+  | { mark: string; at: string; with: string }
+  | { push: string; to: Source }
   | { define: string; do: NodeSpec[] }
   | { on: string; do: NodeSpec[] }
   | { remember: string; kind: ValueKind; of?: ItemKind; start?: Value };
@@ -57,6 +59,8 @@ export function kindOfSpec(s: NodeSpec): SpecKind {
   if ('change' in s) return 'change';
   if ('face' in s) return 'face';
   if ('unlock' in s) return 'unlock';
+  if ('mark' in s) return 'mark';
+  if ('push' in s) return 'push';
   if ('define' in s) return 'define';
   if ('on' in s) return 'on';
   return 'remember';
@@ -80,6 +84,7 @@ export function defaultStart(kind: ValueKind): Value {
     case 'position':
       return { x: 0, y: 0 };
     case 'list':
+    case 'grid':
       return [];
   }
 }
@@ -121,6 +126,8 @@ export function buildNodes(spec: readonly NodeSpec[], newId: IdFactory): IRNode[
     if ('change' in s) return { id, kind: 'change', slot: s.change, by: s.by };
     if ('face' in s) return { id, kind: 'face', slot: s.face };
     if ('unlock' in s) return { id, kind: 'unlock', gate: s.unlock, slot: s.with };
+    if ('mark' in s) return { id, kind: 'mark', grid: s.mark, at: s.at, slot: s.with };
+    if ('push' in s) return { id, kind: 'push', list: s.push, to: s.to };
     if ('repeat' in s) return { id, kind: 'repeat', count: s.repeat, body: buildNodes(s.do, newId) };
     if ('until' in s) return { id, kind: 'until', condition: s.until, body: buildNodes(s.do, newId) };
     if ('forEach' in s) return { id, kind: 'forEach', list: s.forEach, item: s.as, body: buildNodes(s.do, newId) };
@@ -157,6 +164,10 @@ export function specOf(nodes: readonly IRNode[]): NodeSpec[] {
         return { face: n.slot };
       case 'unlock':
         return { unlock: n.gate, with: n.slot };
+      case 'mark':
+        return { mark: n.grid, at: n.at, with: n.slot };
+      case 'push':
+        return { push: n.list, to: n.to };
       default:
         return n.kind;
     }

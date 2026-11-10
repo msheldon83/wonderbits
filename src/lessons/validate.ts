@@ -5,10 +5,11 @@
 import { sequentialIdFactory } from '../ir/ids';
 import { programFromSpec } from '../ir/program';
 import { callsOfSpec, cardsOfSpec, conditionsOfSpec, countSpec, depthOfSpec, gatesOfSpec, specDiff, splitSpec, type NodeSpec } from '../ir/spec';
-import { BASIC_CONDITIONS, MEMORY_CARD_IDS, isBlockId, isCommandId, isGateActionId, isSenseId, parseSlotTest, type CardId, type CommandId, type Key, type Source, type ValueKind } from '../ir/types';
+import { BASIC_CONDITIONS, MEMORY_CARD_IDS, isBlockId, isCommandId, isGateActionId, isSenseId, parseLength, parseRead, parseSlotTest, type CardId, type CommandId, type Key, type Source, type ValueKind } from '../ir/types';
 import { interpretAll } from '../runtime/interpreter';
 import { advance, cellKey, gatesOf, initialState, isTimed, moverCell, moversOf, objectiveMet, period, platesOf, stateKey, step, switchesOf, tileAt } from '../sim/world';
 import { hasField } from './memory';
+import { worldsOf } from './shuffles';
 import { valueFits } from './parse';
 import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 import { cardsTeaching } from './concepts';
@@ -69,7 +70,8 @@ function countOf(cards: readonly string[], c: string): number {
 const runOn = (world: WorldDefinition, objective: ObjectiveDefinition, spec: NodeSpec[], input?: readonly Key[]) =>
   interpretAll({ program: programFromSpec(spec, sequentialIdFactory()), world, objective, limits: { maxSteps: 1000 }, ...(input && { input }) });
 const solvesOn = (world: WorldDefinition, objective: ObjectiveDefinition, spec: NodeSpec[], input?: readonly Key[]) => runOn(world, objective, spec, input).outcome.status === 'success';
-const solves = (puzzle: PuzzleDefinition, spec: NodeSpec[]) => solvesOn(puzzle.world, puzzle.objective, spec, puzzle.inputScript);
+/** A program solves a level only when it solves every version of the board. */
+const solves = (puzzle: PuzzleDefinition, spec: NodeSpec[]) => worldsOf(puzzle).every((w) => solvesOn(w, puzzle.objective, spec, puzzle.inputScript));
 
 /** The board itself: size, and the robot, goal and acorns on floor tiles. Shared by levels and demos. */
 function validateWorld(world: WorldDefinition, objective: ObjectiveDefinition, errors: string[], gateCards = false): void {
@@ -139,7 +141,18 @@ export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
   const warnings: string[] = [];
   const { world, programming, referenceSolution, stars } = puzzle;
 
-  validateWorld(world, puzzle.objective, errors, programming.allowedCommands.some((c) => isGateActionId(c) || c === 'unlock'));
+  const gateCards = programming.allowedCommands.some((c) => isGateActionId(c) || c === 'unlock');
+  validateWorld(world, puzzle.objective, errors, gateCards);
+  // Shuffles: each a whole, valid board of the same size, and different from the others.
+  const seenBoards = new Set([JSON.stringify(world)]);
+  (puzzle.shuffles ?? []).forEach((w, i) => {
+    const own: string[] = [];
+    validateWorld(w, puzzle.objective, own, gateCards);
+    own.forEach((e) => errors.push(`shuffles[${i}]: ${e}`));
+    if (w.width !== world.width || w.height !== world.height) errors.push(`shuffles[${i}] is ${w.width} by ${w.height}; every shuffle is the main board's size`);
+    if (seenBoards.has(JSON.stringify(w))) errors.push(`shuffles[${i}] is the same as another version of the board`);
+    seenBoards.add(JSON.stringify(w));
+  });
 
   if (programming.allowedCommands.length === 0) errors.push('allowedCommands must not be empty');
   const allowed = new Set<string>(programming.allowedCommands);
@@ -172,10 +185,10 @@ export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
   checkSpec('referenceSolution', referenceSolution);
   if (programming.suppliedCards) checkCards('suppliedCards', programming.suppliedCards);
 
-  if (!solves(puzzle, referenceSolution)) {
-    const outcome = runOn(world, puzzle.objective, referenceSolution, puzzle.inputScript).outcome;
-    errors.push(`referenceSolution does not solve the level (outcome: ${outcome.status})`);
-  }
+  worldsOf(puzzle).forEach((w, i) => {
+    const outcome = runOn(w, puzzle.objective, referenceSolution, puzzle.inputScript).outcome;
+    if (outcome.status !== 'success') errors.push(`referenceSolution does not solve ${i === 0 ? 'the level' : `shuffles[${i - 1}]`} (outcome: ${outcome.status})`);
+  });
 
   validateFunctions(puzzle, errors);
   validateHandlers(puzzle, errors);
@@ -185,13 +198,16 @@ export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
 
   /** Levels that need more than a flat list: blocks, functions, When cards, gate cards or a key script. */
   const structured =
-    programming.allowedCommands.some((c) => isBlockId(c) || c === 'call' || isGateActionId(c) || (MEMORY_CARD_IDS as readonly string[]).includes(c)) || splitSpec(referenceSolution).handlers.length > 0 || puzzle.inputScript !== undefined;
+    programming.allowedCommands.some((c) => isBlockId(c) || c === 'call' || isGateActionId(c) || (MEMORY_CARD_IDS as readonly string[]).includes(c)) ||
+    splitSpec(referenceSolution).handlers.length > 0 ||
+    puzzle.inputScript !== undefined ||
+    puzzle.shuffles !== undefined;
   /** Levels where the child writes the program; elsewhere a shorter flat program is no concern. */
   const open = puzzle.curriculum.activity === 'build' || puzzle.curriculum.activity === 'reorder';
   const refCount = countSpec(referenceSolution);
   const shortest = shortestSolution(puzzle);
   // A flat program that breaks a per-card quota is no way round the blocks, so it does not count.
-  const withinQuotas = shortest !== null && Object.entries(programming.maxPerCommand ?? {}).every(([c, max]) => countOf(shortest, c) <= max!);
+  const withinQuotas = shortest !== null && !puzzle.shuffles && Object.entries(programming.maxPerCommand ?? {}).every(([c, max]) => countOf(shortest, c) <= max!);
   const min = shortest?.length ?? null;
   if (min === null && !structured) {
     errors.push(`no solution of ${SEARCH_CAP} commands or fewer exists`);
@@ -283,14 +299,14 @@ function validateHandlers(puzzle: PuzzleDefinition, errors: string[]): void {
 function setSources(spec: readonly NodeSpec[]): Source[] {
   return spec.flatMap((s): Source[] => {
     if (typeof s === 'string') return [];
-    const own = 'set' in s ? [s.to] : [];
+    const own = 'set' in s || 'push' in s ? [s.to] : [];
     return [...own, ...('do' in s ? setSources(s.do) : []), ...('if' in s && s.else ? setSources(s.else) : [])];
   });
 }
 
 /** What kind of value a Set card's source gives. */
 function sourceKind(source: Source): ValueKind {
-  if (typeof source === 'number' || source === 'acorns') return 'number';
+  if (typeof source === 'number' || source === 'acorns' || parseLength(source)) return 'number';
   if (typeof source === 'boolean' || isSenseId(source)) return 'yesNo';
   if (source === 'here') return 'position';
   return 'direction';
@@ -305,12 +321,25 @@ function testKind(value: string): ValueKind {
 }
 
 /** Every card that names a slot, and the kind it needs there, walking a spec. */
-function slotUses(spec: readonly NodeSpec[]): { slot: string; kind: ValueKind | 'item'; card: string; list?: string }[] {
+function slotUses(spec: readonly NodeSpec[]): { slot: string; kind: ValueKind | 'item'; card: string; list?: string; of?: ValueKind }[] {
   return spec.flatMap((s) => {
     if (typeof s === 'string') return [];
     const inner = 'do' in s ? [...slotUses(s.do), ...('if' in s && s.else ? slotUses(s.else) : [])] : [];
-    const own: { slot: string; kind: ValueKind | 'item'; card: string; list?: string }[] = [];
-    if ('set' in s) own.push({ slot: s.set, kind: sourceKind(s.to), card: 'Set' });
+    const own: { slot: string; kind: ValueKind | 'item'; card: string; list?: string; of?: ValueKind }[] = [];
+    if ('push' in s) own.push({ slot: s.push, kind: 'list', card: 'Add to list', of: sourceKind(s.to) });
+    for (const to of 'set' in s ? [s.to] : 'push' in s ? [s.to] : []) {
+      const counted = parseLength(to);
+      if (counted) own.push({ slot: counted, kind: 'list', card: 'a length' });
+    }
+    const read = 'set' in s ? parseRead(s.to) : null;
+    if ('set' in s && read) {
+      own.push({ slot: s.set, kind: 'item', card: 'Set', list: read.grid }, { slot: read.grid, kind: 'grid', card: 'Set' });
+      if (read.at !== 'here' && read.at !== 'ahead') own.push({ slot: read.at, kind: 'position', card: 'Set' });
+    } else if ('set' in s) own.push({ slot: s.set, kind: sourceKind(s.to), card: 'Set' });
+    if ('mark' in s) {
+      own.push({ slot: s.mark, kind: 'grid', card: 'Mark' }, { slot: s.with, kind: 'item', card: 'Mark', list: s.mark });
+      if (s.at !== 'here' && s.at !== 'ahead') own.push({ slot: s.at, kind: 'position', card: 'Mark' });
+    }
     if ('change' in s) own.push({ slot: s.change, kind: 'number', card: 'Add' });
     if ('face' in s) own.push({ slot: s.face, kind: 'direction', card: 'Face' });
     if ('unlock' in s) own.push({ slot: s.with, kind: 'number', card: 'Unlock' });
@@ -352,6 +381,7 @@ function validateMemory(puzzle: PuzzleDefinition, errors: string[]): void {
       }
       const want = use.kind === 'item' ? byName.get(use.list ?? '')?.of : use.kind;
       if (want !== undefined && slot.kind !== want) errors.push(`${label}: ${use.card} needs ${use.slot} to hold a ${want}, but it holds a ${slot.kind}`);
+      else if (use.of && slot.of !== use.of) errors.push(`${label}: ${use.card} puts a ${use.of} in ${use.slot}, a list of ${slot.of}`);
     }
     if (programming.allowedSources) {
       const allowed = new Set(programming.allowedSources.map((x) => JSON.stringify(x)));
@@ -360,6 +390,18 @@ function validateMemory(puzzle: PuzzleDefinition, errors: string[]): void {
     for (const g of gatesOfSpec(spec)) {
       const gate = gatesOf(world).find((x) => x.id === g);
       if (gate && gate.code === undefined && JSON.stringify(spec).includes(`"unlock":"${g}"`)) errors.push(`${label} unlocks gate ${g}, which has no number lock`);
+    }
+  }
+  // An answer in memory: the solution's slots, and values of their kinds. Grids are the board's size.
+  const refMemory = splitSpec(referenceSolution).memory;
+  for (const [slot, want] of Object.entries(puzzle.objective.memory ?? {})) {
+    const m = refMemory.find((x) => x.name === slot);
+    if (!m) errors.push(`objective.memory asks for ${slot}, which the referenceSolution does not remember`);
+    else if (!valueFits(want, m.kind, m.of)) errors.push(`objective.memory gives ${slot} a value that is not a ${m.kind}`);
+  }
+  for (const m of [...splitSpec(programming.starterProgram).memory, ...refMemory, ...(options ?? [])]) {
+    if (m.kind === 'grid' && Array.isArray(m.start) && (m.start.length !== world.height || (m.start[0] as unknown[]).length !== world.width)) {
+      errors.push(`grid ${m.name} is ${(m.start[0] as unknown[]).length} by ${m.start.length}; it must be the board's ${world.width} by ${world.height}`);
     }
   }
   if (!options) {
@@ -482,6 +524,9 @@ export function validatePack(pack: PackManifest, all: readonly PackManifest[]): 
 export function validateIntroduction(intro: ConceptIntroduction, errors: string[]): void {
   const { world, program, before, input } = intro.demo;
   const objective: ObjectiveDefinition = { reachGoal: true, collectAll: world.collectibles.length > 0 };
+  (intro.demo.shuffles ?? []).forEach((w, i) => {
+    if (!solvesOn(w, { reachGoal: true, collectAll: w.collectibles.length > 0 }, program, input)) errors.push(`introduction.demo.program must reach the flag on shuffles[${i}] too`);
+  });
   validateWorld(world, objective, errors, cardsOfSpec(program).some(isGateActionId));
   if (program.length === 0) errors.push('introduction.demo.program must not be empty');
   if (!solvesOn(world, objective, program, input)) errors.push('introduction.demo.program must reach the flag (and collect every acorn) on its board');
@@ -497,6 +542,8 @@ export function validateIntroduction(intro: ConceptIntroduction, errors: string[
     input: [trace.some((e) => e.op === 'press' && e.nodeId !== 'input'), 'never presses a key that a When card waits for'],
     time: [trace.some((e) => e.op === 'tick' && e.before.tick !== e.after.tick) && moversOf(world).length > 0, 'never lets anything move with the ticks'],
     representation: [splitSpec(program).memory.length > 0 && trace.some((e) => e.op === 'set'), 'never puts anything in a memory slot'],
+    grids: [splitSpec(program).memory.some((m) => m.kind === 'grid'), 'never uses a grid'],
+    randomness: [(intro.demo.shuffles?.length ?? 0) >= 2, 'has fewer than two shuffles to play on'],
   };
   const check = shows[intro.concept];
   if (check && !check[0]) errors.push(`introduction.demo.program ${check[1]}, so it does not show "${intro.concept}"`);

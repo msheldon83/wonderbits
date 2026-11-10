@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "t02-two-rivers",
   "title": "Two rivers",
-  "intro": "Two rivers, two logs. Wait for each one, then hop across.",
+  "intro": "Two rivers, two logs. The dashed outline on the water shows where each log goes on the next tick.",
   "themeId": "forest",
   "world": {
     "rows": [

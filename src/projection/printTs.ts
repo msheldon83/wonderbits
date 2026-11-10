@@ -3,7 +3,7 @@
  * readable TypeScript. Read-only through Phase 3; Phase 4 adds a parser that
  * lifts hand-edited code back into the IR using the @node comments.
  */
-import { isSenseId, MAIN, parseSlotTest, type CommandId, type ConditionId, type IRNode, type MemorySlot, type ProgramIR, type SenseId, type Source, type Value } from '../ir/types';
+import { isSenseId, MAIN, parseLength, parseRead, parseSlotTest, type CommandId, type ConditionId, type IRNode, type MemorySlot, type ProgramIR, type SenseId, type Source, type Value } from '../ir/types';
 
 const CALL: Record<CommandId, string> = {
   forward: 'robot.forward();',
@@ -33,11 +33,20 @@ export function valueCode(v: Value): string {
 }
 
 const TYPE: Record<string, string> = { number: 'number', yesNo: 'boolean', direction: 'Direction', position: 'Position' };
-const typeCode = (m: MemorySlot) => (m.kind === 'list' ? `${TYPE[m.of ?? 'number']}[]` : TYPE[m.kind]!);
+const typeCode = (m: MemorySlot) => (m.kind === 'list' ? `${TYPE[m.of ?? 'number']}[]` : m.kind === 'grid' ? `${TYPE[m.of ?? 'number']}[][]` : TYPE[m.kind]!);
+
+/** A grid place as TypeScript: the robot's position, the tile ahead, or a position variable. */
+function placeCode(at: string): string {
+  return at === 'here' ? 'robot.position()' : at === 'ahead' ? 'robot.ahead()' : at;
+}
 
 /** What a Set card reads, as TypeScript. */
 function sourceCode(source: Source): string {
   if (typeof source !== 'string') return String(source);
+  const read = parseRead(source);
+  if (read) return `at(${read.grid}, ${placeCode(read.at)})`;
+  const counted = parseLength(source);
+  if (counted) return `${counted}.length`;
   if (source === 'facing') return 'robot.facing()';
   if (source === 'here') return 'robot.position()';
   if (source === 'acorns') return 'robot.acorns()';
@@ -58,9 +67,11 @@ export function conditionCode(c: ConditionId): string {
 
 /** The types a program's memory needs from the robot's library, beside the robot itself. */
 function typeImports(program: ProgramIR): string {
-  const kinds = new Set((program.memory ?? []).map((m) => (m.kind === 'list' ? m.of : m.kind)));
+  const kinds = new Set((program.memory ?? []).map((m) => (m.kind === 'list' || m.kind === 'grid' ? m.of : m.kind)));
   const types = [...(kinds.has('direction') ? ['Direction'] : []), ...(kinds.has('position') ? ['Position'] : [])];
-  return types.map((t) => `, type ${t}`).join('');
+  // Grids are read with at() and written with put(), which count rows and columns from the top left.
+  const grids = (program.memory ?? []).some((m) => m.kind === 'grid') ? ['at', 'put'] : [];
+  return [...grids.map((g) => `, ${g}`), ...types.map((t) => `, type ${t}`)].join('');
 }
 
 /** A negated check, written the way a person would. */
@@ -121,6 +132,12 @@ function printNode(node: IRNode, depth: number, lines: string[]): void {
       return;
     case 'unlock':
       lines.push(`${pad}robot.unlock('${node.gate}', ${node.slot}); ${tag}`);
+      return;
+    case 'push':
+      lines.push(`${pad}${node.list}.push(${sourceCode(node.to)}); ${tag}`);
+      return;
+    case 'mark':
+      lines.push(`${pad}put(${node.grid}, ${placeCode(node.at)}, ${node.slot}); ${tag}`);
       return;
     case 'openGate':
       lines.push(`${pad}robot.openGate('${node.gate}'); ${tag}`);

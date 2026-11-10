@@ -21,7 +21,7 @@ export function cardsTeaching(concept: string): readonly CardId[] | null {
     case 'variables':
       return ['set', 'change'];
     case 'lists':
-      return ['forEach'];
+      return ['forEach', 'push'];
     default:
       return null;
   }

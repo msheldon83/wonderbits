@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { functionLabel, isSenseId, parseSlotTest, type CardId, type ConditionId, type IRNode, type SenseId, type Source, type Value } from '../ir/types';
+import { functionLabel, isSenseId, parseLength, parseRead, parseSlotTest, type CardId, type ConditionId, type IRNode, type SenseId, type Source, type Value } from '../ir/types';
 import { TurnArrow } from '../render/art';
 
 export interface CommandInfo {
@@ -157,6 +157,25 @@ export const COMMANDS: Record<CardId, CommandInfo> = {
       </svg>
     ),
   },
+  mark: {
+    label: 'Mark',
+    description: 'Write a value into a grid',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <path d="M5 11h22M5 21h22M11 5v22M21 5v22" {...stroke} strokeWidth={2.2} />
+        <circle cx="16" cy="16" r="3.5" fill="currentColor" />
+      </svg>
+    ),
+  },
+  push: {
+    label: 'Add to list',
+    description: 'Put a value on the end of a list',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <path d="M5 8h14M5 15h14M5 22h8M22 18v10M17 23h10" {...stroke} />
+      </svg>
+    ),
+  },
   call: {
     label: 'Function',
     description: 'Run the cards of a function',
@@ -202,9 +221,18 @@ export function valueWords(v: Value): string {
   return String(v);
 }
 
-/** What a Set card reads, in words: "3", "yes", "the way it faces", "where it is", "acorns held", "acorn ahead?". */
+/** Where on a grid, in words: "here", "ahead", "at spot". */
+export function placeWords(at: string): string {
+  return at === 'here' || at === 'ahead' ? at : `at ${at}`;
+}
+
+/** What a Set card reads, in words: "3", "yes", "the way it faces", "where it is", "acorns held", "acorn ahead?", "walls ahead". */
 export function sourceWords(source: Source): string {
   if (typeof source !== 'string') return valueWords(source);
+  const read = parseRead(source);
+  if (read) return `${read.grid} ${placeWords(read.at)}`;
+  const counted = parseLength(source);
+  if (counted) return `how many in ${counted}`;
   if (source === 'facing') return 'the way it faces';
   if (source === 'here') return 'where it is';
   if (source === 'acorns') return 'acorns held';
@@ -241,6 +269,10 @@ export function describeNode(node: IRNode): string {
       return `Face the way ${node.slot} holds`;
     case 'unlock':
       return `Unlock gate ${node.gate.toUpperCase()} with ${node.slot}`;
+    case 'push':
+      return `Add ${sourceWords(node.to)} to the end of ${node.list}`;
+    case 'mark':
+      return `Mark ${node.slot} on ${node.grid} ${placeWords(node.at)}`;
     case 'call':
       return `Run the cards of ${functionLabel(node.name)}`;
     case 'openGate':

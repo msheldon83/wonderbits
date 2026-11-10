@@ -63,11 +63,11 @@ export const CALL = 'call' as const;
  * holds, and Unlock a gate with the number a slot holds. For each is a
  * block that walks a list slot.
  */
-export const MEMORY_CARD_IDS = ['set', 'change', 'face', 'unlock'] as const;
+export const MEMORY_CARD_IDS = ['set', 'change', 'face', 'unlock', 'mark', 'push'] as const;
 export type MemoryCardId = (typeof MEMORY_CARD_IDS)[number];
 
 /** The kinds of value a memory slot can hold. A list holds items of one kind. */
-export const VALUE_KINDS = ['number', 'yesNo', 'direction', 'position', 'list'] as const;
+export const VALUE_KINDS = ['number', 'yesNo', 'direction', 'position', 'list', 'grid'] as const;
 export type ValueKind = (typeof VALUE_KINDS)[number];
 export type ItemKind = 'number' | 'yesNo' | 'direction';
 /** A value in memory: a number, a yes/no, a direction letter (N, E, S, W), a tile, or a list. */
@@ -77,7 +77,7 @@ export type Value = number | boolean | string | { x: number; y: number } | Value
 export interface MemorySlot {
   name: string;
   kind: ValueKind;
-  /** The kind of a list's items. */
+  /** The kind of a list's or a grid's items. */
   of?: ItemKind;
   start: Value;
 }
@@ -85,9 +85,37 @@ export interface MemorySlot {
 /**
  * Where a Set card's value comes from: a literal (a number, yes or no as
  * true or false, a direction letter), or the robot's own reading right now:
- * `facing`, `here`, `acorns` (how many it holds), or a sense's yes or no.
+ * `facing`, `here`, `acorns` (how many it holds), a sense's yes or no, an
+ * item of a grid slot, written `read:<grid>@<where>`, or how many items a
+ * list holds, written `length:<list>`.
  */
 export type Source = number | boolean | string;
+
+/**
+ * Where on a grid a card reads or marks: the robot's tile (`here`), the tile
+ * in front of it (`ahead`), or a position slot's tile.
+ */
+export type GridPlace = string;
+
+const READ = /^read:([a-z][A-Za-z0-9]{0,19})@([a-z][A-Za-z0-9]{0,19})$/;
+
+/** The grid and the place a `read:` source names, or null when it is not one. */
+export function parseRead(source: Source): { grid: string; at: GridPlace } | null {
+  const m = typeof source === 'string' ? READ.exec(source) : null;
+  return m ? { grid: m[1]!, at: m[2]! } : null;
+}
+
+export const readFrom = (grid: string, at: GridPlace): Source => `read:${grid}@${at}`;
+
+const LENGTH = /^length:([a-z][A-Za-z0-9]{0,19})$/;
+
+/** The list a `length:` source counts, or null when it is not one. */
+export function parseLength(source: Source): string | null {
+  const m = typeof source === 'string' ? LENGTH.exec(source) : null;
+  return m ? m[1]! : null;
+}
+
+export const lengthOf = (list: string): Source => `length:${list}`;
 
 /** Cards that act on the world instead of the robot: open or shut a gate by its letter. */
 export const GATE_ACTION_IDS = ['openGate', 'closeGate'] as const;
@@ -195,6 +223,23 @@ export interface UnlockNode {
   slot: string;
 }
 
+/** Writes a slot's value into a grid slot, at the robot's tile, the tile ahead, or a remembered place. */
+export interface MarkNode {
+  id: NodeId;
+  kind: 'mark';
+  grid: string;
+  at: GridPlace;
+  slot: string;
+}
+
+/** Puts a value on the end of a list slot: the list grows by one. */
+export interface PushNode {
+  id: NodeId;
+  kind: 'push';
+  list: string;
+  to: Source;
+}
+
 /** Runs its body once for each item of a list slot, with the item in another slot. */
 export interface ForEachNode {
   id: NodeId;
@@ -205,7 +250,7 @@ export interface ForEachNode {
 }
 
 export type BlockNode = RepeatNode | IfNode | IfElseNode | UntilNode | ForEachNode;
-export type IRNode = CommandNode | BlockNode | CallNode | GateActionNode | SetNode | ChangeNode | FaceNode | UnlockNode;
+export type IRNode = CommandNode | BlockNode | CallNode | GateActionNode | SetNode | ChangeNode | FaceNode | UnlockNode | MarkNode | PushNode;
 
 export function isBlockNode(node: IRNode): node is BlockNode {
   return isBlockId(node.kind);

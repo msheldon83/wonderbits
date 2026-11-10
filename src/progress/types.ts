@@ -64,8 +64,10 @@ export type ObservationEvent = { t: number; levelId: string } & (
   | { kind: 'card-placed'; command: string; at: Place }
   | { kind: 'card-moved'; nodeId: NodeId; to: Place }
   | { kind: 'card-removed'; nodeId: NodeId }
-  | { kind: 'card-changed'; nodeId: NodeId; count?: number; condition?: ConditionId; gate?: string; slot?: string; to?: Source; by?: number; list?: string; item?: string }
+  | { kind: 'card-changed'; nodeId: NodeId; count?: number; condition?: ConditionId; gate?: string; slot?: string; to?: Source; by?: number; list?: string; item?: string; grid?: string; at?: string }
   | { kind: 'slot-added'; slot: string }
+  | { kind: 'shuffled'; shuffle: number }
+  | { kind: 'shuffles-checked'; passed: number; total: number }
   | { kind: 'slot-removed'; slot: string }
   | { kind: 'run-started'; steps: number }
   | { kind: 'trace-halted'; nodeId: NodeId; reason: string }

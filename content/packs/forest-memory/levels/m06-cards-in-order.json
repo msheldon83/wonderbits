@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "id": "m06-cards-in-order",
   "title": "Cards in order",
-  "intro": "Put the cards in order: step, count, step, count, unlock, and through.",
+  "intro": "Put the cards in order: remember the way, turn round for the acorn, then face the way again.",
   "themeId": "forest",
   "world": {
     "rows": [
       "....."
     ],
     "robot": {
-      "x": 0,
+      "x": 1,
       "y": 0,
       "facing": "E"
     },
@@ -17,20 +17,16 @@
       "x": 4,
       "y": 0
     },
-    "collectibles": [],
-    "gates": [
+    "collectibles": [
       {
-        "id": "a",
-        "x": 3,
-        "y": 0,
-        "open": false,
-        "code": 2
+        "x": 0,
+        "y": 0
       }
     ]
   },
   "objective": {
     "reachGoal": true,
-    "collectAll": false
+    "collectAll": true
   },
   "curriculum": {
     "concept": "representation",
@@ -39,22 +35,28 @@
   "programming": {
     "allowedCommands": [
       "forward",
-      "change",
-      "unlock"
+      "rotateCW",
+      "set",
+      "face"
+    ],
+    "allowedSources": [
+      "facing"
     ],
     "starterProgram": [
       {
-        "remember": "steps",
-        "kind": "number",
-        "start": 0
+        "remember": "way",
+        "kind": "direction",
+        "start": "N"
       }
     ],
     "suppliedCards": [
+      "set",
+      "rotateCW",
+      "rotateCW",
       "forward",
-      "change",
+      "face",
       "forward",
-      "change",
-      "unlock",
+      "forward",
       "forward",
       "forward"
     ]
@@ -64,45 +66,43 @@
       "kind": "region",
       "cells": [
         {
-          "x": 3,
+          "x": 0,
           "y": 0
         }
       ],
-      "text": "The lock opens for 2."
+      "text": "The acorn is behind the robot."
     },
     {
       "kind": "card",
-      "command": "unlock",
-      "text": "Unlock comes after two steps and two Adds."
+      "command": "set",
+      "text": "Set way comes before the turns, Face way after the acorn."
     },
     {
       "kind": "fill",
       "path": [],
       "slot": 0,
-      "command": "forward",
-      "text": "Start with a step."
+      "command": "set",
+      "text": "Start by remembering the way."
     }
   ],
   "referenceSolution": [
     {
-      "remember": "steps",
-      "kind": "number",
-      "start": 0
+      "remember": "way",
+      "kind": "direction",
+      "start": "N"
     },
+    {
+      "set": "way",
+      "to": "facing"
+    },
+    "rotateCW",
+    "rotateCW",
     "forward",
     {
-      "change": "steps",
-      "by": 1
+      "face": "way"
     },
     "forward",
-    {
-      "change": "steps",
-      "by": 1
-    },
-    {
-      "unlock": "a",
-      "with": "steps"
-    },
+    "forward",
     "forward",
     "forward"
   ],

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "t10-three-lanes",
   "title": "Three lanes",
-  "intro": "Three lanes of water, three logs at different speeds. Find the moment to go.",
+  "intro": "Three logs, three patterns: read each one in the Every tick strip. Every card is one tick for all of them. Find the moment they line up.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -132,7 +132,7 @@
           "y": 1
         }
       ],
-      "text": "Each log passes the middle row on its own beat."
+      "text": "Each log passes the middle row on its own beat: compare their rows in the Every tick strip."
     },
     {
       "kind": "card",

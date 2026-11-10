@@ -29,9 +29,9 @@ import type { IdFactory } from '../ir/ids';
 import { isNoOpMove, type EditOp } from '../ir/ops';
 import { ancestorsOf, branchesOf, branchBody, containerAt, endOfMain, functionsOf, isWithin, locate, mainBody, memoryOf, procedureOfPlace, samePlaceContainer, slotsInUse, walk } from '../ir/program';
 import { buildNodes } from '../ir/spec';
-import { functionContainerId, functionLabel, functionOfContainer, handlerContainerId, handlerOfContainer, isSenseId, MAIN as MAIN_PROCEDURE, REPEAT_DEFAULT, REPEAT_MAX, REPEAT_MIN, type Branch, type CardId, type CommandId, type IRNode, type MemorySlot, type NodeId, type Place, type ProgramIR, type Source } from '../ir/types';
+import { functionContainerId, functionLabel, functionOfContainer, handlerContainerId, handlerOfContainer, isSenseId, lengthOf, MAIN as MAIN_PROCEDURE, readFrom, REPEAT_DEFAULT, REPEAT_MAX, REPEAT_MIN, type Branch, type CardId, type CommandId, type IRNode, type MemorySlot, type NodeId, type Place, type ProgramIR, type Source } from '../ir/types';
 import type { TraceEvent } from '../runtime/contract';
-import { cardLabel, COMMANDS, conditionLabel, describeNode, eventLabel, FunctionIcon, nodeLabel, sourceWords } from './commands';
+import { cardLabel, COMMANDS, conditionLabel, describeNode, eventLabel, FunctionIcon, nodeLabel, placeWords, sourceWords } from './commands';
 import { gapCentres, slotForY, type RowBox } from './geometry';
 import { conditionsFor, defaultCondition, paletteFor, type Programming } from './palette';
 
@@ -61,6 +61,8 @@ export interface EditorProps {
   highlightNodeId?: NodeId | null;
   /** The program as code, shown inside the program panel beside the blocks when showCode is on. */
   codePanel?: ReactNode;
+  /** Shown at the top of the program panel, above the cards: the key script on input levels. */
+  aboveProgram?: ReactNode;
   showCode?: boolean;
   /** Toggle the code view. The button lives in the program panel's header. */
   onToggleCode?(): void;
@@ -108,6 +110,7 @@ export function Editor({
   highlightCommand = null,
   highlightNodeId = null,
   codePanel,
+  aboveProgram,
   showCode = false,
   onToggleCode,
   gates = [],
@@ -240,7 +243,7 @@ export function Editor({
         return { id: newId(), kind: 'call', name: name ?? functions[0]?.name ?? MAIN_PROCEDURE };
       case 'set': {
         const slot = memory.find((m) => m.kind !== 'list');
-        return { id: newId(), kind: 'set', slot: slot?.name ?? 'count', to: slot ? (sourcesFor(slot.kind, programming)[0] ?? 0) : 0 };
+        return { id: newId(), kind: 'set', slot: slot?.name ?? 'count', to: slot ? (sourcesFor(slot.kind, programming, memory)[0] ?? 0) : 0 };
       }
       case 'change':
         return { id: newId(), kind: 'change', slot: memory.find((m) => m.kind === 'number')?.name ?? 'count', by: 1 };
@@ -248,6 +251,14 @@ export function Editor({
         return { id: newId(), kind: 'face', slot: memory.find((m) => m.kind === 'direction')?.name ?? 'way' };
       case 'unlock':
         return { id: newId(), kind: 'unlock', gate: gates[0] ?? 'a', slot: memory.find((m) => m.kind === 'number')?.name ?? 'count' };
+      case 'push': {
+        const list = memory.find((m) => m.kind === 'list');
+        return { id: newId(), kind: 'push', list: list?.name ?? 'list', to: sourcesFor(list?.of ?? 'yesNo', programming, memory)[0] ?? true };
+      }
+      case 'mark': {
+        const grid = memory.find((m) => m.kind === 'grid');
+        return { id: newId(), kind: 'mark', grid: grid?.name ?? 'map', at: 'here', slot: memory.find((m) => m.kind === grid?.of)?.name ?? 'count' };
+      }
       case 'forEach': {
         const list = memory.find((m) => m.kind === 'list');
         const item = memory.find((m) => m.kind === list?.of);
@@ -744,7 +755,7 @@ export function Editor({
             <span className="block-param block-condition">
               {slotSelect(`Which slot, step ${number}`, node.slot, ['number', 'yesNo', 'direction', 'position'], (slot) => {
                 const kind = memory.find((m) => m.name === slot)?.kind ?? 'number';
-                setParam(node.id, { slot, to: sourcesFor(kind, programming)[0] ?? 0 });
+                setParam(node.id, { slot, to: sourcesFor(kind, programming, memory)[0] ?? 0 });
               })}
               <select
                 className="param-select"
@@ -754,7 +765,7 @@ export function Editor({
                 onChange={(e) => setParam(node.id, { to: JSON.parse(e.target.value) as Source })}
               >
                 {(() => {
-                  const options = sourcesFor(memory.find((m) => m.name === node.slot)?.kind ?? 'number', programming);
+                  const options = sourcesFor(memory.find((m) => m.name === node.slot)?.kind ?? 'number', programming, memory);
                   return (options.some((o) => o === node.to) ? options : [node.to, ...options]).map((o) => (
                     <option key={JSON.stringify(o)} value={JSON.stringify(o)}>
                       {sourceWords(o)}
@@ -774,6 +785,45 @@ export function Editor({
                 ))}
               </select>
               {slotSelect(`To which slot, step ${number}`, node.slot, ['number'], (slot) => setParam(node.id, { slot }))}
+            </span>
+          )}
+          {node.kind === 'push' && (
+            <span className="block-param block-condition">
+              <select
+                className="param-select"
+                aria-label={`Add what, step ${number}`}
+                value={JSON.stringify(node.to)}
+                disabled={locked}
+                onChange={(e) => setParam(node.id, { to: JSON.parse(e.target.value) as Source })}
+              >
+                {(() => {
+                  const options = sourcesFor(memory.find((m) => m.name === node.list)?.of ?? 'yesNo', programming, memory);
+                  return (options.some((o) => o === node.to) ? options : [node.to, ...options]).map((o) => (
+                    <option key={JSON.stringify(o)} value={JSON.stringify(o)}>
+                      {sourceWords(o)}
+                    </option>
+                  ));
+                })()}
+              </select>
+              <span className="param-word">to</span>
+              {slotSelect(`To which list, step ${number}`, node.list, ['list'], (list) => {
+                const of = memory.find((m) => m.name === list)?.of ?? 'yesNo';
+                setParam(node.id, { list, to: sourcesFor(of, programming, memory)[0] ?? true });
+              })}
+            </span>
+          )}
+          {node.kind === 'mark' && (
+            <span className="block-param block-condition">
+              {slotSelect(`Which value, step ${number}`, node.slot, [memory.find((m) => m.name === node.grid)?.of ?? 'number'], (slot) => setParam(node.id, { slot }))}
+              <span className="param-word">on</span>
+              {slotSelect(`On which grid, step ${number}`, node.grid, ['grid'], (grid) => setParam(node.id, { grid }))}
+              <select className="param-select" aria-label={`Where on the grid, step ${number}`} value={node.at} disabled={locked} onChange={(e) => setParam(node.id, { at: e.target.value })}>
+                {['here', 'ahead', ...memory.filter((m) => m.kind === 'position').map((m) => m.name)].map((at) => (
+                  <option key={at} value={at}>
+                    {placeWords(at)}
+                  </option>
+                ))}
+              </select>
             </span>
           )}
           {node.kind === 'face' && <span className="block-param block-condition">{slotSelect(`Which slot, step ${number}`, node.slot, ['direction'], (slot) => setParam(node.id, { slot }))}</span>}
@@ -1032,12 +1082,14 @@ export function Editor({
         </h2>
         <div className={`program-body ${codePanel && showCode ? 'has-code' : ''}`}>
           <div className="program-blocks">
+            {aboveProgram}
             {carrying && (
               <p className="program-note" role="status">
                 Tap an arrow to put {carriedName} there.
               </p>
             )}
-            {(memory.length > 0 || programming.memoryOptions) && renderMemory()}
+            {/* Choosing which slots to keep, on budget levels. The slots themselves show on the memory card above. */}
+            {programming.memoryOptions && !readOnly && renderMemory()}
             {renderList(MAIN, 0)}
             {functions.map((f) => {
               const container: Container = { parent: functionContainerId(f.name), branch: 'body' };
@@ -1132,12 +1184,21 @@ export function Editor({
   );
 }
 
-const KIND_WORDS: Record<string, string> = { number: 'number', yesNo: 'yes/no', direction: 'direction', position: 'place', list: 'list' };
-/** A slot's kind in words: "number", "list of yes/no". */
-const kindWords = (m: MemorySlot) => (m.kind === 'list' ? `list of ${KIND_WORDS[m.of ?? 'number']}` : KIND_WORDS[m.kind]);
+const KIND_WORDS: Record<string, string> = { number: 'number', yesNo: 'yes/no', direction: 'direction', position: 'place', list: 'list', grid: 'grid' };
+/** A slot's kind in words: "number", "list of yes/no", "grid of numbers". */
+const kindWords = (m: MemorySlot) => (m.kind === 'list' || m.kind === 'grid' ? `${m.kind} of ${KIND_WORDS[m.of ?? 'number']}` : KIND_WORDS[m.kind]);
 
 /** The values a Set card may put in a slot of a kind: the level's allowed sources, or every one that fits. */
-function sourcesFor(kind: string, programming: Programming): Source[] {
+function sourcesFor(kind: string, programming: Programming, memory: readonly MemorySlot[] = []): Source[] {
+  // Reading a grid gives an item of the grid's kind: here, ahead, or at a remembered place.
+  const places = ['here', 'ahead', ...memory.filter((m) => m.kind === 'position').map((m) => m.name)];
+  const reads = memory.filter((m) => m.kind === 'grid' && m.of === kind).flatMap((g) => places.map((at) => readFrom(g.name, at)));
+  // How many items a list holds is a number.
+  const lengths = kind === 'number' ? memory.filter((m) => m.kind === 'list').map((m) => lengthOf(m.name)) : [];
+  return [...ownSources(kind, programming), ...[...reads, ...lengths].filter((r) => !programming.allowedSources || programming.allowedSources.includes(r))];
+}
+
+function ownSources(kind: string, programming: Programming): Source[] {
   const all: Record<string, Source[]> = {
     number: [0, 1, 2, 3, 'acorns'],
     yesNo: [true, false, ...conditionsFor(programming).filter(isSenseId)],

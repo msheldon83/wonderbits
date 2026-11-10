@@ -3,7 +3,7 @@
  * contributors may write by hand, so errors name the exact path at fault.
  */
 import { slotOfSpec, type NodeSpec } from '../ir/spec';
-import { FUNCTION_NAME, isCardId, isCommandId, isConditionId, isEventId, isSenseId, KEYS, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, VALUE_KINDS, type CardId, type ConditionId, type ItemKind, type Key, type Source, type Value, type ValueKind } from '../ir/types';
+import { FUNCTION_NAME, isCardId, isCommandId, isConditionId, isEventId, isSenseId, KEYS, parseLength, parseRead, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, VALUE_KINDS, type CardId, type ConditionId, type ItemKind, type Key, type Source, type Value, type ValueKind } from '../ir/types';
 import { FACINGS, type Cell, type Facing, type Gate, type Mover, type Plate, type Switch, type TileKind, type WorldDefinition } from '../sim/types';
 import { CONTENT_SCHEMA_VERSION, type MemoryField, type Activity, type ConceptIntroduction, type HintPath, type HintStep, type PackManifest, type PuzzleDefinition } from './types';
 
@@ -20,6 +20,9 @@ export function valueFits(v: unknown, kind: ValueKind, of?: ItemKind): boolean {
       return typeof v === 'object' && v !== null && Number.isInteger((v as Cell).x) && Number.isInteger((v as Cell).y);
     case 'list':
       return Array.isArray(v) && v.every((x) => valueFits(x, of ?? 'number'));
+    case 'grid':
+      // Rows of items, every row as long as the first.
+      return Array.isArray(v) && v.length > 0 && v.every((row) => Array.isArray(row) && row.length === (v[0] as unknown[]).length && row.every((x) => valueFits(x, of ?? 'number')));
   }
 }
 
@@ -135,6 +138,8 @@ class Reader {
       }
       if ('face' in s) return [{ face: this.functionName(s.face, `${at}.face`) }];
       if ('unlock' in s) return [{ unlock: this.gateId(s.unlock, `${at}.unlock`), with: this.functionName(s.with, `${at}.with`) }];
+      if ('push' in s) return [{ push: this.functionName(s.push, `${at}.push`), to: this.source(s.to, `${at}.to`) }];
+      if ('mark' in s) return [{ mark: this.functionName(s.mark, `${at}.mark`), at: this.place(s.at, `${at}.at`), with: this.functionName(s.with, `${at}.with`) }];
       if ('forEach' in s) return [{ forEach: this.functionName(s.forEach, `${at}.forEach`), as: this.functionName(s.as, `${at}.as`), do: this.spec(s.do, `${at}.do`, false) }];
       if ('open' in s) return [{ open: this.gateId(s.open, `${at}.open`) }];
       if ('close' in s) return [{ close: this.gateId(s.close, `${at}.close`) }];
@@ -232,7 +237,7 @@ class Reader {
   remember(o: Obj, path: string): Extract<NodeSpec, { remember: string }> {
     const name = this.functionName(o.remember, `${path}.remember`);
     const kind = (VALUE_KINDS as readonly unknown[]).includes(o.kind) ? (o.kind as ValueKind) : (this.fail(`${path}.kind`, `expected one of ${VALUE_KINDS.join(', ')}`), 'number');
-    const of = kind === 'list' ? (['number', 'yesNo', 'direction'].includes(o.of as string) ? (o.of as ItemKind) : (this.fail(`${path}.of`, 'a list needs "of": number, yesNo or direction'), 'number')) : undefined;
+    const of = kind === 'list' || kind === 'grid' ? (['number', 'yesNo', 'direction'].includes(o.of as string) ? (o.of as ItemKind) : (this.fail(`${path}.of`, `a ${kind} needs "of": number, yesNo or direction`), 'number')) : undefined;
     const spec: Extract<NodeSpec, { remember: string }> = { remember: name, kind, ...(of && { of }) };
     if (o.start !== undefined) {
       if (!valueFits(o.start, kind, of)) this.fail(`${path}.start`, `expected a ${kind}${of ? ` of ${of}` : ''} value`);
@@ -240,11 +245,17 @@ class Reader {
     }
     return spec;
   }
+  /** Where on a grid: "here", "ahead", or a position slot's name. */
+  place(v: unknown, path: string): string {
+    if (typeof v === 'string' && FUNCTION_NAME.test(v)) return v;
+    this.fail(path, 'expected "here", "ahead" or a position slot');
+    return 'here';
+  }
   /** Where a Set card's value comes from: a number, true or false, N E S or W, facing, here, acorns, or a sense. */
   source(v: unknown, path: string): Source {
     if (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 999) return v;
     if (typeof v === 'boolean') return v;
-    if (typeof v === 'string' && (['N', 'E', 'S', 'W', 'facing', 'here', 'acorns'].includes(v) || isSenseId(v))) return v;
+    if (typeof v === 'string' && (['N', 'E', 'S', 'W', 'facing', 'here', 'acorns'].includes(v) || isSenseId(v) || parseRead(v) || parseLength(v))) return v;
     this.fail(path, `expected a value to set: a number, true or false, N, E, S or W, "facing", "here", "acorns" or a sense, got ${JSON.stringify(v)}`);
     return 0;
   }
@@ -272,6 +283,13 @@ class Reader {
     const cells = this.list(o.path, `${path}.path`, (c, at) => this.cell(c, at));
     if (cells.length === 0) this.fail(`${path}.path`, 'expected at least one cell');
     return { id: this.str(o.id, `${path}.id`), kind, path: cells };
+  }
+  /**
+   * Shuffled versions of a board. Each lists only what changes (rows, the
+   * robot, the goal, acorns, gates and so on); the rest is the main board's.
+   */
+  shuffles(v: unknown, base: unknown, path: string): WorldDefinition[] {
+    return this.list(v, path, (x, at) => this.world({ ...this.obj(base, path), ...this.obj(x, at) }, at));
   }
   keys(v: unknown, path: string): Key[] {
     return this.list(v, path, (k, at) => ((KEYS as readonly unknown[]).includes(k) ? (k as Key) : (this.fail(at, 'expected "up", "down", "left" or "right"'), 'up')));
@@ -303,6 +321,7 @@ class Reader {
         program: this.spec(demo.program, `${path}.demo.program`),
         ...(demo.before !== undefined && { before: this.spec(demo.before, `${path}.demo.before`) }),
         ...(demo.input !== undefined && { input: this.keys(demo.input, `${path}.demo.input`) }),
+        ...(demo.shuffles !== undefined && { shuffles: this.shuffles(demo.shuffles, demo.world, `${path}.demo.shuffles`) }),
       },
     };
   }
@@ -405,6 +424,7 @@ export function parsePuzzle(json: unknown, source: string): PuzzleDefinition {
     objective: {
       reachGoal: r.bool(objective.reachGoal, 'objective.reachGoal'),
       collectAll: r.bool(objective.collectAll, 'objective.collectAll'),
+      ...(objective.memory !== undefined && { memory: r.obj(objective.memory, 'objective.memory') as Record<string, Value> }),
     },
     curriculum: { concept: r.str(curriculum.concept, 'curriculum.concept'), activity },
     programming: {
@@ -433,6 +453,7 @@ export function parsePuzzle(json: unknown, source: string): PuzzleDefinition {
     },
     ...(prediction && { prediction }),
     ...(root.inputScript !== undefined && { inputScript: r.keys(root.inputScript, 'inputScript') }),
+    ...(root.shuffles !== undefined && { shuffles: r.shuffles(root.shuffles, root.world, 'shuffles') }),
     hints,
     referenceSolution: r.spec(root.referenceSolution, 'referenceSolution'),
     stars: {

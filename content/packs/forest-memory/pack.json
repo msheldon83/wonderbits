@@ -42,7 +42,7 @@
           "start": false
         },
         {
-          "remember": "steps",
+          "remember": "got",
           "kind": "number",
           "start": 0
         },
@@ -51,24 +51,20 @@
           "to": "acornAhead"
         },
         "forward",
-        {
-          "change": "steps",
-          "by": 1
-        },
         "forward",
         {
-          "change": "steps",
-          "by": 1
+          "set": "got",
+          "to": "acorns"
         }
       ]
     }
   },
   "levels": [
     "m01-read-the-card",
-    "m02-count-the-steps",
+    "m02-back-to-the-start",
     "m03-what-kind",
     "m04-face-the-way-back",
-    "m05-fix-the-count",
+    "m05-fix-the-snapshot",
     "m06-cards-in-order",
     "m07-the-whole-card",
     "m08-acorns-held",

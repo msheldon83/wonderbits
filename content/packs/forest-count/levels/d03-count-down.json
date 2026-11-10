@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "d03-count-down",
   "title": "Count down",
-  "intro": "left starts at 5 and the lock wants 2. Take one away with every step.",
+  "intro": "left starts at 5 and the lock wants 2. Walk to the gate in a loop, taking one away on every go.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -40,9 +40,16 @@
     "allowedCommands": [
       "forward",
       "change",
-      "unlock"
+      "unlock",
+      "until"
     ],
-    "maxInstructions": 9,
+    "allowedConditions": [
+      "blockedAhead"
+    ],
+    "maxInstructions": 6,
+    "maxPerCommand": {
+      "change": 1
+    },
     "starterProgram": [
       {
         "remember": "left",
@@ -60,19 +67,21 @@
           "y": 0
         }
       ],
-      "text": "5 take away 3 is 2."
+      "text": "5 take away 3 is 2: the loop goes round three times."
     },
     {
       "kind": "card",
       "command": "change",
-      "text": "Choose \u22121 on the Add card to take one away."
+      "text": "Choose \u22121 on the Add card to take one away each go."
     },
     {
       "kind": "fill",
-      "path": [],
+      "path": [
+        0
+      ],
       "slot": 1,
       "command": "change",
-      "text": "After the first step, take one from left."
+      "text": "Inside the loop, take one from left."
     }
   ],
   "referenceSolution": [
@@ -81,20 +90,15 @@
       "kind": "number",
       "start": 5
     },
-    "forward",
     {
-      "change": "left",
-      "by": -1
-    },
-    "forward",
-    {
-      "change": "left",
-      "by": -1
-    },
-    "forward",
-    {
-      "change": "left",
-      "by": -1
+      "until": "blockedAhead",
+      "do": [
+        "forward",
+        {
+          "change": "left",
+          "by": -1
+        }
+      ]
     },
     {
       "unlock": "a",

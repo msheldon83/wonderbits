@@ -23,14 +23,18 @@ export interface BoardLayout {
   stageH: number;
 }
 
-export function layoutFor(world: Pick<WorldDefinition, 'width' | 'height'>): BoardLayout {
+/** With row and column numbers shown, the board leaves room for them above and to the left. */
+const COORD_PAD = 52;
+
+export function layoutFor(world: Pick<WorldDefinition, 'width' | 'height'>, coordinates = false): BoardLayout {
+  const lead = coordinates ? COORD_PAD : PAD;
   return {
     cols: world.width,
     rows: world.height,
-    originX: PAD,
-    originY: PAD,
-    stageW: world.width * TILE + PAD * 2,
-    stageH: world.height * TILE + LIP + PAD * 2,
+    originX: lead,
+    originY: lead,
+    stageW: world.width * TILE + lead + PAD,
+    stageH: world.height * TILE + LIP + lead + PAD,
   };
 }
 

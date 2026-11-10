@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "id": "i02-write-down-the-route",
+  "title": "Write down the route",
+  "intro": "Walk to the flag, and after every step add the way you are facing to route. The list becomes a record of the way you went.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...#",
+      "##.#",
+      "##.#"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 2
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false,
+    "memory": {
+      "route": [
+        "E",
+        "E",
+        "S",
+        "S"
+      ]
+    }
+  },
+  "curriculum": {
+    "concept": "lists",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "push",
+      "if",
+      "until"
+    ],
+    "allowedConditions": [
+      "atFlag",
+      "blockedAhead"
+    ],
+    "allowedSources": [
+      "facing"
+    ],
+    "maxInstructions": 6,
+    "maxPerCommand": {
+      "forward": 1,
+      "push": 1
+    },
+    "starterProgram": [
+      {
+        "remember": "route",
+        "kind": "list",
+        "of": "direction",
+        "start": []
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 2
+        }
+      ],
+      "text": "Right, right, down, down: that is what route should say at the end."
+    },
+    {
+      "kind": "card",
+      "command": "push",
+      "text": "One Add to list inside the loop, after the step, writes down each way."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        0
+      ],
+      "slot": 2,
+      "command": "push",
+      "text": "After the step, add the way the robot faces."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "route",
+      "kind": "list",
+      "of": "direction",
+      "start": []
+    },
+    {
+      "until": "atFlag",
+      "do": [
+        {
+          "if": "blockedAhead",
+          "do": [
+            "rotateCW"
+          ]
+        },
+        "forward",
+        {
+          "push": "route",
+          "to": "facing"
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

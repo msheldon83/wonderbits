@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "d04-follow-the-numbers",
   "title": "Follow the numbers",
-  "intro": "Set, Add, Add, Add. What does count hold at the end?",
+  "intro": "Set, Add, Add, Add. Only those cards change count; the steps do not. What does count hold at the end?",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -45,10 +45,6 @@
         "to": 2
       },
       "forward",
-      {
-        "change": "count",
-        "by": 1
-      },
       "forward",
       {
         "change": "count",
@@ -56,9 +52,13 @@
       },
       {
         "change": "count",
-        "by": -1
+        "by": 1
       },
-      "forward"
+      "forward",
+      {
+        "change": "count",
+        "by": -1
+      }
     ]
   },
   "hints": [
@@ -96,10 +96,6 @@
       "to": 2
     },
     "forward",
-    {
-      "change": "count",
-      "by": 1
-    },
     "forward",
     {
       "change": "count",
@@ -107,9 +103,13 @@
     },
     {
       "change": "count",
-      "by": -1
+      "by": 1
     },
-    "forward"
+    "forward",
+    {
+      "change": "count",
+      "by": -1
+    }
   ],
   "stars": {
     "noHints": true

@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "id": "n08-gate-or-not",
+  "title": "Gate or not",
+  "intro": "Sometimes the gate is open, sometimes shut. Press the switch only when you have to: pressing it shuts an open gate.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "#.###",
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 1,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 1
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 2,
+        "y": 1,
+        "open": false
+      }
+    ],
+    "switches": [
+      {
+        "x": 1,
+        "y": 0,
+        "toggles": [
+          "a"
+        ]
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "randomness",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "if"
+    ],
+    "allowedConditions": [
+      "gateClosedAhead"
+    ],
+    "maxInstructions": 11,
+    "starterProgram": []
+  },
+  "shuffles": [
+    {
+      "gates": [
+        {
+          "id": "a",
+          "x": 2,
+          "y": 1,
+          "open": true
+        }
+      ]
+    }
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 0
+        }
+      ],
+      "text": "The gate, and its switch in the nook above."
+    },
+    {
+      "kind": "card",
+      "command": "if",
+      "text": "If gate shut ahead: go and press the switch. Otherwise walk on."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 1,
+      "command": "if",
+      "text": "After one step, check the gate."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    {
+      "if": "gateClosedAhead",
+      "do": [
+        "rotateCCW",
+        "forward",
+        "rotateCW",
+        "rotateCW",
+        "forward",
+        "rotateCCW"
+      ]
+    },
+    "forward",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

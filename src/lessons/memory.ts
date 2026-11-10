@@ -9,7 +9,7 @@ import { gatesOf, moversOf } from '../sim/world';
 import type { MemoryField, MemoryValue } from './types';
 
 /** The kinds of value a memory line can hold, each with its own icon. */
-export type MemoryKind = 'position' | 'direction' | 'number' | 'yesNo' | 'list';
+export type MemoryKind = 'position' | 'direction' | 'number' | 'yesNo' | 'list' | 'grid';
 
 export interface MemoryLine {
   /** The field id; "position" (asked by placing the flag) and "tick" (on boards where things move) are shown, never asked. */
@@ -45,7 +45,7 @@ export function memoryLines(world: WorldDefinition, slots: readonly MemorySlot[]
 /** True when the memory card has this field and a child can answer it: a place or a whole list is shown, not asked. */
 export function hasField(world: WorldDefinition, field: MemoryField, slots: readonly MemorySlot[] = []): boolean {
   const line = memoryLines(world, slots).find((l) => l.field === field);
-  return line !== undefined && line.kind !== 'position' && line.kind !== 'list';
+  return line !== undefined && line.kind !== 'position' && line.kind !== 'list' && line.kind !== 'grid';
 }
 
 export function memoryValue(state: SimState, field: MemoryField): MemoryValue {
