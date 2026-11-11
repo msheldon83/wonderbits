@@ -76,6 +76,10 @@ export type ObservationEvent = { t: number; levelId: string } & (
   | { kind: 'hint-opened'; rung: number }
   | { kind: 'level-completed'; stars: Stars; steps: number }
   | { kind: 'level-abandoned' }
+  // Creation mode: levelId is the creation's id.
+  | { kind: 'creation-started'; basedOn?: string }
+  | { kind: 'creation-removed' }
+  | { kind: 'creation-solved' }
 );
 
 /** An event before its timestamp is stamped on. Distributes over the union. */
@@ -86,6 +90,8 @@ export interface ExportFile {
   progress: Progress;
   settings: Settings;
   log: ObservationEvent[];
+  /** Everything the child made, in its stored form, so a grown-up can back it up. */
+  creations?: unknown[];
 }
 
 export function emptyProgress(): Progress {

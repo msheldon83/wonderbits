@@ -4,6 +4,47 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Build step 13a: creation mode's foundations (2026-11-11)
+
+The first sub-step of [creation-plan.md](creation-plan.md): a shelf, a way
+in, and a play surface shared by lessons and creations.
+
+- **The play surface** (`src/app/PlaySurface.tsx`) is what `Lesson.tsx`
+  was, minus what only a lesson has. It owns the board, the run controls,
+  prediction, the editor and the code panel, and reports through `record`,
+  `onProgram` and `onSolved`. `Lesson.tsx` is now the wrapper that brings
+  the hint ladder, the stars and badges, and the log. No behaviour changed.
+- **Save-my-place.** A level the child edits (build, debug, reorder) keeps
+  its unfinished program in a `drafts` document, restored on the next visit
+  and dropped when the level is solved.
+- **Creations** (`src/create/`). A creation is a board, its rules and the
+  maker's program. Its stored form writes the board as a level file does,
+  and `parseCreation` reads it back through the level parser's own checks
+  (`parseBoardRules`), so a creation is data and gets a level's validation.
+- **The shelf** is `#/create`, reached from a Create button in the header
+  of the map and of every level. One of its things is `#/create/<id>`: the
+  play surface on the child's board, the name and program saved as they
+  change. For now a new thing is an empty 5 by 5 island with the seven
+  cards of free play; the board editor is 13b.
+- **The nudge** is one quiet line under the shelf: the next unfinished
+  island, with a button.
+
+### Deviations and choices
+
+- **No index document.** The plan's index key is replaced by listing the
+  stored keys that start with `creation:`. One document per creation, as
+  planned.
+- **A document that will not parse is left alone**, never overwritten or
+  deleted; it is just not on the shelf.
+- **Reset progress keeps creations.** It used to clear the whole store. It
+  now erases progress, the log and saved places; what the child made stays.
+  The export includes creations.
+- **Creation mode logs without touching progress.** `ProgressStore.log`
+  appends to the observation log only, so a creation never appears among
+  the levels' attempts or badges.
+- **Two statuses, draft and proved.** "Reviewed" waited on sharing, which
+  the owner moved out of step 13.
+
 ## Change: each robot's memory on the memory card (2026-11-11)
 
 Feedback: on Their own memory, the memory card showed one `steps` line, so

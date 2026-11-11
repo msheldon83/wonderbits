@@ -4,7 +4,7 @@
  */
 import { slotOfSpec, type NodeSpec } from '../ir/spec';
 import { FUNCTION_NAME, isCardId, isCommandId, isConditionId, isEventId, isSenseId, KEYS, BOARD_MAPS, parseItem, parseLength, parseRandom, parseRead, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, VALUE_KINDS, type CardId, type ConditionId, type ItemKind, type Key, type ListOf, parseField, type Source, type Value, type ValueKind } from '../ir/types';
-import { FACINGS, type Cell, type Facing, type Gate, type Mover, type Plate, type Switch, type Teammate, type TileKind, type WorldDefinition } from '../sim/types';
+import { FACINGS, type Cell, type Facing, type Gate, type Mover, type ObjectiveDefinition, type Plate, type Switch, type Teammate, type TileKind, type WorldDefinition } from '../sim/types';
 import { CONTENT_SCHEMA_VERSION, type MemoryField, type Activity, type ConceptIntroduction, type HintPath, type HintStep, type PackManifest, type PuzzleDefinition } from './types';
 
 /** True when a value is of a slot's kind: a list's items of its item kind, a record's fields of its shape. */
@@ -452,6 +452,76 @@ class Reader {
   }
 }
 
+function readObjective(r: Reader, v: unknown): ObjectiveDefinition {
+  const objective = r.obj(v, 'objective');
+  return {
+    reachGoal: r.bool(objective.reachGoal, 'objective.reachGoal'),
+    collectAll: r.bool(objective.collectAll, 'objective.collectAll'),
+    ...(objective.memory !== undefined && { memory: r.obj(objective.memory, 'objective.memory') as Record<string, Value> }),
+    ...(objective.covers !== undefined && { covers: r.covers(objective.covers, 'objective.covers') }),
+  };
+}
+
+function readProgramming(r: Reader, v: unknown): PuzzleDefinition['programming'] {
+  const programming = r.obj(v, 'programming');
+  let maxPerCommand: Partial<Record<CardId, number>> | undefined;
+  if (programming.maxPerCommand !== undefined) {
+    const raw = r.obj(programming.maxPerCommand, 'programming.maxPerCommand');
+    maxPerCommand = {};
+    for (const [k, v] of Object.entries(raw)) {
+      if (!isCardId(k)) r.fail(`programming.maxPerCommand.${k}`, 'unknown card');
+      else maxPerCommand[k] = r.int(v, `programming.maxPerCommand.${k}`, 1);
+    }
+  }
+  return {
+    allowedCommands: r.cards(programming.allowedCommands, 'programming.allowedCommands'),
+    ...(programming.allowedConditions !== undefined && {
+      allowedConditions: r.conditions(programming.allowedConditions, 'programming.allowedConditions'),
+    }),
+    ...(programming.maxInstructions !== undefined && {
+      maxInstructions: r.int(programming.maxInstructions, 'programming.maxInstructions', 1),
+    }),
+    ...(maxPerCommand && { maxPerCommand }),
+    ...(programming.maxNestingDepth !== undefined && {
+      maxNestingDepth: r.int(programming.maxNestingDepth, 'programming.maxNestingDepth', 1),
+    }),
+    ...(programming.allowedSources !== undefined && {
+      allowedSources: r.list(programming.allowedSources, 'programming.allowedSources', (v, at) => r.source(v, at)),
+    }),
+    ...(programming.maxMemory !== undefined && { maxMemory: r.int(programming.maxMemory, 'programming.maxMemory', 1) }),
+    ...(programming.memoryOptions !== undefined && {
+      memoryOptions: r.list(programming.memoryOptions, 'programming.memoryOptions', (o, at) => slotOfSpec(r.remember(r.obj(o, at), at))),
+    }),
+    starterProgram: programming.starterProgram === undefined ? [] : r.spec(programming.starterProgram, 'programming.starterProgram'),
+    ...(programming.suppliedCards !== undefined && {
+      suppliedCards: r.cards(programming.suppliedCards, 'programming.suppliedCards'),
+    }),
+  };
+}
+
+/** The board and its rules, as a level file writes them: what a child's creation shares with a level. */
+export type BoardRules = Pick<PuzzleDefinition, 'world' | 'objective' | 'programming' | 'inputScript' | 'days'>;
+
+/**
+ * Reads the board and rules out of unknown JSON, and any programs beside
+ * them by name, with the same checks as a level file. For a child's
+ * creation, which has no hints, stars or reference solution.
+ */
+export function parseBoardRules<K extends string>(json: unknown, source: string, programs: readonly K[] = []): BoardRules & { programs: Record<K, NodeSpec[]> } {
+  const r = new Reader();
+  const root = r.obj(json, '$');
+  const rules: BoardRules = {
+    world: r.world(root.world, 'world'),
+    objective: readObjective(r, root.objective),
+    programming: readProgramming(r, root.programming),
+    ...(root.inputScript !== undefined && { inputScript: r.keys(root.inputScript, 'inputScript') }),
+    ...(root.days !== undefined && { days: r.days(root.days, 'days') }),
+  };
+  const read = Object.fromEntries(programs.map((k) => [k, root[k] === undefined ? [] : r.spec(root[k], k)])) as Record<K, NodeSpec[]>;
+  if (r.issues.length) throw new ContentError(source, r.issues);
+  return { ...rules, programs: read };
+}
+
 export function parsePuzzle(json: unknown, source: string): PuzzleDefinition {
   const r = new Reader();
   const root = r.obj(json, '$');
@@ -460,11 +530,9 @@ export function parsePuzzle(json: unknown, source: string): PuzzleDefinition {
   if (worldRaw.collectibles === undefined) r.fail('world.collectibles', 'expected an array');
   const world = r.world(root.world, 'world');
 
-  const objective = r.obj(root.objective, 'objective');
   const curriculum = r.obj(root.curriculum, 'curriculum');
   const activity = curriculum.activity as Activity;
   if (!ACTIVITIES.includes(activity)) r.fail('curriculum.activity', `expected one of ${ACTIVITIES.join(', ')}`);
-  const programming = r.obj(root.programming, 'programming');
   const stars = r.obj(root.stars, 'stars');
   const hintsRaw = Array.isArray(root.hints) ? root.hints : (r.fail('hints', 'expected an array of three hints'), []);
   if (hintsRaw.length !== 3) r.fail('hints', `expected exactly three hints, got ${hintsRaw.length}`);
@@ -478,16 +546,6 @@ export function parsePuzzle(json: unknown, source: string): PuzzleDefinition {
     };
   }
 
-  let maxPerCommand: Partial<Record<CardId, number>> | undefined;
-  if (programming.maxPerCommand !== undefined) {
-    const raw = r.obj(programming.maxPerCommand, 'programming.maxPerCommand');
-    maxPerCommand = {};
-    for (const [k, v] of Object.entries(raw)) {
-      if (!isCardId(k)) r.fail(`programming.maxPerCommand.${k}`, 'unknown card');
-      else maxPerCommand[k] = r.int(v, `programming.maxPerCommand.${k}`, 1);
-    }
-  }
-
   const puzzle: PuzzleDefinition = {
     schemaVersion: r.version(root.schemaVersion, 'schemaVersion'),
     id: r.str(root.id, 'id'),
@@ -495,37 +553,9 @@ export function parsePuzzle(json: unknown, source: string): PuzzleDefinition {
     ...(root.intro !== undefined && { intro: r.str(root.intro, 'intro') }),
     themeId: r.str(root.themeId, 'themeId'),
     world,
-    objective: {
-      reachGoal: r.bool(objective.reachGoal, 'objective.reachGoal'),
-      collectAll: r.bool(objective.collectAll, 'objective.collectAll'),
-      ...(objective.memory !== undefined && { memory: r.obj(objective.memory, 'objective.memory') as Record<string, Value> }),
-      ...(objective.covers !== undefined && { covers: r.covers(objective.covers, 'objective.covers') }),
-    },
+    objective: readObjective(r, root.objective),
     curriculum: { concept: r.str(curriculum.concept, 'curriculum.concept'), activity },
-    programming: {
-      allowedCommands: r.cards(programming.allowedCommands, 'programming.allowedCommands'),
-      ...(programming.allowedConditions !== undefined && {
-        allowedConditions: r.conditions(programming.allowedConditions, 'programming.allowedConditions'),
-      }),
-      ...(programming.maxInstructions !== undefined && {
-        maxInstructions: r.int(programming.maxInstructions, 'programming.maxInstructions', 1),
-      }),
-      ...(maxPerCommand && { maxPerCommand }),
-      ...(programming.maxNestingDepth !== undefined && {
-        maxNestingDepth: r.int(programming.maxNestingDepth, 'programming.maxNestingDepth', 1),
-      }),
-      ...(programming.allowedSources !== undefined && {
-        allowedSources: r.list(programming.allowedSources, 'programming.allowedSources', (v, at) => r.source(v, at)),
-      }),
-      ...(programming.maxMemory !== undefined && { maxMemory: r.int(programming.maxMemory, 'programming.maxMemory', 1) }),
-      ...(programming.memoryOptions !== undefined && {
-        memoryOptions: r.list(programming.memoryOptions, 'programming.memoryOptions', (o, at) => slotOfSpec(r.remember(r.obj(o, at), at))),
-      }),
-      starterProgram: programming.starterProgram === undefined ? [] : r.spec(programming.starterProgram, 'programming.starterProgram'),
-      ...(programming.suppliedCards !== undefined && {
-        suppliedCards: r.cards(programming.suppliedCards, 'programming.suppliedCards'),
-      }),
-    },
+    programming: readProgramming(r, root.programming),
     ...(prediction && { prediction }),
     ...(root.inputScript !== undefined && { inputScript: r.keys(root.inputScript, 'inputScript') }),
     ...(root.shuffles !== undefined && { shuffles: r.shuffles(root.shuffles, root.world, 'shuffles') }),

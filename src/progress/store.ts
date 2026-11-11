@@ -3,6 +3,7 @@
  * memory, writes through to storage, and notifies subscribers so React can
  * read it with useSyncExternalStore.
  */
+import type { NodeSpec } from '../ir/spec';
 import type { PuzzleDefinition } from '../lessons/types';
 import { computeBadges } from './badges';
 import type { KeyValueStore } from './storage';
@@ -38,6 +39,8 @@ export class ProgressStore {
   private snapshot: Snapshot = { loaded: false, progress: emptyProgress(), settings: DEFAULT_SETTINGS, log: [] };
   private listeners = new Set<() => void>();
   private levels: readonly PuzzleDefinition[] = [];
+  /** The child's place: the unfinished program of each level left half way, by level id. */
+  private drafts: Record<string, NodeSpec[]> = {};
 
   constructor(
     private storage: KeyValueStore,
@@ -50,11 +53,13 @@ export class ProgressStore {
   }
 
   async load(): Promise<void> {
-    const [progress, settings, log] = await Promise.all([
+    const [progress, settings, log, drafts] = await Promise.all([
       this.storage.get<Progress>('progress'),
       this.storage.get<Settings>('settings'),
       this.storage.get<ObservationEvent[]>('log'),
+      this.storage.get<Record<string, NodeSpec[]>>('drafts'),
     ]);
+    this.drafts = drafts ?? {};
     this.snapshot = {
       loaded: true,
       // introsSeen arrived after the first builds; older saves do not have it.
@@ -118,6 +123,16 @@ export class ProgressStore {
     return this.levelProgress(this.levels[index - 1]!.id).stars.complete;
   }
 
+  /**
+   * Something the child did outside the levels, such as in creation mode:
+   * it goes in the log for the grown-up, and touches no level's progress.
+   */
+  log(event: EventInput): void {
+    this.snapshot = { ...this.snapshot, log: [...this.snapshot.log, { t: this.now(), ...event } as ObservationEvent] };
+    this.emit();
+    void this.storage.set('log', this.snapshot.log);
+  }
+
   record(event: EventInput): void {
     const full = { t: this.now(), ...event } as ObservationEvent;
     const log = this.snapshot.log;
@@ -160,6 +175,24 @@ export class ProgressStore {
     return stars;
   }
 
+  /** The program the child left unfinished on a level, if any. */
+  draft(levelId: string): NodeSpec[] | undefined {
+    return this.drafts[levelId];
+  }
+
+  /** Save-my-place: keep a level's unfinished program for the next visit. */
+  saveDraft(levelId: string, program: NodeSpec[]): void {
+    this.drafts = { ...this.drafts, [levelId]: program };
+    void this.storage.set('drafts', this.drafts);
+  }
+
+  clearDraft(levelId: string): void {
+    if (!(levelId in this.drafts)) return;
+    const { [levelId]: _gone, ...rest } = this.drafts;
+    this.drafts = rest;
+    void this.storage.set('drafts', this.drafts);
+  }
+
   updateSettings(patch: Partial<Settings>): void {
     this.snapshot = { ...this.snapshot, settings: { ...this.snapshot.settings, ...patch } };
     this.emit();
@@ -170,10 +203,11 @@ export class ProgressStore {
     return { exportedAt: new Date(this.now()).toISOString(), progress: this.snapshot.progress, settings: this.snapshot.settings, log: this.snapshot.log };
   }
 
+  /** Erases progress, the log and saved places. The child's creations are theirs and stay. */
   async reset(): Promise<void> {
-    await this.storage.clear();
     this.snapshot = { loaded: true, progress: emptyProgress(), settings: this.snapshot.settings, log: [] };
+    this.drafts = {};
     this.emit();
-    void this.storage.set('settings', this.snapshot.settings);
+    await Promise.all([this.storage.delete('progress'), this.storage.delete('log'), this.storage.delete('drafts')]);
   }
 }

@@ -17,7 +17,7 @@ function download(name: string, text: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export function SettingsScreen({ store, settings }: { store: ProgressStore; settings: Settings }) {
+export function SettingsScreen({ store, settings, creations }: { store: ProgressStore; settings: Settings; creations?: () => unknown[] }) {
   const [confirmReset, setConfirmReset] = useState(false);
   const stamp = () => new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
   return (
@@ -53,10 +53,10 @@ export function SettingsScreen({ store, settings }: { store: ProgressStore; sett
           <small>Play any level without finishing the ones before it.</small>
         </label>
         <div className="setting">
-          <button type="button" className="btn btn-quiet" onClick={() => download(`wonderbits-${stamp()}.json`, JSON.stringify(store.exportFile(), null, 2))}>
+          <button type="button" className="btn btn-quiet" onClick={() => download(`wonderbits-${stamp()}.json`, JSON.stringify({ ...store.exportFile(), ...(creations && { creations: creations() }) }, null, 2))}>
             Export progress and log
           </button>
-          <small>Saves a JSON file with stars, badges and everything the child did, for the child test.</small>
+          <small>Saves a JSON file with stars, badges, everything the child did and everything they made.</small>
         </div>
         <div className="setting">
           {confirmReset ? (
@@ -73,7 +73,7 @@ export function SettingsScreen({ store, settings }: { store: ProgressStore; sett
               Reset progress
             </button>
           )}
-          <small>Erases stars, badges and the log on this device. Export first if you want to keep them.</small>
+          <small>Erases stars, badges and the log on this device. What the child made stays. Export first if you want to keep the rest.</small>
         </div>
       </section>
     </div>

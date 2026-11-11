@@ -96,7 +96,7 @@ Nothing a child can show a friend yet, but everything after stands on it.
     programming: Programming;   // the palette and limits the maker chose
     program: NodeSpec[];        // the maker's own program, saved as they go
     proof?: { solution: NodeSpec[]; steps: number; provedAt: number };
-    status: 'draft' | 'proved' | 'reviewed';
+    status: 'draft' | 'proved';
   }
   ```
 
@@ -284,12 +284,10 @@ cards and functions, memory, and rules. It is content, in
   Following it saves the place (13a), opens the pack, and offers the way
   back on the map and at the end of each level. This is the rules half of
   step 14 and gives the AI guide something exact to stand on.
-- **Grown-up review and sharing.** Behind the existing grown-up settings:
-  see everything made on the device, mark a creation reviewed, and export it
-  as a file or import one. Import goes through `parseCreation`, and an
-  imported puzzle must still be proved on this device before it is offered.
-  Whether file sharing belongs in step 13 at all is an owner decision
-  (section 7).
+- **Grown-up review.** Behind the existing grown-up settings: see
+  everything made on the device. Sharing a creation off the device, by file
+  or otherwise, is not in this step (section 7); it waits for profiles and
+  a server.
 
 ## 5. Order and dependencies
 
@@ -326,24 +324,20 @@ here so it can be overruled.
 - **No AI in this step.** Gap detection is rules; step 14 adds the
   conversation.
 
-## 7. Decisions for the owner
+## 7. Decisions by the owner (2026-11-11)
 
-1. **Is the puzzle half (13a to 13c) the first release of creation mode,**
-   tested with a child before the Workshop is started? Recommended: yes.
-2. **Which starter games?** Proposed: Crossing, Acorn chase, Noughts and
-   crosses, Minesweeper. plan.md asks for two or three named games per
-   family.
-3. **File export and import in step 13?** plan.md says sharing beyond the
-   device waits for accounts. A file a grown-up exports and sends needs no
-   account and no server, and it is the only way two children on two iPads
-   can swap puzzles. Recommended: yes, behind grown-up review, in 13g.
-4. **Typed names on an iPad.** 13d uses the on-screen keyboard with a rule
-   for names. The alternative is choosing from a word list, which is safer
-   and less expressive. Recommended: typed.
-5. **Non-grid games** (solitaire's cards, Q\*bert's pyramid). Recommended:
-   out of step 13; revisit when a child asks for one.
-6. **One maker or several per device?** The record carries an optional
-   nickname and nothing more. Profiles would be a separate piece of work.
+1. **The puzzle half (13a to 13c) is the first release of creation mode,**
+   tested with a child before the Workshop is started.
+2. **Starter games:** Crossing, Acorn chase, Noughts and crosses and
+   Minesweeper.
+3. **No file export or import in step 13.** Sharing beyond the device waits
+   for profiles and a server. The grown-up's export in Settings still
+   includes what the child made, as a backup.
+4. **Names are typed** on the on-screen keyboard, with the rule in 13d.
+5. **One maker per device for now.** Profiles are later work.
+
+Still open: non-grid games (solitaire's cards, Q\*bert's pyramid), which
+stay out of step 13 until a child asks for one.
 
 ## 8. Risks
 
@@ -361,8 +355,8 @@ here so it can be overruled.
 - **`Lesson.tsx` is load-bearing.** Lifting `PlaySurface` out is a refactor
   of the most-used screen. It goes first, alone, with no feature attached.
 - **Storage.** IndexedDB can be cleared by the browser on an iPad that is
-  short of space. Until file export exists, the settings export should
-  include creations so a grown-up can back them up.
+  short of space. The settings export includes creations so a grown-up can
+  back them up.
 
 ## 9. Not in this step
 
