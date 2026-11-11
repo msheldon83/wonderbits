@@ -79,6 +79,7 @@ export type ObservationEvent = { t: number; levelId: string } & (
   // Creation mode: levelId is the creation's id.
   | { kind: 'creation-started'; basedOn?: string }
   | { kind: 'creation-removed' }
+  | { kind: 'board-changed'; width: number; height: number }
   | { kind: 'creation-solved' }
 );
 

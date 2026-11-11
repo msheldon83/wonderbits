@@ -55,4 +55,4 @@ export interface Creation {
 export const TITLE_MAX = 40;
 /** The coordinate cards count rows and columns from 0 to 15. */
 export const BOARD_MAX = 16;
-export const BOARD_MIN = 2;
+export const BOARD_MIN = 1;

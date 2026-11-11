@@ -16,9 +16,15 @@ export function worldToJson(world: WorldDefinition): Record<string, unknown> {
   return { rows: tiles.map((row) => row.map((t) => TILE_CHAR[t]).join('')), ...rest };
 }
 
+/** The cards and limits as a level file writes them: a memory option is a "remember" entry. */
+function programmingToJson(programming: Creation['programming']): Record<string, unknown> {
+  const { memoryOptions, ...rest } = programming;
+  return { ...rest, ...(memoryOptions && { memoryOptions: memoryOptions.map(({ name, ...slot }) => ({ remember: name, ...slot })) }) };
+}
+
 export function creationToJson(c: Creation): Record<string, unknown> {
-  const { world, proof, ...rest } = c;
-  return { ...rest, world: worldToJson(world), ...(proof && { proof: { steps: proof.steps, provedAt: proof.provedAt } }), ...(proof && { solution: proof.solution }) };
+  const { world, proof, programming, ...rest } = c;
+  return { ...rest, world: worldToJson(world), programming: programmingToJson(programming), ...(proof && { proof: { steps: proof.steps, provedAt: proof.provedAt } }), ...(proof && { solution: proof.solution }) };
 }
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);

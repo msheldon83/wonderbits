@@ -4,6 +4,54 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Build step 13b: remix and free play (2026-11-11)
+
+The second sub-step of [creation-plan.md](creation-plan.md): a child can
+change a board and solve their own version.
+
+- **Build and Play, one tap apart.** A creation's bar has both. Build is
+  the board editor (`src/create/BoardEditor.tsx`); Play is the play surface
+  on the board as it now is. The program survives the switch because it is
+  saved on every edit. A new thing opens in Build; one being worked on
+  opens in Play.
+- **Board tools:** grass, rock, water, acorn, flag, robot, gate, switch and
+  an eraser. Tap a tile to use the tool; grass, rock, water and the eraser
+  paint as a finger drags, and a whole stroke is one undo. Tapping the
+  robot turns it, tapping an acorn picks it up, tapping a gate starts it
+  open or shut, tapping a switch moves it on to the next gate. Wide and
+  Tall steppers resize the board at its right and bottom edges, from what
+  still holds the robot and the flag up to 16 by 16.
+- **Board edits are pure operations** (`src/create/worldOps.ts`) with their
+  own undo history, as `ir/ops.ts` is for programs. Every operation leaves
+  a board the simulation can run: the robot and flag on floor and apart,
+  one thing per tile, a switch always flipping a gate that is there. A test
+  taps at random and checks each board against the level validator's
+  `validateWorld`.
+- **The board checker** (`src/create/problems.ts`) runs on every edit and
+  speaks to the child, with the tiles lit: the flag or an acorn cannot be
+  walked to, a shut gate has no switch. It never changes the board.
+- **Remix** (`src/create/remix.ts`): "Change this level" on the dialog of a
+  solved level, and "Change a level" on the shelf, which lists the levels
+  the child has finished. The board and the cards are copied; the budget,
+  per-card limits and nesting limit are not. The level is never altered. A
+  test remixes all 181 levels through storage and back.
+- **Signposts.** The gate and switch tools carry a link to Flip the switch
+  until that pack is finished. They work either way.
+
+### Deviations and choices
+
+- **No plates, logs or beetles yet.** A plate does nothing without a When
+  card, and a child cannot add one until 13d. Movers need a path drawn on
+  the board, which is its own piece of work. A remix keeps the plates and
+  movers its level had; painting over a mover's path removes the mover.
+- **Steppers, not drag handles**, resize the board. They are easier to hit
+  on an iPad and say the size as a number.
+- **Six gates at most**, the number the board draws apart by colour.
+- **A remix carries the main board only.** A shuffled level's other
+  versions are not copied; editing one board of several has no clear
+  meaning yet.
+- **Board changes are logged once per visit to Build**, not once per tile.
+
 ## Build step 13a: creation mode's foundations (2026-11-11)
 
 The first sub-step of [creation-plan.md](creation-plan.md): a shelf, a way

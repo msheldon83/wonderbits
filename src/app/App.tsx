@@ -3,6 +3,7 @@ import { introductionBefore } from '../lessons/concepts';
 import { CreateScreen } from '../create/CreateScreen';
 import { CreationScreen } from '../create/CreationScreen';
 import { creationToJson } from '../create/parse';
+import { remixOf } from '../create/remix';
 import { CreationStore } from '../create/store';
 import { defaultStore } from '../progress/storage';
 import { ProgressStore } from '../progress/store';
@@ -62,6 +63,11 @@ export function App() {
     if (route.screen === 'level') cameFrom.current = route.id;
     else if (route.screen === 'map') cameFrom.current = 'map';
   }, [route]);
+
+  /** Board tools from a pack not finished yet point at it. Nothing is locked. */
+  const switchPack = choices.filter((c) => c.packId === 'forest-switches');
+  const gateSign = switchPack[0] && !switchPack.every((c) => store.levelProgress(c.level.id).stars.complete) ? { pack: switchPack[0].packTitle, href: hashFor({ screen: 'map', packId: switchPack[0].packId }) } : undefined;
+  const signposts = gateSign ? { gate: gateSign, switch: gateSign } : undefined;
 
   const goTo = (hash: string) => {
     location.hash = hash;
@@ -128,7 +134,7 @@ export function App() {
       {route.screen === 'map' && <MapScreen choices={choices} book={book} store={store} badges={snap.progress.badges} packId={route.packId} />}
       {route.screen === 'settings' && <SettingsScreen store={store} settings={snap.settings} creations={() => made.creations.map(creationToJson)} />}
       {route.screen === 'create' && <CreateScreen creations={made.creations} store={creationStore} progress={store} choices={choices} onGoTo={goTo} />}
-      {route.screen === 'make' && creation && <CreationScreen key={creation.id} creation={creation} store={creationStore} progress={store} runtime={runtime} settings={snap.settings} />}
+      {route.screen === 'make' && creation && <CreationScreen key={creation.id} creation={creation} store={creationStore} progress={store} runtime={runtime} settings={snap.settings} {...(signposts && { signposts })} />}
       {route.screen === 'book' && !page && <CardBookScreen book={book} store={store} from={cameFrom.current} />}
       {route.screen === 'book' && page && pageOpen && (
         <ConceptIntro key={`book-${page.packId}`} entry={page} runtime={runtime} store={store} settings={snap.settings} replay onDone={() => goTo(hashFor({ screen: 'book' }))} />
@@ -145,6 +151,11 @@ export function App() {
           settings={snap.settings}
           nextLevelId={nextLevelId(choices, choice.level.id)}
           onGoTo={goTo}
+          onRemix={() => {
+            const remix = creationStore.add(remixOf(choice.level));
+            store.log({ levelId: remix.id, kind: 'creation-started', basedOn: choice.level.id });
+            goTo(hashFor({ screen: 'make', id: remix.id }));
+          }}
         />
       )}
     </div>

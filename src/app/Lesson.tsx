@@ -24,6 +24,8 @@ export interface LessonProps {
   settings: Settings;
   nextLevelId: string | null;
   onGoTo(hash: string): void;
+  /** Change this level: copy it into creation mode as the child's own. Offered once the level is solved. */
+  onRemix?(): void;
 }
 
 interface Completion {
@@ -31,7 +33,7 @@ interface Completion {
   newBadges: BadgeId[];
 }
 
-export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }: LessonProps) {
+export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo, onRemix }: LessonProps) {
   const [completion, setCompletion] = useState<Completion | null>(null);
   const completedRef = useRef(false);
   const activity = level.curriculum.activity;
@@ -123,6 +125,11 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
                 <button type="button" className="btn btn-quiet" onClick={restart}>
                   Play again
                 </button>
+                {onRemix && (
+                  <button type="button" className="btn btn-quiet btn-create" onClick={onRemix}>
+                    Change this level
+                  </button>
+                )}
                 <a className="btn btn-quiet" href={hashFor({ screen: 'map' })}>
                   Map
                 </a>

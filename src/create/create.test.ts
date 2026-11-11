@@ -55,7 +55,7 @@ describe('creations as stored JSON', () => {
     expect(issuesOf({ ...good, programming: { allowedCommands: ['teleport'] } })[0]).toMatch(/^programming\.allowedCommands/);
     expect(issuesOf({ ...good, status: 'proved' })).toContain('status: a proved creation needs its proof');
     const wide = blankWorld(17, 3);
-    expect(issuesOf({ ...good, world: worldToJson(wide) }).join()).toMatch(/2 to 16 tiles/);
+    expect(issuesOf({ ...good, world: worldToJson(wide) }).join()).toMatch(/1 to 16 tiles/);
   });
 });
 

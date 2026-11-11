@@ -85,7 +85,7 @@ const solves = (puzzle: PuzzleDefinition, spec: NodeSpec[]) => {
 };
 
 /** The board itself: size, and the robot, goal and acorns on floor tiles. Shared by levels and demos. */
-function validateWorld(world: WorldDefinition, objective: ObjectiveDefinition, errors: string[], gateCards = false): void {
+export function validateWorld(world: WorldDefinition, objective: ObjectiveDefinition, errors: string[], gateCards = false): void {
   if (world.width < 1 || world.width > 16 || world.height < 1 || world.height > 16) {
     errors.push(`board must be 1..16 tiles on each side, got ${world.width}x${world.height}`);
   }

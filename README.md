@@ -51,7 +51,9 @@ the tile and of the memory card, validators in CI, three-rung hint ladders,
 the level map with stars and badges, progress in IndexedDB, and an
 observation log the grown-up can export. Creation mode, step 13, is under
 way, planned in [docs/creation-plan.md](docs/creation-plan.md): the Create
-button opens a shelf of the child's own islands, kept on the device. See [docs/design-notes.md](docs/design-notes.md) for what is built, what
+button opens a shelf of the child's own islands, kept on the device. A
+child can start from an empty island or change a level they finished,
+build the board with tools, and play it with their own program. See [docs/design-notes.md](docs/design-notes.md) for what is built, what
 is deliberately not, and any deviations from the plan.
 
 ## Run it

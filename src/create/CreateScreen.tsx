@@ -7,9 +7,11 @@ import { useState } from 'react';
 import { hashFor, type LevelChoice } from '../app/levels';
 import type { ProgressStore } from '../progress/store';
 import { blankCreation } from './blank';
+import { remixOf } from './remix';
 import { BoardThumb } from './BoardThumb';
 import type { CreationStore } from './store';
 import type { Creation } from './types';
+import type { PuzzleDefinition } from '../lessons/types';
 
 /** "My island", "My island 2", … : the first name not on the shelf yet. */
 export function nextTitle(creations: readonly Creation[], base = 'My island'): string {
@@ -22,6 +24,14 @@ export function CreateScreen({ creations, store, progress, choices, onGoTo }: { 
   const [removing, setRemoving] = useState<string | null>(null);
   /** The nudge: the island of the first level not finished yet. */
   const next = choices.find((c) => !progress.levelProgress(c.level.id).stars.complete);
+  const [picking, setPicking] = useState(false);
+  /** Levels the child has finished: those are the ones they may change. */
+  const finished = choices.filter((c) => progress.levelProgress(c.level.id).stars.complete);
+  const startRemix = (level: PuzzleDefinition) => {
+    const made = store.add(remixOf(level));
+    progress.log({ levelId: made.id, kind: 'creation-started', basedOn: level.id });
+    onGoTo(hashFor({ screen: 'make', id: made.id }));
+  };
   const startBlank = () => {
     const made = store.add(blankCreation(nextTitle(creations)));
     progress.log({ levelId: made.id, kind: 'creation-started' });
@@ -45,7 +55,33 @@ export function CreateScreen({ creations, store, progress, choices, onGoTo }: { 
               <small>Start with a robot, a flag and every tile yours to place.</small>
             </span>
           </button>
+          <button type="button" className="create-start" aria-expanded={picking} onClick={() => setPicking((v) => !v)}>
+            <span className="create-start-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="34" height="34">
+                <path d="M4 7h3c4 0 6 10 10 10h3M4 17h3c1.6 0 2.8-1.6 3.8-3.4M14.2 9.4C15.2 7.6 16.4 7 17 7h3M17 4l3 3-3 3M17 14l3 3-3 3" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+            <span className="create-start-words">
+              <strong>Change a level</strong>
+              <small>Take a level you finished and make it yours.</small>
+            </span>
+          </button>
         </div>
+        {picking &&
+          (finished.length === 0 ? (
+            <p className="create-empty">Finish a level first. Then you can change it here.</p>
+          ) : (
+            <ul className="shelf remix-list" aria-label="Levels you finished">
+              {finished.map((c) => (
+                <li key={c.level.id} className="shelf-item">
+                  <button type="button" className="shelf-card" onClick={() => startRemix(c.level)}>
+                    <BoardThumb world={c.level.world} size={96} />
+                    <span className="shelf-title">{c.level.title}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ))}
       </section>
 
       <section className="create-group" aria-labelledby="create-shelf">
