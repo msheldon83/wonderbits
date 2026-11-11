@@ -2420,6 +2420,27 @@ button.function-head {
   color: var(--ink-soft);
 }
 
+/* The = between a slot and its value: Set count = 3, Unlock A when count = 3. */
+.param-eq {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+/* A gate's own number on an Unlock card: fixed, so not a picker. */
+.param-code {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  border-radius: 10px;
+  background: #33415c;
+  color: #fff;
+  font-weight: 800;
+}
+
 .card-set .card-icon,
 .card-change .card-icon,
 .card-face .card-icon,

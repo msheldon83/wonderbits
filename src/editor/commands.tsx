@@ -320,13 +320,13 @@ export function describeNode(node: IRNode): string {
     case 'forEach':
       return `For each ${node.item} in ${node.list}`;
     case 'set':
-      return `Set ${node.slot} to ${sourceWords(node.to)}`;
+      return `Set ${node.slot} = ${sourceWords(node.to)}`;
     case 'change':
       return node.by < 0 ? `Take ${-node.by} from ${node.slot}` : `Add ${node.by} to ${node.slot}`;
     case 'face':
       return `Face the way ${node.slot} holds`;
     case 'unlock':
-      return `Unlock gate ${node.gate.toUpperCase()} with ${node.slot}`;
+      return `Unlock gate ${node.gate.toUpperCase()} when ${node.slot} is its number`;
     case 'push':
       return `Add ${sourceWords(node.to)} to the end of ${node.list}`;
     case 'fly': {
