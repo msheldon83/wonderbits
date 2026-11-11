@@ -150,6 +150,13 @@ Real lists count from 0, and so does the coordinate plane children meet in
   a list with a counter from 0, stopping at its length).
 - **Grids print as real indexing.** `walls[spot.y][spot.x]`, row first:
   a grid is a list of rows. The `at()` and `put()` helpers are gone.
+- **Run plays every shuffle.** On a shuffled level, Run plays the program
+  on the board on screen, then repaints the board for each other version
+  and plays it there too, until one fails; the message names the shuffle
+  ("Shuffle 3 of 3: Clunk! ..."). Stars come once all have played. This
+  replaces the silent check and the glowing Shuffle button, which left the
+  child to go and find the failing version. Random levels still check
+  their 48 rolls quietly; playing them all would take minutes.
 
 ## Play-test rework: randomness and coordinates (2026-11-10)
 
