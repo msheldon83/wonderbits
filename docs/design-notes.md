@@ -4,6 +4,62 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Build step 13c: design a puzzle, with the validator as critic (2026-11-11)
+
+The third sub-step of [creation-plan.md](creation-plan.md), and the end of
+the puzzle half of creation mode: a child can make a puzzle for someone
+else on the same device.
+
+- **Puzzle** is a third mode beside Build and Play
+  (`src/create/ChallengePanel.tsx`). The maker sets the goal (reach the
+  flag, collect every acorn, or both), which cards a player gets, and how
+  many cards at most.
+- **The maker's own solution is the proof.** A run in Play that solves the
+  puzzle within its own cards and limit proves it, and the Puzzle mode
+  re-checks the maker's program whenever the puzzle changes. A change to
+  the board, the goal or the cards drops the proof, and the puzzle is a
+  draft again until it is solved afresh. Only a proved puzzle can be
+  played by others; `#/play/<id>` of a draft goes back to its maker's
+  screen.
+- **The critic** (`src/create/critic.ts`) is the level validator's search,
+  now `searchFlat` with a deadline, plus a run of the maker's program. It
+  runs in the Worker behind a new `critique` message of the runtime
+  contract. It says, in a child's words: whether the maker has solved it;
+  the shortest way with plain steps and the limit beside it; that a player
+  can solve it without Repeat, or needs Repeat to fit; that nobody can
+  solve it. It never proposes a change.
+- **Made here** is a shelf on the map with every proved puzzle. A player
+  gets the maker's cards and limit and an empty program, and earns a star
+  for solving it and a second for using no more cards than the maker.
+  Stars are kept under the proof's time, so a puzzle that is changed and
+  proved again starts with none.
+- **The log** records the challenge set, what the critic found, each proof
+  and each play, so the grown-up's export shows creation too.
+
+### Deviations and choices
+
+- **No "Prove it" button.** The plan had the maker prove a puzzle as a
+  separate act. Solving it in Play is that act; a button would only repeat
+  it.
+- **"Nobody can solve this" is said only when it is certain.** The search
+  tries plain steps. Where nothing but the robot's steps can change the
+  board (no gate cards, memory, When cards, keys, days or team) and the
+  search runs out of places to go, no program of any shape can solve it.
+  Otherwise, or past the 1.5 second limit, the critic says it could not
+  try every way and that the maker's solution is the proof.
+- **The critic has an endpoint of its own**, started for each question and
+  closed after, so a long search never holds up a run, and a stale
+  question is simply stopped.
+- **A shelf on the map, not an island.** The plan's "Made here" island
+  would need scenery and a trail like a pack's; a shelf under the island
+  does the job until a child test says otherwise.
+- **Build puzzles only.** "Hide a bug" and "Where will it stop?" puzzles,
+  which the plan lists as later in this step, are not built.
+- **A player's place in a made puzzle is not kept.** Leaving it starts it
+  again.
+- **A goal of "collect every acorn" with no acorns** is met at once; the
+  board checker says there are none, and the critic reports zero cards.
+
 ## Build step 13b: remix and free play (2026-11-11)
 
 The second sub-step of [creation-plan.md](creation-plan.md): a child can

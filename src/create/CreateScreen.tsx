@@ -97,6 +97,7 @@ export function CreateScreen({ creations, store, progress, choices, onGoTo }: { 
                 <a className="shelf-card" href={hashFor({ screen: 'make', id: c.id })}>
                   <BoardThumb world={c.world} />
                   <span className="shelf-title">{c.title}</span>
+                  {c.status === 'proved' && <span className="ready-tag">Ready to play</span>}
                 </a>
                 {removing === c.id ? (
                   <span className="choice-row">

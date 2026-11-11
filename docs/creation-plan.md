@@ -173,6 +173,9 @@ A remix becomes a puzzle for someone else.
 - **Tests:** critic messages for each case, the time limit, a proof is
   rejected when the limits change after it was made.
 
+**Built 2026-11-11** (13a, 13b and 13c; see design-notes.md for what
+differs from this plan).
+
 **Stop here and test with a child.** Steps 13a to 13c are a complete
 feature. The questions for the test: does a child find Create unprompted,
 can they make a puzzle someone else can solve, do they read the critic, and

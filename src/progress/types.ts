@@ -81,6 +81,9 @@ export type ObservationEvent = { t: number; levelId: string } & (
   | { kind: 'creation-removed' }
   | { kind: 'board-changed'; width: number; height: number }
   | { kind: 'creation-solved' }
+  | { kind: 'puzzle-set'; goal: string; cards: number; limit: number | null }
+  | { kind: 'critic-spoke'; ownSolves: boolean; flat: string }
+  | { kind: 'puzzle-proved'; steps: number }
 );
 
 /** An event before its timestamp is stamped on. Distributes over the union. */

@@ -53,7 +53,11 @@ observation log the grown-up can export. Creation mode, step 13, is under
 way, planned in [docs/creation-plan.md](docs/creation-plan.md): the Create
 button opens a shelf of the child's own islands, kept on the device. A
 child can start from an empty island or change a level they finished,
-build the board with tools, and play it with their own program. See [docs/design-notes.md](docs/design-notes.md) for what is built, what
+build the board with tools, play it with their own program, and turn it
+into a puzzle for someone else: set the goal, the cards and the limit,
+solve it, and hear from the critic how short it can be. Solved puzzles
+appear on the map under Made here. That is sub-steps 13a to 13c, the
+puzzle half; the Workshop's games come after a child test. See [docs/design-notes.md](docs/design-notes.md) for what is built, what
 is deliberately not, and any deviations from the plan.
 
 ## Run it
@@ -68,7 +72,8 @@ The level map is the home screen (`#/`), one island at a time; an island is
 `#/map/<pack id>`. A level is `#/level/<id>`; the
 first level of a pack opens with the pack's introduction, once. The card
 book is `#/book`, and one of its pages is `#/book/<pack id>`. Creation mode
-is `#/create`, and one of the child's things is `#/create/<id>`. `#/settings`
+is `#/create`, and one of the child's things is `#/create/<id>`; a puzzle
+its maker has solved is played at `#/play/<id>`. `#/settings`
 has reduced motion, "open every level" for the grown-up (on by default for
 now, while the curriculum is being tested; turn it off to unlock levels in
 order), the progress export and a reset.

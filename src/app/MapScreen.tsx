@@ -5,7 +5,7 @@
  * to travel on to the next island. A strip of islands across the top jumps
  * anywhere. The badge shelf sits underneath. Reads progress only.
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import type { BookEntry } from '../lessons/concepts';
 import { BADGE_IDS } from '../progress/types';
 import type { ProgressStore } from '../progress/store';
@@ -25,7 +25,7 @@ interface Island {
   levels: LevelChoice[];
 }
 
-export function MapScreen({ choices, book, store, badges, packId }: { choices: LevelChoice[]; book: BookEntry[]; store: ProgressStore; badges: readonly string[]; packId?: string }) {
+export function MapScreen({ choices, book, store, badges, packId, extra }: { choices: LevelChoice[]; book: BookEntry[]; store: ProgressStore; badges: readonly string[]; packId?: string; /** Shown between the island and the badges: the puzzles made on this device. */ extra?: ReactNode }) {
   const islands: Island[] = [];
   for (const c of choices) {
     const last = islands.at(-1);
@@ -203,6 +203,7 @@ export function MapScreen({ choices, book, store, badges, packId }: { choices: L
         </div>
       </section>
 
+      {extra}
       <section className="badge-shelf" aria-label="Badges">
         <h2 className="map-title">Badges</h2>
         <ul className="badge-list">

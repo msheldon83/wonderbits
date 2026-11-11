@@ -26,8 +26,15 @@ export interface ValidationReport {
 
 const SEARCH_CAP = 64;
 
-/** Breadth-first search over robot states for the shortest solving program of plain commands. */
-export function shortestSolution(puzzle: PuzzleDefinition, cap = SEARCH_CAP): CommandId[] | null {
+/**
+ * What a search for the shortest program of plain commands came to. `none`
+ * means every state the commands can reach was tried and none meets the
+ * objective; `cap` and `timeout` mean the search stopped before it knew.
+ */
+export type FlatSearch = { kind: 'found'; path: CommandId[] } | { kind: 'none' } | { kind: 'cap' } | { kind: 'timeout' };
+
+/** Breadth-first search over robot states for the shortest solving program of plain commands. Stops at `deadline`, a Date.now() time, when given. */
+export function searchFlat(puzzle: Pick<PuzzleDefinition, 'world' | 'objective'> & { programming: Pick<PuzzleDefinition['programming'], 'allowedCommands'> }, cap = SEARCH_CAP, deadline?: number): FlatSearch {
   const { world, objective, programming } = puzzle;
   const commands = programming.allowedCommands.filter(isCommandId);
   const worldPeriod = period(world);
@@ -42,12 +49,14 @@ export function shortestSolution(puzzle: PuzzleDefinition, cap = SEARCH_CAP): Co
     return t.kind === 'ok' ? t.state : null;
   };
   const start = initialState(world);
-  if (objectiveMet(world, objective, start)) return [];
+  if (objectiveMet(world, objective, start)) return { kind: 'found', path: [] };
   let frontier: { state: SimState; path: CommandId[] }[] = [{ state: start, path: [] }];
   const seen = new Set([keyOf(start)]);
+  let tried = 0;
   for (let depth = 1; depth <= cap && frontier.length; depth++) {
     const next: typeof frontier = [];
     for (const { state, path } of frontier) {
+      if (deadline !== undefined && (++tried & 255) === 0 && Date.now() > deadline) return { kind: 'timeout' };
       for (const cmd of commands) {
         const after = act(state, cmd);
         if (!after) continue;
@@ -55,13 +64,19 @@ export function shortestSolution(puzzle: PuzzleDefinition, cap = SEARCH_CAP): Co
         if (seen.has(k)) continue;
         seen.add(k);
         const p = [...path, cmd];
-        if (objectiveMet(world, objective, after)) return p;
+        if (objectiveMet(world, objective, after)) return { kind: 'found', path: p };
         next.push({ state: after, path: p });
       }
     }
     frontier = next;
   }
-  return null;
+  return frontier.length === 0 ? { kind: 'none' } : { kind: 'cap' };
+}
+
+/** The shortest solving program of plain commands, or null when the search finds none within the cap. */
+export function shortestSolution(puzzle: PuzzleDefinition, cap = SEARCH_CAP): CommandId[] | null {
+  const found = searchFlat(puzzle, cap);
+  return found.kind === 'found' ? found.path : null;
 }
 
 function countOf(cards: readonly string[], c: string): number {

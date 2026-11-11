@@ -1,19 +1,23 @@
 /**
- * One creation, in two modes on one screen. Build changes the board; Play
- * is the play surface on it, with the creation's cards. Switching is one
+ * One creation, in three modes on one screen. Build changes the board;
+ * Play is the play surface on it, with the creation's cards; Puzzle sets
+ * the challenge for others and hears the critic. Switching is one
  * tap, and the board, the name and the program are saved as they change,
  * so nothing is lost on the way.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { hashFor } from '../app/levels';
-import { PlaySurface, type Playable } from '../app/PlaySurface';
+import { PlaySurface, type Playable, type Solved } from '../app/PlaySurface';
 import { programSpec } from '../ir/program';
 import type { ProgramIR } from '../ir/types';
 import type { ProgressStore } from '../progress/store';
 import type { EventInput, Settings } from '../progress/types';
 import type { Runtime } from '../runtime/contract';
 import type { WorldDefinition } from '../sim/types';
+import type { CardId } from '../ir/types';
 import { BoardEditor, type BoardEditorProps } from './BoardEditor';
+import { ChallengePanel } from './ChallengePanel';
+import { fitsRules } from './critic';
 import type { CreationStore } from './store';
 import { TITLE_MAX, type Creation } from './types';
 
@@ -39,11 +43,13 @@ export interface CreationScreenProps {
   runtime: Runtime | null;
   settings: Settings;
   signposts?: BoardEditorProps['signposts'];
+  /** Every card this creation may offer a player. */
+  universe: readonly CardId[];
 }
 
-export function CreationScreen({ creation, store, progress, runtime, settings, signposts }: CreationScreenProps) {
+export function CreationScreen({ creation, store, progress, runtime, settings, signposts, universe }: CreationScreenProps) {
   /** A new thing, or one with no program yet, opens ready to be built; one being worked on opens ready to play. */
-  const [mode, setMode] = useState<'build' | 'play'>(() => (creation.program.length === 0 || creation.updatedAt === creation.createdAt ? 'build' : 'play'));
+  const [mode, setMode] = useState<'build' | 'play' | 'puzzle'>(() => (creation.program.length === 0 || creation.updatedAt === creation.createdAt ? 'build' : 'play'));
   const [title, setTitle] = useState(creation.title);
   const level = useMemo(
     () => playableOf(creation, 'This island is yours. Tap an instruction to add it to your program, then press Run.'),
@@ -69,7 +75,17 @@ export function CreationScreen({ creation, store, progress, runtime, settings, s
     if (world) progress.log({ levelId: creation.id, kind: 'board-changed', width: world.width, height: world.height });
   }, [store, progress, creation.id]);
   useEffect(() => logBoard, [logBoard]);
-  const onSolved = useCallback(() => progress.log({ levelId: creation.id, kind: 'creation-solved' }), [progress, creation.id]);
+  /** A run that solves it within the puzzle's own cards and limit is the maker's proof. */
+  const onSolved = useCallback(
+    ({ program, steps }: Solved) => {
+      progress.log({ levelId: creation.id, kind: 'creation-solved' });
+      const now = store.get(creation.id);
+      if (!now || !fitsRules(now.programming, program)) return;
+      store.prove(creation.id, programSpec(program), steps);
+      progress.log({ levelId: creation.id, kind: 'puzzle-proved', steps });
+    },
+    [progress, store, creation.id],
+  );
 
   return (
     <div className="creation">
@@ -90,20 +106,27 @@ export function CreationScreen({ creation, store, progress, runtime, settings, s
             }}
           />
         </label>
-        <div className="mode-switch" role="group" aria-label="Build or play">
-          {(['build', 'play'] as const).map((m) => (
+        <div className="mode-switch" role="group" aria-label="Build, play or set the puzzle">
+          {(['build', 'play', 'puzzle'] as const).map((m) => (
             <button key={m} type="button" className={`btn btn-choice ${mode === m ? 'is-on' : ''}`} aria-pressed={mode === m} onClick={() => {
                 logBoard();
                 setMode(m);
               }}
             >
-              {m === 'build' ? 'Build' : 'Play'}
+              {m === 'build' ? 'Build' : m === 'play' ? 'Play' : 'Puzzle'}
             </button>
           ))}
         </div>
+        {creation.status === 'proved' && (
+          <span className="ready-tag" title="You solved it, so others can play it. It is on the map, under Made here.">
+            Ready to play
+          </span>
+        )}
       </div>
       {mode === 'build' ? (
         <BoardEditor world={creation.world} objective={creation.objective} cards={creation.programming.allowedCommands} settings={settings} onChange={onWorld} {...(signposts && { signposts })} />
+      ) : mode === 'puzzle' ? (
+        <ChallengePanel creation={creation} universe={universe} store={store} progress={progress} runtime={runtime} settings={settings} />
       ) : (
         <PlaySurface level={level} runtime={runtime} settings={settings} initialProgram={creation.program} onProgram={onProgram} record={record} onSolved={onSolved} />
       )}

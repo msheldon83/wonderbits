@@ -5,6 +5,7 @@
  * on every change, and notifies subscribers so React can read it with
  * useSyncExternalStore.
  */
+import type { NodeSpec } from '../ir/spec';
 import { ContentError } from '../lessons/parse';
 import type { KeyValueStore } from '../progress/storage';
 import { creationToJson, parseCreation } from './parse';
@@ -77,13 +78,31 @@ export class CreationStore {
     return creation;
   }
 
-  /** Autosave: every edit goes through here. */
-  update(id: string, patch: Partial<Omit<Creation, 'schemaVersion' | 'id' | 'createdAt' | 'updatedAt'>>): Creation | undefined {
+  /**
+   * Autosave: every edit goes through here. A change to the board, the goal
+   * or the cards makes it a different puzzle, so the proof made for the old
+   * one is dropped and it is a draft again until it is solved afresh.
+   */
+  update(id: string, patch: Partial<Omit<Creation, 'schemaVersion' | 'id' | 'createdAt' | 'updatedAt' | 'proof' | 'status'>>): Creation | undefined {
     const before = this.get(id);
     if (!before) return undefined;
-    const after: Creation = { ...before, ...patch, ...(patch.title !== undefined && { title: cleanTitle(patch.title, before.title) }), updatedAt: this.now() };
-    this.set(this.snapshot.creations.map((c) => (c.id === id ? after : c)));
-    void this.storage.set(PREFIX + id, creationToJson(after));
+    const changesPuzzle = (['world', 'objective', 'programming', 'inputScript', 'days'] as const).some((k) => k in patch && JSON.stringify(patch[k]) !== JSON.stringify(before[k]));
+    const { proof: _proof, ...unproved } = before;
+    const base: Creation = changesPuzzle ? { ...unproved, status: 'draft' } : before;
+    return this.save({ ...base, ...patch, ...(patch.title !== undefined && { title: cleanTitle(patch.title, before.title) }), updatedAt: this.now() });
+  }
+
+  /** The maker solved it under its own limits: others may play it now. */
+  prove(id: string, solution: NodeSpec[], steps: number): Creation | undefined {
+    const before = this.get(id);
+    if (!before) return undefined;
+    if (before.proof && before.proof.steps === steps && JSON.stringify(before.proof.solution) === JSON.stringify(solution)) return before;
+    return this.save({ ...before, status: 'proved', proof: { solution, steps, provedAt: this.now() } });
+  }
+
+  private save(after: Creation): Creation {
+    this.set(this.snapshot.creations.map((c) => (c.id === after.id ? after : c)));
+    void this.storage.set(PREFIX + after.id, creationToJson(after));
     return after;
   }
 
