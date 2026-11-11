@@ -555,6 +555,8 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           signs={signsOf(program.memory, shownState ?? initialState(world, program.memory), activeEvent)}
           bird={(level.programming.allowedSources ?? []).some(isBirdSource) || specAsksBird(level.programming.starterProgram)}
         />
+        {/* The warehouse sits right under the board, next to what the robot is doing. */}
+        <Inventory slots={program.memory} state={shownState ?? initialState(world, program.memory)} event={activeEvent} />
         <div className="toolbar" role="toolbar" aria-label="Run controls">
           <button
             type="button"
@@ -616,7 +618,6 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           </button>
         </div>
         <TickRules world={world} state={shownState ?? initialState(world, program.memory)} event={activeEvent} />
-        <Inventory slots={program.memory} state={shownState ?? initialState(world, program.memory)} event={activeEvent} />
       </div>
       <div className="side-col">
         <Editor
