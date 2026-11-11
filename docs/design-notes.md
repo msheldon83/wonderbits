@@ -232,8 +232,10 @@ before the lock.
 - **The pack.** Two scoreboards (model: held is kept up to date, left
   never is), Read it when you need it (set left from the board just before
   the lock), Keep both up to date (two cards in the When card, and both
-  slots checked at the flag), Fix the copy (debug: a count typed in by eye
-  is one short), How many in the bag? (a separate count beside a list; read
+  slots checked at the flag), Ask the right one (debug: right before
+  the lock the robot looks in its pocket instead of asking the bird; it
+  replaced Fix the copy on 2026-11-11, which asked the bird at the start and
+  then counted down by hand, mixing the two habits the pack contrasts), How many in the bag? (a separate count beside a list; read
   its length instead), Which one is wrong? (model: a guessed count against
   one read from what the robot holds), Cards in order, Stop at the last
   acorn (walk until none are left, on three shuffles), Where will it stop?
@@ -246,7 +248,7 @@ before the lock.
 
 - **The plan's debug level is spread over three.** "Two stored values
   disagree, delete one and calculate it" needs a level to see them
-  disagree (Two scoreboards), one to fix a stored copy (Fix the copy) and
+  disagree (Two scoreboards), one to fix a value read from the wrong place (Ask the right one) and
   one where a single slot replaces both (One scoreboard). A debug level
   changes one card, and deleting a slot is not a card.
 

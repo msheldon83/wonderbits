@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "id": "v04-fix-the-copy",
-  "title": "Fix the copy",
-  "intro": "Someone typed in how many acorns there are, and the lock will not open.",
+  "title": "Ask the right one",
+  "intro": "The robot picks up every acorn, then sets left right before the lock. But it looked in its own pocket instead of asking the bird.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -57,12 +57,10 @@
     "allowedCommands": [
       "forward",
       "set",
-      "change",
       "unlock"
     ],
-    "maxInstructions": 11,
+    "maxInstructions": 9,
     "allowedSources": [
-      3,
       "acorns",
       "acornsLeft"
     ],
@@ -70,32 +68,23 @@
       {
         "remember": "left",
         "kind": "number",
-        "start": 0
+        "start": 3
       },
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      "forward",
       {
         "set": "left",
-        "to": 3
+        "to": "acorns"
       },
-      "forward",
-      "forward",
-      "forward",
-      "forward",
-      "forward",
       {
         "unlock": "a",
         "with": "left"
       },
       "forward",
-      "forward",
-      {
-        "on": "acorn",
-        "do": [
-          {
-            "change": "left",
-            "by": -1
-          }
-        ]
-      }
+      "forward"
     ]
   },
   "hints": [
@@ -103,34 +92,22 @@
       "kind": "region",
       "cells": [
         {
-          "x": 1,
-          "y": 0
-        },
-        {
-          "x": 2,
-          "y": 0
-        },
-        {
-          "x": 4,
-          "y": 0
-        },
-        {
-          "x": 5,
+          "x": 6,
           "y": 0
         }
       ],
-      "text": "Count the acorns on the board. Does left start right?"
+      "text": "Gate A opens when no acorns are left on the board."
     },
     {
       "kind": "step",
       "path": [],
-      "index": 0,
-      "text": "This card types in a number someone counted by eye. The bird would count right."
+      "index": 5,
+      "text": "This card looks in the robot's pocket. Does the pocket know what is left on the board?"
     },
     {
       "kind": "fill",
       "path": [],
-      "slot": 0,
+      "slot": 5,
       "command": "set",
       "text": "Ask the bird instead: set left to acorns left."
     }
@@ -139,32 +116,23 @@
     {
       "remember": "left",
       "kind": "number",
-      "start": 0
+      "start": 3
     },
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    "forward",
     {
       "set": "left",
       "to": "acornsLeft"
     },
-    "forward",
-    "forward",
-    "forward",
-    "forward",
-    "forward",
     {
       "unlock": "a",
       "with": "left"
     },
     "forward",
-    "forward",
-    {
-      "on": "acorn",
-      "do": [
-        {
-          "change": "left",
-          "by": -1
-        }
-      ]
-    }
+    "forward"
   ],
   "stars": {
     "noHints": true
