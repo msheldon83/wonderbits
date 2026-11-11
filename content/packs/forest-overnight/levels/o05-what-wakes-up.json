@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "id": "o05-what-wakes-up",
+  "title": "What wakes up?",
+  "intro": "Three days. At the end of day 3, how many acorns is the robot holding, and what does total say?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 3,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "persistence",
+    "activity": "model"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": [
+      {
+        "remember": "total",
+        "kind": "number",
+        "start": 0,
+        "keep": true
+      },
+      "forward",
+      "forward",
+      "forward",
+      {
+        "on": "acorn",
+        "do": [
+          {
+            "change": "total",
+            "by": 1
+          }
+        ]
+      }
+    ]
+  },
+  "days": 3,
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "text": "The acorns grow back every night, and the robot puts down the ones it held."
+    },
+    {
+      "kind": "card",
+      "command": "change",
+      "text": "total is in the backpack, so it keeps adding up."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:acorn"
+      ],
+      "slot": 0,
+      "command": "change",
+      "text": "Two a day, for three days."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "total",
+      "kind": "number",
+      "start": 0,
+      "keep": true
+    },
+    "forward",
+    "forward",
+    "forward",
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "change": "total",
+          "by": 1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": false,
+    "askMemory": [
+      "acorns",
+      "slot:total"
+    ]
+  }
+}

@@ -100,6 +100,17 @@ export function initialState(world: WorldDefinition, memory: readonly MemorySlot
   return { ...base, memory: Object.fromEntries(memory.map((m) => [m.name, startValue(world, m.start)])) };
 }
 
+/**
+ * The next morning on a level of several days: the board as it starts, the
+ * robot back at the start, and memory started again, except the slots kept
+ * in the backpack, which hold what they held last night. Pure.
+ */
+export function morning(world: WorldDefinition, memory: readonly MemorySlot[], night: SimState): SimState {
+  const fresh = initialState(world, memory);
+  const kept = Object.fromEntries(memory.filter((m) => m.keep && night.memory && m.name in night.memory).map((m) => [m.name, night.memory![m.name]!]));
+  return { ...fresh, ...(fresh.memory && { memory: { ...fresh.memory, ...kept } }), ...(night.rng !== undefined && { rng: night.rng }), day: (night.day ?? 1) + 1 };
+}
+
 /** A slot's start: its own value, or, for a map, a copy of the board as rows of yes and no. */
 export function startValue(world: WorldDefinition, start: Value): Value {
   if (start === 'board:walls') return world.tiles.map((row) => row.map((t) => t !== 'floor'));
@@ -128,7 +139,7 @@ function initialWorld(world: WorldDefinition): SimState {
  * they were.
  */
 export function stateKey(s: SimState, worldPeriod = 1): string {
-  return `${s.robot.x},${s.robot.y},${s.robot.facing}|${[...s.collected].sort().join(';')}|${s.open.join(';')}|${s.tick % worldPeriod}|${s.memory ? JSON.stringify(s.memory) : ''}|${s.rng ?? ''}`;
+  return `${s.robot.x},${s.robot.y},${s.robot.facing}|${[...s.collected].sort().join(';')}|${s.open.join(';')}|${s.tick % worldPeriod}|${s.memory ? JSON.stringify(s.memory) : ''}|${s.rng ?? ''}|${s.day ?? ''}`;
 }
 
 /** A board where time passes: something moves, or the program has an every-tick card. */

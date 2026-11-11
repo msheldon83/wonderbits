@@ -103,7 +103,8 @@ function typeImports(program: ProgramIR): string {
   for (const p of program.procedures) visit(p.body);
   for (const h of program.handlers) visit(h.body);
   const randoms = ['random', 'coinFlip', 'randomDirection', 'pick'].filter((r) => used.has(r));
-  return randoms.map((g) => `, ${g}`).concat(types.map((t) => `, type ${t}`)).join('');
+  const backpack = (program.memory ?? []).some((m) => m.keep) ? [', backpack'] : [];
+  return backpack.concat(randoms.map((g) => `, ${g}`)).concat(types.map((t) => `, type ${t}`)).join('');
 }
 
 /** A negated check, written the way a person would. */
@@ -208,9 +209,10 @@ export function printProgram(program: ProgramIR): string {
     `import { robot${typeImports(program)} } from 'wonderbits';`,
   ];
   // The robot's memory: one typed variable per slot, before anything uses it.
+  // A slot in the backpack starts from what was saved last night, or its start on the first day.
   if (program.memory?.length) {
     lines.push('');
-    for (const m of program.memory) lines.push(`let ${m.name}: ${typeCode(m)} = ${startCode(m.start)};`);
+    for (const m of program.memory) lines.push(m.keep ? `let ${m.name}: ${typeCode(m)} = backpack.load('${m.name}', ${startCode(m.start)});` : `let ${m.name}: ${typeCode(m)} = ${startCode(m.start)};`);
   }
   // Main is the program the robot runs; each function is a helper beside it.
   for (const proc of program.procedures) {
@@ -224,6 +226,13 @@ export function printProgram(program: ProgramIR): string {
     lines.push('', `robot.on(${eventArgs(handler.event)}, () => { // @node on:${handler.event}`);
     if (handler.body.length === 0) lines.push(`${INDENT}// No steps yet.`);
     for (const node of handler.body) printNode(node, 1, lines);
+    lines.push('});');
+  }
+  // At night the backpack's slots are saved for tomorrow; everything else is forgotten.
+  const kept = (program.memory ?? []).filter((m) => m.keep);
+  if (kept.length > 0) {
+    lines.push('', `robot.on('night', () => { // @node night`);
+    for (const m of kept) lines.push(`${INDENT}backpack.save('${m.name}', ${m.name});`);
     lines.push('});');
   }
   return lines.join('\n') + '\n';

@@ -96,4 +96,6 @@ export interface SimState {
   memory?: Record<string, Value>;
   /** The random generator's state, when the run was given a seed. */
   rng?: number;
+  /** On a level of several days, which day it is, from 1. */
+  day?: number;
 }

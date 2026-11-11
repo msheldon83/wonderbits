@@ -64,6 +64,15 @@ function kindWord(m: MemorySlot | undefined): string {
   return { number: 'number', yesNo: 'yes/no', direction: 'direction', position: 'place' }[m.kind] ?? m.kind;
 }
 
+/** A backpack: what is kept overnight. */
+const BACKPACK = (
+  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+    <path d="M9 6V4.5a3 3 0 0 1 6 0V6" {...stroke} />
+    <rect x="4.5" y="6" width="15" height="15" rx="4" {...stroke} />
+    <path d="M8.5 13.5h7v4h-7z" {...stroke} strokeWidth={2} />
+  </svg>
+);
+
 /** A list slot drawn as its items in order, each with its index from 0 underneath. */
 function ListItems({ items }: { items: Value[] }) {
   if (items.length === 0) return <span className="memory-list-empty">nothing yet</span>;
@@ -115,6 +124,8 @@ export interface MemoryCardProps {
   state: SimState;
   /** The robot's own memory slots, listed after the world's lines. */
   slots?: readonly MemorySlot[];
+  /** On a level of several days, how many: the card then says which day it is. */
+  days?: number;
   /** Fields the child is predicting now: they show as questions instead of values. */
   asking?: readonly MemoryField[];
   answers?: Partial<Record<MemoryField, MemoryValue>>;
@@ -124,7 +135,7 @@ export interface MemoryCardProps {
   onAnswer?(field: MemoryField, value: MemoryValue): void;
 }
 
-export function MemoryCard({ world, state, slots = [], asking = [], answers = {}, wrong = [], disabled = false, onAnswer }: MemoryCardProps) {
+export function MemoryCard({ world, state, slots = [], days, asking = [], answers = {}, wrong = [], disabled = false, onAnswer }: MemoryCardProps) {
   const gateIds = gatesOf(world).map((g) => g.id);
   const lines = memoryLines(world, slots);
   const valueOf = (line: MemoryLine): string => {
@@ -186,6 +197,17 @@ export function MemoryCard({ world, state, slots = [], asking = [], answers = {}
     <section className={`memory-card ${asking.length > 0 ? 'is-asking' : ''}`} aria-label="Memory card">
       <h2 className="memory-title">Memory card</h2>
       <ul className="memory-lines">
+        {days !== undefined && (
+          <li className="memory-line kind-number is-day">
+            <span className="memory-kind" title="The day">
+              {KIND_ICON.number}
+            </span>
+            <span className="memory-label">Day</span>
+            <span className="memory-value">
+              {state.day ?? 1} of {days}
+            </span>
+          </li>
+        )}
         {lines.map((line) => {
           const gate = gateOfField(line.field);
           const field = line.field === 'position' || line.field === 'tick' ? null : line.field;
@@ -203,6 +225,12 @@ export function MemoryCard({ world, state, slots = [], asking = [], answers = {}
               </span>
               <span className="memory-label">{line.label}</span>
               {line.slot && <span className="memory-kindword">{kindWord(slots.find((m) => slotOfField(line.field) === m.name))}</span>}
+              {line.slot && slots.find((m) => slotOfField(line.field) === m.name)?.keep && (
+                <span className="memory-backpack" title="In the backpack: kept overnight">
+                  {BACKPACK}
+                  <span className="visually-hidden">In the backpack: kept overnight.</span>
+                </span>
+              )}
               {asked ? (
                 <span className="memory-question" role="group" aria-label={`${line.label} at the end? ${isWrong ? 'Not that one last time.' : ''}`}>
                   {question(line.field as MemoryField, line.label, askedKind(line))}

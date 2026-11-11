@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "id": "o04-fix-the-save",
+  "title": "Fix the save",
+  "intro": "Three days of acorns should open the lock, but every morning the count starts again.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      }
+    ],
+    "gates": [
+      {
+        "id": "a",
+        "x": 3,
+        "y": 0,
+        "open": false,
+        "code": 6
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "persistence",
+    "activity": "debug"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change",
+      "unlock",
+      "if"
+    ],
+    "allowedConditions": [
+      "pathAhead"
+    ],
+    "maxInstructions": 8,
+    "starterProgram": [
+      {
+        "remember": "total",
+        "kind": "number",
+        "start": 0,
+        "keep": true
+      },
+      {
+        "remember": "today",
+        "kind": "number",
+        "start": 0
+      },
+      "forward",
+      "forward",
+      {
+        "unlock": "a",
+        "with": "total"
+      },
+      {
+        "if": "pathAhead",
+        "do": [
+          "forward",
+          "forward"
+        ]
+      },
+      {
+        "on": "acorn",
+        "do": [
+          {
+            "change": "today",
+            "by": 1
+          }
+        ]
+      }
+    ]
+  },
+  "days": 3,
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "Three days of two acorns: the lock wants 6."
+    },
+    {
+      "kind": "step",
+      "path": [
+        "on:acorn"
+      ],
+      "index": 0,
+      "text": "Which slot does this card add to? Is it in the backpack?"
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:acorn"
+      ],
+      "slot": 0,
+      "command": "change",
+      "text": "Add to total, the slot that is kept overnight."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "total",
+      "kind": "number",
+      "start": 0,
+      "keep": true
+    },
+    {
+      "remember": "today",
+      "kind": "number",
+      "start": 0
+    },
+    "forward",
+    "forward",
+    {
+      "unlock": "a",
+      "with": "total"
+    },
+    {
+      "if": "pathAhead",
+      "do": [
+        "forward",
+        "forward"
+      ]
+    },
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "change": "total",
+          "by": 1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

@@ -2676,6 +2676,17 @@ button.function-head {
   color: var(--ink-soft);
 }
 
+/* A slot in the backpack, kept overnight on a level of several days. */
+.memory-backpack {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink-soft);
+}
+
+.program-blocks .memory-line.is-day {
+  background: var(--gold-wash);
+}
+
 /* Asked and wrong lines keep their colours inside the Program panel too. */
 .program-blocks .memory-line.is-asked {
   background: var(--gold-wash);

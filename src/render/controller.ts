@@ -325,6 +325,14 @@ export class BoardController implements Player {
       this.showIndicator(after.robot);
       return;
     }
+    // Night: the robot sleeps where it stopped, then wakes at the start of a fresh day.
+    if (event.op === 'night') {
+      await this.showBubble(before.robot, 'zzz…', 'loop', ms(THINK_MS), signal);
+      if (signal.aborted) return;
+      this.showState(after);
+      await this.showBubble(after.robot, `Day ${event.day}`, 'event', ms(THINK_MS), signal);
+      return;
+    }
     if (event.op === 'wait') {
       await this.showBubble(before.robot, '…', 'loop', ms(THINK_MS), signal);
       return;

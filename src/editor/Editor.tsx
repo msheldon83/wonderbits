@@ -1229,7 +1229,7 @@ export function Editor({
 
 const KIND_WORDS: Record<string, string> = { number: 'number', yesNo: 'yes/no', direction: 'direction', position: 'place', list: 'list', grid: 'grid' };
 /** A slot's kind in words: "number", "list of yes/no", "grid of numbers". */
-const kindWords = (m: MemorySlot) => (m.kind === 'list' || m.kind === 'grid' ? `${m.kind} of ${KIND_WORDS[m.of ?? 'number']}` : KIND_WORDS[m.kind]);
+const kindWords = (m: MemorySlot) => (m.kind === 'list' || m.kind === 'grid' ? `${m.kind} of ${KIND_WORDS[m.of ?? 'number']}` : KIND_WORDS[m.kind]) + (m.keep ? ', in the backpack' : '');
 
 /** The values a Set card may put in a slot of a kind: the level's allowed sources, or every one that fits. */
 function sourcesFor(kind: string, programming: Programming, memory: readonly MemorySlot[] = []): Source[] {

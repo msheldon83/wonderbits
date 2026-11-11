@@ -408,3 +408,39 @@ describe('interpreter: building lists', () => {
     expect(r.trace.filter((e) => e.op === 'set').map((e) => e.op === 'set' && e.value)).toEqual([[true], [true, false], 2]);
   });
 });
+
+describe('days', () => {
+  const spec: NodeSpec[] = [
+    { remember: 'total', kind: 'number', start: 0, keep: true },
+    { remember: 'today', kind: 'number', start: 0 },
+    { change: 'total', by: 1 },
+    { change: 'today', by: 1 },
+    'forward',
+  ];
+  const days = (n: number) => interpretAll({ program: programFromSpec(spec, sequentialIdFactory()), world, objective: { reachGoal: false, collectAll: false, memory: { total: n } }, limits: { maxSteps: 1000 }, days: n });
+
+  it('runs the program once a day, keeping only the backpack overnight', () => {
+    const r = days(3);
+    expect(r.outcome).toEqual({ status: 'success' });
+    expect(r.final.memory).toEqual({ total: 3, today: 1 });
+    expect(r.final.day).toBe(3);
+    const nights = r.trace.filter((e) => e.op === 'night');
+    expect(nights.map((e) => (e.op === 'night' ? e.day : 0))).toEqual([2, 3]);
+    // Each morning the robot is back at the start, and today starts again.
+    expect(nights[0]!.before.robot).toEqual({ x: 1, y: 1, facing: 'E' });
+    expect(nights[0]!.after.robot).toEqual(world.robot);
+    expect(nights[0]!.after.memory).toEqual({ total: 1, today: 0 });
+  });
+
+  it('stops on the day something goes wrong', () => {
+    const r = interpretAll({ program: programFromSpec([...F(2)], sequentialIdFactory()), world, objective, limits: { maxSteps: 1000 }, days: 2 });
+    expect(r.outcome).toEqual({ status: 'incomplete' });
+    const bump = interpretAll({ program: programFromSpec(['forward', 'forward', 'forward', 'forward'], sequentialIdFactory()), world, objective, limits: { maxSteps: 1000 }, days: 2 });
+    expect(bump.outcome.status).toBe('blocked');
+    expect(bump.trace.some((e) => e.op === 'night')).toBe(false);
+  });
+});
+
+function F(n: number): NodeSpec[] {
+  return Array.from({ length: n }, () => 'forward' as const);
+}

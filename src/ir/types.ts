@@ -88,6 +88,8 @@ export interface MemorySlot {
   /** The kind of a list's or a grid's items. */
   of?: ItemKind;
   start: Value;
+  /** In the backpack: on a level of several days, the slot keeps its value overnight instead of starting again. */
+  keep?: boolean;
 }
 
 /**

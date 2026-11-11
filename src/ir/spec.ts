@@ -40,7 +40,7 @@ export type NodeSpec =
   | { shift: string; dir: 'N' | 'E' | 'S' | 'W' }
   | { define: string; do: NodeSpec[] }
   | { on: string; do: NodeSpec[] }
-  | { remember: string; kind: ValueKind; of?: ItemKind; start?: Value };
+  | { remember: string; kind: ValueKind; of?: ItemKind; start?: Value; keep?: boolean };
 
 export type DefineSpec = Extract<NodeSpec, { define: string }>;
 export type OnSpec = Extract<NodeSpec, { on: string }>;
@@ -96,7 +96,7 @@ export function defaultStart(kind: ValueKind): Value {
 }
 
 export function slotOfSpec(s: RememberSpec): MemorySlot {
-  return { name: s.remember, kind: s.kind, ...(s.of && { of: s.of }), start: s.start ?? defaultStart(s.kind) };
+  return { name: s.remember, kind: s.kind, ...(s.of && { of: s.of }), start: s.start ?? defaultStart(s.kind), ...(s.keep && { keep: true }) };
 }
 
 /** A spec split into main's cards, its functions, its When cards and its memory slots, each in the order listed. */

@@ -68,14 +68,14 @@ function countOf(cards: readonly string[], c: string): number {
   return cards.filter((x) => x === c).length;
 }
 
-const runOn = (world: WorldDefinition, objective: ObjectiveDefinition, spec: NodeSpec[], input?: readonly Key[], seed?: number) =>
-  interpretAll({ program: programFromSpec(spec, sequentialIdFactory()), world, objective, limits: { maxSteps: 1000 }, ...(input && { input }), ...(seed !== undefined && { seed }) });
-const solvesOn = (world: WorldDefinition, objective: ObjectiveDefinition, spec: NodeSpec[], input?: readonly Key[]) => runOn(world, objective, spec, input).outcome.status === 'success';
+const runOn = (world: WorldDefinition, objective: ObjectiveDefinition, spec: NodeSpec[], input?: readonly Key[], seed?: number, days?: number) =>
+  interpretAll({ program: programFromSpec(spec, sequentialIdFactory()), world, objective, limits: { maxSteps: 1000 }, ...(input && { input }), ...(seed !== undefined && { seed }), ...(days !== undefined && { days }) });
+const solvesOn = (world: WorldDefinition, objective: ObjectiveDefinition, spec: NodeSpec[], input?: readonly Key[], days?: number) => runOn(world, objective, spec, input, undefined, days).outcome.status === 'success';
 
 /** Every check a level makes, run: each board, and each seed on a random level. */
 function runChecks(puzzle: PuzzleDefinition, spec: NodeSpec[]) {
   const worlds = worldsOf(puzzle);
-  return checksOf(puzzle).map((c) => ({ ...c, run: runOn(worlds[c.world]!, puzzle.objective, spec, puzzle.inputScript, c.seed) }));
+  return checksOf(puzzle).map((c) => ({ ...c, run: runOn(worlds[c.world]!, puzzle.objective, spec, puzzle.inputScript, c.seed, puzzle.days) }));
 }
 
 /** A program solves a level only when it solves every version of the board, on every roll, and turns up every outcome asked for. */
@@ -165,6 +165,8 @@ export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
     seenBoards.add(JSON.stringify(w));
   });
 
+  if (puzzle.days !== undefined && puzzle.shuffles) errors.push('a level of several days runs on one board, so it cannot have shuffles');
+
   if (programming.allowedCommands.length === 0) errors.push('allowedCommands must not be empty');
   const allowed = new Set<string>(programming.allowedCommands);
   const conditions = new Set<string>(programming.allowedConditions ?? BASIC_CONDITIONS);
@@ -219,6 +221,7 @@ export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
     splitSpec(referenceSolution).handlers.length > 0 ||
     puzzle.inputScript !== undefined ||
     puzzle.shuffles !== undefined ||
+    puzzle.days !== undefined ||
     isRandomLevel(puzzle);
   /** Levels where the child writes the program; elsewhere a shorter flat program is no concern. */
   const open = puzzle.curriculum.activity === 'build' || puzzle.curriculum.activity === 'reorder';
@@ -404,8 +407,9 @@ function validateMemory(puzzle: PuzzleDefinition, errors: string[]): void {
       if (functions.some((f) => f.name === m.name)) errors.push(`${label}: slot ${m.name} has the same name as a function`);
       const map = m.kind === 'grid' && m.of === 'yesNo' && (BOARD_MAPS as readonly unknown[]).includes(m.start);
       if (!map && !valueFits(m.start, m.kind, m.of)) errors.push(`${label}: slot ${m.name} starts with a value that is not a ${m.kind}`);
-      if (options && !options.some((o) => o.name === m.name && o.kind === m.kind)) errors.push(`${label} remembers ${m.name}, which is not one of the memoryOptions`);
+      if (options && !options.some((o) => o.name === m.name && o.kind === m.kind && !!o.keep === !!m.keep)) errors.push(`${label} remembers ${m.name}, which is not one of the memoryOptions`);
     }
+    if (puzzle.days === undefined && memory.some((m) => m.keep)) errors.push(`${label} keeps a slot in the backpack, but the level lasts one day`);
     if (programming.maxMemory !== undefined && memory.length > programming.maxMemory) errors.push(`${label} keeps ${memory.length} slots, over the memory budget of ${programming.maxMemory}`);
     const byName = new Map(memory.map((m) => [m.name, m]));
     for (const use of slotUses(spec)) {
@@ -557,20 +561,20 @@ export function validatePack(pack: PackManifest, all: readonly PackManifest[]): 
 
 /** The demo must reach the flag and must use a card that belongs to the concept it introduces. */
 export function validateIntroduction(intro: ConceptIntroduction, errors: string[]): void {
-  const { world, program, before, input } = intro.demo;
+  const { world, program, before, input, days } = intro.demo;
   const objective: ObjectiveDefinition = { reachGoal: true, collectAll: world.collectibles.length > 0 };
   (intro.demo.shuffles ?? []).forEach((w, i) => {
     if (!solvesOn(w, { reachGoal: true, collectAll: w.collectibles.length > 0 }, program, input)) errors.push(`introduction.demo.program must reach the flag on shuffles[${i}] too`);
   });
   validateWorld(world, objective, errors, cardsOfSpec(program).some(isGateActionId));
   if (program.length === 0) errors.push('introduction.demo.program must not be empty');
-  if (!solvesOn(world, objective, program, input)) errors.push('introduction.demo.program must reach the flag (and collect every acorn) on its board');
+  if (!solvesOn(world, objective, program, input, days)) errors.push('introduction.demo.program must reach the flag (and collect every acorn) on its board');
   if (before) {
-    if (!solvesOn(world, objective, before, input)) errors.push('introduction.demo.before must reach the flag on its board too, the old way');
+    if (!solvesOn(world, objective, before, input, days)) errors.push('introduction.demo.before must reach the flag on its board too, the old way');
     if (countSpec(before) <= countSpec(program)) errors.push('introduction.demo.before should be the longer, old way; it has no more cards than the program');
   }
   // Concepts without a card of their own must show their idea in the run itself.
-  const trace = runOn(world, objective, program, input).trace;
+  const trace = runOn(world, objective, program, input, undefined, days).trace;
   const shows: Record<string, [boolean, string]> = {
     worldState: [trace.some((e) => e.result.kind === 'ok' && e.result.toggled), 'never steps on a switch'],
     events: [trace.some((e) => e.op === 'when' && !e.event.startsWith('key:') && e.event !== 'tick'), 'never sets off a When card'],
@@ -579,6 +583,7 @@ export function validateIntroduction(intro: ConceptIntroduction, errors: string[
     representation: [splitSpec(program).memory.length > 0 && trace.some((e) => e.op === 'set'), 'never puts anything in a memory slot'],
     grids: [splitSpec(program).memory.some((m) => m.kind === 'grid') || cardsOfSpec(program).some((c) => (GO_IDS as readonly string[]).includes(c)), 'never uses a grid or a row or column'],
     randomness: [setSources(program).some((src) => parseRandom(src) !== null), 'never uses a random source'],
+    persistence: [trace.some((e) => e.op === 'night') && splitSpec(program).memory.some((m) => m.keep), 'never keeps a slot in the backpack overnight'],
     derived: [setSources(program).some((src) => typeof src === 'string' && !parseRandom(src) && !['N', 'E', 'S', 'W'].includes(src)), 'never works a value out from what is there'],
   };
   const check = shows[intro.concept];

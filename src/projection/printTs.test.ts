@@ -192,4 +192,13 @@ describe('printProgram', () => {
     const p = programFromSpec([{ remember: 'left', kind: 'number' }, { set: 'left', to: 'acornsLeft' }], sequentialIdFactory());
     expect(printProgram(p)).toContain('left = robot.acornsLeft(); // @node n1');
   });
+
+  it('prints a slot in the backpack as loaded in the morning and saved at night', () => {
+    const p = programFromSpec([{ remember: 'total', kind: 'number', keep: true }, { remember: 'today', kind: 'number' }, { change: 'total', by: 1 }], sequentialIdFactory());
+    const code = printProgram(p);
+    expect(code).toContain("import { robot, backpack } from 'wonderbits';");
+    expect(code).toContain("let total: number = backpack.load('total', 0);");
+    expect(code).toContain('let today: number = 0;');
+    expect(code).toContain("robot.on('night', () => { // @node night\n  backpack.save('total', total);\n});");
+  });
 });

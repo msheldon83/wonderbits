@@ -226,7 +226,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
     const seed = seedRef.current;
     if (cache.current?.program === program && cache.current.world === world && cache.current.seed === seed) return cache.current.result;
     if (!runtime) return null;
-    const result = await runtime.run({ program, world, objective: level.objective, limits: DEFAULT_LIMITS, ...(level.inputScript && { input: level.inputScript }), ...(random && { seed }) });
+    const result = await runtime.run({ program, world, objective: level.objective, limits: DEFAULT_LIMITS, ...(level.inputScript && { input: level.inputScript }), ...(level.days && { days: level.days }), ...(random && { seed }) });
     cache.current = { program, world, seed, result };
     return result;
   }, [runtime, program, level, world, random]);
@@ -341,7 +341,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
         const checks = checksOf(level);
         const runs = await Promise.all(
           checks.map((c) =>
-            runtime.run({ program, world: worlds[c.world]!, objective: level.objective, limits: DEFAULT_LIMITS, ...(level.inputScript && { input: level.inputScript }), ...(c.seed !== undefined && { seed: c.seed }) }),
+            runtime.run({ program, world: worlds[c.world]!, objective: level.objective, limits: DEFAULT_LIMITS, ...(level.inputScript && { input: level.inputScript }), ...(level.days && { days: level.days }), ...(c.seed !== undefined && { seed: c.seed }) }),
           ),
         );
         if (token !== runToken.current) return;
@@ -477,7 +477,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   };
   let message: { tone: Tone | 'hint'; text: string };
   if (hint) message = { tone: 'hint', text: hint.text };
-  else if (phase === 'running') message = { tone: 'info', text: worlds.length > 1 && !random ? `Running shuffle ${shuffle + 1} of ${worlds.length}…` : 'Running…' };
+  else if (phase === 'running') message = { tone: 'info', text: worlds.length > 1 && !random ? `Running shuffle ${shuffle + 1} of ${worlds.length}…` : level.days ? `Running day ${shownState?.day ?? 1} of ${level.days}…` : 'Running…' };
   else if (phase === 'paused') message = { tone: 'info', text: `Paused after step ${position}. Step plays one more. Run keeps going.` };
   else if (outcome) {
     const base =
@@ -494,6 +494,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           ? { tone: 'success', text: `${base.text} It worked on all ${worlds.length} shuffles.` }
           : { tone: base.tone, text: `Shuffle ${shuffle + 1} of ${worlds.length}: ${base.text}` };
     }
+    if (level.days && outcome.status !== 'success') message = { tone: base.tone, text: `Day ${shownState?.day ?? 1} of ${level.days}: ${message.text}` };
     if (failedShuffle !== null) message = { tone: 'problem', text: 'That worked on this shuffle, but not on every one. Press Shuffle to see a version it misses.' };
     if (failedRoll !== null) message = { tone: 'problem', text: 'That worked on this roll, but not on every roll. Press Run to see a roll it misses.' };
     if (unseen && level.objective.covers) {
@@ -503,6 +504,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
     }
   } else if (predicting) message = predictionPrompt();
   else message = { tone: 'info', text: level.intro ?? 'Help the robot reach the flag. Tap an instruction to add it to your program.' };
+  if (level.days && phase === 'editing' && !hint && !outcome && !predicting) message = { tone: 'info', text: `${message.text} Run plays all ${level.days} days.` };
   if (worlds.length > 1 && phase === 'editing' && !hint && !outcome && !predicting) message = { tone: 'info', text: `${message.text} Shuffle ${shuffle + 1} of ${worlds.length}: Run plays every shuffle in turn.` };
 
   const busy = !runtime || phase === 'running';
@@ -634,6 +636,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
             world={world}
             state={shownState ?? initialState(world, program.memory)}
             slots={program.memory}
+            {...(level.days && { days: level.days })}
             asking={predicting ? askedFields : []}
             answers={prediction?.memory}
             wrong={wrongFields}

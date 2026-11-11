@@ -4,6 +4,55 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Build step 12, part four: Overnight (2026-11-11)
+
+The persistence pack, **Overnight** (`content/packs/forest-overnight`), ten
+levels with its introduction, "Save it": a day counter in the backpack opens
+a gate on the second morning.
+
+### What is built
+
+- **Levels of several days.** A level may set `days` (2 to 5). The program
+  runs once a day on the same board, in one trace: at the end of each day a
+  `night` event (node id `night`) takes the robot back to the start, puts
+  the acorns back, resets the gates and starts memory again. `SimState.day`
+  counts the days from 1. Every day must end without a bump or an error;
+  only the last day is checked against the objective. The runtime contract
+  carries `days` beside `input` and `seed`.
+- **The backpack.** A memory slot may be marked `keep: true` (`"keep": true`
+  in a spec): it holds last night's value each morning instead of its start.
+  It prints as `let total: number = backpack.load('total', 0);`, and the
+  program ends with a `robot.on('night', ...)` handler that saves each kept
+  slot, so the code shows what persistence is: load in the morning, save at
+  night. The memory card and the Memory chips mark kept slots with a
+  backpack, and the memory card gains a Day line ("Day 2 of 3").
+- **On the board** night is a "zzz…" bubble, then the board snaps to the
+  morning and the bubble says "Day 2". The message says which day is
+  running, and which day a run went wrong on.
+- **Validator.** A level of several days has no shuffles; a kept slot needs
+  a level of several days; memoryOptions match on the backpack too. The
+  persistence introduction must keep a slot overnight.
+- **The pack.** The backpack (model: total is kept, today is not), Pack the
+  backpack (choose the one slot that lasts), Third morning (count the days
+  to open a lock), Fix the save (debug: the When card adds to the slot that
+  is forgotten), What wakes up? (model: acorns held start again, the
+  backpack does not), A list that grows (a diary of one line a day), Cards
+  in order, Where will it stop? (Go to column with a day counter), Not in
+  the backpack (a count that must start again each morning) and Three days
+  (two kept slots, two locks, under a budget).
+
+### Deviations and choices
+
+- **The same board every day.** The plan's `persistAcross` let days differ.
+  Here every morning is the same forest, so the backpack is the only thing
+  that can make day 3 differ from day 1; that is the idea being taught.
+  Locks that want more than one day can give are what force the backpack.
+- **Only the last day is judged.** Earlier days must end safely (an If
+  stops the robot at a shut gate), since one program cannot reach a flag
+  behind a lock that opens only on day 3.
+- **IndexedDB is not used.** The backpack lives in the run's state; saving
+  a child's creations between sessions waits for creation mode.
+
 ## Build step 12, part three: Two scoreboards (2026-11-11)
 
 The stored vs. derived pack, **Two scoreboards** (`content/packs/forest-scoreboards`),

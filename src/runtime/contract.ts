@@ -33,6 +33,8 @@ export interface RunRequest {
   input?: Key[];
   /** Seeds the robot's random generator: the same seed, the same rolls. */
   seed?: number;
+  /** Levels of several days: the program runs once a day, keeping only the backpack overnight. */
+  days?: number;
 }
 
 export type TraceResult =
@@ -102,6 +104,18 @@ export interface PressEvent extends TraceBase {
 }
 
 /**
+ * Night on a level of several days: the robot sleeps, and the next day
+ * starts. The after state is that morning: the robot back at the start, the
+ * board as it began, and only the backpack's slots still holding last
+ * night's values. The node id is "night".
+ */
+export interface NightEvent extends TraceBase {
+  op: 'night';
+  /** The day that starts, from 2. */
+  day: number;
+}
+
+/**
  * The world moved on one tick after a robot action: movers stepped, and a
  * robot on a log rode along. The node id is the action's. A blocked result
  * means the robot fell in the water or a beetle caught it.
@@ -130,7 +144,7 @@ export interface UnlockEvent extends TraceBase {
   opened: boolean;
 }
 
-export type TraceEvent = ActionEvent | CheckEvent | LoopEvent | CallEvent | GateEvent | WhenEvent | PressEvent | TickEvent | SetEvent | FaceEvent | UnlockEvent;
+export type TraceEvent = ActionEvent | CheckEvent | LoopEvent | CallEvent | GateEvent | WhenEvent | PressEvent | TickEvent | SetEvent | FaceEvent | UnlockEvent | NightEvent;
 
 export type RunOutcome =
   | { status: 'success' }

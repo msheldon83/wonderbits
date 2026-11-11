@@ -244,7 +244,7 @@ class Reader {
     const name = this.functionName(o.remember, `${path}.remember`);
     const kind = (VALUE_KINDS as readonly unknown[]).includes(o.kind) ? (o.kind as ValueKind) : (this.fail(`${path}.kind`, `expected one of ${VALUE_KINDS.join(', ')}`), 'number');
     const of = kind === 'list' || kind === 'grid' ? (['number', 'yesNo', 'direction'].includes(o.of as string) ? (o.of as ItemKind) : (this.fail(`${path}.of`, `a ${kind} needs "of": number, yesNo or direction`), 'number')) : undefined;
-    const spec: Extract<NodeSpec, { remember: string }> = { remember: name, kind, ...(of && { of }) };
+    const spec: Extract<NodeSpec, { remember: string }> = { remember: name, kind, ...(of && { of }), ...(o.keep !== undefined && this.bool(o.keep, `${path}.keep`) && { keep: true }) };
     if (o.start !== undefined) {
       const map = kind === 'grid' && of === 'yesNo' && (BOARD_MAPS as readonly unknown[]).includes(o.start);
       if (!map && !valueFits(o.start, kind, of)) this.fail(`${path}.start`, `expected a ${kind}${of ? ` of ${of}` : ''} value`);
@@ -312,6 +312,12 @@ class Reader {
   shuffles(v: unknown, base: unknown, path: string): WorldDefinition[] {
     return this.list(v, path, (x, at) => this.world({ ...this.obj(base, path), ...this.obj(x, at) }, at));
   }
+  /** How many days a level runs: the same board each morning, with only the backpack kept overnight. */
+  days(v: unknown, path: string): number {
+    const n = this.int(v, path, 2);
+    if (n > 5) this.fail(path, 'expected 2 to 5 days');
+    return n;
+  }
   keys(v: unknown, path: string): Key[] {
     return this.list(v, path, (k, at) => ((KEYS as readonly unknown[]).includes(k) ? (k as Key) : (this.fail(at, 'expected "up", "down", "left" or "right"'), 'up')));
   }
@@ -343,6 +349,7 @@ class Reader {
         ...(demo.before !== undefined && { before: this.spec(demo.before, `${path}.demo.before`) }),
         ...(demo.input !== undefined && { input: this.keys(demo.input, `${path}.demo.input`) }),
         ...(demo.shuffles !== undefined && { shuffles: this.shuffles(demo.shuffles, demo.world, `${path}.demo.shuffles`) }),
+        ...(demo.days !== undefined && { days: this.days(demo.days, `${path}.demo.days`) }),
       },
     };
   }
@@ -476,6 +483,7 @@ export function parsePuzzle(json: unknown, source: string): PuzzleDefinition {
     ...(prediction && { prediction }),
     ...(root.inputScript !== undefined && { inputScript: r.keys(root.inputScript, 'inputScript') }),
     ...(root.shuffles !== undefined && { shuffles: r.shuffles(root.shuffles, root.world, 'shuffles') }),
+    ...(root.days !== undefined && { days: r.days(root.days, 'days') }),
     hints,
     referenceSolution: r.spec(root.referenceSolution, 'referenceSolution'),
     stars: {
