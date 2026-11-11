@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "id": "b06-one-opens-one-passes",
+  "title": "One opens, one passes",
+  "intro": "The robots share the board. Robot 1 goes first: can it open the way for robot 2?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....",
+      "...."
+    ],
+    "team": [
+      {
+        "robot": {
+          "x": 0,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 3,
+          "y": 0
+        }
+      },
+      {
+        "robot": {
+          "x": 0,
+          "y": 1,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 3,
+          "y": 1
+        }
+      }
+    ],
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 2,
+        "y": 1,
+        "open": false
+      }
+    ],
+    "switches": [
+      {
+        "x": 2,
+        "y": 0,
+        "toggles": [
+          "a"
+        ]
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "objects",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "repeat"
+    ],
+    "maxInstructions": 2,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 1
+        }
+      ],
+      "text": "Robot 1 walks over the switch. Robot 2 needs gate A open."
+    },
+    {
+      "kind": "card",
+      "command": "repeat",
+      "text": "Robot 1 runs first, so it opens the way for robot 2."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "repeat",
+      "text": "Repeat 3 times: forward."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "repeat": 3,
+      "do": [
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

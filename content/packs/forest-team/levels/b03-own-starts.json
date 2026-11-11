@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "id": "b03-own-starts",
+  "title": "Own starts",
+  "intro": "One blueprint for two robots on different paths. Each one must stop at its own flag.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      ".....",
+      "#.##.",
+      "....."
+    ],
+    "team": [
+      {
+        "robot": {
+          "x": 0,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 4,
+          "y": 2
+        }
+      },
+      {
+        "robot": {
+          "x": 0,
+          "y": 2,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 3,
+          "y": 2
+        }
+      }
+    ],
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "objects",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "until",
+      "ifElse"
+    ],
+    "allowedConditions": [
+      "atFlag",
+      "blockedAhead"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "text": "Robot 1 has to turn at the end of the top row. Robot 2 never meets a rock."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "Walk until at your own flag; turn when something is in the way."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        0
+      ],
+      "slot": 0,
+      "command": "ifElse",
+      "text": "Inside the loop: if blocked ahead, turn right, else step forward."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "until": "atFlag",
+      "do": [
+        {
+          "if": "blockedAhead",
+          "do": [
+            "rotateCW"
+          ],
+          "else": [
+            "forward"
+          ]
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

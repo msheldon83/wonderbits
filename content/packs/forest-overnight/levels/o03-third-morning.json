@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "id": "o03-third-morning",
+  "title": "Third morning",
+  "intro": "Three days. Gate A opens on the third morning, if the robot has counted the days.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 0
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 1,
+        "y": 0,
+        "open": false,
+        "code": 3
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "persistence",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change",
+      "unlock",
+      "if"
+    ],
+    "allowedConditions": [
+      "pathAhead"
+    ],
+    "maxInstructions": 6,
+    "starterProgram": [
+      {
+        "remember": "day",
+        "kind": "number",
+        "start": 0,
+        "keep": true
+      }
+    ]
+  },
+  "days": 3,
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        }
+      ],
+      "text": "Gate A opens with a 3. It is shut every morning."
+    },
+    {
+      "kind": "card",
+      "command": "change",
+      "text": "day is in the backpack: add one to it each morning, and it counts the days."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "change",
+      "text": "Start each day with Add 1 to day."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "day",
+      "kind": "number",
+      "start": 0,
+      "keep": true
+    },
+    {
+      "change": "day",
+      "by": 1
+    },
+    {
+      "unlock": "a",
+      "with": "day"
+    },
+    {
+      "if": "pathAhead",
+      "do": [
+        "forward",
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

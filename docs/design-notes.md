@@ -4,6 +4,200 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Build step 12, part six: Robot team (2026-11-11)
+
+The objects pack, **Robot team** (`content/packs/forest-team`), ten levels
+with its introduction, "Blueprints": two robots run the same two cards, each
+from its own start. This finishes step 12 and the concept spine.
+
+### What is built
+
+- **Team boards.** A board may list `team`: two to four robots, each with
+  its start, its own flag and, optionally, the values its memory is built
+  with (`"memory": { "steps": 2 }`). The first is the board's robot and
+  goal. The program is the blueprint: each robot runs main in turn, in the
+  order listed, on the same board, so a gate one robot opens stays open for
+  the next. Between robots a `next` event (node id `team`) leaves the one
+  that ran where it stopped and starts the next at its own place, with its
+  own memory: the blueprint's starts, then its own values.
+- **Robots share the board.** A robot standing still blocks the way like a
+  rock (`blocked: robot`) and counts as blocked ahead; at the flag means
+  the running robot's own flag. The level is solved when every robot ends
+  on its own flag. `SimState.team` holds every robot's place and
+  `SimState.active` the one running.
+- **The code** prints a team board as a class: `class Bot extends Robot`
+  with each slot a field and main a method (`this.forward()`,
+  `this.steps -= 1`), then the team as instances,
+  `Object.assign(new Bot(0, 0, 'right'), { steps: 2 })`, and
+  `for (const bot of team) bot.main();`.
+- **On the board** each robot and its numbered flag have their own colour;
+  the robots not running stand where they are. The bubble says "done!" and
+  "Robot 2" at each handover, the memory card gains a Robot line ("Robot 2
+  of 3") and shows the running robot's memory, and messages say which robot
+  bumped.
+- **Validator.** A team has two to four robots, each starting on floor off
+  its flag, no two sharing a start or a flag; values a robot is built with
+  are slots of the blueprint, of their kinds. A team board asks for the
+  flags and has no days, shuffles, key script, movers or When cards. The
+  objects introduction must hand over to a second robot.
+- **The pack.** Two robots, Their own memory (model: each robot counts its
+  own steps), Own starts (one sensing blueprint on two paths), Fix the
+  blueprint (debug: stop at the flag, not the wall), Built with a number
+  (each robot walks as far as it was built to), One opens, one passes (the
+  first robot flips the switch for the second), Cards in order, In each
+  other's way (a robot blocks the next), Where will robot 3 stop? and The
+  opener (one blueprint, two jobs chosen by a value each robot is built
+  with, under a budget).
+
+### Deviations and choices
+
+- **Robots take turns.** The plan's "one holds a plate open while another
+  passes" needs robots acting at once. Here each robot runs the whole
+  blueprint before the next starts, so a trace stays one robot at a time and
+  can be followed card by card; a switch flipped by the first robot does the
+  holding. Running robots together waits for the game loop of creation mode.
+- **Changing the blueprint changes every robot** without a separate card:
+  there is one program, and every robot runs it.
+- **No backpacks on the team.** Robots are built with their own values, the
+  constructor's arguments; days and teams are not combined yet.
+
+## Build step 12, part five: The notebook (2026-11-11)
+
+The records pack, **The notebook** (`content/packs/forest-notebook`), ten
+levels with its introduction, "Records": a crate's record holds its number
+and whether it has the key, and the robot opens a lock with `crate.number`.
+
+### What is built
+
+- **Records.** A memory slot can be a record (`"kind": "record"`) or a list
+  of records (`"of": "record"`), with a shape: a type name and one to four
+  fields, each a number, a yes/no or a direction
+  (`"shape": "Crate", "fields": { "number": "number", "key": "yesNo" }`).
+  Every record of a shape has exactly its fields; the parser and validator
+  reject one with a field missing or extra, as TypeScript would.
+- **Reading fields.** Set can read a field, `field:crate.number`, printed
+  `crate.number` and read aloud as "crate's number". If and Repeat until can
+  test one, `slot:crate.key=yes`, printed `if (crate.key)`. Reading a field
+  a record lacks stops the run with a message, in case a record ever comes
+  without one. For each walks a list of records into a record slot of the
+  same shape, and `item:spots@k` sets a record slot from a list by index.
+- **The code** declares each shape once as an interface (`interface Crate {
+  number: number; key: boolean; }`) and types the slots with it
+  (`let crates: Crate[] = [...]`).
+- **On screen** the memory card draws a record as its fields in a row
+  ("number 2 · key yes"), a list of records as one row per record with its
+  index, and tags each slot with its shape ("list of Crate"). The Set menu
+  offers each field of the right kind.
+- **Validator.** Fields read and tested must be fields of the record, of the
+  kind the card needs; For each and items keep shapes apart. The records
+  introduction must read a field.
+- **The pack.** Read the record (model), The right field (two numbers, pick
+  by name), Follow the sign (a row and a column, in the order a rock
+  allows), Find the key (search a list of records), Fix the search (debug:
+  the If checks the wrong field), How many keys? (model), Cards in order, Go
+  to the crate, Where will it stop? and Two notebooks (find the key crate's
+  number, use it as an index into a second list, and go to that spot's
+  column, under a budget).
+
+### Deviations and choices
+
+- **Labels and colours are not fields.** Fields are numbers, yes/noes and
+  directions, the kinds the robot already has; a crate's label is its
+  number.
+- **The missing-field puzzle is the validator's.** The plan's "a crate
+  missing a field breaks the search" cannot be a solvable level once every
+  record must match its shape, so the shape check lives where TypeScript
+  puts it, before the run, and the run's message stays as a safety net.
+- **Two lists are joined by index.** A check compares a field with a
+  written value, not with another slot, so Two notebooks joins the lists by
+  using the crate number as an index into the second list.
+- **Records are read, not built.** The notebook is given, like the lists of
+  In a row were at first; building records waits for creation mode.
+
+## Build step 12, part four: Overnight (2026-11-11)
+
+The persistence pack, **Overnight** (`content/packs/forest-overnight`), ten
+levels with its introduction, "Save it": a day counter in the backpack opens
+a gate on the second morning.
+
+### What is built
+
+- **Levels of several days.** A level may set `days` (2 to 5). The program
+  runs once a day on the same board, in one trace: at the end of each day a
+  `night` event (node id `night`) takes the robot back to the start, puts
+  the acorns back, resets the gates and starts memory again. `SimState.day`
+  counts the days from 1. Every day must end without a bump or an error;
+  only the last day is checked against the objective. The runtime contract
+  carries `days` beside `input` and `seed`.
+- **The backpack.** A memory slot may be marked `keep: true` (`"keep": true`
+  in a spec): it holds last night's value each morning instead of its start.
+  It prints as `let total: number = backpack.load('total', 0);`, and the
+  program ends with a `robot.on('night', ...)` handler that saves each kept
+  slot, so the code shows what persistence is: load in the morning, save at
+  night. The memory card and the Memory chips mark kept slots with a
+  backpack, and the memory card gains a Day line ("Day 2 of 3").
+- **On the board** night is a "zzz…" bubble, then the board snaps to the
+  morning and the bubble says "Day 2". The message says which day is
+  running, and which day a run went wrong on.
+- **Validator.** A level of several days has no shuffles; a kept slot needs
+  a level of several days; memoryOptions match on the backpack too. The
+  persistence introduction must keep a slot overnight.
+- **The pack.** The backpack (model: total is kept, today is not), Pack the
+  backpack (choose the one slot that lasts), Third morning (count the days
+  to open a lock), Fix the save (debug: the When card adds to the slot that
+  is forgotten), What wakes up? (model: acorns held start again, the
+  backpack does not), A list that grows (a diary of one line a day), Cards
+  in order, Where will it stop? (Go to column with a day counter), Not in
+  the backpack (a count that must start again each morning) and Three days
+  (two kept slots, two locks, under a budget).
+
+### Deviations and choices
+
+- **The same board every day.** The plan's `persistAcross` let days differ.
+  Here every morning is the same forest, so the backpack is the only thing
+  that can make day 3 differ from day 1; that is the idea being taught.
+  Locks that want more than one day can give are what force the backpack.
+- **Only the last day is judged.** Earlier days must end safely (an If
+  stops the robot at a shut gate), since one program cannot reach a flag
+  behind a lock that opens only on day 3.
+- **IndexedDB is not used.** The backpack lives in the run's state; saving
+  a child's creations between sessions waits for creation mode.
+
+## Build step 12, part three: Two scoreboards (2026-11-11)
+
+The stored vs. derived pack, **Two scoreboards** (`content/packs/forest-scoreboards`),
+ten levels with its introduction, "Work it out": the old way keeps a
+`left` counter in step by hand, the new way reads it off the board right
+before the lock.
+
+### What is built
+
+- **A new reading: acorns left on the board.** Set can read `acornsLeft`,
+  how many acorns are still lying on the board, beside `acorns`, how many
+  the robot holds. It prints as `robot.acornsLeft()`. Together they are the
+  pack's two scoreboards: a value kept by hand next to one worked out from
+  the world.
+- **The pack.** Two scoreboards (model: held is kept up to date, left
+  never is), Read it when you need it (set left from the board just before
+  the lock), Keep both up to date (two cards in the When card, and both
+  slots checked at the flag), Fix the copy (debug: a count typed in by eye
+  is one short), How many in the bag? (a separate count beside a list; read
+  its length instead), Which one is wrong? (model: a guessed count against
+  one read from what the robot holds), Cards in order, Stop at the last
+  acorn (walk until none are left, on three shuffles), Where will it stop?
+  and One scoreboard (one slot, two locks that want different numbers,
+  under a budget).
+- **The introduction check** for `derived` asks that the demo set a slot
+  from a reading of the world, not a typed value.
+
+### Deviations and choices
+
+- **The plan's debug level is spread over three.** "Two stored values
+  disagree, delete one and calculate it" needs a level to see them
+  disagree (Two scoreboards), one to fix a stored copy (Fix the copy) and
+  one where a single slot replaces both (One scoreboard). A debug level
+  changes one card, and deleting a slot is not a card.
+
 ## Change: the map as a journey of islands (2026-11-10)
 
 The map was one long scroll of identical trails. It is now a journey, one

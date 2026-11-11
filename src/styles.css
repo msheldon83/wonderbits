@@ -372,6 +372,31 @@ a.btn {
   display: none;
 }
 
+/* A team board: each robot, its flag and its badge in its own colour. */
+.robot[data-team='1'] svg {
+  filter: hue-rotate(-90deg);
+}
+.robot[data-team='2'] svg {
+  filter: hue-rotate(150deg);
+}
+.robot[data-team='3'] svg {
+  filter: hue-rotate(60deg);
+}
+.team-goal .team-badge {
+  fill: #3291d6;
+  stroke: #fff;
+  stroke-width: 3;
+}
+.team-goal.team-1 .team-badge {
+  fill: #3ea85a;
+}
+.team-goal.team-2 .team-badge {
+  fill: #d6503c;
+}
+.team-goal.team-3 .team-badge {
+  fill: #8a5cc7;
+}
+
 .robot[data-mood='idle'] .eyes-idle,
 .robot[data-mood='happy'] .eyes-happy,
 .robot[data-mood='error'] .eyes-error {
@@ -2674,6 +2699,17 @@ button.function-head {
   font-size: 12px;
   font-weight: 700;
   color: var(--ink-soft);
+}
+
+/* A slot in the backpack, kept overnight on a level of several days. */
+.memory-backpack {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink-soft);
+}
+
+.program-blocks .memory-line.is-day {
+  background: var(--gold-wash);
 }
 
 /* Asked and wrong lines keep their colours inside the Program panel too. */

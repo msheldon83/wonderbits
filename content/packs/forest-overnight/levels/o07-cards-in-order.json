@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "id": "o07-cards-in-order",
+  "title": "Cards in order",
+  "intro": "Put the cards in order. Day 1 must end without a bump; day 2 must reach the flag.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 3,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      }
+    ],
+    "gates": [
+      {
+        "id": "a",
+        "x": 2,
+        "y": 0,
+        "open": false,
+        "code": 2
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "persistence",
+    "activity": "reorder"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change",
+      "unlock",
+      "if"
+    ],
+    "allowedConditions": [
+      "pathAhead"
+    ],
+    "starterProgram": [
+      {
+        "remember": "total",
+        "kind": "number",
+        "start": 0,
+        "keep": true
+      },
+      {
+        "on": "acorn",
+        "do": []
+      }
+    ],
+    "suppliedCards": [
+      "forward",
+      "unlock",
+      "if",
+      "forward",
+      "forward",
+      "change"
+    ]
+  },
+  "days": 2,
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "text": "One acorn a day, and a lock that wants 2."
+    },
+    {
+      "kind": "card",
+      "command": "if",
+      "text": "On day 1 the gate stays shut, so only step on when the path is clear."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:acorn"
+      ],
+      "slot": 0,
+      "command": "change",
+      "text": "The When card adds to total."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "total",
+      "kind": "number",
+      "start": 0,
+      "keep": true
+    },
+    "forward",
+    {
+      "unlock": "a",
+      "with": "total"
+    },
+    {
+      "if": "pathAhead",
+      "do": [
+        "forward",
+        "forward"
+      ]
+    },
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "change": "total",
+          "by": 1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

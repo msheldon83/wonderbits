@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "id": "v10-one-scoreboard",
+  "title": "One scoreboard",
+  "intro": "Only one slot, and two locks that want different numbers. Work each one out when you need it.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "........."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 8,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      },
+      {
+        "x": 7,
+        "y": 0
+      }
+    ],
+    "gates": [
+      {
+        "id": "a",
+        "x": 3,
+        "y": 0,
+        "open": false,
+        "code": 2
+      },
+      {
+        "id": "b",
+        "x": 5,
+        "y": 0,
+        "open": false,
+        "code": 1
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "derived",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "repeat",
+      "set",
+      "unlock"
+    ],
+    "allowedSources": [
+      "acorns",
+      "acornsLeft"
+    ],
+    "maxInstructions": 14,
+    "starterProgram": [
+      {
+        "remember": "score",
+        "kind": "number",
+        "start": 0
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        }
+      ],
+      "text": "Gate A wants the acorns held. Gate B wants the acorns left on the board."
+    },
+    {
+      "kind": "card",
+      "command": "set",
+      "text": "One slot is enough: work each number out right before its lock."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 1,
+      "command": "set",
+      "text": "Set score to acorns held, then Unlock A."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "score",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "repeat": 2,
+      "do": [
+        "forward"
+      ]
+    },
+    {
+      "set": "score",
+      "to": "acorns"
+    },
+    {
+      "unlock": "a",
+      "with": "score"
+    },
+    {
+      "repeat": 2,
+      "do": [
+        "forward"
+      ]
+    },
+    {
+      "set": "score",
+      "to": "acornsLeft"
+    },
+    {
+      "unlock": "b",
+      "with": "score"
+    },
+    {
+      "repeat": 4,
+      "do": [
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 10
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "id": "o01-the-backpack",
+  "title": "The backpack",
+  "intro": "Two days on the same path. total is in the backpack; today is not. What will each say at the end of day 2?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 3,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "persistence",
+    "activity": "model"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change"
+    ],
+    "maxInstructions": 5,
+    "starterProgram": [
+      {
+        "remember": "total",
+        "kind": "number",
+        "start": 0,
+        "keep": true
+      },
+      {
+        "remember": "today",
+        "kind": "number",
+        "start": 0
+      },
+      "forward",
+      "forward",
+      "forward",
+      {
+        "on": "acorn",
+        "do": [
+          {
+            "change": "total",
+            "by": 1
+          },
+          {
+            "change": "today",
+            "by": 1
+          }
+        ]
+      }
+    ]
+  },
+  "days": 2,
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "text": "Two acorns a day, and they grow back overnight."
+    },
+    {
+      "kind": "card",
+      "command": "change",
+      "text": "Every acorn adds one to both. At night only total, in the backpack, is kept."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:acorn"
+      ],
+      "slot": 0,
+      "command": "change",
+      "text": "One more on total for every acorn, on both days."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "total",
+      "kind": "number",
+      "start": 0,
+      "keep": true
+    },
+    {
+      "remember": "today",
+      "kind": "number",
+      "start": 0
+    },
+    "forward",
+    "forward",
+    "forward",
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "change": "total",
+          "by": 1
+        },
+        {
+          "change": "today",
+          "by": 1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": false,
+    "askMemory": [
+      "slot:total",
+      "slot:today"
+    ]
+  }
+}

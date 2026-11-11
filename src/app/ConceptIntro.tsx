@@ -115,7 +115,7 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
     void (async () => {
       // A random demo rolls afresh each time round, so the loop shows different outcomes.
       for (let round = 1; !signal.aborted; round++) {
-        const results = await Promise.all(stages.map((p) => runtime.run({ program: p, world, objective, limits: DEFAULT_LIMITS, seed: round * 7919, ...(demo.input && { input: demo.input }) })));
+        const results = await Promise.all(stages.map((p) => runtime.run({ program: p, world, objective, limits: DEFAULT_LIMITS, seed: round * 7919, ...(demo.input && { input: demo.input }), ...(demo.days && { days: demo.days }) })));
         if (signal.aborted) return;
         for (let i = 0; i < stages.length && !signal.aborted; i++) {
           setStage(i);
@@ -178,12 +178,12 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
               errorNodeId={null}
               newId={newId}
               onEdit={() => undefined}
-              codePanel={<CodePanel program={program} activeNodeId={activeNode} />}
+              codePanel={<CodePanel program={program} activeNodeId={activeNode} {...(demo.world.team && { team: demo.world.team })} />}
               aboveProgram={
                 <>
                   {demo.input && <KeyScript keys={demo.input} event={activeEvent} />}
-                  {(gatesOf(world).length > 0 || moversOf(world).length > 0 || (program.memory?.length ?? 0) > 0) && (
-                    <MemoryCard world={world} state={shownState ?? initialState(world, program.memory)} slots={program.memory} />
+                  {(world.team !== undefined || gatesOf(world).length > 0 || moversOf(world).length > 0 || (program.memory?.length ?? 0) > 0) && (
+                    <MemoryCard world={world} state={shownState ?? initialState(world, program.memory)} slots={program.memory} {...(demo.days && { days: demo.days })} {...(world.team && { team: world.team.length })} />
                   )}
                 </>
               }

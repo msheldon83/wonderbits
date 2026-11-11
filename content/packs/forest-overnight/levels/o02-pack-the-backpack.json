@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 1,
+  "id": "o02-pack-the-backpack",
+  "title": "Pack the backpack",
+  "intro": "The lock wants 4 acorns, and the robot gets 2 a day. Remember one slot: which one lasts until tomorrow?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      }
+    ],
+    "gates": [
+      {
+        "id": "a",
+        "x": 3,
+        "y": 0,
+        "open": false,
+        "code": 4
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "persistence",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change",
+      "unlock",
+      "if"
+    ],
+    "allowedConditions": [
+      "pathAhead"
+    ],
+    "maxInstructions": 8,
+    "maxMemory": 1,
+    "memoryOptions": [
+      {
+        "remember": "count",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "remember": "total",
+        "kind": "number",
+        "start": 0,
+        "keep": true
+      }
+    ],
+    "starterProgram": [
+      "forward",
+      "forward",
+      {
+        "if": "pathAhead",
+        "do": [
+          "forward",
+          "forward"
+        ]
+      },
+      {
+        "on": "acorn",
+        "do": []
+      }
+    ]
+  },
+  "days": 2,
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "The lock wants 4, but there are only 2 acorns a day."
+    },
+    {
+      "kind": "card",
+      "command": "unlock",
+      "text": "Count the acorns in a slot that goes in the backpack, then try the lock."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 2,
+      "command": "unlock",
+      "text": "Unlock A with total, just before the If."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "total",
+      "kind": "number",
+      "start": 0,
+      "keep": true
+    },
+    "forward",
+    "forward",
+    {
+      "unlock": "a",
+      "with": "total"
+    },
+    {
+      "if": "pathAhead",
+      "do": [
+        "forward",
+        "forward"
+      ]
+    },
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "change": "total",
+          "by": 1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

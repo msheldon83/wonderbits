@@ -1,0 +1,220 @@
+{
+  "schemaVersion": 1,
+  "id": "n05-fix-the-search",
+  "title": "Fix the search",
+  "intro": "The search finds a crate, but the lock says wrong number.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 0
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 1,
+        "y": 0,
+        "open": false,
+        "code": 2
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "records",
+    "activity": "debug"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "set",
+      "unlock",
+      "forEach",
+      "if"
+    ],
+    "allowedConditions": [
+      "slot:crate.key=yes",
+      "slot:crate.acorn=yes"
+    ],
+    "allowedSources": [
+      "field:crate.number"
+    ],
+    "maxInstructions": 6,
+    "starterProgram": [
+      {
+        "remember": "crates",
+        "kind": "list",
+        "of": "record",
+        "shape": "Crate",
+        "fields": {
+          "number": "number",
+          "key": "yesNo",
+          "acorn": "yesNo"
+        },
+        "start": [
+          {
+            "number": 1,
+            "key": false,
+            "acorn": true
+          },
+          {
+            "number": 2,
+            "key": true,
+            "acorn": false
+          },
+          {
+            "number": 3,
+            "key": false,
+            "acorn": true
+          }
+        ]
+      },
+      {
+        "remember": "crate",
+        "kind": "record",
+        "shape": "Crate",
+        "fields": {
+          "number": "number",
+          "key": "yesNo",
+          "acorn": "yesNo"
+        }
+      },
+      {
+        "remember": "code",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "forEach": "crates",
+        "as": "crate",
+        "do": [
+          {
+            "if": "slot:crate.acorn=yes",
+            "do": [
+              {
+                "set": "code",
+                "to": "field:crate.number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "unlock": "a",
+        "with": "code"
+      },
+      "forward",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        }
+      ],
+      "text": "The lock wants the number of the crate with the key."
+    },
+    {
+      "kind": "step",
+      "path": [
+        0
+      ],
+      "index": 0,
+      "text": "Which field does this If look at?"
+    },
+    {
+      "kind": "fill",
+      "path": [
+        0
+      ],
+      "slot": 0,
+      "command": "if",
+      "text": "Check crate's key, not its acorn."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "crates",
+      "kind": "list",
+      "of": "record",
+      "shape": "Crate",
+      "fields": {
+        "number": "number",
+        "key": "yesNo",
+        "acorn": "yesNo"
+      },
+      "start": [
+        {
+          "number": 1,
+          "key": false,
+          "acorn": true
+        },
+        {
+          "number": 2,
+          "key": true,
+          "acorn": false
+        },
+        {
+          "number": 3,
+          "key": false,
+          "acorn": true
+        }
+      ]
+    },
+    {
+      "remember": "crate",
+      "kind": "record",
+      "shape": "Crate",
+      "fields": {
+        "number": "number",
+        "key": "yesNo",
+        "acorn": "yesNo"
+      }
+    },
+    {
+      "remember": "code",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "forEach": "crates",
+      "as": "crate",
+      "do": [
+        {
+          "if": "slot:crate.key=yes",
+          "do": [
+            {
+              "set": "code",
+              "to": "field:crate.number"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unlock": "a",
+      "with": "code"
+    },
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

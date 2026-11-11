@@ -19,7 +19,7 @@
  */
 import { functionBody, handlerBody, mainBody } from '../ir/program';
 import { handlerContainerId, type Key } from '../ir/types';
-import { advance, drawSource, faceTo, gridPlace, initialState, markGrid, missingItem, shiftPlace, evaluate, isTimed, objectiveMet, period, remember, setGate, stateKey, step, unlockGate, type WorldEvent } from '../sim/world';
+import { advance, drawSource, morning, nextRobot, faceTo, gridPlace, initialState, markGrid, missingItem, shiftPlace, evaluate, isTimed, objectiveMet, period, remember, setGate, stateKey, step, unlockGate, type WorldEvent } from '../sim/world';
 import type { Facing } from '../sim/types';
 import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 import type { IRNode, ProgramIR } from '../ir/types';
@@ -32,6 +32,7 @@ export interface InterpretInput {
   limits: Pick<RunLimits, 'maxSteps'>;
   input?: readonly Key[];
   seed?: number;
+  days?: number;
 }
 
 export interface InterpretSummary {
@@ -340,18 +341,41 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
     ticking = false;
   }
 
-  yield* run(mainBody(program));
-  // Input levels: the key script plays after main.
-  for (const [index, key] of (input.input ?? []).entries()) {
-    if (stop) break;
-    const event = `key:${key}`;
-    const body = handlerBody(program, event);
-    const container = body ? handlerContainerId(event) : 'input';
-    const ok = yield* emit({ nodeId: container, op: 'press', key, press: index, before: state, after: state, result: { kind: 'ok' } });
-    if (!ok || !body) continue;
-    calls.push(container);
-    yield* run(body);
-    calls.pop();
+  /** One day's run: main, then on input levels the key script. */
+  function* day(): Generator<TraceEvent, void, void> {
+    yield* run(mainBody(program));
+    for (const [index, key] of (input.input ?? []).entries()) {
+      if (stop) break;
+      const event = `key:${key}`;
+      const body = handlerBody(program, event);
+      const container = body ? handlerContainerId(event) : 'input';
+      const ok = yield* emit({ nodeId: container, op: 'press', key, press: index, before: state, after: state, result: { kind: 'ok' } });
+      if (!ok || !body) continue;
+      calls.push(container);
+      yield* run(body);
+      calls.pop();
+    }
+  }
+
+  // Levels of several days run the program once a day. Each night the robot
+  // sleeps, and the next morning starts afresh, but for the backpack.
+  const days = input.days ?? 1;
+  if (days > 1) state = { ...state, day: 1 };
+  yield* day();
+  for (let d = 2; d <= days && !stop; d++) {
+    const after = morning(world, program.memory ?? [], state);
+    const ok = yield* emit({ nodeId: 'night', op: 'night', day: d, before: state, after, result: { kind: 'ok' } });
+    if (!ok) break;
+    state = after;
+    yield* day();
+  }
+  // A team board: every robot built from the blueprint runs it in turn, on the same board.
+  for (let r = 1; r < (world.team?.length ?? 0) && !stop; r++) {
+    const after = nextRobot(world, program.memory ?? [], state);
+    const ok = yield* emit({ nodeId: 'team', op: 'next', robot: r, before: state, after, result: { kind: 'ok' } });
+    if (!ok) break;
+    state = after;
+    yield* day();
   }
   if (stop) return { outcome: stop, final: state, executedSteps: executed };
   const outcome: RunOutcome = objectiveMet(world, objective, state) ? { status: 'success' } : { status: 'incomplete' };

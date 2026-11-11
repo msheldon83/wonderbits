@@ -51,6 +51,16 @@ export interface Mover {
   path: Cell[];
 }
 
+/**
+ * One robot of a team: where it starts, the flag it must reach, and the
+ * values its memory is built with, beside the blueprint's starts.
+ */
+export interface Teammate {
+  robot: RobotState;
+  goal: Cell;
+  memory?: Record<string, Value>;
+}
+
 export interface WorldDefinition {
   width: number;
   height: number;
@@ -66,6 +76,12 @@ export interface WorldDefinition {
   plates?: Plate[];
   /** Time: logs and beetles that move one step per tick. */
   movers?: Mover[];
+  /**
+   * Objects: several robots built from one blueprint, the program. Each runs
+   * it in turn, from its own start, with its own memory, and must end on its
+   * own flag. The first is the board's robot and goal.
+   */
+  team?: Teammate[];
 }
 
 export interface ObjectiveDefinition {
@@ -96,4 +112,9 @@ export interface SimState {
   memory?: Record<string, Value>;
   /** The random generator's state, when the run was given a seed. */
   rng?: number;
+  /** On a level of several days, which day it is, from 1. */
+  day?: number;
+  /** On a team board, where every robot stands, by number from 0, and which one is running now. */
+  team?: RobotState[];
+  active?: number;
 }

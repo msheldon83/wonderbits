@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "id": "o10-three-days",
+  "title": "Three days",
+  "intro": "Three days to open two locks. Only what is in the backpack makes it to day 3.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      }
+    ],
+    "gates": [
+      {
+        "id": "a",
+        "x": 3,
+        "y": 0,
+        "open": false,
+        "code": 3
+      },
+      {
+        "id": "b",
+        "x": 4,
+        "y": 0,
+        "open": false,
+        "code": 6
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "persistence",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "repeat",
+      "change",
+      "unlock",
+      "if"
+    ],
+    "allowedConditions": [
+      "pathAhead"
+    ],
+    "maxInstructions": 12,
+    "starterProgram": [
+      {
+        "remember": "day",
+        "kind": "number",
+        "start": 0,
+        "keep": true
+      },
+      {
+        "remember": "total",
+        "kind": "number",
+        "start": 0,
+        "keep": true
+      },
+      {
+        "on": "acorn",
+        "do": []
+      }
+    ]
+  },
+  "days": 3,
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "text": "Gate A wants the day. Gate B wants every acorn of all three days."
+    },
+    {
+      "kind": "card",
+      "command": "unlock",
+      "text": "Two slots in the backpack: one counts mornings, one counts acorns."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "change",
+      "text": "Start each day with Add 1 to day."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "day",
+      "kind": "number",
+      "start": 0,
+      "keep": true
+    },
+    {
+      "remember": "total",
+      "kind": "number",
+      "start": 0,
+      "keep": true
+    },
+    {
+      "change": "day",
+      "by": 1
+    },
+    "forward",
+    "forward",
+    {
+      "unlock": "a",
+      "with": "day"
+    },
+    {
+      "unlock": "b",
+      "with": "total"
+    },
+    {
+      "if": "pathAhead",
+      "do": [
+        {
+          "repeat": 3,
+          "do": [
+            "forward"
+          ]
+        }
+      ]
+    },
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "change": "total",
+          "by": 1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 10
+  }
+}

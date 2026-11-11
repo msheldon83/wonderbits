@@ -88,6 +88,13 @@ export interface PuzzleDefinition {
    * when one program works on every version, the main board included.
    */
   shuffles?: WorldDefinition[];
+  /**
+   * Levels of several days: the program runs this many times on the same
+   * board, one run a day. Each morning the robot is back at the start and
+   * its memory starts again, except the slots kept in the backpack. Every
+   * day must end without trouble; the last day must meet the objective.
+   */
+  days?: number;
   hints: [HintStep, HintStep, HintStep];
   /** Required on every level; validators prove it works. */
   referenceSolution: NodeSpec[];
@@ -119,6 +126,8 @@ export interface ConceptIntroduction {
     input?: Key[];
     /** Other versions of the board, for the randomness introduction: the same program plays on each. */
     shuffles?: WorldDefinition[];
+    /** Days the program runs, for the persistence introduction. */
+    days?: number;
   };
 }
 

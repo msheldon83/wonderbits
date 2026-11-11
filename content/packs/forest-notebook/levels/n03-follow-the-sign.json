@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "id": "n03-follow-the-sign",
+  "title": "Follow the sign",
+  "intro": "The sign is a record with a row and a column. Go where it says.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...",
+      ".#.",
+      "..."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 1,
+      "y": 2
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "records",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "set",
+      "goRow",
+      "goColumn"
+    ],
+    "maxInstructions": 4,
+    "allowedSources": [
+      "field:sign.row",
+      "field:sign.column"
+    ],
+    "starterProgram": [
+      {
+        "remember": "sign",
+        "kind": "record",
+        "shape": "Sign",
+        "fields": {
+          "row": "number",
+          "column": "number"
+        },
+        "start": {
+          "row": 2,
+          "column": 1
+        }
+      },
+      {
+        "remember": "r",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "remember": "c",
+        "kind": "number",
+        "start": 0
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 1
+        }
+      ],
+      "text": "A rock in the middle: go down first, then across."
+    },
+    {
+      "kind": "card",
+      "command": "set",
+      "text": "Read each field of sign into a number slot, then go there."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "set",
+      "text": "Set r to sign's row."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "sign",
+      "kind": "record",
+      "shape": "Sign",
+      "fields": {
+        "row": "number",
+        "column": "number"
+      },
+      "start": {
+        "row": 2,
+        "column": 1
+      }
+    },
+    {
+      "remember": "r",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "c",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "set": "r",
+      "to": "field:sign.row"
+    },
+    {
+      "goRow": "r"
+    },
+    {
+      "set": "c",
+      "to": "field:sign.column"
+    },
+    {
+      "goColumn": "c"
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

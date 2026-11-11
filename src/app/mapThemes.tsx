@@ -9,7 +9,7 @@
  */
 import type { ReactElement } from 'react';
 
-export type TravelIcon = 'path' | 'logBridge' | 'hill' | 'ropeBridge' | 'stairs' | 'gate' | 'lift' | 'cart' | 'boat' | 'balloon' | 'wagon' | 'ferry' | 'kite' | 'flag';
+export type TravelIcon = 'path' | 'logBridge' | 'hill' | 'ropeBridge' | 'stairs' | 'gate' | 'lift' | 'cart' | 'boat' | 'balloon' | 'wagon' | 'ferry' | 'kite' | 'flag' | 'bike' | 'lantern' | 'plane' | 'rocket';
 
 export interface MapTheme {
   /** Top and bottom of the sky behind the island. */
@@ -191,6 +191,12 @@ const Cards = () => (
 
 // ---------- Landmarks (240 by 120) ----------
 
+const Pennant = ({ c = '#d6503c' }: { c?: string }) => (
+  <svg viewBox="0 0 80 80" aria-hidden="true">
+    <path d="M26 74 V12" stroke="#6f5338" strokeWidth={4} />
+    <path d="M28 14 L62 24 L28 34 Z" fill={c} />
+  </svg>
+);
 const Sun = () => <circle cx={200} cy={34} r={18} fill="#ffd95a" />;
 const Hills = ({ a, b }: { a: string; b: string }) => (
   <>
@@ -328,6 +334,87 @@ const Carnival = landmark(
     <path d="M150 100 L170 58 L190 100" stroke="#5b4636" strokeWidth={5} fill="none" />
   </>,
 );
+const Scoreboard = landmark(
+  <>
+    <Hills a="#a8d785" b="#93c86f" />
+    <path d="M90 100 V70 M150 100 V70" stroke="#6f5338" strokeWidth={6} />
+    <rect x={60} y={18} width={120} height={56} rx={6} fill="#33415c" />
+    {[0, 1].map((k) => (
+      <g key={k}>
+        <rect x={72 + k * 56} y={30} width={40} height={34} rx={4} fill="#1f2a3d" />
+        <text x={92 + k * 56} y={57} textAnchor="middle" fontSize={26} fontWeight={700} fill={k ? '#f2c230' : '#7fd0ff'}>
+          {k ? 1 : 2}
+        </text>
+      </g>
+    ))}
+  </>,
+);
+const Campsite = landmark(
+  <>
+    <circle cx={196} cy={30} r={16} fill="#fdf3c4" />
+    <circle cx={204} cy={25} r={14} fill="#2f3b63" />
+    {[
+      [40, 24],
+      [70, 40],
+      [150, 18],
+    ].map(([x, y]) => (
+      <circle key={x} cx={x} cy={y} r={2.5} fill="#fdf3c4" />
+    ))}
+    <Hills a="#7fae7a" b="#6a9a66" />
+    <path d="M70 100 L110 46 L150 100 Z" fill="#e9862b" />
+    <path d="M110 46 L100 100 H120 Z" fill="#8a4f1c" />
+    <path d="M160 100 l10 -14 l10 14 M164 100 l6 -8 l6 8" stroke="#d6503c" strokeWidth={4} fill="none" />
+  </>,
+);
+const Moon = () => (
+  <svg viewBox="0 0 80 80" aria-hidden="true">
+    <circle cx={40} cy={34} r={18} fill="#fdf3c4" />
+    <circle cx={50} cy={28} r={16} fill="#dfe9f3" />
+  </svg>
+);
+const Schoolhouse = landmark(
+  <>
+    <Hills a="#b3d98c" b="#9fcb78" />
+    <rect x={76} y={50} width={88} height={50} fill="#d6503c" />
+    <path d="M68 52 L120 18 L172 52 Z" fill="#8a4f1c" />
+    <rect x={112} y={70} width={16} height={30} fill="#f3e3c8" />
+    <rect x={86} y={62} width={16} height={14} fill="#dff1fb" />
+    <rect x={138} y={62} width={16} height={14} fill="#dff1fb" />
+    <path d="M120 18 V6 M120 6 h14 v8 h-14" stroke="#5b4636" strokeWidth={3} fill="#f2c230" />
+    <g transform="translate(176 66) rotate(-8)">
+      <rect width={40} height={30} rx={3} fill="#fff" stroke="#3291d6" strokeWidth={3} />
+      <path d="M8 10 H32 M8 17 H32 M8 24 H24" stroke="#9fb4c8" strokeWidth={2} />
+    </g>
+  </>,
+);
+const Gear = ({ cx, cy, r, c }: { cx: number; cy: number; r: number; c: string }) => (
+  <g>
+    {[0, 45, 90, 135].map((a) => (
+      <rect key={a} x={cx - r * 0.22} y={cy - r * 1.18} width={r * 0.44} height={r * 2.36} rx={2} fill={c} transform={`rotate(${a} ${cx} ${cy})`} />
+    ))}
+    <circle cx={cx} cy={cy} r={r} fill={c} />
+    <circle cx={cx} cy={cy} r={r * 0.4} fill="#f3e3c8" />
+  </g>
+);
+const Workshop = landmark(
+  <>
+    <Hills a="#a9d18a" b="#94c374" />
+    <rect x={64} y={44} width={112} height={56} fill="#c9d3dc" />
+    <path d="M64 44 L84 26 L104 44 L124 26 L144 44 L164 26 L176 44 Z" fill="#5d6b80" />
+    <rect x={108} y={70} width={24} height={30} fill="#5d6b80" />
+    <g className="map-spin-slow" style={{ transformOrigin: '196px 46px' }}>
+      <Gear cx={196} cy={46} r={16} c="#e9862b" />
+    </g>
+    <Gear cx={40} cy={72} r={12} c="#3291d6" />
+  </>,
+);
+const Bolt = () => (
+  <svg viewBox="0 0 80 80" aria-hidden="true">
+    <rect x={30} y={18} width={20} height={10} rx={2} fill="#7d8a99" />
+    <rect x={36} y={28} width={8} height={36} fill="#9aa6b2" />
+    <path d="M36 36 h8 M36 44 h8 M36 52 h8" stroke="#7d8a99" strokeWidth={2} />
+  </svg>
+);
 const Meadow = landmark(
   <>
     <Sun />
@@ -386,6 +473,10 @@ const THEMES: Record<string, MapTheme> = {
   'forest-lists': { sky: ['#d3eaf8', '#eaf5f7'], ground: '#cfe2d8', path: '#5b8fa8', landmark: Lighthouse, decor: [() => <Crate />, () => <Waves />, () => <Crate />], travel: { icon: 'ferry', verb: 'Take the ferry to' } },
   'forest-grids': { sky: ['#e4f2dc', '#f2f7ea'], ground: '#cfe3a6', path: '#7a5b40', landmark: MapRoom, decor: [() => <Field />, () => <Tree />, () => <Field />], travel: { icon: 'kite', verb: 'Fly the kite to' } },
   'forest-shuffle': { sky: ['#fbe3ef', '#f7f3f8'], ground: '#e0e8c4', path: '#8a5cc7', landmark: Carnival, decor: [() => <Tent />, () => <Cards />, () => <Tent c="#3291d6" />], travel: { icon: 'flag', verb: 'Head on to' } },
+  'forest-scoreboards': { sky: ['#e2f0fb', '#f1f7ee'], ground: '#cde6b0', path: '#b8701a', landmark: Scoreboard, decor: [() => <Pennant />, () => <Tree c="#6bb276" />, () => <Pennant c="#3291d6" />], travel: { icon: 'bike', verb: 'Ride the bike to' } },
+  'forest-overnight': { sky: ['#cfd8ef', '#eef0f4'], ground: '#b9d6a8', path: '#6f5338', landmark: Campsite, decor: [() => <Tent c="#e9862b" />, () => <Moon />, () => <Pine />], travel: { icon: 'lantern', verb: 'Follow the lantern to' } },
+  'forest-notebook': { sky: ['#e7eef9', '#f6f6ef'], ground: '#cfe3b0', path: '#3291d6', landmark: Schoolhouse, decor: [() => <Book c="#3291d6" />, () => <Crate />, () => <Book c="#d6503c" />], travel: { icon: 'plane', verb: 'Fly the paper plane to' } },
+  'forest-team': { sky: ['#e1ecf2', '#f2f5ee'], ground: '#c6dcb2', path: '#5d6b80', landmark: Workshop, decor: [() => <Bolt />, () => <Tree c="#6bb276" />, () => <Bolt />], travel: { icon: 'rocket', verb: 'Launch the rocket to' } },
 };
 
 const FALLBACK = Object.values(THEMES);
@@ -472,6 +563,28 @@ export function TravelIconArt({ icon }: { icon: TravelIcon }) {
       <>
         <path d="M24 4 L36 18 L24 32 L12 18 Z" {...s} />
         <path d="M24 32 Q20 38 26 42 T24 46" {...s} />
+      </>
+    ),
+    bike: (
+      <>
+        <circle cx={12} cy={32} r={8} {...s} />
+        <circle cx={36} cy={32} r={8} {...s} />
+        <path d="M12 32 L20 18 H32 L36 32 M20 18 L26 32 H12 M30 12 H36" {...s} />
+      </>
+    ),
+    lantern: (
+      <>
+        <path d="M18 10 H30 M24 4 V10" {...s} />
+        <rect x={14} y={10} width={20} height={26} rx={5} {...s} />
+        <path d="M20 40 H28 M24 18 q-4 6 0 10 q4 -4 0 -10" {...s} />
+      </>
+    ),
+    plane: <path d="M4 22 L44 6 L30 42 L22 28 Z M22 28 L44 6" {...s} />,
+    rocket: (
+      <>
+        <path d="M24 4 C32 12 34 24 30 34 H18 C14 24 16 12 24 4 Z" {...s} />
+        <circle cx={24} cy={18} r={4} {...s} />
+        <path d="M18 30 L10 38 H18 M30 30 L38 38 H30 M21 38 L24 44 L27 38" {...s} />
       </>
     ),
     flag: (

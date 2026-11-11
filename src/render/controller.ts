@@ -89,8 +89,26 @@ export class BoardController implements Player {
     private colors: { ok: string; blocked: string },
     public motion: MotionSettings,
     /** Gate elements by id, switch plates by cell key and movers by id, when the board has them. */
-    private worldEls: { gates: Map<string, HTMLElement>; switches: Map<string, HTMLElement>; movers?: Map<string, HTMLElement>; ghosts?: Map<string, HTMLElement> } = { gates: new Map(), switches: new Map() },
+    private worldEls: { gates: Map<string, HTMLElement>; switches: Map<string, HTMLElement>; movers?: Map<string, HTMLElement>; ghosts?: Map<string, HTMLElement>; teammates?: Map<number, HTMLElement> } = { gates: new Map(), switches: new Map() },
   ) {}
+
+  /**
+   * A team board: every robot but the one running stands still where it is,
+   * drawn as its own sprite; the running one is the animated robot, in its colour.
+   */
+  private placeTeam(state: SimState): void {
+    const active = state.active ?? 0;
+    this.robot.root.dataset.team = state.team ? String(active) : '';
+    for (const [i, el] of this.worldEls.teammates ?? []) {
+      const r = state.team?.[i];
+      if (!r || i === active) {
+        el.style.opacity = '0';
+        continue;
+      }
+      el.style.opacity = '1';
+      el.style.transform = this.transformFor(r, angleFor(r.facing));
+    }
+  }
 
   private moverTransform(cell: Cell): string {
     const p = toScreen(this.layout, cell);
@@ -262,6 +280,7 @@ export class BoardController implements Player {
     this.robot.bubble.getAnimations().forEach((a) => a.cancel());
     this.robot.bubble.style.opacity = '0';
     this.place(state.robot);
+    this.placeTeam(state);
     this.showGates(state.open);
     this.placeMovers(state.tick);
     for (const [key, el] of this.collectibles) {
@@ -323,6 +342,22 @@ export class BoardController implements Player {
         anim.cancel();
       }
       this.showIndicator(after.robot);
+      return;
+    }
+    // The next robot of the team takes over: the one that ran stays put, the next starts from its own place.
+    if (event.op === 'next') {
+      await this.showBubble(before.robot, 'done!', 'yes', ms(THINK_MS), signal);
+      if (signal.aborted) return;
+      this.showState(after);
+      await this.showBubble(after.robot, `Robot ${event.robot + 1}`, 'event', ms(THINK_MS), signal);
+      return;
+    }
+    // Night: the robot sleeps where it stopped, then wakes at the start of a fresh day.
+    if (event.op === 'night') {
+      await this.showBubble(before.robot, 'zzz…', 'loop', ms(THINK_MS), signal);
+      if (signal.aborted) return;
+      this.showState(after);
+      await this.showBubble(after.robot, `Day ${event.day}`, 'event', ms(THINK_MS), signal);
       return;
     }
     if (event.op === 'wait') {

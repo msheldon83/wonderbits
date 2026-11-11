@@ -1,0 +1,198 @@
+{
+  "schemaVersion": 1,
+  "id": "n06-how-many-keys",
+  "title": "How many keys?",
+  "intro": "The loop counts the crates with a key. What will keys say at the end?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      ".."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 1,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "records",
+    "activity": "model"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change",
+      "forEach",
+      "if"
+    ],
+    "allowedConditions": [
+      "slot:crate.key=yes"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": [
+      {
+        "remember": "crates",
+        "kind": "list",
+        "of": "record",
+        "shape": "Crate",
+        "fields": {
+          "number": "number",
+          "key": "yesNo"
+        },
+        "start": [
+          {
+            "number": 1,
+            "key": true
+          },
+          {
+            "number": 2,
+            "key": false
+          },
+          {
+            "number": 3,
+            "key": true
+          },
+          {
+            "number": 4,
+            "key": false
+          }
+        ]
+      },
+      {
+        "remember": "crate",
+        "kind": "record",
+        "shape": "Crate",
+        "fields": {
+          "number": "number",
+          "key": "yesNo"
+        }
+      },
+      {
+        "remember": "keys",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "forEach": "crates",
+        "as": "crate",
+        "do": [
+          {
+            "if": "slot:crate.key=yes",
+            "do": [
+              {
+                "change": "keys",
+                "by": 1
+              }
+            ]
+          }
+        ]
+      },
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "text": "Look at the crates list on the memory card."
+    },
+    {
+      "kind": "card",
+      "command": "forEach",
+      "text": "The loop looks at every crate, and adds one when its key is yes."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        0,
+        0
+      ],
+      "slot": 0,
+      "command": "change",
+      "text": "One more for each key."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "crates",
+      "kind": "list",
+      "of": "record",
+      "shape": "Crate",
+      "fields": {
+        "number": "number",
+        "key": "yesNo"
+      },
+      "start": [
+        {
+          "number": 1,
+          "key": true
+        },
+        {
+          "number": 2,
+          "key": false
+        },
+        {
+          "number": 3,
+          "key": true
+        },
+        {
+          "number": 4,
+          "key": false
+        }
+      ]
+    },
+    {
+      "remember": "crate",
+      "kind": "record",
+      "shape": "Crate",
+      "fields": {
+        "number": "number",
+        "key": "yesNo"
+      }
+    },
+    {
+      "remember": "keys",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "forEach": "crates",
+      "as": "crate",
+      "do": [
+        {
+          "if": "slot:crate.key=yes",
+          "do": [
+            {
+              "change": "keys",
+              "by": 1
+            }
+          ]
+        }
+      ]
+    },
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": false,
+    "askMemory": [
+      "slot:keys"
+    ]
+  }
+}

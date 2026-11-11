@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "id": "o08-where-will-it-stop",
+  "title": "Where will it stop?",
+  "intro": "Three days of the same two cards. Place the flag where the robot ends on day 3.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 3,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "transfer",
+    "activity": "predict"
+  },
+  "programming": {
+    "allowedCommands": [
+      "change",
+      "goColumn"
+    ],
+    "maxInstructions": 2,
+    "starterProgram": [
+      {
+        "remember": "day",
+        "kind": "number",
+        "start": 0,
+        "keep": true
+      },
+      {
+        "change": "day",
+        "by": 1
+      },
+      {
+        "goColumn": "day"
+      }
+    ]
+  },
+  "days": 3,
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "text": "Each morning the robot starts here, in column 0."
+    },
+    {
+      "kind": "card",
+      "command": "change",
+      "text": "day is in the backpack, so it is one more each morning."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "change",
+      "text": "Day 1, day 2, day 3: where does the last day end?"
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "day",
+      "kind": "number",
+      "start": 0,
+      "keep": true
+    },
+    {
+      "change": "day",
+      "by": 1
+    },
+    {
+      "goColumn": "day"
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true
+  }
+}

@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { functionLabel, isSenseId, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CardId, type RandomSource, type ConditionId, type IRNode, type SenseId, type Source, type Value } from '../ir/types';
+import { functionLabel, isPosition, isSenseId, parseField, splitSlotPath, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CardId, type RandomSource, type ConditionId, type IRNode, type SenseId, type Source, type Value } from '../ir/types';
 import { TurnArrow } from '../render/art';
 
 export interface CommandInfo {
@@ -246,7 +246,8 @@ const DIRECTION_WORDS: Record<string, string> = { N: 'up', E: 'right', S: 'down'
 export function valueWords(v: Value): string {
   if (Array.isArray(v)) return v.length === 0 ? 'nothing yet' : v.map(valueWords).join(', ');
   if (typeof v === 'boolean') return v ? 'yes' : 'no';
-  if (typeof v === 'object') return `column ${v.x}, row ${v.y}`;
+  if (isPosition(v)) return `column ${v.x}, row ${v.y}`;
+  if (typeof v === 'object') return Object.entries(v).map(([f, x]) => `${f} ${valueWords(x)}`).join(' · ');
   if (typeof v === 'string') return DIRECTION_WORDS[v] ?? v;
   return String(v);
 }
@@ -259,6 +260,8 @@ export function placeWords(at: string): string {
 /** What a Set card reads, in words: "3", "yes", "the way it faces", "where it is", "acorns held", "acorn ahead?", "walls ahead". */
 export function sourceWords(source: Source): string {
   if (typeof source !== 'string') return valueWords(source);
+  const field = parseField(source);
+  if (field) return `${field.record}'s ${field.field}`;
   const read = parseRead(source);
   if (read) return `${read.grid} ${placeWords(read.at)}`;
   const counted = parseLength(source);
@@ -270,6 +273,7 @@ export function sourceWords(source: Source): string {
   if (source === 'facing') return 'the way it faces';
   if (source === 'here') return 'where it is';
   if (source === 'acorns') return 'acorns held';
+  if (source === 'acornsLeft') return 'acorns left on the board';
   if (isSenseId(source)) return `${CONDITIONS[source].label}?`;
   return valueWords(source);
 }
@@ -287,7 +291,8 @@ export function conditionLabel(c: ConditionId): string {
   if (isSenseId(c)) return CONDITIONS[c].label;
   const t = parseSlotTest(c);
   if (!t) return c;
-  return `${t.slot} is ${t.value === 'here' ? 'here' : (DIRECTION_WORDS[t.value] ?? t.value)}`;
+  const { slot, field } = splitSlotPath(t.slot);
+  return `${field ? `${slot}'s ${field}` : slot} is ${t.value === 'here' ? 'here' : (DIRECTION_WORDS[t.value] ?? t.value)}`;
 }
 
 /** A block's own words, with its count or condition filled in. */

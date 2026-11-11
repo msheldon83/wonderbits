@@ -11,6 +11,8 @@ export interface Shortfall {
   memory?: string[];
   /** A random level's run that ended outside the outcomes asked for, in words. */
   outside?: string;
+  /** A team board where not every robot ended on its own flag. */
+  team?: boolean;
 }
 
 const acorns = (n: number) => (n === 1 ? 'an acorn' : `${n} acorns`);
@@ -32,6 +34,7 @@ export function outcomeMessage(outcome: RunOutcome, stepNumber: number | null, s
       if (shortfall && shortfall.missing > 0) {
         return { tone: 'problem', text: `The robot stopped before the flag and left ${acorns(shortfall.missing)} behind.` };
       }
+      if (shortfall?.team) return { tone: 'problem', text: 'Every robot must end on its own flag. Watch each one: where does it stop?' };
       return { tone: 'problem', text: 'The robot stopped before the flag. Does it need more steps?' };
     case 'blocked':
       switch (outcome.reason) {
@@ -45,6 +48,8 @@ export function outcomeMessage(outcome: RunOutcome, stepNumber: number | null, s
           return { tone: 'problem', text: `Clunk! The gate is shut${at}. What opens it?` };
         case 'beetle':
           return { tone: 'problem', text: `A beetle got in the way${at}. Can the robot wait for it to pass?` };
+        case 'robot':
+          return { tone: 'problem', text: `Bump! Another robot is standing in the way${at}.` };
       }
       break;
     case 'halted':

@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "id": "o09-not-in-the-backpack",
+  "title": "Not in the backpack",
+  "intro": "Not everything belongs in the backpack. On day 3 the lock still wants just one day's acorns.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      }
+    ],
+    "gates": [
+      {
+        "id": "a",
+        "x": 3,
+        "y": 0,
+        "open": false,
+        "code": 2
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "persistence",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change",
+      "unlock",
+      "if"
+    ],
+    "allowedConditions": [
+      "pathAhead"
+    ],
+    "maxInstructions": 8,
+    "maxMemory": 1,
+    "memoryOptions": [
+      {
+        "remember": "total",
+        "kind": "number",
+        "start": 0,
+        "keep": true
+      },
+      {
+        "remember": "today",
+        "kind": "number",
+        "start": 0
+      }
+    ],
+    "starterProgram": [
+      "forward",
+      "forward",
+      {
+        "if": "pathAhead",
+        "do": [
+          "forward",
+          "forward"
+        ]
+      },
+      {
+        "on": "acorn",
+        "do": []
+      }
+    ]
+  },
+  "days": 3,
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "The lock wants 2: the acorns of one day, not of three."
+    },
+    {
+      "kind": "card",
+      "command": "unlock",
+      "text": "A slot in the backpack would hold 6 by day 3. This count should start again every morning."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 2,
+      "command": "unlock",
+      "text": "Unlock A with today."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "today",
+      "kind": "number",
+      "start": 0
+    },
+    "forward",
+    "forward",
+    {
+      "unlock": "a",
+      "with": "today"
+    },
+    {
+      "if": "pathAhead",
+      "do": [
+        "forward",
+        "forward"
+      ]
+    },
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "change": "today",
+          "by": 1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

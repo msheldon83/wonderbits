@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "id": "n07-cards-in-order",
+  "title": "Cards in order",
+  "intro": "Put the cards in order: search the notebook, open the lock, reach the flag.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 0
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 1,
+        "y": 0,
+        "open": false,
+        "code": 7
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "records",
+    "activity": "reorder"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "set",
+      "unlock",
+      "forEach",
+      "if"
+    ],
+    "allowedConditions": [
+      "slot:crate.key=yes"
+    ],
+    "allowedSources": [
+      "field:crate.number"
+    ],
+    "starterProgram": [
+      {
+        "remember": "crates",
+        "kind": "list",
+        "of": "record",
+        "shape": "Crate",
+        "fields": {
+          "number": "number",
+          "key": "yesNo"
+        },
+        "start": [
+          {
+            "number": 5,
+            "key": false
+          },
+          {
+            "number": 7,
+            "key": true
+          }
+        ]
+      },
+      {
+        "remember": "crate",
+        "kind": "record",
+        "shape": "Crate",
+        "fields": {
+          "number": "number",
+          "key": "yesNo"
+        }
+      },
+      {
+        "remember": "code",
+        "kind": "number",
+        "start": 0
+      }
+    ],
+    "suppliedCards": [
+      "forEach",
+      "if",
+      "set",
+      "unlock",
+      "forward",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        }
+      ],
+      "text": "Gate A wants the number of the crate with the key."
+    },
+    {
+      "kind": "card",
+      "command": "forEach",
+      "text": "Search first, then unlock, then walk."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "forEach",
+      "text": "The loop goes first, with the If inside it."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "crates",
+      "kind": "list",
+      "of": "record",
+      "shape": "Crate",
+      "fields": {
+        "number": "number",
+        "key": "yesNo"
+      },
+      "start": [
+        {
+          "number": 5,
+          "key": false
+        },
+        {
+          "number": 7,
+          "key": true
+        }
+      ]
+    },
+    {
+      "remember": "crate",
+      "kind": "record",
+      "shape": "Crate",
+      "fields": {
+        "number": "number",
+        "key": "yesNo"
+      }
+    },
+    {
+      "remember": "code",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "forEach": "crates",
+      "as": "crate",
+      "do": [
+        {
+          "if": "slot:crate.key=yes",
+          "do": [
+            {
+              "set": "code",
+              "to": "field:crate.number"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unlock": "a",
+      "with": "code"
+    },
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

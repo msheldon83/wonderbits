@@ -1,0 +1,255 @@
+{
+  "schemaVersion": 1,
+  "id": "n10-two-notebooks",
+  "title": "Two notebooks",
+  "intro": "One notebook says which crate has the key. Another says where each crate stands. Put them together.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 3,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "records",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "set",
+      "forEach",
+      "if",
+      "goColumn"
+    ],
+    "allowedConditions": [
+      "slot:crate.key=yes"
+    ],
+    "allowedSources": [
+      "field:crate.number",
+      "item:spots@k",
+      "field:spot.column"
+    ],
+    "maxInstructions": 8,
+    "starterProgram": [
+      {
+        "remember": "crates",
+        "kind": "list",
+        "of": "record",
+        "shape": "Crate",
+        "fields": {
+          "number": "number",
+          "key": "yesNo"
+        },
+        "start": [
+          {
+            "number": 0,
+            "key": false
+          },
+          {
+            "number": 1,
+            "key": false
+          },
+          {
+            "number": 2,
+            "key": true
+          }
+        ]
+      },
+      {
+        "remember": "crate",
+        "kind": "record",
+        "shape": "Crate",
+        "fields": {
+          "number": "number",
+          "key": "yesNo"
+        }
+      },
+      {
+        "remember": "k",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "remember": "spots",
+        "kind": "list",
+        "of": "record",
+        "shape": "Spot",
+        "fields": {
+          "column": "number"
+        },
+        "start": [
+          {
+            "column": 4
+          },
+          {
+            "column": 1
+          },
+          {
+            "column": 3
+          }
+        ]
+      },
+      {
+        "remember": "spot",
+        "kind": "record",
+        "shape": "Spot",
+        "fields": {
+          "column": "number"
+        }
+      },
+      {
+        "remember": "c",
+        "kind": "number",
+        "start": 0
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "text": "spots says where each crate stands: item 0 of spots is crate 0's spot, and so on."
+    },
+    {
+      "kind": "card",
+      "command": "set",
+      "text": "Find the key crate's number, use it as an index into spots, then read that spot's column."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 1,
+      "command": "set",
+      "text": "After the search, set spot to item k of spots."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "crates",
+      "kind": "list",
+      "of": "record",
+      "shape": "Crate",
+      "fields": {
+        "number": "number",
+        "key": "yesNo"
+      },
+      "start": [
+        {
+          "number": 0,
+          "key": false
+        },
+        {
+          "number": 1,
+          "key": false
+        },
+        {
+          "number": 2,
+          "key": true
+        }
+      ]
+    },
+    {
+      "remember": "crate",
+      "kind": "record",
+      "shape": "Crate",
+      "fields": {
+        "number": "number",
+        "key": "yesNo"
+      }
+    },
+    {
+      "remember": "k",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "spots",
+      "kind": "list",
+      "of": "record",
+      "shape": "Spot",
+      "fields": {
+        "column": "number"
+      },
+      "start": [
+        {
+          "column": 4
+        },
+        {
+          "column": 1
+        },
+        {
+          "column": 3
+        }
+      ]
+    },
+    {
+      "remember": "spot",
+      "kind": "record",
+      "shape": "Spot",
+      "fields": {
+        "column": "number"
+      }
+    },
+    {
+      "remember": "c",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "forEach": "crates",
+      "as": "crate",
+      "do": [
+        {
+          "if": "slot:crate.key=yes",
+          "do": [
+            {
+              "set": "k",
+              "to": "field:crate.number"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "set": "spot",
+      "to": "item:spots@k"
+    },
+    {
+      "set": "c",
+      "to": "field:spot.column"
+    },
+    {
+      "goColumn": "c"
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 6
+  }
+}

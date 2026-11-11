@@ -1,0 +1,194 @@
+{
+  "schemaVersion": 1,
+  "id": "n09-where-will-it-stop",
+  "title": "Where will it stop?",
+  "intro": "The robot visits every crate with an acorn. Place the flag where it ends.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 3,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "transfer",
+    "activity": "predict"
+  },
+  "programming": {
+    "allowedCommands": [
+      "set",
+      "forEach",
+      "if",
+      "goColumn"
+    ],
+    "allowedConditions": [
+      "slot:crate.acorn=yes"
+    ],
+    "allowedSources": [
+      "field:crate.column"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": [
+      {
+        "remember": "crates",
+        "kind": "list",
+        "of": "record",
+        "shape": "Crate",
+        "fields": {
+          "acorn": "yesNo",
+          "column": "number"
+        },
+        "start": [
+          {
+            "acorn": true,
+            "column": 2
+          },
+          {
+            "acorn": false,
+            "column": 4
+          },
+          {
+            "acorn": true,
+            "column": 3
+          }
+        ]
+      },
+      {
+        "remember": "crate",
+        "kind": "record",
+        "shape": "Crate",
+        "fields": {
+          "acorn": "yesNo",
+          "column": "number"
+        }
+      },
+      {
+        "remember": "c",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "forEach": "crates",
+        "as": "crate",
+        "do": [
+          {
+            "if": "slot:crate.acorn=yes",
+            "do": [
+              {
+                "set": "c",
+                "to": "field:crate.column"
+              },
+              {
+                "goColumn": "c"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "text": "Read the crates list on the memory card, one crate at a time."
+    },
+    {
+      "kind": "card",
+      "command": "forEach",
+      "text": "The robot walks to every crate with an acorn, in the order of the list."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        0,
+        0
+      ],
+      "slot": 1,
+      "command": "goColumn",
+      "text": "The last acorn crate in the list is where it ends."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "crates",
+      "kind": "list",
+      "of": "record",
+      "shape": "Crate",
+      "fields": {
+        "acorn": "yesNo",
+        "column": "number"
+      },
+      "start": [
+        {
+          "acorn": true,
+          "column": 2
+        },
+        {
+          "acorn": false,
+          "column": 4
+        },
+        {
+          "acorn": true,
+          "column": 3
+        }
+      ]
+    },
+    {
+      "remember": "crate",
+      "kind": "record",
+      "shape": "Crate",
+      "fields": {
+        "acorn": "yesNo",
+        "column": "number"
+      }
+    },
+    {
+      "remember": "c",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "forEach": "crates",
+      "as": "crate",
+      "do": [
+        {
+          "if": "slot:crate.acorn=yes",
+          "do": [
+            {
+              "set": "c",
+              "to": "field:crate.column"
+            },
+            {
+              "goColumn": "c"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true
+  }
+}

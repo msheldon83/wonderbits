@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "id": "v06-which-one-is-wrong",
+  "title": "Which one is wrong?",
+  "intro": "held guesses: one acorn every two steps. real reads what the robot holds. Fill in both.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 6,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 2,
+        "y": 0
+      },
+      {
+        "x": 4,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "derived",
+    "activity": "model"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "repeat",
+      "change",
+      "set"
+    ],
+    "maxInstructions": 6,
+    "starterProgram": [
+      {
+        "remember": "held",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "remember": "real",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "repeat": 3,
+        "do": [
+          "forward",
+          "forward",
+          {
+            "change": "held",
+            "by": 1
+          }
+        ]
+      },
+      {
+        "set": "real",
+        "to": "acorns"
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 6,
+          "y": 0
+        }
+      ],
+      "text": "Three stops, but only two of them have an acorn."
+    },
+    {
+      "kind": "card",
+      "command": "change",
+      "text": "held adds one every two steps, acorn or not."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 1,
+      "command": "set",
+      "text": "real is read from the acorns the robot really holds."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "held",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "real",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "repeat": 3,
+      "do": [
+        "forward",
+        "forward",
+        {
+          "change": "held",
+          "by": 1
+        }
+      ]
+    },
+    {
+      "set": "real",
+      "to": "acorns"
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": false,
+    "askMemory": [
+      "slot:held",
+      "slot:real"
+    ]
+  }
+}

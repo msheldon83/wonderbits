@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "forest-overnight",
+  "title": "Overnight",
+  "themeId": "forest",
+  "order": 15,
+  "concepts": [
+    "persistence"
+  ],
+  "prerequisites": [
+    "forest-scoreboards"
+  ],
+  "introduction": {
+    "concept": "persistence",
+    "title": "Save it",
+    "explanation": "Each night the robot forgets everything except what is in its backpack. A slot in the backpack keeps its value until tomorrow.",
+    "demo": {
+      "world": {
+        "rows": [
+          "...."
+        ],
+        "robot": {
+          "x": 0,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 3,
+          "y": 0
+        },
+        "collectibles": [],
+        "gates": [
+          {
+            "id": "a",
+            "x": 2,
+            "y": 0,
+            "open": false,
+            "code": 2
+          }
+        ]
+      },
+      "program": [
+        {
+          "remember": "day",
+          "kind": "number",
+          "start": 0,
+          "keep": true
+        },
+        {
+          "change": "day",
+          "by": 1
+        },
+        "forward",
+        {
+          "unlock": "a",
+          "with": "day"
+        },
+        {
+          "if": "pathAhead",
+          "do": [
+            "forward",
+            "forward"
+          ]
+        }
+      ],
+      "days": 2
+    }
+  },
+  "levels": [
+    "o01-the-backpack",
+    "o02-pack-the-backpack",
+    "o03-third-morning",
+    "o04-fix-the-save",
+    "o05-what-wakes-up",
+    "o06-a-list-that-grows",
+    "o07-cards-in-order",
+    "o08-where-will-it-stop",
+    "o09-not-in-the-backpack",
+    "o10-three-days"
+  ]
+}

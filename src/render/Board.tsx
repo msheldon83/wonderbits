@@ -42,6 +42,7 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
   const switchEls = useRef(new Map<string, HTMLElement>());
   const moverEls = useRef(new Map<string, HTMLElement>());
   const ghostEls = useRef(new Map<string, HTMLElement>());
+  const teammateEls = useRef(new Map<number, HTMLElement>());
   const controllers = useRef<BoardController[]>([]);
   const elsFor = (i: number) => (robotEls.current[i] ??= {});
   const [scale, setScale] = useState(1);
@@ -64,7 +65,7 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
   useLayoutEffect(() => {
     const cs = Array.from({ length: robotCount }, (_, i) => {
       const els = robotEls.current[i] as RobotElements;
-      const c = new BoardController(world, layout, els, i === 0 ? gems.current : new Map(), theme.indicator, motion, i === 0 ? { gates: gateEls.current, switches: switchEls.current, movers: moverEls.current, ghosts: ghostEls.current } : undefined);
+      const c = new BoardController(world, layout, els, i === 0 ? gems.current : new Map(), theme.indicator, motion, i === 0 ? { gates: gateEls.current, switches: switchEls.current, movers: moverEls.current, ghosts: ghostEls.current, teammates: teammateEls.current } : undefined);
       c.showState(initialState(world));
       return c;
     });
@@ -132,12 +133,27 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
 
   const objects: ReactElement[] = [];
   const goal = toScreen(layout, world.goal);
-  if (!hideGoal) {
+  if (!hideGoal && !world.team) {
     objects.push(
       <Anchored key="goal" x={goal.x} y={goal.y} size={TILE} z={LAYER.goal} className="goal" label="Goal flag">
         <GoalFlag theme={theme} />
       </Anchored>,
     );
+  }
+  // A team board: each robot has its own flag, numbered and in its colour.
+  if (!hideGoal) {
+    (world.team ?? []).forEach((t, i) => {
+      const g = toScreen(layout, t.goal);
+      objects.push(
+        <Anchored key={`goal${i}`} x={g.x} y={g.y} size={TILE} z={LAYER.goal} className={`goal team-goal team-${i}`} label={`Robot ${i + 1}'s flag`}>
+          <GoalFlag theme={theme} />
+          <circle cx={TILE / 2 - 20} cy={-TILE / 2 + 20} r={14} className="team-badge" />
+          <text x={TILE / 2 - 20} y={-TILE / 2 + 26} textAnchor="middle" fontSize={17} fontWeight={800} fill="#fff">
+            {i + 1}
+          </text>
+        </Anchored>,
+      );
+    });
   }
   for (const c of world.collectibles) {
     const p = toScreen(layout, c);
@@ -398,6 +414,24 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
               style={{ zIndex: LAYER.effect + 1, opacity: 0 }}
               aria-hidden="true"
             />
+          ))}
+          {(world.team ?? []).map((_, i) => (
+            <div
+              key={`mate${i}`}
+              ref={(el) => {
+                if (el) teammateEls.current.set(i, el);
+                else teammateEls.current.delete(i);
+              }}
+              className="robot teammate"
+              data-team={i}
+              data-mood="idle"
+              aria-hidden="true"
+              style={{ position: 'absolute', left: 0, top: 0, width: ROBOT_BOX, height: ROBOT_BOX, zIndex: LAYER.robot - 1, transformOrigin: 'center', opacity: 0 }}
+            >
+              <svg width={ROBOT_BOX} height={ROBOT_BOX} viewBox={`${-ROBOT_BOX / 2} ${-ROBOT_BOX / 2} ${ROBOT_BOX} ${ROBOT_BOX}`} overflow="visible">
+                <Robot />
+              </svg>
+            </div>
           ))}
           {Array.from({ length: robotCount }, (_, i) => (
             <div

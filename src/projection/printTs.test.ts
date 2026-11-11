@@ -187,5 +187,53 @@ describe('printProgram', () => {
     expect(printProgram(p)).toContain('n = seen.length; // @node n2');
     expect(printProgram(p)).toContain('let seen: boolean[] = [];');
   });
-});
 
+  it('prints the acorns left on the board as a reading of the robot', () => {
+    const p = programFromSpec([{ remember: 'left', kind: 'number' }, { set: 'left', to: 'acornsLeft' }], sequentialIdFactory());
+    expect(printProgram(p)).toContain('left = robot.acornsLeft(); // @node n1');
+  });
+
+  it('prints a slot in the backpack as loaded in the morning and saved at night', () => {
+    const p = programFromSpec([{ remember: 'total', kind: 'number', keep: true }, { remember: 'today', kind: 'number' }, { change: 'total', by: 1 }], sequentialIdFactory());
+    const code = printProgram(p);
+    expect(code).toContain("import { robot, backpack } from 'wonderbits';");
+    expect(code).toContain("let total: number = backpack.load('total', 0);");
+    expect(code).toContain('let today: number = 0;');
+    expect(code).toContain("robot.on('night', () => { // @node night\n  backpack.save('total', total);\n});");
+  });
+
+  it('prints records with an interface for their shape, and their fields with dots', () => {
+    const fields = { number: 'number', key: 'yesNo' } as const;
+    const p = programFromSpec(
+      [
+        { remember: 'crates', kind: 'list', of: 'record', shape: 'Crate', fields, start: [{ number: 1, key: false }, { number: 2, key: true }] },
+        { remember: 'crate', kind: 'record', shape: 'Crate', fields },
+        { remember: 'code', kind: 'number' },
+        { forEach: 'crates', as: 'crate', do: [{ if: 'slot:crate.key=yes', do: [{ set: 'code', to: 'field:crate.number' }] }] },
+      ],
+      sequentialIdFactory(),
+    );
+    const code = printProgram(p);
+    expect(code).toContain('interface Crate {\n  number: number;\n  key: boolean;\n}');
+    expect(code).toContain('let crates: Crate[] = [{ number: 1, key: false }, { number: 2, key: true }];');
+    expect(code).toContain('let crate: Crate = { number: 0, key: false };');
+    expect(code).toContain('if (crate.key) { // @node n2');
+    expect(code).toContain('code = crate.number; // @node n3');
+  });
+
+  it('prints a team board as a blueprint class and its robots as instances', () => {
+    const p = programFromSpec([{ remember: 'steps', kind: 'number' }, { until: 'slot:steps=0', do: ['forward', { change: 'steps', by: -1 }] }], sequentialIdFactory());
+    const team = [
+      { robot: { x: 0, y: 0, facing: 'E' as const }, goal: { x: 2, y: 0 }, memory: { steps: 2 } },
+      { robot: { x: 0, y: 1, facing: 'E' as const }, goal: { x: 3, y: 1 }, memory: { steps: 3 } },
+    ];
+    const code = printProgram(p, { team });
+    expect(code).toContain("import { Robot } from 'wonderbits';");
+    expect(code).toContain('class Bot extends Robot {\n  steps: number = 0;\n\n  main(): void {');
+    expect(code).toContain('    while (this.steps !== 0) { // @node n1');
+    expect(code).toContain('      this.forward(); // @node n2');
+    expect(code).toContain('      this.steps -= 1; // @node n3');
+    expect(code).toContain("  Object.assign(new Bot(0, 0, 'right'), { steps: 2 }),");
+    expect(code).toContain('for (const bot of team) bot.main();');
+  });
+});

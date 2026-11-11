@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WorldDefinition } from './types';
-import { advance, evaluate, initialState, isTimed, moverLabel, moverSteps, objectiveMet, passable, period, stateKey, step } from './world';
+import { advance, evaluate, initialState, isTimed, moverLabel, moverSteps, objectiveMet, passable, period, readSource, stateKey, step } from './world';
 
 // 4x3 board:   . . # .
 //              R . . G     robot at (0,1) facing E, goal at (3,1)
@@ -190,5 +190,16 @@ describe('reading a mover\'s round', () => {
     expect(moverSteps(bug)).toEqual(['right', 'left']);
     const world = { width: 4, height: 2, tiles: [], robot: { x: 0, y: 0, facing: 'E' as const }, goal: { x: 1, y: 1 }, collectibles: [], movers: [fast, bug, slow] };
     expect([fast, slow, bug].map((m) => moverLabel(world, m))).toEqual(['Log 1', 'Log 2', 'Beetle']);
+  });
+});
+
+describe('readSource', () => {
+  it('works out the acorns held and the acorns still on the board from the state', () => {
+    const start = initialState(world);
+    expect(readSource(world, start, 'acorns')).toBe(0);
+    expect(readSource(world, start, 'acornsLeft')).toBe(1);
+    const after = step(world, step(world, start, 'forward').state, 'forward').state;
+    expect(readSource(world, after, 'acorns')).toBe(1);
+    expect(readSource(world, after, 'acornsLeft')).toBe(0);
   });
 });

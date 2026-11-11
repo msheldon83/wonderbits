@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "id": "v04-fix-the-copy",
+  "title": "Fix the copy",
+  "intro": "Someone typed in how many acorns there are, and the lock will not open.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "........"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 7,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      },
+      {
+        "x": 4,
+        "y": 0
+      },
+      {
+        "x": 5,
+        "y": 0
+      }
+    ],
+    "gates": [
+      {
+        "id": "a",
+        "x": 6,
+        "y": 0,
+        "open": false,
+        "code": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "derived",
+    "activity": "debug"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "set",
+      "change",
+      "unlock"
+    ],
+    "maxInstructions": 11,
+    "allowedSources": [
+      3,
+      "acorns",
+      "acornsLeft"
+    ],
+    "starterProgram": [
+      {
+        "remember": "left",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "set": "left",
+        "to": 3
+      },
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      {
+        "unlock": "a",
+        "with": "left"
+      },
+      "forward",
+      "forward",
+      {
+        "on": "acorn",
+        "do": [
+          {
+            "change": "left",
+            "by": -1
+          }
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        }
+      ],
+      "text": "Count the acorns on the board. Does left start right?"
+    },
+    {
+      "kind": "step",
+      "path": [],
+      "index": 0,
+      "text": "This card types in a number someone counted by eye."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "set",
+      "text": "Set left from the board itself: acorns left on the board."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "left",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "set": "left",
+      "to": "acornsLeft"
+    },
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    {
+      "unlock": "a",
+      "with": "left"
+    },
+    "forward",
+    "forward",
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "change": "left",
+          "by": -1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

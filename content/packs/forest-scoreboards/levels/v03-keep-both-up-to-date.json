@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "id": "v03-keep-both-up-to-date",
+  "title": "Keep both up to date",
+  "intro": "Keep both scoreboards right: held and left must both be correct at the flag.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 6,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      },
+      {
+        "x": 3,
+        "y": 0
+      }
+    ],
+    "gates": [
+      {
+        "id": "a",
+        "x": 5,
+        "y": 0,
+        "open": false,
+        "code": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true,
+    "memory": {
+      "held": 3,
+      "left": 0
+    }
+  },
+  "curriculum": {
+    "concept": "derived",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change",
+      "unlock"
+    ],
+    "maxInstructions": 10,
+    "starterProgram": [
+      {
+        "remember": "held",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "remember": "left",
+        "kind": "number",
+        "start": 3
+      },
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      {
+        "unlock": "a",
+        "with": "left"
+      },
+      "forward",
+      "forward",
+      {
+        "on": "acorn",
+        "do": [
+          {
+            "change": "held",
+            "by": 1
+          }
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "Each acorn changes two numbers: one more held, one fewer left."
+    },
+    {
+      "kind": "card",
+      "command": "change",
+      "text": "Two scoreboards means two cards for every acorn."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:acorn"
+      ],
+      "slot": 1,
+      "command": "change",
+      "text": "Take 1 from left as well."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "held",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "left",
+      "kind": "number",
+      "start": 3
+    },
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    {
+      "unlock": "a",
+      "with": "left"
+    },
+    "forward",
+    "forward",
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "change": "held",
+          "by": 1
+        },
+        {
+          "change": "left",
+          "by": -1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

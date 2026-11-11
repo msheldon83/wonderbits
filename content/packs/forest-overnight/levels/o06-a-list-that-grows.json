@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "id": "o06-a-list-that-grows",
+  "title": "A list that grows",
+  "intro": "Keep a diary in the backpack: one line a day. On day 3 the diary is long enough to open the lock.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      }
+    ],
+    "gates": [
+      {
+        "id": "a",
+        "x": 3,
+        "y": 0,
+        "open": false,
+        "code": 3
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "persistence",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "push",
+      "set",
+      "unlock",
+      "if"
+    ],
+    "allowedConditions": [
+      "pathAhead"
+    ],
+    "allowedSources": [
+      "acorns",
+      "length:log"
+    ],
+    "maxInstructions": 9,
+    "starterProgram": [
+      {
+        "remember": "log",
+        "kind": "list",
+        "of": "number",
+        "start": [],
+        "keep": true
+      },
+      {
+        "remember": "n",
+        "kind": "number",
+        "start": 0
+      },
+      "forward",
+      "forward",
+      {
+        "unlock": "a",
+        "with": "n"
+      },
+      {
+        "if": "pathAhead",
+        "do": [
+          "forward",
+          "forward"
+        ]
+      }
+    ]
+  },
+  "days": 3,
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "The lock wants 3: one for each day written down."
+    },
+    {
+      "kind": "card",
+      "command": "push",
+      "text": "Each day, write the acorns held at the end of log. log is in the backpack, so it grows."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 2,
+      "command": "push",
+      "text": "After the two steps, add acorns held to the end of log."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "log",
+      "kind": "list",
+      "of": "number",
+      "start": [],
+      "keep": true
+    },
+    {
+      "remember": "n",
+      "kind": "number",
+      "start": 0
+    },
+    "forward",
+    "forward",
+    {
+      "push": "log",
+      "to": "acorns"
+    },
+    {
+      "set": "n",
+      "to": "length:log"
+    },
+    {
+      "unlock": "a",
+      "with": "n"
+    },
+    {
+      "if": "pathAhead",
+      "do": [
+        "forward",
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

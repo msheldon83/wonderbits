@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "id": "n02-the-right-field",
+  "title": "The right field",
+  "intro": "The crate's record has a number and a size. Gate A opens with the crate's number.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 0
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 1,
+        "y": 0,
+        "open": false,
+        "code": 2
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "records",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "set",
+      "unlock"
+    ],
+    "maxInstructions": 4,
+    "allowedSources": [
+      "field:crate.number",
+      "field:crate.size"
+    ],
+    "starterProgram": [
+      {
+        "remember": "crate",
+        "kind": "record",
+        "shape": "Crate",
+        "fields": {
+          "number": "number",
+          "size": "number"
+        },
+        "start": {
+          "number": 2,
+          "size": 5
+        }
+      },
+      {
+        "remember": "code",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "unlock": "a",
+        "with": "code"
+      },
+      "forward",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        }
+      ],
+      "text": "The lock wants the crate's number."
+    },
+    {
+      "kind": "card",
+      "command": "set",
+      "text": "crate holds two numbers. Pick the field by its name."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "set",
+      "text": "Set code to crate's number, before Unlock."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "crate",
+      "kind": "record",
+      "shape": "Crate",
+      "fields": {
+        "number": "number",
+        "size": "number"
+      },
+      "start": {
+        "number": 2,
+        "size": 5
+      }
+    },
+    {
+      "remember": "code",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "set": "code",
+      "to": "field:crate.number"
+    },
+    {
+      "unlock": "a",
+      "with": "code"
+    },
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

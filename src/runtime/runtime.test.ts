@@ -408,3 +408,96 @@ describe('interpreter: building lists', () => {
     expect(r.trace.filter((e) => e.op === 'set').map((e) => e.op === 'set' && e.value)).toEqual([[true], [true, false], 2]);
   });
 });
+
+describe('days', () => {
+  const spec: NodeSpec[] = [
+    { remember: 'total', kind: 'number', start: 0, keep: true },
+    { remember: 'today', kind: 'number', start: 0 },
+    { change: 'total', by: 1 },
+    { change: 'today', by: 1 },
+    'forward',
+  ];
+  const days = (n: number) => interpretAll({ program: programFromSpec(spec, sequentialIdFactory()), world, objective: { reachGoal: false, collectAll: false, memory: { total: n } }, limits: { maxSteps: 1000 }, days: n });
+
+  it('runs the program once a day, keeping only the backpack overnight', () => {
+    const r = days(3);
+    expect(r.outcome).toEqual({ status: 'success' });
+    expect(r.final.memory).toEqual({ total: 3, today: 1 });
+    expect(r.final.day).toBe(3);
+    const nights = r.trace.filter((e) => e.op === 'night');
+    expect(nights.map((e) => (e.op === 'night' ? e.day : 0))).toEqual([2, 3]);
+    // Each morning the robot is back at the start, and today starts again.
+    expect(nights[0]!.before.robot).toEqual({ x: 1, y: 1, facing: 'E' });
+    expect(nights[0]!.after.robot).toEqual(world.robot);
+    expect(nights[0]!.after.memory).toEqual({ total: 1, today: 0 });
+  });
+
+  it('stops on the day something goes wrong', () => {
+    const r = interpretAll({ program: programFromSpec([...F(2)], sequentialIdFactory()), world, objective, limits: { maxSteps: 1000 }, days: 2 });
+    expect(r.outcome).toEqual({ status: 'incomplete' });
+    const bump = interpretAll({ program: programFromSpec(['forward', 'forward', 'forward', 'forward'], sequentialIdFactory()), world, objective, limits: { maxSteps: 1000 }, days: 2 });
+    expect(bump.outcome.status).toBe('blocked');
+    expect(bump.trace.some((e) => e.op === 'night')).toBe(false);
+  });
+});
+
+function F(n: number): NodeSpec[] {
+  return Array.from({ length: n }, () => 'forward' as const);
+}
+
+describe('records', () => {
+  const fields = { number: 'number', key: 'yesNo' } as const;
+  const crates = [
+    { number: 1, key: false },
+    { number: 2, key: true },
+  ];
+  const spec = (cond: string): NodeSpec[] => [
+    { remember: 'crates', kind: 'list', of: 'record', shape: 'Crate', fields, start: crates },
+    { remember: 'crate', kind: 'record', shape: 'Crate', fields },
+    { remember: 'code', kind: 'number' },
+    { forEach: 'crates', as: 'crate', do: [{ if: cond as `slot:${string}`, do: [{ set: 'code', to: 'field:crate.number' }] }] },
+  ];
+  const go = (s: NodeSpec[]) => interpretAll({ program: programFromSpec(s, sequentialIdFactory()), world, objective: { reachGoal: false, collectAll: false, memory: { code: 2 } }, limits: { maxSteps: 1000 } });
+
+  it('walks a list of records, testing and reading fields by name', () => {
+    const r = go(spec('slot:crate.key=yes'));
+    expect(r.outcome).toEqual({ status: 'success' });
+    expect(r.final.memory?.crate).toEqual({ number: 2, key: true });
+  });
+
+  it('stops with a message when a record has no such field', () => {
+    const r = go([{ remember: 'crate', kind: 'record', shape: 'Crate', fields, start: { number: 1 } as never }, { remember: 'code', kind: 'number' }, { set: 'code', to: 'field:crate.key' }]);
+    expect(r.outcome).toMatchObject({ status: 'error', message: 'crate has no key: every record of a shape needs all its fields' });
+  });
+});
+
+describe('a team', () => {
+  const team: WorldDefinition = {
+    ...world,
+    team: [
+      { robot: { x: 0, y: 1, facing: 'E' }, goal: { x: 3, y: 1 }, memory: { steps: 3 } },
+      { robot: { x: 0, y: 2, facing: 'E' }, goal: { x: 1, y: 2 }, memory: { steps: 1 } },
+    ],
+  };
+  const blueprint: NodeSpec[] = [{ remember: 'steps', kind: 'number' }, { until: 'slot:steps=0', do: ['forward', { change: 'steps', by: -1 }] }];
+  const go = (w: WorldDefinition, s: NodeSpec[]) => interpretAll({ program: programFromSpec(s, sequentialIdFactory()), world: w, objective, limits: { maxSteps: 1000 } });
+
+  it('runs the blueprint once per robot, each with its own start and memory', () => {
+    const r = go(team, blueprint);
+    expect(r.outcome).toEqual({ status: 'success' });
+    const next = r.trace.find((e) => e.op === 'next')!;
+    expect(next.after.robot).toEqual({ x: 0, y: 2, facing: 'E' });
+    expect(next.after.memory).toEqual({ steps: 1 });
+    expect(next.after.team![0]).toEqual({ x: 3, y: 1, facing: 'E' });
+    expect(r.final.active).toBe(1);
+  });
+
+  it('lets robots block each other, and needs every robot on its own flag', () => {
+    const line: WorldDefinition = { ...world, team: [{ robot: { x: 1, y: 2, facing: 'E' }, goal: { x: 3, y: 2 } }, { robot: { x: 0, y: 2, facing: 'E' }, goal: { x: 2, y: 2 } }] };
+    const r = go(line, [{ until: 'blockedAhead', do: ['forward'] }]);
+    expect(r.outcome).toEqual({ status: 'success' });
+    expect(r.final.robot).toEqual({ x: 2, y: 2, facing: 'E' });
+    const bump = go(line, ['forward', 'forward', 'forward']);
+    expect(bump.outcome).toMatchObject({ status: 'blocked' });
+  });
+});

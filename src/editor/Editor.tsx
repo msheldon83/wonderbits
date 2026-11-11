@@ -29,7 +29,7 @@ import type { IdFactory } from '../ir/ids';
 import { isNoOpMove, type EditOp } from '../ir/ops';
 import { ancestorsOf, branchesOf, branchBody, containerAt, endOfMain, functionsOf, isWithin, locate, mainBody, memoryOf, procedureOfPlace, samePlaceContainer, slotsInUse, walk } from '../ir/program';
 import { buildNodes } from '../ir/spec';
-import { functionContainerId, functionLabel, functionOfContainer, handlerContainerId, handlerOfContainer, isSenseId, itemOf, lengthOf, MAIN as MAIN_PROCEDURE, parseRandom, readFrom, REPEAT_DEFAULT, REPEAT_MAX, REPEAT_MIN, type Branch, type CardId, type CommandId, type IRNode, type MemorySlot, type NodeId, type Place, type ProgramIR, type Source } from '../ir/types';
+import { functionContainerId, functionLabel, functionOfContainer, handlerContainerId, handlerOfContainer, isSenseId, itemOf, fieldOf, lengthOf, MAIN as MAIN_PROCEDURE, parseRandom, readFrom, REPEAT_DEFAULT, REPEAT_MAX, REPEAT_MIN, type Branch, type CardId, type CommandId, type IRNode, type MemorySlot, type NodeId, type Place, type ProgramIR, type Source } from '../ir/types';
 import type { TraceEvent } from '../runtime/contract';
 import { cardLabel, COMMANDS, conditionLabel, describeNode, eventLabel, FunctionIcon, nodeLabel, placeWords, sourceWords, valueWords } from './commands';
 import { gapCentres, slotForY, type RowBox } from './geometry';
@@ -1227,9 +1227,10 @@ export function Editor({
   );
 }
 
-const KIND_WORDS: Record<string, string> = { number: 'number', yesNo: 'yes/no', direction: 'direction', position: 'place', list: 'list', grid: 'grid' };
+const KIND_WORDS: Record<string, string> = { number: 'number', yesNo: 'yes/no', direction: 'direction', position: 'place', list: 'list', grid: 'grid', record: 'record' };
 /** A slot's kind in words: "number", "list of yes/no", "grid of numbers". */
-const kindWords = (m: MemorySlot) => (m.kind === 'list' || m.kind === 'grid' ? `${m.kind} of ${KIND_WORDS[m.of ?? 'number']}` : KIND_WORDS[m.kind]);
+const kindWords = (m: MemorySlot) =>
+  (m.kind === 'record' ? (m.shape ?? 'record') : m.kind === 'list' && m.of === 'record' ? `list of ${m.shape ?? 'record'}` : m.kind === 'list' || m.kind === 'grid' ? `${m.kind} of ${KIND_WORDS[m.of ?? 'number']}` : KIND_WORDS[m.kind]) + (m.keep ? ', in the backpack' : '');
 
 /** The values a Set card may put in a slot of a kind: the level's allowed sources, or every one that fits. */
 function sourcesFor(kind: string, programming: Programming, memory: readonly MemorySlot[] = []): Source[] {
@@ -1241,17 +1242,19 @@ function sourcesFor(kind: string, programming: Programming, memory: readonly Mem
   // An item of a list, by its index from 0: a number, or a number slot's value.
   const indices: (number | string)[] = [0, 1, 2, 3, ...memory.filter((m) => m.kind === 'number').map((m) => m.name)];
   const items = memory.filter((m) => m.kind === 'list' && (m.of ?? 'number') === kind).flatMap((l) => indices.map((i) => itemOf(l.name, i)));
+  // A field of a record slot, of the kind wanted: crate.number.
+  const fields = memory.filter((m) => m.kind === 'record').flatMap((r) => Object.entries(r.fields ?? {}).flatMap(([f, k]) => (k === kind ? [fieldOf(r.name, f)] : [])));
   // Items only show where the level offers them, so earlier list levels keep their short menus.
   return [
     ...ownSources(kind, programming, memory),
-    ...[...reads, ...lengths].filter((r) => !programming.allowedSources || programming.allowedSources.includes(r)),
+    ...[...reads, ...lengths, ...fields].filter((r) => !programming.allowedSources || programming.allowedSources.includes(r)),
     ...items.filter((r) => programming.allowedSources?.includes(r)),
   ];
 }
 
 function ownSources(kind: string, programming: Programming, memory: readonly MemorySlot[]): Source[] {
   const all: Record<string, Source[]> = {
-    number: [0, 1, 2, 3, 'acorns'],
+    number: [0, 1, 2, 3, 'acorns', 'acornsLeft'],
     yesNo: [true, false, ...conditionsFor(programming).filter(isSenseId)],
     direction: ['N', 'E', 'S', 'W', 'facing'],
     position: ['here'],
@@ -1268,7 +1271,7 @@ function ownSources(kind: string, programming: Programming, memory: readonly Mem
     if (r.kind === 'way') return 'direction';
     return memory.find((m) => m.name === r.list)?.of ?? 'number';
   };
-  return allowed.filter((a) => (parseRandom(a) ? randomKind(a) === kind : kind === 'number' ? typeof a === 'number' || a === 'acorns' : fits.includes(a)));
+  return allowed.filter((a) => (parseRandom(a) ? randomKind(a) === kind : kind === 'number' ? typeof a === 'number' || a === 'acorns' || a === 'acornsLeft' : fits.includes(a)));
 }
 
 /** A lightning bolt: something happens, and a When card answers. */
