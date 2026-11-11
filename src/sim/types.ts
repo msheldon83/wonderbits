@@ -117,4 +117,6 @@ export interface SimState {
   /** On a team board, where every robot stands, by number from 0, and which one is running now. */
   team?: RobotState[];
   active?: number;
+  /** On a team board, each robot's own memory, by number; the running robot's is `memory`. */
+  teamMemory?: Record<string, Value>[];
 }

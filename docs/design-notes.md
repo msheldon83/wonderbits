@@ -4,6 +4,20 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Change: each robot's memory on the memory card (2026-11-11)
+
+Feedback: on Their own memory, the memory card showed one `steps` line, so
+it looked like a value the robots share, and it was not clear whose steps
+the question asked for.
+
+- **Every robot keeps its memory.** `SimState.teamMemory` holds each
+  robot's own slots; at a handover the robot that ran keeps what it had,
+  and the next takes up its own. The running robot's is still `memory`.
+- **One value per robot on each line.** On a team board a memory line
+  shows a numbered chip per robot, in its colour (`steps ① 3 ② 1`), with
+  the running robot's ringed. A question is asked in the last robot's chip,
+  the robot running when the run ends, and read aloud as "Robot 2's steps".
+
 ## Change: a sign on the board, and the level page's header (2026-11-11)
 
 - **Records can stand on the board.** A record slot may say where it

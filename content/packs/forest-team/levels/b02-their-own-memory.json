@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "b02-their-own-memory",
   "title": "Their own memory",
-  "intro": "Both robots count their steps in steps. When robot 2 is done, what does its steps say?",
+  "intro": "Each robot has its own steps, and counts its own steps in it. The memory card shows both: ① for robot 1, ② for robot 2. When robot 2 is done, what will its steps say?",
   "themeId": "forest",
   "world": {
     "rows": [
