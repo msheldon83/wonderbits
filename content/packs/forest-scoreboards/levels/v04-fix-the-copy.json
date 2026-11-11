@@ -125,14 +125,14 @@
       "kind": "step",
       "path": [],
       "index": 0,
-      "text": "This card types in a number someone counted by eye."
+      "text": "This card types in a number someone counted by eye. The bird would count right."
     },
     {
       "kind": "fill",
       "path": [],
       "slot": 0,
       "command": "set",
-      "text": "Set left from the board itself: acorns left on the board."
+      "text": "Ask the bird instead: set left to acorns left."
     }
   ],
   "referenceSolution": [

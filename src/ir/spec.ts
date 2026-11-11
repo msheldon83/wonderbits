@@ -18,7 +18,7 @@
  * spec mints fresh ids; specOf throws the ids away again.
  */
 import type { IdFactory } from './ids';
-import type { CommandId, ConditionId, IRNode, ItemKind, ListOf, MemorySlot, Source, Value, ValueKind } from './types';
+import { isBirdSource, type CommandId, type ConditionId, type IRNode, type ItemKind, type ListOf, type MemorySlot, type Source, type Value, type ValueKind } from './types';
 
 export type NodeSpec =
   | CommandId
@@ -233,6 +233,11 @@ export function conditionsOfSpec(spec: readonly NodeSpec[]): ConditionId[] {
     const own = typeof s !== 'string' && ('if' in s || 'until' in s) ? ['if' in s ? s.if : (s as { until: ConditionId }).until] : [];
     return [...own, ...innerOf(s).flatMap(conditionsOfSpec)];
   });
+}
+
+/** True when a spec's cards ask the bird, which sees the whole board. */
+export function specAsksBird(spec: readonly NodeSpec[]): boolean {
+  return spec.some((s) => typeof s !== 'string' && ((('set' in s || 'push' in s) && isBirdSource(s.to)) || innerOf(s).some(specAsksBird)));
 }
 
 /** The names a spec calls, in document order, repeats included. */

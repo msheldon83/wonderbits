@@ -3,7 +3,7 @@
  * readable TypeScript. Read-only through Phase 3; Phase 4 adds a parser that
  * lifts hand-edited code back into the IR using the @node comments.
  */
-import { isPosition, isSenseId, MAIN, parseField, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type IRNode, type MemorySlot, type ProgramIR, type SenseId, type Source, type Value } from '../ir/types';
+import { isBirdSource, isPosition, isSenseId, MAIN, parseField, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type IRNode, type MemorySlot, type ProgramIR, type SenseId, type Source, type Value } from '../ir/types';
 import type { Teammate } from '../sim/types';
 
 const CALL: Record<CommandId, string> = {
@@ -85,7 +85,7 @@ function sourceCode(source: Source): string {
   if (source === 'facing') return 'robot.facing()';
   if (source === 'here') return 'robot.position()';
   if (source === 'acorns') return 'robot.acorns()';
-  if (source === 'acornsLeft') return 'robot.acornsLeft()';
+  if (source === 'acornsLeft') return 'bird.acornsLeft()';
   if (isSenseId(source)) return SENSE[source];
   return valueCode(source);
 }
@@ -99,6 +99,13 @@ export function conditionCode(c: ConditionId): string {
   if (t.value === 'here') return `robot.isAt(${t.slot})`;
   if (/^\d+$/.test(t.value)) return `${t.slot} === ${t.value}`;
   return `${t.slot} === '${DIRECTION[t.value] ?? t.value}'`;
+}
+
+/** True when a card asks the bird, which sees the whole board. */
+function programAsksBird(program: ProgramIR): boolean {
+  const visit = (nodes: readonly IRNode[]): boolean =>
+    nodes.some((n) => ((n.kind === 'set' || n.kind === 'push') && isBirdSource(n.to)) || ('body' in n && visit(n.body)) || (n.kind === 'ifElse' && visit(n.elseBody)));
+  return [...program.procedures, ...program.handlers].some((p) => visit(p.body));
 }
 
 /** The types a program's memory needs from the robot's library, beside the robot itself. */
@@ -120,7 +127,9 @@ function typeImports(program: ProgramIR): string {
   for (const h of program.handlers) visit(h.body);
   const randoms = ['random', 'coinFlip', 'randomDirection', 'pick'].filter((r) => used.has(r));
   const backpack = (program.memory ?? []).some((m) => m.keep) ? [', backpack'] : [];
-  return backpack.concat(randoms.map((g) => `, ${g}`)).concat(types.map((t) => `, type ${t}`)).join('');
+  // The bird sees the whole board; the robot asks it.
+  const bird = programAsksBird(program) ? [', bird'] : [];
+  return bird.concat(backpack).concat(randoms.map((g) => `, ${g}`)).concat(types.map((t) => `, type ${t}`)).join('');
 }
 
 /** A negated check, written the way a person would. */

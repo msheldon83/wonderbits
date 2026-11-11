@@ -1254,7 +1254,7 @@ function sourcesFor(kind: string, programming: Programming, memory: readonly Mem
 
 function ownSources(kind: string, programming: Programming, memory: readonly MemorySlot[]): Source[] {
   const all: Record<string, Source[]> = {
-    number: [0, 1, 2, 3, 'acorns', 'acornsLeft'],
+    number: [0, 1, 2, 3, 'acorns'],
     yesNo: [true, false, ...conditionsFor(programming).filter(isSenseId)],
     direction: ['N', 'E', 'S', 'W', 'facing'],
     position: ['here'],

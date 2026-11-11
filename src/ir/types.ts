@@ -116,12 +116,17 @@ export interface MemorySlot {
 /**
  * Where a Set card's value comes from: a literal (a number, yes or no as
  * true or false, a direction letter), or the robot's own reading right now:
- * `facing`, `here`, `acorns` (how many it holds), `acornsLeft` (how many
- * are still on the board), a sense's yes or no, an
+ * `facing`, `here`, `acorns` (how many are in its pocket), `acornsLeft`
+ * (how many are still on the board, which the robot asks the bird, since
+ * only the bird sees the whole board), a sense's yes or no, an
  * item of a grid slot, written `read:<grid>@<where>`, how many items a
  * list holds, written `length:<list>`, or a random value: see parseRandom.
  */
 export type Source = number | boolean | string;
+
+/** Readings only the bird can give: it flies over the board and sees all of it. */
+export const BIRD_SOURCES: readonly string[] = ['acornsLeft'];
+export const isBirdSource = (source: Source): boolean => typeof source === 'string' && BIRD_SOURCES.includes(source);
 
 /**
  * Where on a grid a card reads or marks: the robot's tile (`here`), the tile

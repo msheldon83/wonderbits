@@ -257,7 +257,7 @@ export function placeWords(at: string): string {
   return at === 'here' || at === 'ahead' ? at : `at ${at}`;
 }
 
-/** What a Set card reads, in words: "3", "yes", "the way it faces", "where it is", "acorns held", "acorn ahead?", "walls ahead". */
+/** What a Set card reads, in words: "3", "yes", "the way it faces", "where it is", "acorns in its pocket", "acorns left (ask the bird)", "acorn ahead?", "walls ahead". */
 export function sourceWords(source: Source): string {
   if (typeof source !== 'string') return valueWords(source);
   const field = parseField(source);
@@ -272,8 +272,8 @@ export function sourceWords(source: Source): string {
   if (item) return `item ${item.index} of ${item.list}`;
   if (source === 'facing') return 'the way it faces';
   if (source === 'here') return 'where it is';
-  if (source === 'acorns') return 'acorns held';
-  if (source === 'acornsLeft') return 'acorns left on the board';
+  if (source === 'acorns') return 'acorns in its pocket';
+  if (source === 'acornsLeft') return 'acorns left (ask the bird)';
   if (isSenseId(source)) return `${CONDITIONS[source].label}?`;
   return valueWords(source);
 }

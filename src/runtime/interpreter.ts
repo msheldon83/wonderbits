@@ -18,7 +18,7 @@
  * each followed by that key's When card.
  */
 import { functionBody, handlerBody, mainBody } from '../ir/program';
-import { handlerContainerId, type Key } from '../ir/types';
+import { handlerContainerId, isBirdSource, type Key } from '../ir/types';
 import { advance, drawSource, morning, nextRobot, faceTo, gridPlace, initialState, markGrid, missingItem, shiftPlace, evaluate, isTimed, objectiveMet, period, remember, setGate, stateKey, step, unlockGate, type WorldEvent } from '../sim/world';
 import type { Facing } from '../sim/types';
 import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
@@ -120,7 +120,8 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
           const drawn = node.kind === 'set' ? drawSource(world, state, node.to) : { value: (typeof old === 'number' ? old : 0) + node.by, state };
           const value = drawn.value;
           const after = remember(drawn.state, node.slot, value);
-          const ok = yield* emit({ nodeId: node.id, op: 'set', slot: node.slot, value, before: state, after, result: { kind: 'ok' } });
+          const asked = node.kind === 'set' && isBirdSource(node.to);
+          const ok = yield* emit({ nodeId: node.id, op: 'set', slot: node.slot, value, ...(asked && { asked: 'bird' as const }), before: state, after, result: { kind: 'ok' } });
           if (!ok) return;
           state = after;
           break;

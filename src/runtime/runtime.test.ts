@@ -501,3 +501,15 @@ describe('a team', () => {
     expect(bump.outcome).toMatchObject({ status: 'blocked' });
   });
 });
+
+describe('the bird', () => {
+  it('marks a value the robot asked the bird for', () => {
+    const w: WorldDefinition = { ...world, collectibles: [{ x: 1, y: 1 }, { x: 3, y: 0 }] };
+    const r = interpretAll({ program: programFromSpec([{ remember: 'left', kind: 'number' }, 'forward', { set: 'left', to: 'acornsLeft' }, { set: 'left', to: 'acorns' }], sequentialIdFactory()), world: w, objective: { reachGoal: false, collectAll: false, memory: { left: 1 } }, limits: { maxSteps: 100 } });
+    const sets = r.trace.filter((e) => e.op === 'set');
+    expect(sets.map((e) => (e.op === 'set' ? [e.value, e.asked] : []))).toEqual([
+      [1, 'bird'],
+      [1, undefined],
+    ]);
+  });
+});

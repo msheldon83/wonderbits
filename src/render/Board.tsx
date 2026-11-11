@@ -31,9 +31,27 @@ export interface BoardProps {
   hideGoal?: boolean;
   /** Number the rows and columns around the board, for levels that read it as a grid. */
   coordinates?: boolean;
+  /** The bird: it flies over the board, sees all of it, and answers when the robot asks. */
+  bird?: boolean;
 }
 
-export function Board({ world, theme, motion, label, onControllers, robotCount = 1, maxScale = 1.6, onTileTap, marks = [], pointers = [], highlightCells, hideIndicator = false, hideGoal = false, coordinates = false }: BoardProps) {
+/** The bird, side on, wings up: a round body, a beak, an eye and a tail. */
+function BirdArt() {
+  return (
+    <svg width={64} height={56} viewBox="0 0 64 56" aria-hidden="true">
+      <path d="M14 30 L2 24 L8 34 Z" fill="#3a7bc8" />
+      <ellipse cx={32} cy={32} rx={18} ry={14} fill="#5aa3e8" />
+      <ellipse cx={34} cy={37} rx={11} ry={7} fill="#e8f3fd" />
+      <path className="bird-wing" d="M26 26 Q30 6 44 10 Q38 22 34 30 Z" fill="#3a7bc8" />
+      <circle cx={44} cy={22} r={10} fill="#5aa3e8" />
+      <circle cx={47} cy={20} r={2.6} fill="#1f2a3d" />
+      <path d="M53 22 L62 25 L53 28 Z" fill="#f2a330" />
+      <path d="M28 46 v6 M36 46 v6" stroke="#f2a330" strokeWidth={2.5} strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function Board({ world, theme, motion, label, onControllers, robotCount = 1, maxScale = 1.6, onTileTap, marks = [], pointers = [], highlightCells, hideIndicator = false, hideGoal = false, coordinates = false, bird = false }: BoardProps) {
   const layout = useMemo(() => layoutFor(world, coordinates), [world, coordinates]);
   const viewport = useRef<HTMLDivElement>(null);
   const robotEls = useRef<Partial<RobotElements>[]>([]);
@@ -43,6 +61,7 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
   const moverEls = useRef(new Map<string, HTMLElement>());
   const ghostEls = useRef(new Map<string, HTMLElement>());
   const teammateEls = useRef(new Map<number, HTMLElement>());
+  const birdEls = useRef<{ root?: HTMLElement; bubble?: HTMLElement }>({});
   const controllers = useRef<BoardController[]>([]);
   const elsFor = (i: number) => (robotEls.current[i] ??= {});
   const [scale, setScale] = useState(1);
@@ -65,7 +84,7 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
   useLayoutEffect(() => {
     const cs = Array.from({ length: robotCount }, (_, i) => {
       const els = robotEls.current[i] as RobotElements;
-      const c = new BoardController(world, layout, els, i === 0 ? gems.current : new Map(), theme.indicator, motion, i === 0 ? { gates: gateEls.current, switches: switchEls.current, movers: moverEls.current, ghosts: ghostEls.current, teammates: teammateEls.current } : undefined);
+      const c = new BoardController(world, layout, els, i === 0 ? gems.current : new Map(), theme.indicator, motion, i === 0 ? { gates: gateEls.current, switches: switchEls.current, movers: moverEls.current, ghosts: ghostEls.current, teammates: teammateEls.current, ...(bird && birdEls.current.root && birdEls.current.bubble && { bird: { root: birdEls.current.root, bubble: birdEls.current.bubble } }) } : undefined);
       c.showState(initialState(world));
       return c;
     });
@@ -77,7 +96,7 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
     };
     // Motion changes are applied below without rebuilding the controllers.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [world, layout, theme, onControllers, robotCount]);
+  }, [world, layout, theme, onControllers, robotCount, bird]);
 
   useEffect(() => {
     for (const c of controllers.current) c.motion = motion;
@@ -447,6 +466,14 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
               </svg>
             </div>
           ))}
+          {bird && (
+            <div className="board-bird" style={{ left: layout.originX + world.width * TILE - 52, top: Math.max(0, layout.originY - 40), zIndex: LAYER.effect + 1 }} role="img" aria-label="The bird, who can see the whole board">
+              <div ref={(el) => void (birdEls.current.root = el ?? undefined)} className="board-bird-body">
+                <BirdArt />
+              </div>
+              <div ref={(el) => void (birdEls.current.bubble = el ?? undefined)} className="thought-bubble board-bird-bubble" data-tone="event" aria-live="polite" />
+            </div>
+          )}
           {markerEls}
           {pointerEls}
           {tileButtons}

@@ -188,9 +188,10 @@ describe('printProgram', () => {
     expect(printProgram(p)).toContain('let seen: boolean[] = [];');
   });
 
-  it('prints the acorns left on the board as a reading of the robot', () => {
+  it('prints the acorns left on the board as a question for the bird, which sees the whole board', () => {
     const p = programFromSpec([{ remember: 'left', kind: 'number' }, { set: 'left', to: 'acornsLeft' }], sequentialIdFactory());
-    expect(printProgram(p)).toContain('left = robot.acornsLeft(); // @node n1');
+    expect(printProgram(p)).toContain("import { robot, bird } from 'wonderbits';");
+    expect(printProgram(p)).toContain('left = bird.acornsLeft(); // @node n1');
   });
 
   it('prints a slot in the backpack as loaded in the morning and saved at night', () => {

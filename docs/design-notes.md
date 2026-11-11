@@ -4,6 +4,27 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Change: the robot's pocket and the bird (2026-11-11)
+
+Feedback: "acorns left on the board" was abstract. Every other reading is
+something the robot can know from where it stands, what it carries or what
+it wrote down; a count of the whole board came from nowhere.
+
+- **The robot knows its pocket.** The reading `acorns` is now worded "acorns
+  in its pocket" everywhere (it was "acorns held"): the robot keeping track
+  of what it carries is its own reading.
+- **The bird sees the whole board.** Readings no robot could make from one
+  tile belong to the bird, flying over the board (`BIRD_SOURCES`, so far
+  only `acornsLeft`). The card reads "acorns left (ask the bird)" and prints
+  as `bird.acornsLeft()`, with `bird` imported beside `robot`. On levels
+  that offer it, the bird sits over the top right of the board; when the
+  robot asks, the bird flaps and calls back ("0 left!"), and the Set event
+  carries `asked: 'bird'`.
+- **Asking the bird is opt-in.** Set offers it only where a level's
+  allowedSources lists it, so earlier packs' menus are as they were.
+- **Two scoreboards is reworded** around the two: hand-kept counts go out of
+  date; the pocket and the bird are always right.
+
 ## Build step 12, part six: Robot team (2026-11-11)
 
 The objects pack, **Robot team** (`content/packs/forest-team`), ten levels

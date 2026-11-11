@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "v02-read-it-when-you-need-it",
   "title": "Read it when you need it",
-  "intro": "Gate A opens when no acorns are left. The robot wrote 2 at the start, and that is out of date now.",
+  "intro": "Gate A opens when no acorns are left. The robot wrote 2 at the start, and that is out of date now. The bird flying over the board can see how many are left: ask it.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -87,19 +87,19 @@
           "y": 0
         }
       ],
-      "text": "Both acorns are picked up before the lock. How many are left on the board then?"
+      "text": "Both acorns are picked up before the lock. How many are left on the board then? The bird can see."
     },
     {
       "kind": "card",
       "command": "set",
-      "text": "left still says 2. Right before Unlock, read the real number from the board."
+      "text": "left still says 2. Right before Unlock, ask the bird for the real number."
     },
     {
       "kind": "fill",
       "path": [],
       "slot": 4,
       "command": "set",
-      "text": "Set left to acorns left on the board, just before Unlock."
+      "text": "Set left to acorns left (ask the bird), just before Unlock."
     }
   ],
   "referenceSolution": [

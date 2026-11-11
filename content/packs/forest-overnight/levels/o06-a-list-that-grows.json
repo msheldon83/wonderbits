@@ -104,14 +104,14 @@
     {
       "kind": "card",
       "command": "push",
-      "text": "Each day, write the acorns held at the end of log. log is in the backpack, so it grows."
+      "text": "Each day, write the acorns in its pocket at the end of log. log is in the backpack, so it grows."
     },
     {
       "kind": "fill",
       "path": [],
       "slot": 2,
       "command": "push",
-      "text": "After the two steps, add acorns held to the end of log."
+      "text": "After the two steps, add the acorns in its pocket to the end of log."
     }
   ],
   "referenceSolution": [

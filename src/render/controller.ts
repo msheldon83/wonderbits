@@ -89,7 +89,7 @@ export class BoardController implements Player {
     private colors: { ok: string; blocked: string },
     public motion: MotionSettings,
     /** Gate elements by id, switch plates by cell key and movers by id, when the board has them. */
-    private worldEls: { gates: Map<string, HTMLElement>; switches: Map<string, HTMLElement>; movers?: Map<string, HTMLElement>; ghosts?: Map<string, HTMLElement>; teammates?: Map<number, HTMLElement> } = { gates: new Map(), switches: new Map() },
+    private worldEls: { gates: Map<string, HTMLElement>; switches: Map<string, HTMLElement>; movers?: Map<string, HTMLElement>; ghosts?: Map<string, HTMLElement>; teammates?: Map<number, HTMLElement>; bird?: { root: HTMLElement; bubble: HTMLElement } } = { gates: new Map(), switches: new Map() },
   ) {}
 
   /**
@@ -273,6 +273,21 @@ export class BoardController implements Player {
     return settle(anim, signal);
   }
 
+  /** The bird answers: it flaps, and its own bubble says what it sees from up high. */
+  private birdSays(text: string, durationMs: number, signal: AbortSignal): Promise<void> {
+    const { root, bubble } = this.worldEls.bird!;
+    bubble.textContent = text;
+    if (this.motion.reducedMotion) {
+      bubble.style.opacity = '1';
+      return wait(durationMs, signal).then(() => {
+        bubble.style.opacity = '0';
+      });
+    }
+    root.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-10px)', offset: 0.3 }, { transform: 'translateY(0)', offset: 0.6 }, { transform: 'translateY(-6px)', offset: 0.8 }, { transform: 'translateY(0)' }], { duration: Math.min(durationMs, 700), easing: 'ease-in-out' });
+    const anim = bubble.animate([{ opacity: 0 }, { opacity: 1, offset: 0.15 }, { opacity: 1, offset: 0.85 }, { opacity: 0 }], { duration: durationMs, easing: 'ease-out' });
+    return settle(anim, signal);
+  }
+
   showState(state: SimState): void {
     this.robot.root.getAnimations({ subtree: true }).forEach((a) => a.cancel());
     this.robot.turnCue.getAnimations().forEach((a) => a.cancel());
@@ -318,6 +333,11 @@ export class BoardController implements Player {
       return;
     }
     // Memory cards: a bubble says what went into the slot, or how the lock answered.
+    if (event.op === 'set' && event.asked === 'bird' && this.worldEls.bird) {
+      // The robot asks; the bird, high over the board, flaps and calls back what it sees.
+      await this.birdSays(`${valueWords(event.value)} left!`, ms(THINK_MS * 1.6), signal);
+      if (signal.aborted) return;
+    }
     if (event.op === 'set') {
       await this.showBubble(before.robot, `${event.slot} = ${valueWords(event.value)}`, 'memory', ms(THINK_MS), signal);
       return;

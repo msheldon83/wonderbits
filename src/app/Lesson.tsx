@@ -12,7 +12,8 @@ import { canRedo, canUndo, createHistory, push, redo, undo, type History } from 
 import { randomIdFactory } from '../ir/ids';
 import { applyOp, type EditOp } from '../ir/ops';
 import { countNodes, programFromSpec, stepNumber } from '../ir/program';
-import { isPosition, type NodeId, type ProgramIR, type Value } from '../ir/types';
+import { specAsksBird } from '../ir/spec';
+import { isBirdSource, isPosition, type NodeId, type ProgramIR, type Value } from '../ir/types';
 import { valueWords } from '../editor/commands';
 import { coveredValue, teamOnFlags, withinOutcomes } from '../sim/world';
 import type { ObjectiveDefinition } from '../sim/types';
@@ -544,6 +545,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           highlightCells={hint?.cells}
           hideIndicator={predicting}
           hideGoal={(predicting && asksTile) || !level.objective.reachGoal}
+          bird={(level.programming.allowedSources ?? []).some(isBirdSource) || specAsksBird(level.programming.starterProgram)}
         />
         <div className="toolbar" role="toolbar" aria-label="Run controls">
           <button
