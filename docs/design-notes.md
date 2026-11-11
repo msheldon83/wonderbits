@@ -186,7 +186,7 @@ Feedback: The notebook's crates lived only as rows on the memory card. To
 keep them tangible, the robot asks its friend, the warehouse inventory
 computer.
 
-- **A warehouse panel under the board** (`src/app/Inventory.tsx`) on every
+- **A warehouse panel right under the board** (`src/app/Inventory.tsx`), above the Run buttons, on every
   level with a record or a list of records: the inventory computer, a
   terminal with a face, and a shelf per list with each crate drawn as a box
   with its index and its fields (a tick or a cross for yes and no).
