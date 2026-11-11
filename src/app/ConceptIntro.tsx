@@ -188,6 +188,7 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
                 </>
               }
               gates={gatesOf(demo.world).map((g) => g.id)}
+          gateCodes={Object.fromEntries(gatesOf(demo.world).flatMap((g) => (g.code !== undefined ? [[g.id, g.code]] : [])))}
           boardSize={{ width: demo.world.width, height: demo.world.height }}
               showCode
             />

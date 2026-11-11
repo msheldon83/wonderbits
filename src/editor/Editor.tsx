@@ -68,6 +68,8 @@ export interface EditorProps {
   onToggleCode?(): void;
   /** The board's gate letters, for Open gate and Shut gate cards to choose from. */
   gates?: readonly string[];
+  /** The number each gate's lock opens with, by letter: an Unlock card shows it. */
+  gateCodes?: Readonly<Record<string, number>>;
   /** The board's columns and rows, for Go to column and Go to row cards to choose from. */
   boardSize?: { width: number; height: number };
 }
@@ -117,6 +119,7 @@ export function Editor({
   onToggleCode,
   gates = [],
   boardSize,
+  gateCodes = {},
 }: EditorProps) {
   const locked = lockedProp || readOnly;
   const body = mainBody(program);
@@ -769,6 +772,9 @@ export function Editor({
                 const kind = memory.find((m) => m.name === slot)?.kind ?? 'number';
                 setParam(node.id, { slot, to: sourcesFor(kind, programming, memory)[0] ?? 0 });
               })}
+              <span className="param-word param-eq" aria-hidden="true">
+                =
+              </span>
               <select
                 className="param-select"
                 aria-label={`Set it to what, step ${number}`}
@@ -911,7 +917,19 @@ export function Editor({
                   </option>
                 ))}
               </select>
+              <span className="param-word">when</span>
               {slotSelect(`With which slot, step ${number}`, node.slot, ['number'], (slot) => setParam(node.id, { slot }))}
+              {/* The lock's own number: the gate opens only when the slot holds it. */}
+              {gateCodes[node.gate] !== undefined && (
+                <>
+                  <span className="param-word param-eq" aria-hidden="true">
+                    =
+                  </span>
+                  <span className="param-code" title={`Gate ${node.gate.toUpperCase()} opens with ${gateCodes[node.gate]}`}>
+                    {gateCodes[node.gate]}
+                  </span>
+                </>
+              )}
             </span>
           )}
           {node.kind === 'forEach' && (

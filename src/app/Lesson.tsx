@@ -655,6 +655,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
             </>
           }
           gates={gatesOf(world).map((g) => g.id)}
+          gateCodes={Object.fromEntries(gatesOf(world).flatMap((g) => (g.code !== undefined ? [[g.id, g.code]] : [])))}
           boardSize={{ width: world.width, height: world.height }}
           showCode={showCode}
           onToggleCode={() => setShowCode((v) => !v)}
