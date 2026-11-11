@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "v03-keep-both-up-to-date",
   "title": "Keep both up to date",
-  "intro": "Keep both scoreboards right: held and left must both be correct at the flag.",
+  "intro": "The hand-kept way: both scoreboards must be right at the flag, held and left. Nobody to ask yet, so every acorn needs a card for each one.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -114,7 +114,7 @@
     {
       "kind": "card",
       "command": "change",
-      "text": "Two scoreboards means two cards for every acorn."
+      "text": "Two scoreboards kept by hand means two cards for every acorn. Next level, there is an easier way."
     },
     {
       "kind": "fill",

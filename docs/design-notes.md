@@ -230,9 +230,10 @@ before the lock.
   pack's two scoreboards: a value kept by hand next to one worked out from
   the world.
 - **The pack.** Two scoreboards (model: held is kept up to date, left
-  never is), Read it when you need it (set left from the board just before
-  the lock), Keep both up to date (two cards in the When card, and both
-  slots checked at the flag), Ask the right one (debug: right before
+  never is), Keep both up to date (the hand-kept way, before the bird: two
+  cards in the When card, and both slots checked at the flag; moved ahead
+  of the bird's level on 2026-11-11 so it no longer reads as a step back),
+  Read it when you need it (ask the bird just before the lock), Ask the right one (debug: right before
   the lock the robot looks in its pocket instead of asking the bird; it
   replaced Fix the copy on 2026-11-11, which asked the bird at the start and
   then counted down by hand, mixing the two habits the pack contrasts), How many in the bag? (a separate count beside a list; read
