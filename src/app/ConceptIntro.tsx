@@ -10,7 +10,7 @@ import { CodePanel } from '../editor/CodePanel';
 import { Editor } from '../editor/Editor';
 import { randomIdFactory } from '../ir/ids';
 import { programFromSpec } from '../ir/program';
-import { cardsOfSpec } from '../ir/spec';
+import { cardsOfSpec, specAsksBird } from '../ir/spec';
 import type { CardId, NodeId } from '../ir/types';
 import type { BookEntry } from '../lessons/concepts';
 import type { ProgressStore } from '../progress/store';
@@ -158,7 +158,7 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
         </h2>
         <div className={`intro-demo ${folding ? 'is-folding' : ''}`}>
           <div className="intro-board">
-            <Board world={world} theme={theme} motion={motion} label={label} onControllers={onControllers} maxScale={1.3} coordinates={cards.some((c) => c === 'goRow' || c === 'goColumn' || c === 'shift') || (program.memory ?? []).some((m) => m.kind === 'grid')} />
+            <Board world={world} theme={theme} motion={motion} label={label} onControllers={onControllers} maxScale={1.3} coordinates={cards.some((c) => c === 'goRow' || c === 'goColumn' || c === 'shift') || (program.memory ?? []).some((m) => m.kind === 'grid')} bird={specAsksBird(demo.program) || specAsksBird(demo.before ?? [])} />
             <TickRules world={world} state={shownState ?? initialState(world, program.memory)} event={activeEvent} />
             {caption && (
               <p className="intro-caption" role="status" aria-live="polite">

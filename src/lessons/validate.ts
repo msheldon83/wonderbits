@@ -412,7 +412,11 @@ function slotUses(spec: readonly NodeSpec[]): SlotUse[] {
     if ('change' in s) own.push({ slot: s.change, kind: 'number', card: 'Add' });
     if ('goRow' in s && typeof s.goRow === 'string') own.push({ slot: s.goRow, kind: 'number', card: 'Go to row' });
     if ('goColumn' in s && typeof s.goColumn === 'string') own.push({ slot: s.goColumn, kind: 'number', card: 'Go to column' });
-    if ('shift' in s) own.push({ slot: s.shift, kind: 'position', card: 'Move finger' });
+    if ('shift' in s) own.push({ slot: s.shift, kind: 'position', card: 'Fly the bird' });
+    if ('fly' in s) {
+      own.push({ slot: s.fly, kind: 'position', card: 'Fly the bird to' });
+      for (const t of [s.column, s.row]) if (typeof t === 'string') own.push({ slot: t, kind: 'number', card: 'Fly the bird to' });
+    }
     if ('face' in s) own.push({ slot: s.face, kind: 'direction', card: 'Face' });
     if ('unlock' in s) own.push({ slot: s.with, kind: 'number', card: 'Unlock' });
     if ('forEach' in s) own.push({ slot: s.forEach, kind: 'list', card: 'For each' }, { slot: s.as, kind: 'item', card: 'For each', list: s.forEach });

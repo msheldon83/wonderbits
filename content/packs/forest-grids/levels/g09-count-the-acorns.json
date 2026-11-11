@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "g09-count-the-acorns",
   "title": "Count the acorns",
-  "intro": "Count the acorns without walking: run your finger along each row of the map, then back and down to the next row.",
+  "intro": "Count the acorns without walking: fly the bird along each row, then straight back to column 0 and down to the next row.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -59,13 +59,14 @@
       "if",
       "change",
       "shift",
-      "repeat"
+      "repeat",
+      "fly"
     ],
     "allowedConditions": [
       "slot:acorn=yes"
     ],
     "allowedSources": [
-      "read:acorns@spot"
+      "read:acorns@bird"
     ],
     "maxInstructions": 10,
     "maxPerCommand": {
@@ -79,7 +80,7 @@
         "start": "board:acorns"
       },
       {
-        "remember": "spot",
+        "remember": "bird",
         "kind": "position",
         "start": {
           "x": 0,
@@ -161,7 +162,7 @@
           "y": 0
         }
       ],
-      "text": "One row: read, count, move right, four times."
+      "text": "One row: read, count, move right, four times. Then fly straight back to column 0."
     },
     {
       "kind": "card",
@@ -184,7 +185,7 @@
       "start": "board:acorns"
     },
     {
-      "remember": "spot",
+      "remember": "bird",
       "kind": "position",
       "start": {
         "x": 0,
@@ -209,7 +210,7 @@
           "do": [
             {
               "set": "acorn",
-              "to": "read:acorns@spot"
+              "to": "read:acorns@bird"
             },
             {
               "if": "slot:acorn=yes",
@@ -221,22 +222,17 @@
               ]
             },
             {
-              "shift": "spot",
+              "shift": "bird",
               "dir": "E"
             }
           ]
         },
         {
-          "repeat": 4,
-          "do": [
-            {
-              "shift": "spot",
-              "dir": "W"
-            }
-          ]
+          "fly": "bird",
+          "column": 0
         },
         {
-          "shift": "spot",
+          "shift": "bird",
           "dir": "S"
         }
       ]

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "g07-point-and-look",
   "title": "Point and look",
-  "intro": "Now the finger reads the map. spot moves two tiles right, then Set reads the map where spot points. Watch the purple hand: is there a rock under it?",
+  "intro": "Now the bird looks. It flies two tiles right, then Set reads the map under the bird. Watch the bird: is there a rock under it?",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -44,7 +44,7 @@
         "start": "board:walls"
       },
       {
-        "remember": "spot",
+        "remember": "bird",
         "kind": "position",
         "start": {
           "x": 0,
@@ -57,16 +57,16 @@
         "start": false
       },
       {
-        "shift": "spot",
+        "shift": "bird",
         "dir": "E"
       },
       {
-        "shift": "spot",
+        "shift": "bird",
         "dir": "E"
       },
       {
         "set": "rock",
-        "to": "read:walls@spot"
+        "to": "read:walls@bird"
       }
     ]
   },
@@ -84,14 +84,14 @@
     {
       "kind": "card",
       "command": "shift",
-      "text": "Move finger moves spot one tile; the robot stays put."
+      "text": "Fly the bird moves the bird one tile; the robot stays put."
     },
     {
       "kind": "fill",
       "path": [],
       "slot": 2,
       "command": "set",
-      "text": "Then it reads the map at spot."
+      "text": "Then read the map under the bird."
     }
   ],
   "referenceSolution": [
@@ -102,7 +102,7 @@
       "start": "board:walls"
     },
     {
-      "remember": "spot",
+      "remember": "bird",
       "kind": "position",
       "start": {
         "x": 0,
@@ -115,16 +115,16 @@
       "start": false
     },
     {
-      "shift": "spot",
+      "shift": "bird",
       "dir": "E"
     },
     {
-      "shift": "spot",
+      "shift": "bird",
       "dir": "E"
     },
     {
       "set": "rock",
-      "to": "read:walls@spot"
+      "to": "read:walls@bird"
     }
   ],
   "stars": {

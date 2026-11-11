@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "v01-two-scoreboards",
   "title": "Two scoreboards",
-  "intro": "Two scoreboards: held and left. Only one of them is kept up to date. What will each say at the flag?",
+  "intro": "Two scoreboards the robot keeps by hand: held and left. Only one of them is kept up to date. What will each say at the flag?",
   "themeId": "forest",
   "world": {
     "rows": [

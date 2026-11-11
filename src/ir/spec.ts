@@ -18,7 +18,7 @@
  * spec mints fresh ids; specOf throws the ids away again.
  */
 import type { IdFactory } from './ids';
-import type { CommandId, ConditionId, IRNode, ItemKind, ListOf, MemorySlot, Source, Value, ValueKind } from './types';
+import { isBirdSource, type CommandId, type ConditionId, type IRNode, type ItemKind, type ListOf, type MemorySlot, type Source, type Value, type ValueKind } from './types';
 
 export type NodeSpec =
   | CommandId
@@ -38,6 +38,7 @@ export type NodeSpec =
   | { goRow: number | string }
   | { goColumn: number | string }
   | { shift: string; dir: 'N' | 'E' | 'S' | 'W' }
+  | { fly: string; column?: number | string; row?: number | string }
   | { define: string; do: NodeSpec[] }
   | { on: string; do: NodeSpec[] }
   | { remember: string; kind: ValueKind; of?: ListOf; shape?: string; fields?: Record<string, ItemKind>; start?: Value; keep?: boolean };
@@ -67,6 +68,7 @@ export function kindOfSpec(s: NodeSpec): SpecKind {
   if ('goRow' in s) return 'goRow';
   if ('goColumn' in s) return 'goColumn';
   if ('shift' in s) return 'shift';
+  if ('fly' in s) return 'fly';
   if ('define' in s) return 'define';
   if ('on' in s) return 'on';
   return 'remember';
@@ -145,6 +147,7 @@ export function buildNodes(spec: readonly NodeSpec[], newId: IdFactory): IRNode[
     if ('goRow' in s) return { id, kind: 'goRow', to: s.goRow };
     if ('goColumn' in s) return { id, kind: 'goColumn', to: s.goColumn };
     if ('shift' in s) return { id, kind: 'shift', slot: s.shift, dir: s.dir };
+    if ('fly' in s) return { id, kind: 'fly', slot: s.fly, ...(s.column !== undefined && { column: s.column }), ...(s.row !== undefined && { row: s.row }) };
     if ('repeat' in s) return { id, kind: 'repeat', count: s.repeat, body: buildNodes(s.do, newId) };
     if ('until' in s) return { id, kind: 'until', condition: s.until, body: buildNodes(s.do, newId) };
     if ('forEach' in s) return { id, kind: 'forEach', list: s.forEach, item: s.as, body: buildNodes(s.do, newId) };
@@ -191,6 +194,8 @@ export function specOf(nodes: readonly IRNode[]): NodeSpec[] {
         return { goColumn: n.to };
       case 'shift':
         return { shift: n.slot, dir: n.dir };
+      case 'fly':
+        return { fly: n.slot, ...(n.column !== undefined && { column: n.column }), ...(n.row !== undefined && { row: n.row }) };
       default:
         return n.kind;
     }
@@ -233,6 +238,11 @@ export function conditionsOfSpec(spec: readonly NodeSpec[]): ConditionId[] {
     const own = typeof s !== 'string' && ('if' in s || 'until' in s) ? ['if' in s ? s.if : (s as { until: ConditionId }).until] : [];
     return [...own, ...innerOf(s).flatMap(conditionsOfSpec)];
   });
+}
+
+/** True when a spec's cards ask the bird, which sees the whole board. */
+export function specAsksBird(spec: readonly NodeSpec[]): boolean {
+  return spec.some((s) => typeof s !== 'string' && ((('set' in s || 'push' in s) && isBirdSource(s.to)) || innerOf(s).some(specAsksBird)));
 }
 
 /** The names a spec calls, in document order, repeats included. */

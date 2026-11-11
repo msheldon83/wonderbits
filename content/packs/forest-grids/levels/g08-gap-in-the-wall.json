@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "g08-gap-in-the-wall",
   "title": "Gap in the wall",
-  "intro": "The gap in the wall moves each shuffle. Run your finger down column 3 on the map until there is no rock, counting rows.",
+  "intro": "The gap in the wall moves each shuffle. Fly the bird down column 3 until there is no rock under it, counting rows.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -44,7 +44,7 @@
       "slot:rock=no"
     ],
     "allowedSources": [
-      "read:walls@spot"
+      "read:walls@bird"
     ],
     "maxInstructions": 8,
     "maxPerCommand": {
@@ -59,7 +59,7 @@
         "start": "board:walls"
       },
       {
-        "remember": "spot",
+        "remember": "bird",
         "kind": "position",
         "start": {
           "x": 3,
@@ -120,19 +120,19 @@
           "y": 4
         }
       ],
-      "text": "spot starts at the top of the wall."
+      "text": "The bird starts over the top of the wall."
     },
     {
       "kind": "card",
       "command": "until",
-      "text": "Repeat until rock is no: move spot down, add 1 to row, read the map again."
+      "text": "Repeat until rock is no: fly the bird down, add 1 to row, read the map under it again."
     },
     {
       "kind": "fill",
       "path": [],
       "slot": 1,
       "command": "until",
-      "text": "Read once, then loop until the finger finds no rock."
+      "text": "Read once, then loop until the bird finds no rock."
     }
   ],
   "referenceSolution": [
@@ -143,7 +143,7 @@
       "start": "board:walls"
     },
     {
-      "remember": "spot",
+      "remember": "bird",
       "kind": "position",
       "start": {
         "x": 3,
@@ -162,13 +162,13 @@
     },
     {
       "set": "rock",
-      "to": "read:walls@spot"
+      "to": "read:walls@bird"
     },
     {
       "until": "slot:rock=no",
       "do": [
         {
-          "shift": "spot",
+          "shift": "bird",
           "dir": "S"
         },
         {
@@ -177,7 +177,7 @@
         },
         {
           "set": "rock",
-          "to": "read:walls@spot"
+          "to": "read:walls@bird"
         }
       ]
     },

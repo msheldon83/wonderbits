@@ -2976,3 +2976,47 @@ a.travel-button .travel-icon {
     scroll-margin-top: 112px;
   }
 }
+
+/* The bird: it flies over the board, sees all of it, and answers when the robot asks. */
+.board-bird {
+  position: absolute;
+  width: 64px;
+  height: 56px;
+  pointer-events: none;
+}
+
+.board-bird-body {
+  animation: bird-bob 2.6s ease-in-out infinite;
+}
+
+/* Over the board, the bird glides from tile to tile as its place changes. */
+.board-bird.is-flying {
+  transition: left 320ms ease-in-out, top 320ms ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-bird.is-flying {
+    transition: none;
+  }
+}
+
+@keyframes bird-bob {
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.board-bird-bubble {
+  position: absolute;
+  left: auto;
+  right: 54px;
+  top: 0;
+  opacity: 0;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-bird-body {
+    animation: none;
+  }
+}

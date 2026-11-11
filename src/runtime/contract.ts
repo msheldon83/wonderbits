@@ -140,6 +140,10 @@ export interface SetEvent extends TraceBase {
   op: 'set';
   slot: string;
   value: Value;
+  /** The robot asked the bird for this value: something on the whole board, or what is under the bird. */
+  asked?: 'bird';
+  /** When the bird read a map under it: the map's name, such as walls. */
+  seen?: string;
 }
 
 /** A Face card turned the robot to the direction a slot holds. A robot action, like a turn. */

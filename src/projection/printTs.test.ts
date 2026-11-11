@@ -188,9 +188,10 @@ describe('printProgram', () => {
     expect(printProgram(p)).toContain('let seen: boolean[] = [];');
   });
 
-  it('prints the acorns left on the board as a reading of the robot', () => {
+  it('prints the acorns left on the board as a question for the bird, which sees the whole board', () => {
     const p = programFromSpec([{ remember: 'left', kind: 'number' }, { set: 'left', to: 'acornsLeft' }], sequentialIdFactory());
-    expect(printProgram(p)).toContain('left = robot.acornsLeft(); // @node n1');
+    expect(printProgram(p)).toContain("import { robot, bird } from 'wonderbits';");
+    expect(printProgram(p)).toContain('left = bird.acornsLeft(); // @node n1');
   });
 
   it('prints a slot in the backpack as loaded in the morning and saved at night', () => {
@@ -235,5 +236,12 @@ describe('printProgram', () => {
     expect(code).toContain('      this.steps -= 1; // @node n3');
     expect(code).toContain("  Object.assign(new Bot(0, 0, 'right'), { steps: 2 }),");
     expect(code).toContain('for (const bot of team) bot.main();');
+  });
+
+  it('prints the bird as a place the robot sends out and reads the map under', () => {
+    const p = programFromSpec([{ remember: 'bird', kind: 'position' }, { remember: 'walls', kind: 'grid', of: 'yesNo', start: 'board:walls' }, { remember: 'rock', kind: 'yesNo' }, { shift: 'bird', dir: 'E' }, { set: 'rock', to: 'read:walls@bird' }], sequentialIdFactory());
+    const code = printProgram(p);
+    expect(code).toContain('bird.x += 1; // @node n1');
+    expect(code).toContain('rock = walls[bird.y][bird.x]; // @node n2');
   });
 });

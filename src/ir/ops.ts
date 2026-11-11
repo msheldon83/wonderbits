@@ -19,7 +19,7 @@ export type EditOp =
   | { op: 'move'; id: NodeId; to: Place }
   | { op: 'delete'; id: NodeId }
   /** Change a block's parameter: a Repeat's count or an If's or Until's condition. */
-  | { op: 'set'; id: NodeId; count?: number; condition?: ConditionId; gate?: string; slot?: string; to?: Source; by?: number; list?: string; item?: string; grid?: string; at?: string; target?: number | string; dir?: 'N' | 'E' | 'S' | 'W' }
+  | { op: 'set'; id: NodeId; count?: number; condition?: ConditionId; gate?: string; slot?: string; to?: Source; by?: number; list?: string; item?: string; grid?: string; at?: string; target?: number | string; dir?: 'N' | 'E' | 'S' | 'W'; column?: number | string | null; row?: number | string | null }
   /** Give the robot a memory slot, or forget one no card uses. */
   | { op: 'addSlot'; slot: MemorySlot }
   | { op: 'removeSlot'; name: string };
@@ -185,9 +185,18 @@ export function applyOp(program: ProgramIR, edit: EditOp): ProgramIR {
       if ((edit.grid !== undefined || edit.at !== undefined) && node.kind !== 'mark') throw new Error(`Node ${edit.id} has no grid`);
       if (edit.target !== undefined && node.kind !== 'goRow' && node.kind !== 'goColumn') throw new Error(`Node ${edit.id} has no row or column`);
       if (edit.dir !== undefined && node.kind !== 'shift') throw new Error(`Node ${edit.id} has no direction`);
+      if ((edit.column !== undefined || edit.row !== undefined) && node.kind !== 'fly') throw new Error(`Node ${edit.id} has no column or row to fly to`);
       const patch = (n: IRNode): IRNode => {
         if (n.id !== edit.id) return n;
         if (n.kind === 'goRow' || n.kind === 'goColumn') return { ...n, ...(edit.target !== undefined && { to: edit.target }) };
+        if (n.kind === 'fly') {
+          // null clears a coordinate, so it stays where it is; at least one must remain.
+          const { column: _c, row: _r, ...rest } = n;
+          const column = edit.column === undefined ? n.column : (edit.column ?? undefined);
+          const row = edit.row === undefined ? n.row : (edit.row ?? undefined);
+          if (column === undefined && row === undefined) throw new Error(`Node ${edit.id} must fly to a column, a row or both`);
+          return { ...rest, ...(edit.slot !== undefined && { slot: edit.slot }), ...(column !== undefined && { column }), ...(row !== undefined && { row }) };
+        }
         if (n.kind === 'shift') return { ...n, ...(edit.slot !== undefined && { slot: edit.slot }), ...(edit.dir !== undefined && { dir: edit.dir }) };
         if (n.kind === 'push') return { ...n, ...(edit.list !== undefined && { list: edit.list }), ...(edit.to !== undefined && { to: edit.to }) };
         if (n.kind === 'mark') return { ...n, ...(edit.slot !== undefined && { slot: edit.slot }), ...(edit.grid !== undefined && { grid: edit.grid }), ...(edit.at !== undefined && { at: edit.at }) };

@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "id": "g14-straight-there",
+  "title": "Straight there",
+  "intro": "A bird does not have to fly one tile at a time, and rocks do not stop it. Fly the bird to sends it straight to a column and a row. Send it to the acorn with one card.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......",
+      "..#...",
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 0,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 4,
+        "y": 2
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": false,
+    "collectAll": false,
+    "memory": {
+      "bird": {
+        "x": 4,
+        "y": 2
+      }
+    }
+  },
+  "curriculum": {
+    "concept": "grids",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "shift",
+      "fly"
+    ],
+    "maxInstructions": 1,
+    "starterProgram": [
+      {
+        "remember": "bird",
+        "kind": "position",
+        "start": {
+          "x": 0,
+          "y": 0
+        }
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 4,
+          "y": 2
+        }
+      ],
+      "text": "The acorn is at column 4, row 2."
+    },
+    {
+      "kind": "card",
+      "command": "fly",
+      "text": "One card is all there is room for: Fly the bird to, with a column and a row."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "fly",
+      "text": "Fly the bird to column 4, row 2."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "bird",
+      "kind": "position",
+      "start": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "fly": "bird",
+      "column": 4,
+      "row": 2
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

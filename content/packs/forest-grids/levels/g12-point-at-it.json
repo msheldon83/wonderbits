@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "g12-point-at-it",
   "title": "Point at it",
-  "intro": "A new card: Move finger. spot is a finger on the map, the purple hand on the board. Moving it moves only the finger: the robot stays where it is. Point spot at the acorn.",
+  "intro": "The bird flies wherever the robot sends it, and the robot stays where it is. bird holds where the bird is: column 0, row 0 to start. A new card, Fly the bird, sends it one tile. Send the bird to the acorn.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -29,7 +29,7 @@
     "reachGoal": false,
     "collectAll": false,
     "memory": {
-      "spot": {
+      "bird": {
         "x": 3,
         "y": 1
       }
@@ -46,7 +46,7 @@
     "maxInstructions": 4,
     "starterProgram": [
       {
-        "remember": "spot",
+        "remember": "bird",
         "kind": "position",
         "start": {
           "x": 0,
@@ -64,24 +64,24 @@
           "y": 1
         }
       ],
-      "text": "The acorn is at column 3, row 1. The finger starts at column 0, row 0."
+      "text": "The acorn is at column 3, row 1. The bird starts at column 0, row 0."
     },
     {
       "kind": "card",
       "command": "shift",
-      "text": "Each Move finger moves spot one tile: right three times, down once."
+      "text": "Each Fly the bird moves it one tile: right three times, down once."
     },
     {
       "kind": "fill",
       "path": [],
       "slot": 0,
       "command": "shift",
-      "text": "Start by moving spot right."
+      "text": "Start by flying the bird right."
     }
   ],
   "referenceSolution": [
     {
-      "remember": "spot",
+      "remember": "bird",
       "kind": "position",
       "start": {
         "x": 0,
@@ -89,19 +89,19 @@
       }
     },
     {
-      "shift": "spot",
+      "shift": "bird",
       "dir": "E"
     },
     {
-      "shift": "spot",
+      "shift": "bird",
       "dir": "E"
     },
     {
-      "shift": "spot",
+      "shift": "bird",
       "dir": "E"
     },
     {
-      "shift": "spot",
+      "shift": "bird",
       "dir": "S"
     }
   ],

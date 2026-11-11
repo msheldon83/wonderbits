@@ -108,7 +108,7 @@
     {
       "kind": "card",
       "command": "set",
-      "text": "The bag knows how many it holds. count is a second scoreboard that nobody updates."
+      "text": "The robot can always count its own bag. count is a second scoreboard that nobody updates."
     },
     {
       "kind": "fill",

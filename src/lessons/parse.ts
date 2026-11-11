@@ -152,6 +152,10 @@ class Reader {
         const dir = FACINGS.includes(s.dir as Facing) ? (s.dir as Facing) : (this.fail(`${at}.dir`, 'expected N, E, S or W'), 'E');
         return [{ shift: this.functionName(s.shift, `${at}.shift`), dir }];
       }
+      if ('fly' in s) {
+        if (s.column === undefined && s.row === undefined) this.fail(at, 'a fly card needs a "column", a "row", or both');
+        return [{ fly: this.functionName(s.fly, `${at}.fly`), ...(s.column !== undefined && { column: this.target(s.column, `${at}.column`) }), ...(s.row !== undefined && { row: this.target(s.row, `${at}.row`) }) }];
+      }
       if ('forEach' in s) return [{ forEach: this.functionName(s.forEach, `${at}.forEach`), as: this.functionName(s.as, `${at}.as`), do: this.spec(s.do, `${at}.do`, false) }];
       if ('open' in s) return [{ open: this.gateId(s.open, `${at}.open`) }];
       if ('close' in s) return [{ close: this.gateId(s.close, `${at}.close`) }];

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "v08-stop-at-the-last-acorn",
   "title": "Stop at the last acorn",
-  "intro": "One program for every shuffle: walk until no acorns are left, and stop right there.",
+  "intro": "One program for every shuffle: walk, asking the bird after each step, until no acorns are left. Stop right there.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -125,14 +125,14 @@
     {
       "kind": "card",
       "command": "until",
-      "text": "Keep walking until no acorns are left."
+      "text": "Keep walking until the bird says no acorns are left."
     },
     {
       "kind": "fill",
       "path": [],
       "slot": 0,
       "command": "until",
-      "text": "Repeat until left is 0: a step, then set left again from the board."
+      "text": "Repeat until left is 0: a step, then ask the bird again."
     }
   ],
   "referenceSolution": [

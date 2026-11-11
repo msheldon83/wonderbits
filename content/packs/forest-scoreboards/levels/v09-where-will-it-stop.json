@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "v09-where-will-it-stop",
   "title": "Where will it stop?",
-  "intro": "left is read from the board after every step. Place the flag where the robot stops.",
+  "intro": "After every step the robot asks the bird how many acorns are left. Place the flag where the robot stops.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -93,7 +93,7 @@
     {
       "kind": "card",
       "command": "until",
-      "text": "After every step, left is worked out again from the board."
+      "text": "After every step the robot asks the bird how many are left."
     },
     {
       "kind": "fill",

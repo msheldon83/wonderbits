@@ -89,7 +89,7 @@
     {
       "kind": "card",
       "command": "set",
-      "text": "Work out what is left after picking them up, not before."
+      "text": "Ask the bird after picking them up, not before."
     },
     {
       "kind": "fill",

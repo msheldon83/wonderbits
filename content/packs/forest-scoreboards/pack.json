@@ -13,7 +13,7 @@
   "introduction": {
     "concept": "derived",
     "title": "Work it out",
-    "explanation": "A number you copy and keep can go out of date. Work it out from what is really there, right when you need it.",
+    "explanation": "A number you copy and keep by hand can go out of date. The robot always knows what is in its pocket, and the bird flying over the board sees all of it: ask them right when you need a number.",
     "demo": {
       "world": {
         "rows": [

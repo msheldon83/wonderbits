@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "v06-which-one-is-wrong",
   "title": "Which one is wrong?",
-  "intro": "held guesses: one acorn every two steps. real reads what the robot holds. Fill in both.",
+  "intro": "held guesses: one acorn every two steps. real is what the robot finds in its pocket. Fill in both.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -94,14 +94,14 @@
     {
       "kind": "card",
       "command": "change",
-      "text": "held adds one every two steps, acorn or not."
+      "text": "held adds one every two steps, acorn or not. real is what the robot finds in its pocket."
     },
     {
       "kind": "fill",
       "path": [],
       "slot": 1,
       "command": "set",
-      "text": "real is read from the acorns the robot really holds."
+      "text": "real is set from the acorns in its pocket."
     }
   ],
   "referenceSolution": [

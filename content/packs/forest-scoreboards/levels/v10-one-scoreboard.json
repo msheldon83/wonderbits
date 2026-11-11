@@ -89,19 +89,19 @@
           "y": 0
         }
       ],
-      "text": "Gate A wants the acorns held. Gate B wants the acorns left on the board."
+      "text": "Gate A wants the acorns in the robot's pocket. Gate B wants the acorns left on the board: ask the bird."
     },
     {
       "kind": "card",
       "command": "set",
-      "text": "One slot is enough: work each number out right before its lock."
+      "text": "One slot is enough: find each number right before its lock, in the pocket or from the bird."
     },
     {
       "kind": "fill",
       "path": [],
       "slot": 1,
       "command": "set",
-      "text": "Set score to acorns held, then Unlock A."
+      "text": "Set score to acorns in its pocket, then Unlock A."
     }
   ],
   "referenceSolution": [

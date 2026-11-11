@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "g13-look-before-you-go",
   "title": "Look before you go",
-  "intro": "A rock sits in column 3, in row 0 or row 1: it changes each shuffle. spot already points at column 3, row 0. Read the map there: if it says rock, go round by row 1.",
+  "intro": "A rock sits in column 3, in row 0 or row 1: it changes each shuffle. Send the bird to column 3 and read the map under it: if it says rock, go round by row 1.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -33,15 +33,16 @@
       "set",
       "if",
       "goRow",
-      "goColumn"
+      "goColumn",
+      "fly"
     ],
     "allowedConditions": [
       "slot:rock=yes"
     ],
     "allowedSources": [
-      "read:walls@spot"
+      "read:walls@bird"
     ],
-    "maxInstructions": 6,
+    "maxInstructions": 7,
     "starterProgram": [
       {
         "remember": "walls",
@@ -50,10 +51,10 @@
         "start": "board:walls"
       },
       {
-        "remember": "spot",
+        "remember": "bird",
         "kind": "position",
         "start": {
-          "x": 3,
+          "x": 0,
           "y": 0
         }
       },
@@ -85,19 +86,19 @@
           "y": 1
         }
       ],
-      "text": "The rock is in one of these two tiles. The finger points at the top one."
+      "text": "The rock is in one of these two tiles. The bird starts at column 0, row 0."
     },
     {
       "kind": "card",
       "command": "if",
-      "text": "Set rock to walls at spot. If rock is yes, go to row 1 before going along."
+      "text": "Fly the bird to column 3, then set rock to walls under the bird. If rock is yes, go to row 1 before going along."
     },
     {
       "kind": "fill",
       "path": [],
-      "slot": 1,
+      "slot": 2,
       "command": "if",
-      "text": "Second: an If on rock."
+      "text": "Third: an If on rock."
     }
   ],
   "referenceSolution": [
@@ -108,10 +109,10 @@
       "start": "board:walls"
     },
     {
-      "remember": "spot",
+      "remember": "bird",
       "kind": "position",
       "start": {
-        "x": 3,
+        "x": 0,
         "y": 0
       }
     },
@@ -121,8 +122,12 @@
       "start": false
     },
     {
+      "fly": "bird",
+      "column": 3
+    },
+    {
       "set": "rock",
-      "to": "read:walls@spot"
+      "to": "read:walls@bird"
     },
     {
       "if": "slot:rock=yes",
