@@ -104,6 +104,17 @@ function validateWorld(world: WorldDefinition, objective: ObjectiveDefinition, e
   const ids = gates.map((g) => g.id);
   if (new Set(ids).size !== ids.length) errors.push('gate ids must not repeat');
   const taken = new Map<string, string>([[cellKey(world.robot), 'the robot'], [cellKey(world.goal), 'the goal']]);
+  // A team: every robot starts on floor, off its own flag, and no two share a start or a flag.
+  (world.team ?? []).forEach((t, i) => {
+    if (tileAt(world, t.robot) !== 'floor') errors.push(`robot ${i + 1} must start on a floor tile`);
+    if (tileAt(world, t.goal) !== 'floor') errors.push(`robot ${i + 1}'s flag must be on a floor tile`);
+    if (cellKey(t.robot) === cellKey(t.goal)) errors.push(`robot ${i + 1} must not start on its flag`);
+    if (i === 0) return;
+    if (taken.has(cellKey(t.robot))) errors.push(`robot ${i + 1} starts on ${taken.get(cellKey(t.robot))}`);
+    taken.set(cellKey(t.robot), `robot ${i + 1}`);
+    if (taken.has(cellKey(t.goal))) errors.push(`robot ${i + 1}'s flag shares a tile with ${taken.get(cellKey(t.goal))}`);
+    taken.set(cellKey(t.goal), `robot ${i + 1}'s flag`);
+  });
   world.collectibles.forEach((c) => taken.set(cellKey(c), 'an acorn'));
   const place = (cell: { x: number; y: number }, what: string) => {
     const key = cellKey(cell);
@@ -166,6 +177,19 @@ export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
   });
 
   if (puzzle.days !== undefined && puzzle.shuffles) errors.push('a level of several days runs on one board, so it cannot have shuffles');
+  if (world.team) {
+    if (puzzle.days !== undefined || puzzle.shuffles || puzzle.inputScript || moversOf(world).length > 0) errors.push('a team board has no days, shuffles, key script or movers');
+    if (!puzzle.objective.reachGoal) errors.push('a team board asks every robot to reach its own flag: objective.reachGoal must be true');
+    if (splitSpec(referenceSolution).handlers.length > 0) errors.push('a team board has no When cards: every robot runs the blueprint, main');
+    const slots = new Map(splitSpec(referenceSolution).memory.map((m) => [m.name, m]));
+    world.team.forEach((t, i) => {
+      for (const [name, v] of Object.entries(t.memory ?? {})) {
+        const m = slots.get(name);
+        if (!m) errors.push(`robot ${i + 1} is built with ${name}, which the blueprint does not remember`);
+        else if (!valueFits(v, m.kind, m.of, m.fields)) errors.push(`robot ${i + 1} is built with a ${name} that is not a ${m.kind}`);
+      }
+    });
+  }
 
   if (programming.allowedCommands.length === 0) errors.push('allowedCommands must not be empty');
   const allowed = new Set<string>(programming.allowedCommands);
@@ -222,6 +246,7 @@ export function validatePuzzle(puzzle: PuzzleDefinition): ValidationReport {
     puzzle.inputScript !== undefined ||
     puzzle.shuffles !== undefined ||
     puzzle.days !== undefined ||
+    world.team !== undefined ||
     isRandomLevel(puzzle);
   /** Levels where the child writes the program; elsewhere a shorter flat program is no concern. */
   const open = puzzle.curriculum.activity === 'build' || puzzle.curriculum.activity === 'reorder';
@@ -611,6 +636,7 @@ export function validateIntroduction(intro: ConceptIntroduction, errors: string[
     representation: [splitSpec(program).memory.length > 0 && trace.some((e) => e.op === 'set'), 'never puts anything in a memory slot'],
     grids: [splitSpec(program).memory.some((m) => m.kind === 'grid') || cardsOfSpec(program).some((c) => (GO_IDS as readonly string[]).includes(c)), 'never uses a grid or a row or column'],
     randomness: [setSources(program).some((src) => parseRandom(src) !== null), 'never uses a random source'],
+    objects: [world.team !== undefined && trace.some((e) => e.op === 'next'), 'never has a second robot run the blueprint'],
     persistence: [trace.some((e) => e.op === 'night') && splitSpec(program).memory.some((m) => m.keep), 'never keeps a slot in the backpack overnight'],
     records: [setSources(program).some((src) => parseField(src) !== null) || conditionsOfSpec(program).some((c) => splitSlotPath(parseSlotTest(c)?.slot ?? '').field !== undefined), 'never reads a field of a record'],
     derived: [setSources(program).some((src) => typeof src === 'string' && !parseRandom(src) && !['N', 'E', 'S', 'W'].includes(src)), 'never works a value out from what is there'],

@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "id": "forest-team",
+  "title": "Robot team",
+  "themeId": "forest",
+  "order": 17,
+  "concepts": [
+    "objects"
+  ],
+  "prerequisites": [
+    "forest-notebook"
+  ],
+  "introduction": {
+    "concept": "objects",
+    "title": "Blueprints",
+    "explanation": "A program can be a blueprint. Every robot built from it runs the same cards, from its own start, with its own memory.",
+    "demo": {
+      "world": {
+        "rows": [
+          "...",
+          "..."
+        ],
+        "team": [
+          {
+            "robot": {
+              "x": 0,
+              "y": 0,
+              "facing": "E"
+            },
+            "goal": {
+              "x": 2,
+              "y": 0
+            }
+          },
+          {
+            "robot": {
+              "x": 0,
+              "y": 1,
+              "facing": "E"
+            },
+            "goal": {
+              "x": 2,
+              "y": 1
+            }
+          }
+        ],
+        "collectibles": []
+      },
+      "program": [
+        "forward",
+        "forward"
+      ]
+    }
+  },
+  "levels": [
+    "b01-two-robots",
+    "b02-their-own-memory",
+    "b03-own-starts",
+    "b04-fix-the-blueprint",
+    "b05-built-with-a-number",
+    "b06-one-opens-one-passes",
+    "b07-cards-in-order",
+    "b08-in-each-others-way",
+    "b09-where-will-robot-3-stop",
+    "b10-the-opener"
+  ]
+}

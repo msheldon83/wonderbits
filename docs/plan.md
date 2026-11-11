@@ -181,7 +181,7 @@ Each level authors a deterministic three-rung ladder: orient attention (highligh
 
 **Curriculum: the concept spine**
 
-Repeat was motivated by the instruction budget the child felt on level 15, and the packs through The notebook (records) are built. The spine continues from there to data. Functions came next after conditionals. Switches then introduce world state on its own, and events follow right after, so the world can react to the robot. Input and the game loop follow events, and lists, grids and randomness follow variables, because the target game types depend on them. Types run as a thread from Representation onward, and Robot team adds objects at the end. A construct is introduced only after a concrete puzzle makes the previous approach cumbersome.
+Repeat was motivated by the instruction budget the child felt on level 15, and every pack of the spine, through Robot team (objects), is built. The spine continues from there to data. Functions came next after conditionals. Switches then introduce world state on its own, and events follow right after, so the world can react to the robot. Input and the game loop follow events, and lists, grids and randomness follow variables, because the target game types depend on them. Types run as a thread from Representation onward, and Robot team adds objects at the end. A construct is introduced only after a concrete puzzle makes the previous approach cumbersome.
 
 | # | Concept | Pack | Status |
 | --- | --- | --- | --- |
@@ -201,7 +201,7 @@ Repeat was motivated by the instruction budget the child felt on level 15, and t
 | 14 | Stored vs. derived | Two scoreboards | Built |
 | 15 | Persistence | Overnight | Built |
 | 16 | Records and shapes | The notebook | Built |
-| 17 | Objects: blueprints and instances | Robot team | Proposed |
+| 17 | Objects: blueprints and instances | Robot team | Built |
 
 Inheritance stays out of the puzzle curriculum. It is the least essential part of classes, and TypeScript style leans toward interfaces and composition. If it appears at all, it belongs in Phase 4.
 
@@ -557,7 +557,7 @@ Work proceeds vertically: each step ends with something runnable on an iPad. Cod
 9. **Functions.** `call` in the IR, the printer and the interpreter; the Same trick, new place pack with its introduction. Built 2026-11-08 (design-notes.md).
 10. **World state and the memory card.** Switches and gates in the simulation with their senses; the memory card panel rendered from trace state; the Flip the switch pack; the `model` activity and state prediction with their validator rules. Built 2026-11-08 (design-notes.md).
 11. **Events, input and time.** `on` handlers and When it happens; `inputScript` and Remote control; ticks, every-tick handlers, moving hazards and Tick tock. Built 2026-11-08 (design-notes.md).
-12. **Data.** The memory budget and kinds of values (Two things to remember); `set` and variables (Into the dark, built as Keep count); lists (In a row) — these three built 2026-11-09 (design-notes.md); 2D grids (Reading the map); seeded randomness (Never the same twice) — these two built 2026-11-09 as well; stored vs. derived (Two scoreboards, built 2026-11-11); the backpack and persistence (Overnight, built 2026-11-11); records (The notebook, built 2026-11-11); blueprints and instances (Robot team).
+12. **Data.** The memory budget and kinds of values (Two things to remember); `set` and variables (Into the dark, built as Keep count); lists (In a row) — these three built 2026-11-09 (design-notes.md); 2D grids (Reading the map); seeded randomness (Never the same twice) — these two built 2026-11-09 as well; stored vs. derived (Two scoreboards, built 2026-11-11); the backpack and persistence (Overnight, built 2026-11-11); records (The notebook, built 2026-11-11); blueprints and instances (Robot team, built 2026-11-11). Step 12 is complete.
 13. **Creation mode.** Create on the map with its nudge; remix; design a puzzle with the validator as critic; the Workshop's turn-based and real-time starters; the design card and save-my-place for detours; grown-up review.
 14. **AI design guide.** Gap detection by rules over the concept graph first, then the AI conversation behind a flag, in creation mode only.
 

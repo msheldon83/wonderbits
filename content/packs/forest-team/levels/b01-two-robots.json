@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "id": "b01-two-robots",
+  "title": "Two robots",
+  "intro": "One program is a blueprint. Robot 1 runs it, then robot 2 runs it from its own start.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....",
+      "...."
+    ],
+    "team": [
+      {
+        "robot": {
+          "x": 0,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 3,
+          "y": 0
+        }
+      },
+      {
+        "robot": {
+          "x": 0,
+          "y": 1,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 3,
+          "y": 1
+        }
+      }
+    ],
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "objects",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward"
+    ],
+    "maxInstructions": 3,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 1
+        }
+      ],
+      "text": "Two robots, two flags, and one program."
+    },
+    {
+      "kind": "card",
+      "command": "forward",
+      "text": "Both robots run the same cards, each from its own start."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "forward",
+      "text": "Three steps take each robot to its flag."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

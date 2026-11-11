@@ -470,3 +470,34 @@ describe('records', () => {
     expect(r.outcome).toMatchObject({ status: 'error', message: 'crate has no key: every record of a shape needs all its fields' });
   });
 });
+
+describe('a team', () => {
+  const team: WorldDefinition = {
+    ...world,
+    team: [
+      { robot: { x: 0, y: 1, facing: 'E' }, goal: { x: 3, y: 1 }, memory: { steps: 3 } },
+      { robot: { x: 0, y: 2, facing: 'E' }, goal: { x: 1, y: 2 }, memory: { steps: 1 } },
+    ],
+  };
+  const blueprint: NodeSpec[] = [{ remember: 'steps', kind: 'number' }, { until: 'slot:steps=0', do: ['forward', { change: 'steps', by: -1 }] }];
+  const go = (w: WorldDefinition, s: NodeSpec[]) => interpretAll({ program: programFromSpec(s, sequentialIdFactory()), world: w, objective, limits: { maxSteps: 1000 } });
+
+  it('runs the blueprint once per robot, each with its own start and memory', () => {
+    const r = go(team, blueprint);
+    expect(r.outcome).toEqual({ status: 'success' });
+    const next = r.trace.find((e) => e.op === 'next')!;
+    expect(next.after.robot).toEqual({ x: 0, y: 2, facing: 'E' });
+    expect(next.after.memory).toEqual({ steps: 1 });
+    expect(next.after.team![0]).toEqual({ x: 3, y: 1, facing: 'E' });
+    expect(r.final.active).toBe(1);
+  });
+
+  it('lets robots block each other, and needs every robot on its own flag', () => {
+    const line: WorldDefinition = { ...world, team: [{ robot: { x: 1, y: 2, facing: 'E' }, goal: { x: 3, y: 2 } }, { robot: { x: 0, y: 2, facing: 'E' }, goal: { x: 2, y: 2 } }] };
+    const r = go(line, [{ until: 'blockedAhead', do: ['forward'] }]);
+    expect(r.outcome).toEqual({ status: 'success' });
+    expect(r.final.robot).toEqual({ x: 2, y: 2, facing: 'E' });
+    const bump = go(line, ['forward', 'forward', 'forward']);
+    expect(bump.outcome).toMatchObject({ status: 'blocked' });
+  });
+});

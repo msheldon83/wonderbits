@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "id": "b04-fix-the-blueprint",
+  "title": "Fix the blueprint",
+  "intro": "The blueprint works for robot 1 but not for robot 2. Change it so it works for both.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....",
+      "...."
+    ],
+    "team": [
+      {
+        "robot": {
+          "x": 0,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 3,
+          "y": 0
+        }
+      },
+      {
+        "robot": {
+          "x": 0,
+          "y": 1,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 2,
+          "y": 1
+        }
+      }
+    ],
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "objects",
+    "activity": "debug"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "until"
+    ],
+    "allowedConditions": [
+      "blockedAhead",
+      "atFlag"
+    ],
+    "maxInstructions": 2,
+    "starterProgram": [
+      {
+        "until": "blockedAhead",
+        "do": [
+          "forward"
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 1
+        }
+      ],
+      "text": "Robot 2's flag is not at the end of its row."
+    },
+    {
+      "kind": "step",
+      "path": [],
+      "index": 0,
+      "text": "This loop works for robot 1. What should every robot stop at?"
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "until",
+      "text": "Repeat until at the flag: each robot's own flag."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "until": "atFlag",
+      "do": [
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

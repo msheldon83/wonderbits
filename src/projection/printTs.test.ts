@@ -220,4 +220,20 @@ describe('printProgram', () => {
     expect(code).toContain('if (crate.key) { // @node n2');
     expect(code).toContain('code = crate.number; // @node n3');
   });
+
+  it('prints a team board as a blueprint class and its robots as instances', () => {
+    const p = programFromSpec([{ remember: 'steps', kind: 'number' }, { until: 'slot:steps=0', do: ['forward', { change: 'steps', by: -1 }] }], sequentialIdFactory());
+    const team = [
+      { robot: { x: 0, y: 0, facing: 'E' as const }, goal: { x: 2, y: 0 }, memory: { steps: 2 } },
+      { robot: { x: 0, y: 1, facing: 'E' as const }, goal: { x: 3, y: 1 }, memory: { steps: 3 } },
+    ];
+    const code = printProgram(p, { team });
+    expect(code).toContain("import { Robot } from 'wonderbits';");
+    expect(code).toContain('class Bot extends Robot {\n  steps: number = 0;\n\n  main(): void {');
+    expect(code).toContain('    while (this.steps !== 0) { // @node n1');
+    expect(code).toContain('      this.forward(); // @node n2');
+    expect(code).toContain('      this.steps -= 1; // @node n3');
+    expect(code).toContain("  Object.assign(new Bot(0, 0, 'right'), { steps: 2 }),");
+    expect(code).toContain('for (const bot of team) bot.main();');
+  });
 });

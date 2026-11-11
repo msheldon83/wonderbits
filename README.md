@@ -32,9 +32,9 @@ introduced, creation mode, the AI design guide, the build sequence, the
 architecture, and the exit gate for the first child test. Read it before
 starting new work.
 
-The first child test passed on 2026-11-08, and this repository is part way
-through **build step 12 of the plan: data**. It has 165 levels in seventeen
-packs (Forest, five levels that teach the game; Forest trails, ten
+The first child test passed on 2026-11-08, and this repository has finished
+**build step 12 of the plan: data**, the last pack of the concept spine. It
+has 175 levels in eighteen packs (Forest, five levels that teach the game; Forest trails, ten
 sequencing levels; Around and around, Repeat; Look before you leap, If,
 If / else and Repeat until; Same trick, new place, functions; Flip the
 switch, switches and gates; When it happens, When cards for plates and
@@ -44,13 +44,13 @@ count, variables that change; In a row, lists; Never the same twice, a
 random generator; Reading the map, coordinates and a finger on the map;
 Two scoreboards, values worked out instead of stored; Overnight, levels of
 several days with a backpack kept overnight; The notebook, records of named
-fields), a show-first introduction before
+fields; Robot team, robots built from one blueprint), a show-first introduction before
 each new concept, a card book to watch them again, a memory card under the
 board wherever the world or the robot's memory can change, prediction of
 the tile and of the memory card, validators in CI, three-rung hint ladders,
 the level map with stars and badges, progress in IndexedDB, and an
-observation log the grown-up can export. The rest of step 12 comes next:
-objects (Robot team). See [docs/design-notes.md](docs/design-notes.md) for what is built, what
+observation log the grown-up can export. Creation mode, step 13, comes
+next. See [docs/design-notes.md](docs/design-notes.md) for what is built, what
 is deliberately not, and any deviations from the plan.
 
 ## Run it

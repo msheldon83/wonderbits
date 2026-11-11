@@ -19,7 +19,7 @@
  */
 import { functionBody, handlerBody, mainBody } from '../ir/program';
 import { handlerContainerId, type Key } from '../ir/types';
-import { advance, drawSource, morning, faceTo, gridPlace, initialState, markGrid, missingItem, shiftPlace, evaluate, isTimed, objectiveMet, period, remember, setGate, stateKey, step, unlockGate, type WorldEvent } from '../sim/world';
+import { advance, drawSource, morning, nextRobot, faceTo, gridPlace, initialState, markGrid, missingItem, shiftPlace, evaluate, isTimed, objectiveMet, period, remember, setGate, stateKey, step, unlockGate, type WorldEvent } from '../sim/world';
 import type { Facing } from '../sim/types';
 import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 import type { IRNode, ProgramIR } from '../ir/types';
@@ -365,6 +365,14 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
   for (let d = 2; d <= days && !stop; d++) {
     const after = morning(world, program.memory ?? [], state);
     const ok = yield* emit({ nodeId: 'night', op: 'night', day: d, before: state, after, result: { kind: 'ok' } });
+    if (!ok) break;
+    state = after;
+    yield* day();
+  }
+  // A team board: every robot built from the blueprint runs it in turn, on the same board.
+  for (let r = 1; r < (world.team?.length ?? 0) && !stop; r++) {
+    const after = nextRobot(world, program.memory ?? [], state);
+    const ok = yield* emit({ nodeId: 'team', op: 'next', robot: r, before: state, after, result: { kind: 'ok' } });
     if (!ok) break;
     state = after;
     yield* day();

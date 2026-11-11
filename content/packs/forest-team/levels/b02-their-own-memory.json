@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "id": "b02-their-own-memory",
+  "title": "Their own memory",
+  "intro": "Both robots count their steps in steps. When robot 2 is done, what does its steps say?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....#",
+      "..#.."
+    ],
+    "team": [
+      {
+        "robot": {
+          "x": 0,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 3,
+          "y": 0
+        }
+      },
+      {
+        "robot": {
+          "x": 0,
+          "y": 1,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 1,
+          "y": 1
+        }
+      }
+    ],
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "objects",
+    "activity": "model"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change",
+      "until"
+    ],
+    "allowedConditions": [
+      "blockedAhead"
+    ],
+    "maxInstructions": 3,
+    "starterProgram": [
+      {
+        "remember": "steps",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "until": "blockedAhead",
+        "do": [
+          "forward",
+          {
+            "change": "steps",
+            "by": 1
+          }
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 1
+        }
+      ],
+      "text": "Robot 2 meets a rock much sooner."
+    },
+    {
+      "kind": "card",
+      "command": "change",
+      "text": "Each robot is built with its own steps, starting at 0."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        0
+      ],
+      "slot": 1,
+      "command": "change",
+      "text": "Robot 2 adds one for each of its own steps."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "steps",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "until": "blockedAhead",
+      "do": [
+        "forward",
+        {
+          "change": "steps",
+          "by": 1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": false,
+    "askMemory": [
+      "slot:steps"
+    ]
+  }
+}

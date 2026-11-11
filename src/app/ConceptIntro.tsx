@@ -178,12 +178,12 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
               errorNodeId={null}
               newId={newId}
               onEdit={() => undefined}
-              codePanel={<CodePanel program={program} activeNodeId={activeNode} />}
+              codePanel={<CodePanel program={program} activeNodeId={activeNode} {...(demo.world.team && { team: demo.world.team })} />}
               aboveProgram={
                 <>
                   {demo.input && <KeyScript keys={demo.input} event={activeEvent} />}
-                  {(gatesOf(world).length > 0 || moversOf(world).length > 0 || (program.memory?.length ?? 0) > 0) && (
-                    <MemoryCard world={world} state={shownState ?? initialState(world, program.memory)} slots={program.memory} {...(demo.days && { days: demo.days })} />
+                  {(world.team !== undefined || gatesOf(world).length > 0 || moversOf(world).length > 0 || (program.memory?.length ?? 0) > 0) && (
+                    <MemoryCard world={world} state={shownState ?? initialState(world, program.memory)} slots={program.memory} {...(demo.days && { days: demo.days })} {...(world.team && { team: world.team.length })} />
                   )}
                 </>
               }

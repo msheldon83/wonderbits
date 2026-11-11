@@ -86,18 +86,47 @@ export function closedGateAt(world: WorldDefinition, state: SimState, cell: Cell
   return gate !== undefined && !state.open.includes(gate.id);
 }
 
-/** The robot can step onto the cell: floor with no shut gate and no beetle, or water with a log on it. */
+/** True when another robot of the team stands on the cell. */
+export function teammateAt(state: SimState, cell: Cell): boolean {
+  return (state.team ?? []).some((r, i) => i !== state.active && r.x === cell.x && r.y === cell.y);
+}
+
+/** The flag a robot of the team must reach: the board's goal for the first, its own for the rest. */
+export function goalOf(world: WorldDefinition, robot = 0): Cell {
+  return world.team?.[robot]?.goal ?? world.goal;
+}
+
+/** The robot can step onto the cell: floor with no shut gate, no beetle and no other robot, or water with a log on it. */
 export function passable(world: WorldDefinition, state: SimState, cell: Cell): boolean {
   const tile = tileAt(world, cell);
   if (tile === 'gap') return moverAt(world, state, cell, 'log') !== undefined;
-  return tile === 'floor' && !closedGateAt(world, state, cell) && !moverAt(world, state, cell, 'beetle');
+  return tile === 'floor' && !closedGateAt(world, state, cell) && !moverAt(world, state, cell, 'beetle') && !teammateAt(state, cell);
 }
 
 /** The state before the first card. A program's memory slots hold their start values. */
 export function initialState(world: WorldDefinition, memory: readonly MemorySlot[] = [], seed?: number): SimState {
   const base = { ...initialWorld(world), ...(seed !== undefined && { rng: seed }) };
   if (memory.length === 0) return base;
-  return { ...base, memory: Object.fromEntries(memory.map((m) => [m.name, startValue(world, m.start)])) };
+  return { ...base, memory: robotMemory(world, memory, 0) };
+}
+
+/** A robot's memory as it is built: the blueprint's starts, with that robot's own values on a team board. */
+export function robotMemory(world: WorldDefinition, memory: readonly MemorySlot[], robot: number): Record<string, Value> {
+  const own = world.team?.[robot]?.memory ?? {};
+  return Object.fromEntries(memory.map((m) => [m.name, m.name in own ? own[m.name]! : startValue(world, m.start)]));
+}
+
+/**
+ * The next robot of a team takes over: the one that ran stays where it
+ * stopped, and the next starts from its own place with its own memory. The
+ * board (gates, acorns) is shared. Pure.
+ */
+export function nextRobot(world: WorldDefinition, memory: readonly MemorySlot[], state: SimState): SimState {
+  const done = state.active ?? 0;
+  const next = done + 1;
+  const team = (state.team ?? []).map((r, i) => (i === done ? { ...state.robot } : r));
+  const robot = { ...world.team![next]!.robot };
+  return { ...state, robot, team, active: next, ...(memory.length > 0 && { memory: robotMemory(world, memory, next) }) };
 }
 
 /**
@@ -123,7 +152,8 @@ export function startValue(world: WorldDefinition, start: Value): Value {
 
 function initialWorld(world: WorldDefinition): SimState {
   return {
-    robot: { ...world.robot },
+    ...(world.team && { team: world.team.map((t) => ({ ...t.robot })), active: 0 }),
+    robot: { ...(world.team?.[0]?.robot ?? world.robot) },
     collected: [],
     open: gatesOf(world)
       .filter((g) => g.open)
@@ -139,7 +169,7 @@ function initialWorld(world: WorldDefinition): SimState {
  * they were.
  */
 export function stateKey(s: SimState, worldPeriod = 1): string {
-  return `${s.robot.x},${s.robot.y},${s.robot.facing}|${[...s.collected].sort().join(';')}|${s.open.join(';')}|${s.tick % worldPeriod}|${s.memory ? JSON.stringify(s.memory) : ''}|${s.rng ?? ''}|${s.day ?? ''}`;
+  return `${s.robot.x},${s.robot.y},${s.robot.facing}|${[...s.collected].sort().join(';')}|${s.open.join(';')}|${s.tick % worldPeriod}|${s.memory ? JSON.stringify(s.memory) : ''}|${s.rng ?? ''}|${s.day ?? ''}|${s.active ?? ''}:${(s.team ?? []).map((r) => `${r.x},${r.y}`).join(';')}`;
 }
 
 /** A board where time passes: something moves, or the program has an every-tick card. */
@@ -147,7 +177,7 @@ export function isTimed(world: WorldDefinition, hasTickCard = false): boolean {
   return moversOf(world).length > 0 || hasTickCard;
 }
 
-export type BlockReason = 'wall' | 'gap' | 'edge' | 'gate' | 'beetle';
+export type BlockReason = 'wall' | 'gap' | 'edge' | 'gate' | 'beetle' | 'robot';
 
 /** The events an action fires: stepping onto a plate, or picking up an acorn. */
 export type WorldEvent = `stepOn:${string}` | 'acorn';
@@ -205,6 +235,7 @@ export function step(world: WorldDefinition, state: SimState, command: CommandId
       }
       if (closedGateAt(world, state, target)) return { kind: 'blocked', state, reason: 'gate', at: target };
       if (moverAt(world, state, target, 'beetle')) return { kind: 'blocked', state, reason: 'beetle', at: target };
+      if (teammateAt(state, target)) return { kind: 'blocked', state, reason: 'robot', at: target };
       let moved: SimState = { ...state, robot: { ...robot, x: target.x, y: target.y } };
       const key = cellKey(target);
       const isCollectible = world.collectibles.some((c) => cellKey(c) === key);
@@ -246,8 +277,10 @@ export function evaluate(world: WorldDefinition, state: SimState, condition: Con
       const key = cellKey(target);
       return tileAt(world, target) === 'floor' && world.collectibles.some((c) => cellKey(c) === key) && !state.collected.includes(key);
     }
-    case 'atFlag':
-      return robot.x === world.goal.x && robot.y === world.goal.y;
+    case 'atFlag': {
+      const goal = goalOf(world, state.active);
+      return robot.x === goal.x && robot.y === goal.y;
+    }
   }
 }
 
@@ -408,10 +441,19 @@ export function withinOutcomes(objective: ObjectiveDefinition, state: SimState):
   return objective.covers.values.some((v) => JSON.stringify(v) === got);
 }
 
+/** Every robot on its own flag: on a team board all of them, wherever each stopped; otherwise the robot. */
+export function teamOnFlags(world: WorldDefinition, state: SimState): boolean {
+  if (!world.team) return state.robot.x === world.goal.x && state.robot.y === world.goal.y;
+  return world.team.every((t, i) => {
+    const at = i === state.active ? state.robot : state.team?.[i];
+    return at !== undefined && at.x === t.goal.x && at.y === t.goal.y;
+  });
+}
+
 export function objectiveMet(world: WorldDefinition, objective: ObjectiveDefinition, state: SimState): boolean {
   if (memoryShortfall(objective, state).length > 0) return false;
   if (!withinOutcomes(objective, state)) return false;
-  if (objective.reachGoal && (state.robot.x !== world.goal.x || state.robot.y !== world.goal.y)) return false;
+  if (objective.reachGoal && !teamOnFlags(world, state)) return false;
   if (objective.collectAll && state.collected.length !== world.collectibles.length) return false;
   return true;
 }

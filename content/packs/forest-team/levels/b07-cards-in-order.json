@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "id": "b07-cards-in-order",
+  "title": "Cards in order",
+  "intro": "Put the blueprint in order: each robot walks as many steps as it was built with.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....",
+      "...."
+    ],
+    "team": [
+      {
+        "robot": {
+          "x": 0,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 3,
+          "y": 0
+        },
+        "memory": {
+          "steps": 3
+        }
+      },
+      {
+        "robot": {
+          "x": 0,
+          "y": 1,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 1,
+          "y": 1
+        },
+        "memory": {
+          "steps": 1
+        }
+      }
+    ],
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "objects",
+    "activity": "reorder"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change",
+      "until"
+    ],
+    "allowedConditions": [
+      "slot:steps=0"
+    ],
+    "starterProgram": [
+      {
+        "remember": "steps",
+        "kind": "number",
+        "start": 0
+      }
+    ],
+    "suppliedCards": [
+      "until",
+      "forward",
+      "change"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ],
+      "text": "Robot 1 is built with steps 3, robot 2 with steps 1."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "The step and the count go inside the loop."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "until",
+      "text": "The loop holds everything."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "steps",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "until": "slot:steps=0",
+      "do": [
+        "forward",
+        {
+          "change": "steps",
+          "by": -1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

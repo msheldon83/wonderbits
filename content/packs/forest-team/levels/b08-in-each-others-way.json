@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "id": "b08-in-each-others-way",
+  "title": "In each other's way",
+  "intro": "Two robots in one row. A robot standing still is in the way of the next one.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....."
+    ],
+    "team": [
+      {
+        "robot": {
+          "x": 1,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 4,
+          "y": 0
+        }
+      },
+      {
+        "robot": {
+          "x": 0,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 3,
+          "y": 0
+        }
+      }
+    ],
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "objects",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "until"
+    ],
+    "allowedConditions": [
+      "blockedAhead"
+    ],
+    "maxInstructions": 2,
+    "starterProgram": []
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "Robot 1 goes to the end of the row. Then robot 2 walks up behind it."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "Another robot blocks the way, just like a rock."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "until",
+      "text": "Repeat until blocked ahead: forward."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "until": "blockedAhead",
+      "do": [
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

@@ -4,7 +4,7 @@
  */
 import { slotOfSpec, type NodeSpec } from '../ir/spec';
 import { FUNCTION_NAME, isCardId, isCommandId, isConditionId, isEventId, isSenseId, KEYS, BOARD_MAPS, parseItem, parseLength, parseRandom, parseRead, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, VALUE_KINDS, type CardId, type ConditionId, type ItemKind, type Key, type ListOf, parseField, type Source, type Value, type ValueKind } from '../ir/types';
-import { FACINGS, type Cell, type Facing, type Gate, type Mover, type Plate, type Switch, type TileKind, type WorldDefinition } from '../sim/types';
+import { FACINGS, type Cell, type Facing, type Gate, type Mover, type Plate, type Switch, type Teammate, type TileKind, type WorldDefinition } from '../sim/types';
 import { CONTENT_SCHEMA_VERSION, type MemoryField, type Activity, type ConceptIntroduction, type HintPath, type HintStep, type PackManifest, type PuzzleDefinition } from './types';
 
 /** True when a value is of a slot's kind: a list's items of its item kind, a record's fields of its shape. */
@@ -202,7 +202,10 @@ class Reader {
         return kind ?? 'gap';
       });
     });
-    const robotRaw = this.obj(world.robot, `${path}.robot`);
+    // A team lists every robot, each with its start and its flag; the first is the board's robot and goal.
+    const team = world.team === undefined ? undefined : this.list(world.team, `${path}.team`, (t, at) => this.teammate(t, at));
+    if (team && (team.length < 2 || team.length > 4)) this.fail(`${path}.team`, 'expected 2 to 4 robots');
+    const robotRaw = team?.[0] ? { ...team[0].robot } : this.obj(world.robot, `${path}.robot`);
     const facing = robotRaw.facing as Facing;
     if (!FACINGS.includes(facing)) this.fail(`${path}.robot.facing`, 'expected N, E, S or W');
     const gates = world.gates === undefined ? undefined : this.list(world.gates, `${path}.gates`, (g, at) => this.gate(g, at));
@@ -214,17 +217,29 @@ class Reader {
       ...(switches && { switches }),
       ...(plates && { plates }),
       ...(movers && { movers }),
+      ...(team && { team }),
       width,
       height: rows.length,
       tiles,
       robot: { ...this.cell(robotRaw, `${path}.robot`), facing },
-      goal: this.cell(world.goal, `${path}.goal`),
+      goal: team?.[0] ? { ...team[0].goal } : this.cell(world.goal, `${path}.goal`),
       collectibles:
         world.collectibles === undefined
           ? []
           : Array.isArray(world.collectibles)
             ? world.collectibles.map((c, i) => this.cell(c, `${path}.collectibles[${i}]`))
             : (this.fail(`${path}.collectibles`, 'expected an array'), []),
+    };
+  }
+  /** A robot of a team: { "robot": { "x": 0, "y": 0, "facing": "E" }, "goal": { "x": 3, "y": 0 }, "memory": { "steps": 2 } }. */
+  teammate(v: unknown, path: string): Teammate {
+    const o = this.obj(v, path);
+    const r = this.obj(o.robot, `${path}.robot`);
+    const facing = FACINGS.includes(r.facing as Facing) ? (r.facing as Facing) : (this.fail(`${path}.robot.facing`, 'expected N, E, S or W'), 'E');
+    return {
+      robot: { ...this.cell(r, `${path}.robot`), facing },
+      goal: this.cell(o.goal, `${path}.goal`),
+      ...(o.memory !== undefined && { memory: this.obj(o.memory, `${path}.memory`) as Record<string, Value> }),
     };
   }
   list<T>(v: unknown, path: string, item: (x: unknown, at: string) => T): T[] {

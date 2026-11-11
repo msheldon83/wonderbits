@@ -4,6 +4,63 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Build step 12, part six: Robot team (2026-11-11)
+
+The objects pack, **Robot team** (`content/packs/forest-team`), ten levels
+with its introduction, "Blueprints": two robots run the same two cards, each
+from its own start. This finishes step 12 and the concept spine.
+
+### What is built
+
+- **Team boards.** A board may list `team`: two to four robots, each with
+  its start, its own flag and, optionally, the values its memory is built
+  with (`"memory": { "steps": 2 }`). The first is the board's robot and
+  goal. The program is the blueprint: each robot runs main in turn, in the
+  order listed, on the same board, so a gate one robot opens stays open for
+  the next. Between robots a `next` event (node id `team`) leaves the one
+  that ran where it stopped and starts the next at its own place, with its
+  own memory: the blueprint's starts, then its own values.
+- **Robots share the board.** A robot standing still blocks the way like a
+  rock (`blocked: robot`) and counts as blocked ahead; at the flag means
+  the running robot's own flag. The level is solved when every robot ends
+  on its own flag. `SimState.team` holds every robot's place and
+  `SimState.active` the one running.
+- **The code** prints a team board as a class: `class Bot extends Robot`
+  with each slot a field and main a method (`this.forward()`,
+  `this.steps -= 1`), then the team as instances,
+  `Object.assign(new Bot(0, 0, 'right'), { steps: 2 })`, and
+  `for (const bot of team) bot.main();`.
+- **On the board** each robot and its numbered flag have their own colour;
+  the robots not running stand where they are. The bubble says "done!" and
+  "Robot 2" at each handover, the memory card gains a Robot line ("Robot 2
+  of 3") and shows the running robot's memory, and messages say which robot
+  bumped.
+- **Validator.** A team has two to four robots, each starting on floor off
+  its flag, no two sharing a start or a flag; values a robot is built with
+  are slots of the blueprint, of their kinds. A team board asks for the
+  flags and has no days, shuffles, key script, movers or When cards. The
+  objects introduction must hand over to a second robot.
+- **The pack.** Two robots, Their own memory (model: each robot counts its
+  own steps), Own starts (one sensing blueprint on two paths), Fix the
+  blueprint (debug: stop at the flag, not the wall), Built with a number
+  (each robot walks as far as it was built to), One opens, one passes (the
+  first robot flips the switch for the second), Cards in order, In each
+  other's way (a robot blocks the next), Where will robot 3 stop? and The
+  opener (one blueprint, two jobs chosen by a value each robot is built
+  with, under a budget).
+
+### Deviations and choices
+
+- **Robots take turns.** The plan's "one holds a plate open while another
+  passes" needs robots acting at once. Here each robot runs the whole
+  blueprint before the next starts, so a trace stays one robot at a time and
+  can be followed card by card; a switch flipped by the first robot does the
+  holding. Running robots together waits for the game loop of creation mode.
+- **Changing the blueprint changes every robot** without a separate card:
+  there is one program, and every robot runs it.
+- **No backpacks on the team.** Robots are built with their own values, the
+  constructor's arguments; days and teams are not combined yet.
+
 ## Build step 12, part five: The notebook (2026-11-11)
 
 The records pack, **The notebook** (`content/packs/forest-notebook`), ten

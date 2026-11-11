@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "id": "b09-where-will-robot-3-stop",
+  "title": "Where will robot 3 stop?",
+  "intro": "Three robots, one blueprint. Place the flag where robot 3 stops.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "team": [
+      {
+        "robot": {
+          "x": 2,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 5,
+          "y": 0
+        }
+      },
+      {
+        "robot": {
+          "x": 1,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 4,
+          "y": 0
+        }
+      },
+      {
+        "robot": {
+          "x": 0,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 3,
+          "y": 0
+        }
+      }
+    ],
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "transfer",
+    "activity": "predict"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "until"
+    ],
+    "allowedConditions": [
+      "blockedAhead"
+    ],
+    "maxInstructions": 2,
+    "starterProgram": [
+      {
+        "until": "blockedAhead",
+        "do": [
+          "forward"
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "text": "Three robots in a row. Robot 1 goes first, then 2, then 3."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "Each robot walks until something, or someone, is in the way."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "until",
+      "text": "Robot 3 stops behind robot 2."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "until": "blockedAhead",
+      "do": [
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true
+  }
+}

@@ -14,7 +14,7 @@ import { applyOp, type EditOp } from '../ir/ops';
 import { countNodes, programFromSpec, stepNumber } from '../ir/program';
 import { isPosition, type NodeId, type ProgramIR, type Value } from '../ir/types';
 import { valueWords } from '../editor/commands';
-import { coveredValue, withinOutcomes } from '../sim/world';
+import { coveredValue, teamOnFlags, withinOutcomes } from '../sim/world';
 import type { ObjectiveDefinition } from '../sim/types';
 import { hintEffect, type HintEffect } from '../lessons/hints';
 import { gateLabel, gateOfField } from '../lessons/memory';
@@ -145,7 +145,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   const coordinates =
     [...(program.memory ?? []), ...(level.programming.memoryOptions ?? [])].some((m) => m.kind === 'grid') ||
     level.programming.allowedCommands.some((c) => c === 'goRow' || c === 'goColumn' || c === 'shift');
-  const showMemory = gatesOf(world).length > 0 || moversOf(world).length > 0 || askedFields.length > 0 || (program.memory?.length ?? 0) > 0 || level.programming.memoryOptions !== undefined;
+  const showMemory = world.team !== undefined || gatesOf(world).length > 0 || moversOf(world).length > 0 || askedFields.length > 0 || (program.memory?.length ?? 0) > 0 || level.programming.memoryOptions !== undefined;
 
   // The log: opened on mount, abandoned on unmount unless completed.
   useEffect(() => {
@@ -294,7 +294,8 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
         setPhase('done');
         const end = r.final ?? r.trace.at(-1)?.after ?? initialState(w);
         setShortfall({
-          onGoal: end.robot.x === w.goal.x && end.robot.y === w.goal.y,
+          onGoal: teamOnFlags(w, end),
+          ...(w.team && !teamOnFlags(w, end) && { team: true }),
           missing: w.collectibles.length - end.collected.length,
           memory: memoryShortfall(level.objective, end),
           ...(level.objective.covers && !withinOutcomes(level.objective, end) && { outside: outsideWords(level.objective.covers, end) }),
@@ -477,7 +478,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   };
   let message: { tone: Tone | 'hint'; text: string };
   if (hint) message = { tone: 'hint', text: hint.text };
-  else if (phase === 'running') message = { tone: 'info', text: worlds.length > 1 && !random ? `Running shuffle ${shuffle + 1} of ${worlds.length}…` : level.days ? `Running day ${shownState?.day ?? 1} of ${level.days}…` : 'Running…' };
+  else if (phase === 'running') message = { tone: 'info', text: worlds.length > 1 && !random ? `Running shuffle ${shuffle + 1} of ${worlds.length}…` : level.days ? `Running day ${shownState?.day ?? 1} of ${level.days}…` : world.team ? `Running robot ${(shownState?.active ?? 0) + 1} of ${world.team.length}…` : 'Running…' };
   else if (phase === 'paused') message = { tone: 'info', text: `Paused after step ${position}. Step plays one more. Run keeps going.` };
   else if (outcome) {
     const base =
@@ -494,6 +495,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           ? { tone: 'success', text: `${base.text} It worked on all ${worlds.length} shuffles.` }
           : { tone: base.tone, text: `Shuffle ${shuffle + 1} of ${worlds.length}: ${base.text}` };
     }
+    if (world.team && outcome.status !== 'success' && outcome.status !== 'incomplete') message = { tone: base.tone, text: `Robot ${(shownState?.active ?? 0) + 1}: ${message.text}` };
     if (level.days && outcome.status !== 'success') message = { tone: base.tone, text: `Day ${shownState?.day ?? 1} of ${level.days}: ${message.text}` };
     if (failedShuffle !== null) message = { tone: 'problem', text: 'That worked on this shuffle, but not on every one. Press Shuffle to see a version it misses.' };
     if (failedRoll !== null) message = { tone: 'problem', text: 'That worked on this roll, but not on every roll. Press Run to see a roll it misses.' };
@@ -626,7 +628,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           onUndo={onUndo}
           onRedo={onRedo}
           onRestart={restart}
-          codePanel={<CodePanel program={program} activeNodeId={activeNode} />}
+          codePanel={<CodePanel program={program} activeNodeId={activeNode} {...(world.team && { team: world.team })} />}
           aboveProgram={
             // Keys and memory sit at the top of the Program panel, next to the cards that use and change them.
             <>
@@ -637,6 +639,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
             state={shownState ?? initialState(world, program.memory)}
             slots={program.memory}
             {...(level.days && { days: level.days })}
+            {...(world.team && { team: world.team.length })}
             asking={predicting ? askedFields : []}
             answers={prediction?.memory}
             wrong={wrongFields}

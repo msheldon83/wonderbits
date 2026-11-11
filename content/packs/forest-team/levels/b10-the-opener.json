@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "id": "b10-the-opener",
+  "title": "The opener",
+  "intro": "Robot 1 is built as the opener; robot 2 is not. One blueprint gets both robots to their flags.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..##",
+      "..##",
+      "...."
+    ],
+    "team": [
+      {
+        "robot": {
+          "x": 0,
+          "y": 1,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 1,
+          "y": 0
+        },
+        "memory": {
+          "opener": true
+        }
+      },
+      {
+        "robot": {
+          "x": 0,
+          "y": 2,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 3,
+          "y": 2
+        }
+      }
+    ],
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 2,
+        "y": 2,
+        "open": false
+      }
+    ],
+    "switches": [
+      {
+        "x": 1,
+        "y": 1,
+        "toggles": [
+          "a"
+        ]
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "objects",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCCW",
+      "ifElse"
+    ],
+    "allowedConditions": [
+      "slot:opener=yes"
+    ],
+    "maxInstructions": 8,
+    "starterProgram": [
+      {
+        "remember": "opener",
+        "kind": "yesNo",
+        "start": false
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 2
+        }
+      ],
+      "text": "Robot 1, the opener, steps on the switch. Robot 2 goes through gate A."
+    },
+    {
+      "kind": "card",
+      "command": "ifElse",
+      "text": "One blueprint, two jobs: each robot looks at its own opener."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 1,
+      "command": "ifElse",
+      "text": "After one step: if opener is yes, turn left and step up; else two more steps."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "opener",
+      "kind": "yesNo",
+      "start": false
+    },
+    "forward",
+    {
+      "if": "slot:opener=yes",
+      "do": [
+        "rotateCCW",
+        "forward"
+      ],
+      "else": [
+        "forward",
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 6
+  }
+}

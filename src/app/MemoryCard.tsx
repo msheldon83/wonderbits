@@ -134,6 +134,8 @@ export interface MemoryCardProps {
   slots?: readonly MemorySlot[];
   /** On a level of several days, how many: the card then says which day it is. */
   days?: number;
+  /** On a team board, how many robots: the card then says whose memory it shows. */
+  team?: number;
   /** Fields the child is predicting now: they show as questions instead of values. */
   asking?: readonly MemoryField[];
   answers?: Partial<Record<MemoryField, MemoryValue>>;
@@ -143,7 +145,7 @@ export interface MemoryCardProps {
   onAnswer?(field: MemoryField, value: MemoryValue): void;
 }
 
-export function MemoryCard({ world, state, slots = [], days, asking = [], answers = {}, wrong = [], disabled = false, onAnswer }: MemoryCardProps) {
+export function MemoryCard({ world, state, slots = [], days, team, asking = [], answers = {}, wrong = [], disabled = false, onAnswer }: MemoryCardProps) {
   const gateIds = gatesOf(world).map((g) => g.id);
   const lines = memoryLines(world, slots);
   const valueOf = (line: MemoryLine): string => {
@@ -213,6 +215,17 @@ export function MemoryCard({ world, state, slots = [], days, asking = [], answer
             <span className="memory-label">Day</span>
             <span className="memory-value">
               {state.day ?? 1} of {days}
+            </span>
+          </li>
+        )}
+        {team !== undefined && (
+          <li className={`memory-line kind-number is-day is-robot team-${state.active ?? 0}`}>
+            <span className="memory-kind" title="Which robot">
+              {KIND_ICON.number}
+            </span>
+            <span className="memory-label">Robot</span>
+            <span className="memory-value">
+              {(state.active ?? 0) + 1} of {team}
             </span>
           </li>
         )}
