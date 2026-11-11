@@ -31,6 +31,8 @@ export interface BoardProps {
   hideGoal?: boolean;
   /** Number the rows and columns around the board, for levels that read it as a grid. */
   coordinates?: boolean;
+  /** Records standing on the board, such as a sign: each field a line, the one being read lit up. */
+  signs?: { name: string; cell: Cell; lines: { field: string; text: string }[]; focus?: string }[];
   /** The bird: it flies over the board, sees all of it, and answers when the robot asks. */
   bird?: boolean;
 }
@@ -53,7 +55,7 @@ function BirdArt() {
   );
 }
 
-export function Board({ world, theme, motion, label, onControllers, robotCount = 1, maxScale = 1.6, onTileTap, marks = [], pointers = [], highlightCells, hideIndicator = false, hideGoal = false, coordinates = false, bird = false }: BoardProps) {
+export function Board({ world, theme, motion, label, onControllers, robotCount = 1, maxScale = 1.6, onTileTap, marks = [], pointers = [], highlightCells, hideIndicator = false, hideGoal = false, coordinates = false, bird = false, signs = [] }: BoardProps) {
   const layout = useMemo(() => layoutFor(world, coordinates), [world, coordinates]);
   const viewport = useRef<HTMLDivElement>(null);
   const robotEls = useRef<Partial<RobotElements>[]>([]);
@@ -487,6 +489,26 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
               <div ref={(el) => void (birdEls.current.bubble = el ?? undefined)} className="thought-bubble board-bird-bubble" data-tone="event" aria-live="polite" />
             </div>
           )}
+          {signs.map((s) => {
+            const q = toScreen(layout, s.cell);
+            const h = 18 + s.lines.length * 22;
+            return (
+              <Anchored key={`sign${s.name}`} x={q.x} y={q.y} size={TILE} z={LAYER.collectible} className="board-sign" label={`${s.name}: ${s.lines.map((l) => l.text).join(', ')}`}>
+                <rect x={-5} y={-4} width={10} height={TILE / 2 + 2} rx={3} fill="#7a5b40" />
+                <g transform={`translate(0 ${-TILE / 2 + 6})`}>
+                  <rect x={-42} y={0} width={84} height={h} rx={8} fill="#e8c792" stroke="#8a6a4a" strokeWidth={3} />
+                  {s.lines.map((l, i) => (
+                    <g key={l.field}>
+                      {s.focus === l.field && <rect x={-38} y={8 + i * 22} width={76} height={21} rx={5} fill="#fff4c2" stroke="#f2a330" strokeWidth={2} />}
+                      <text x={0} y={24 + i * 22} textAnchor="middle" fontSize={15} fontWeight={800} fill="#4a3424">
+                        {l.text}
+                      </text>
+                    </g>
+                  ))}
+                </g>
+              </Anchored>
+            );
+          })}
           {markerEls}
           {pointerEls}
           {tileButtons}

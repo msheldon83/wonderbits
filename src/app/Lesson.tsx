@@ -38,6 +38,7 @@ import { hashFor } from './levels';
 import { KeyScript } from './KeyScript';
 import { MemoryCard } from './MemoryCard';
 import { TickRules } from './TickRules';
+import { Inventory, signsOf } from './Inventory';
 import { outcomeMessage, type Shortfall, type Tone } from './messages';
 
 /**
@@ -517,7 +518,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   ];
   /** On finger levels, each place slot is drawn on the board where it points, moving as the run plays. */
   const fingerState = shownState ?? initialState(world, program.memory);
-  const pointers = level.programming.allowedCommands.includes('shift')
+  const pointers = level.programming.allowedCommands.some((c) => c === 'shift' || c === 'fly')
     ? (program.memory ?? []).flatMap((m) => {
         const v = fingerState.memory?.[m.name];
         return m.kind === 'position' && isPosition(v) ? [{ name: m.name, cell: v }] : [];
@@ -531,6 +532,12 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
 
   return (
     <main className={`app-main ${showCode ? 'is-showing-code' : ''}`}>
+      {/* What to do on this level, and after a run what happened: at the top, where it is read first. */}
+      <div className="lesson-banner">
+        <p className={`message tone-${message.tone}`} role="status" aria-live="polite">
+          {message.text}
+        </p>
+      </div>
       <div className="stage-col">
         <Board
           world={world}
@@ -545,6 +552,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           highlightCells={hint?.cells}
           hideIndicator={predicting}
           hideGoal={(predicting && asksTile) || !level.objective.reachGoal}
+          signs={signsOf(program.memory, shownState ?? initialState(world, program.memory), activeEvent)}
           bird={(level.programming.allowedSources ?? []).some(isBirdSource) || specAsksBird(level.programming.starterProgram)}
         />
         <div className="toolbar" role="toolbar" aria-label="Run controls">
@@ -606,11 +614,9 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
               ))}
             </span>
           </button>
-          <p className={`message tone-${message.tone}`} role="status" aria-live="polite">
-            {message.text}
-          </p>
         </div>
         <TickRules world={world} state={shownState ?? initialState(world, program.memory)} event={activeEvent} />
+        <Inventory slots={program.memory} state={shownState ?? initialState(world, program.memory)} event={activeEvent} />
       </div>
       <div className="side-col">
         <Editor

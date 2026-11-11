@@ -71,8 +71,16 @@ export function App() {
           Wonderbits
         </a>
         {route.screen === 'level' && choice && (
-          <p className="level-title">
-            <span className="level-number">{choice.number}</span> {choice.level.title}
+          <p className="level-title" title={`${choice.packTitle}, level ${choice.number}`}>
+            <span className="level-crumb">World {choice.world}</span>
+            <span className="level-sep" aria-hidden="true">
+              ·
+            </span>
+            <span className="level-crumb">Level {choice.number}</span>
+            <span className="level-sep" aria-hidden="true">
+              ·
+            </span>
+            <span className="level-name">{choice.level.title}</span>
           </p>
         )}
         {route.screen === 'map' && <span className="header-spacer" />}

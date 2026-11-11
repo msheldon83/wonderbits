@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "n03-follow-the-sign",
   "title": "Follow the sign",
-  "intro": "The sign is a record with a row and a column. Go where it says.",
+  "intro": "A sign stands next to the robot. It is a record with a row and a column: read each one, and go where it says.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -49,6 +49,10 @@
           "row": "number",
           "column": "number"
         },
+        "at": {
+          "x": 1,
+          "y": 0
+        },
         "start": {
           "row": 2,
           "column": 1
@@ -75,7 +79,7 @@
           "y": 1
         }
       ],
-      "text": "A rock in the middle: go down first, then across."
+      "text": "Read the sign first. A rock in the middle: go down first, then across."
     },
     {
       "kind": "card",
@@ -98,6 +102,10 @@
       "fields": {
         "row": "number",
         "column": "number"
+      },
+      "at": {
+        "x": 1,
+        "y": 0
       },
       "start": {
         "row": 2,

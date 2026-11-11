@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "n04-find-the-key",
   "title": "Find the key",
-  "intro": "The notebook lists four crates, each a record of the same shape. Find the one with the key.",
+  "intro": "The inventory computer knows four crates, each a record of the same shape. Go through them one at a time and find the one with the key.",
   "themeId": "forest",
   "world": {
     "rows": [

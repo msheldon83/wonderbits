@@ -13,7 +13,7 @@
   "introduction": {
     "concept": "records",
     "title": "Records",
-    "explanation": "A record keeps facts about one thing together, each with a name: a crate's number, and whether it holds the key. You read one fact by its name: crate.number.",
+    "explanation": "The warehouse's inventory computer, the robot's friend, keeps a record for every crate: facts about one crate kept together, each with a name, like its number and whether it holds the key. The robot asks for one fact by its name: crate.number.",
     "demo": {
       "world": {
         "rows": [

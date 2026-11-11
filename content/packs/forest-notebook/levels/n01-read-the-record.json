@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "n01-read-the-record",
   "title": "Read the record",
-  "intro": "crate is a record: a number and a key, kept together. Fill in what n and found will hold.",
+  "intro": "The inventory computer keeps a record for this crate: its number and whether it has the key, kept together. The robot asks it for each one. Fill in what n and found will hold.",
   "themeId": "forest",
   "world": {
     "rows": [

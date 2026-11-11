@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "n10-two-notebooks",
   "title": "Two notebooks",
-  "intro": "One notebook says which crate has the key. Another says where each crate stands. Put them together.",
+  "intro": "The inventory computer keeps two lists. One says which crate has the key; the other says where each crate stands. Put them together.",
   "themeId": "forest",
   "world": {
     "rows": [

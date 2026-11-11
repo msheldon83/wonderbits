@@ -108,6 +108,8 @@ export interface MemorySlot {
   /** A record's, or a list of records', type name and fields. */
   shape?: string;
   fields?: Record<string, ItemKind>;
+  /** A record that stands on the board, such as a sign: the tile it is drawn on. */
+  at?: { x: number; y: number };
   start: Value;
   /** In the backpack: on a level of several days, the slot keeps its value overnight instead of starting again. */
   keep?: boolean;
