@@ -328,7 +328,7 @@ function sourceKind(source: Source): ValueKind {
   if (random?.kind === 'range') return 'number';
   if (random?.kind === 'coin') return 'yesNo';
   if (random?.kind === 'way') return 'direction';
-  if (typeof source === 'number' || source === 'acorns' || parseLength(source)) return 'number';
+  if (typeof source === 'number' || source === 'acorns' || source === 'acornsLeft' || parseLength(source)) return 'number';
   if (typeof source === 'boolean' || isSenseId(source)) return 'yesNo';
   if (source === 'here') return 'position';
   return 'direction';
@@ -579,6 +579,7 @@ export function validateIntroduction(intro: ConceptIntroduction, errors: string[
     representation: [splitSpec(program).memory.length > 0 && trace.some((e) => e.op === 'set'), 'never puts anything in a memory slot'],
     grids: [splitSpec(program).memory.some((m) => m.kind === 'grid') || cardsOfSpec(program).some((c) => (GO_IDS as readonly string[]).includes(c)), 'never uses a grid or a row or column'],
     randomness: [setSources(program).some((src) => parseRandom(src) !== null), 'never uses a random source'],
+    derived: [setSources(program).some((src) => typeof src === 'string' && !parseRandom(src) && !['N', 'E', 'S', 'W'].includes(src)), 'never works a value out from what is there'],
   };
   const check = shows[intro.concept];
   if (check && !check[0]) errors.push(`introduction.demo.program ${check[1]}, so it does not show "${intro.concept}"`);

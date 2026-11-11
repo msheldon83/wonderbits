@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "id": "forest-scoreboards",
+  "title": "Two scoreboards",
+  "themeId": "forest",
+  "order": 14,
+  "concepts": [
+    "derived"
+  ],
+  "prerequisites": [
+    "forest-grids"
+  ],
+  "introduction": {
+    "concept": "derived",
+    "title": "Work it out",
+    "explanation": "A number you copy and keep can go out of date. Work it out from what is really there, right when you need it.",
+    "demo": {
+      "world": {
+        "rows": [
+          "....."
+        ],
+        "robot": {
+          "x": 0,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 4,
+          "y": 0
+        },
+        "collectibles": [
+          {
+            "x": 1,
+            "y": 0
+          },
+          {
+            "x": 2,
+            "y": 0
+          }
+        ],
+        "gates": [
+          {
+            "id": "a",
+            "x": 3,
+            "y": 0,
+            "open": false,
+            "code": 0
+          }
+        ]
+      },
+      "program": [
+        {
+          "remember": "left",
+          "kind": "number",
+          "start": 2
+        },
+        "forward",
+        "forward",
+        {
+          "set": "left",
+          "to": "acornsLeft"
+        },
+        {
+          "unlock": "a",
+          "with": "left"
+        },
+        "forward",
+        "forward"
+      ],
+      "before": [
+        {
+          "remember": "left",
+          "kind": "number",
+          "start": 2
+        },
+        "forward",
+        {
+          "change": "left",
+          "by": -1
+        },
+        "forward",
+        {
+          "change": "left",
+          "by": -1
+        },
+        {
+          "unlock": "a",
+          "with": "left"
+        },
+        "forward",
+        "forward"
+      ]
+    }
+  },
+  "levels": [
+    "v01-two-scoreboards",
+    "v02-read-it-when-you-need-it",
+    "v03-keep-both-up-to-date",
+    "v04-fix-the-copy",
+    "v05-how-many-in-the-bag",
+    "v06-which-one-is-wrong",
+    "v07-cards-in-order",
+    "v08-stop-at-the-last-acorn",
+    "v09-where-will-it-stop",
+    "v10-one-scoreboard"
+  ]
+}

@@ -69,6 +69,7 @@ function sourceCode(source: Source): string {
   if (source === 'facing') return 'robot.facing()';
   if (source === 'here') return 'robot.position()';
   if (source === 'acorns') return 'robot.acorns()';
+  if (source === 'acornsLeft') return 'robot.acornsLeft()';
   if (isSenseId(source)) return SENSE[source];
   return valueCode(source);
 }

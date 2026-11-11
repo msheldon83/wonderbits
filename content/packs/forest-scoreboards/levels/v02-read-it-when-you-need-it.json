@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "id": "v02-read-it-when-you-need-it",
+  "title": "Read it when you need it",
+  "intro": "Gate A opens when no acorns are left. The robot wrote 2 at the start, and that is out of date now.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 6,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 3,
+        "y": 0
+      }
+    ],
+    "gates": [
+      {
+        "id": "a",
+        "x": 5,
+        "y": 0,
+        "open": false,
+        "code": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "derived",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "set",
+      "unlock"
+    ],
+    "maxInstructions": 8,
+    "allowedSources": [
+      "acorns",
+      "acornsLeft"
+    ],
+    "starterProgram": [
+      {
+        "remember": "left",
+        "kind": "number",
+        "start": 2
+      },
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      {
+        "unlock": "a",
+        "with": "left"
+      },
+      "forward",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "Both acorns are picked up before the lock. How many are left on the board then?"
+    },
+    {
+      "kind": "card",
+      "command": "set",
+      "text": "left still says 2. Right before Unlock, read the real number from the board."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 4,
+      "command": "set",
+      "text": "Set left to acorns left on the board, just before Unlock."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "left",
+      "kind": "number",
+      "start": 2
+    },
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    {
+      "set": "left",
+      "to": "acornsLeft"
+    },
+    {
+      "unlock": "a",
+      "with": "left"
+    },
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

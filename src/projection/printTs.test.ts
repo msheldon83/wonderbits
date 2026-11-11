@@ -187,5 +187,9 @@ describe('printProgram', () => {
     expect(printProgram(p)).toContain('n = seen.length; // @node n2');
     expect(printProgram(p)).toContain('let seen: boolean[] = [];');
   });
-});
 
+  it('prints the acorns left on the board as a reading of the robot', () => {
+    const p = programFromSpec([{ remember: 'left', kind: 'number' }, { set: 'left', to: 'acornsLeft' }], sequentialIdFactory());
+    expect(printProgram(p)).toContain('left = robot.acornsLeft(); // @node n1');
+  });
+});

@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "id": "v01-two-scoreboards",
+  "title": "Two scoreboards",
+  "intro": "Two scoreboards: held and left. Only one of them is kept up to date. What will each say at the flag?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      },
+      {
+        "x": 4,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "derived",
+    "activity": "model"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change"
+    ],
+    "maxInstructions": 6,
+    "starterProgram": [
+      {
+        "remember": "held",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "remember": "left",
+        "kind": "number",
+        "start": 3
+      },
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      {
+        "on": "acorn",
+        "do": [
+          {
+            "change": "held",
+            "by": 1
+          }
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "text": "Three acorns on the way."
+    },
+    {
+      "kind": "card",
+      "command": "change",
+      "text": "The When card adds to held. Nothing ever changes left."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        "on:acorn"
+      ],
+      "slot": 0,
+      "command": "change",
+      "text": "Only held goes up."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "held",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "left",
+      "kind": "number",
+      "start": 3
+    },
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "change": "held",
+          "by": 1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": false,
+    "askMemory": [
+      "slot:held",
+      "slot:left"
+    ]
+  }
+}

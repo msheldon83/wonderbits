@@ -9,7 +9,7 @@
  */
 import type { ReactElement } from 'react';
 
-export type TravelIcon = 'path' | 'logBridge' | 'hill' | 'ropeBridge' | 'stairs' | 'gate' | 'lift' | 'cart' | 'boat' | 'balloon' | 'wagon' | 'ferry' | 'kite' | 'flag';
+export type TravelIcon = 'path' | 'logBridge' | 'hill' | 'ropeBridge' | 'stairs' | 'gate' | 'lift' | 'cart' | 'boat' | 'balloon' | 'wagon' | 'ferry' | 'kite' | 'flag' | 'bike';
 
 export interface MapTheme {
   /** Top and bottom of the sky behind the island. */
@@ -191,6 +191,12 @@ const Cards = () => (
 
 // ---------- Landmarks (240 by 120) ----------
 
+const Pennant = ({ c = '#d6503c' }: { c?: string }) => (
+  <svg viewBox="0 0 80 80" aria-hidden="true">
+    <path d="M26 74 V12" stroke="#6f5338" strokeWidth={4} />
+    <path d="M28 14 L62 24 L28 34 Z" fill={c} />
+  </svg>
+);
 const Sun = () => <circle cx={200} cy={34} r={18} fill="#ffd95a" />;
 const Hills = ({ a, b }: { a: string; b: string }) => (
   <>
@@ -328,6 +334,21 @@ const Carnival = landmark(
     <path d="M150 100 L170 58 L190 100" stroke="#5b4636" strokeWidth={5} fill="none" />
   </>,
 );
+const Scoreboard = landmark(
+  <>
+    <Hills a="#a8d785" b="#93c86f" />
+    <path d="M90 100 V70 M150 100 V70" stroke="#6f5338" strokeWidth={6} />
+    <rect x={60} y={18} width={120} height={56} rx={6} fill="#33415c" />
+    {[0, 1].map((k) => (
+      <g key={k}>
+        <rect x={72 + k * 56} y={30} width={40} height={34} rx={4} fill="#1f2a3d" />
+        <text x={92 + k * 56} y={57} textAnchor="middle" fontSize={26} fontWeight={700} fill={k ? '#f2c230' : '#7fd0ff'}>
+          {k ? 1 : 2}
+        </text>
+      </g>
+    ))}
+  </>,
+);
 const Meadow = landmark(
   <>
     <Sun />
@@ -386,6 +407,7 @@ const THEMES: Record<string, MapTheme> = {
   'forest-lists': { sky: ['#d3eaf8', '#eaf5f7'], ground: '#cfe2d8', path: '#5b8fa8', landmark: Lighthouse, decor: [() => <Crate />, () => <Waves />, () => <Crate />], travel: { icon: 'ferry', verb: 'Take the ferry to' } },
   'forest-grids': { sky: ['#e4f2dc', '#f2f7ea'], ground: '#cfe3a6', path: '#7a5b40', landmark: MapRoom, decor: [() => <Field />, () => <Tree />, () => <Field />], travel: { icon: 'kite', verb: 'Fly the kite to' } },
   'forest-shuffle': { sky: ['#fbe3ef', '#f7f3f8'], ground: '#e0e8c4', path: '#8a5cc7', landmark: Carnival, decor: [() => <Tent />, () => <Cards />, () => <Tent c="#3291d6" />], travel: { icon: 'flag', verb: 'Head on to' } },
+  'forest-scoreboards': { sky: ['#e2f0fb', '#f1f7ee'], ground: '#cde6b0', path: '#b8701a', landmark: Scoreboard, decor: [() => <Pennant />, () => <Tree c="#6bb276" />, () => <Pennant c="#3291d6" />], travel: { icon: 'bike', verb: 'Ride the bike to' } },
 };
 
 const FALLBACK = Object.values(THEMES);
@@ -472,6 +494,13 @@ export function TravelIconArt({ icon }: { icon: TravelIcon }) {
       <>
         <path d="M24 4 L36 18 L24 32 L12 18 Z" {...s} />
         <path d="M24 32 Q20 38 26 42 T24 46" {...s} />
+      </>
+    ),
+    bike: (
+      <>
+        <circle cx={12} cy={32} r={8} {...s} />
+        <circle cx={36} cy={32} r={8} {...s} />
+        <path d="M12 32 L20 18 H32 L36 32 M20 18 L26 32 H12 M30 12 H36" {...s} />
       </>
     ),
     flag: (

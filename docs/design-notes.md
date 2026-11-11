@@ -4,6 +4,41 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Build step 12, part three: Two scoreboards (2026-11-11)
+
+The stored vs. derived pack, **Two scoreboards** (`content/packs/forest-scoreboards`),
+ten levels with its introduction, "Work it out": the old way keeps a
+`left` counter in step by hand, the new way reads it off the board right
+before the lock.
+
+### What is built
+
+- **A new reading: acorns left on the board.** Set can read `acornsLeft`,
+  how many acorns are still lying on the board, beside `acorns`, how many
+  the robot holds. It prints as `robot.acornsLeft()`. Together they are the
+  pack's two scoreboards: a value kept by hand next to one worked out from
+  the world.
+- **The pack.** Two scoreboards (model: held is kept up to date, left
+  never is), Read it when you need it (set left from the board just before
+  the lock), Keep both up to date (two cards in the When card, and both
+  slots checked at the flag), Fix the copy (debug: a count typed in by eye
+  is one short), How many in the bag? (a separate count beside a list; read
+  its length instead), Which one is wrong? (model: a guessed count against
+  one read from what the robot holds), Cards in order, Stop at the last
+  acorn (walk until none are left, on three shuffles), Where will it stop?
+  and One scoreboard (one slot, two locks that want different numbers,
+  under a budget).
+- **The introduction check** for `derived` asks that the demo set a slot
+  from a reading of the world, not a typed value.
+
+### Deviations and choices
+
+- **The plan's debug level is spread over three.** "Two stored values
+  disagree, delete one and calculate it" needs a level to see them
+  disagree (Two scoreboards), one to fix a stored copy (Fix the copy) and
+  one where a single slot replaces both (One scoreboard). A debug level
+  changes one card, and deleting a slot is not a card.
+
 ## Change: the map as a journey of islands (2026-11-10)
 
 The map was one long scroll of identical trails. It is now a journey, one

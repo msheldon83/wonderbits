@@ -270,6 +270,7 @@ export function sourceWords(source: Source): string {
   if (source === 'facing') return 'the way it faces';
   if (source === 'here') return 'where it is';
   if (source === 'acorns') return 'acorns held';
+  if (source === 'acornsLeft') return 'acorns left on the board';
   if (isSenseId(source)) return `${CONDITIONS[source].label}?`;
   return valueWords(source);
 }

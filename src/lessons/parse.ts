@@ -269,8 +269,8 @@ class Reader {
   source(v: unknown, path: string): Source {
     if (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 999) return v;
     if (typeof v === 'boolean') return v;
-    if (typeof v === 'string' && (['N', 'E', 'S', 'W', 'facing', 'here', 'acorns'].includes(v) || isSenseId(v) || parseRead(v) || parseLength(v) || parseRandom(v) || parseItem(v))) return v;
-    this.fail(path, `expected a value to set: a number, true or false, N, E, S or W, "facing", "here", "acorns", a sense or a random source, got ${JSON.stringify(v)}`);
+    if (typeof v === 'string' && (['N', 'E', 'S', 'W', 'facing', 'here', 'acorns', 'acornsLeft'].includes(v) || isSenseId(v) || parseRead(v) || parseLength(v) || parseRandom(v) || parseItem(v))) return v;
+    this.fail(path, `expected a value to set: a number, true or false, N, E, S or W, "facing", "here", "acorns", "acornsLeft", a sense or a random source, got ${JSON.stringify(v)}`);
     return 0;
   }
   /** A random level's outcomes: { "of": "roll", "values": [1, 2, 3] }; of is a slot or "column". */

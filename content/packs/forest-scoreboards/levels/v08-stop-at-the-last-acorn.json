@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "id": "v08-stop-at-the-last-acorn",
+  "title": "Stop at the last acorn",
+  "intro": "One program for every shuffle: walk until no acorns are left, and stop right there.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "........"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 6,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 2,
+        "y": 0
+      },
+      {
+        "x": 3,
+        "y": 0
+      },
+      {
+        "x": 6,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "derived",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "until",
+      "set"
+    ],
+    "allowedConditions": [
+      "slot:left=0"
+    ],
+    "allowedSources": [
+      "acornsLeft"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": [
+      {
+        "remember": "left",
+        "kind": "number",
+        "start": 3
+      }
+    ]
+  },
+  "shuffles": [
+    {
+      "goal": {
+        "x": 4,
+        "y": 0
+      },
+      "collectibles": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "goal": {
+        "x": 7,
+        "y": 0
+      },
+      "collectibles": [
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        },
+        {
+          "x": 6,
+          "y": 0
+        },
+        {
+          "x": 7,
+          "y": 0
+        }
+      ]
+    }
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 6,
+          "y": 0
+        }
+      ],
+      "text": "The flag sits on the last acorn. Shuffle moves the acorns, and how many there are."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "Keep walking until no acorns are left."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "until",
+      "text": "Repeat until left is 0: a step, then set left again from the board."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "left",
+      "kind": "number",
+      "start": 3
+    },
+    {
+      "until": "slot:left=0",
+      "do": [
+        "forward",
+        {
+          "set": "left",
+          "to": "acornsLeft"
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

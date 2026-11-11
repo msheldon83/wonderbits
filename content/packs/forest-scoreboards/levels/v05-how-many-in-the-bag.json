@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "id": "v05-how-many-in-the-bag",
+  "title": "How many in the bag?",
+  "intro": "Every acorn goes in the bag. The lock wants to know how many.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 6,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      },
+      {
+        "x": 4,
+        "y": 0
+      }
+    ],
+    "gates": [
+      {
+        "id": "a",
+        "x": 5,
+        "y": 0,
+        "open": false,
+        "code": 3
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "derived",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "set",
+      "push",
+      "unlock"
+    ],
+    "maxInstructions": 9,
+    "allowedSources": [
+      "facing",
+      "length:bag"
+    ],
+    "starterProgram": [
+      {
+        "remember": "bag",
+        "kind": "list",
+        "of": "direction",
+        "start": []
+      },
+      {
+        "remember": "count",
+        "kind": "number",
+        "start": 0
+      },
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      {
+        "unlock": "a",
+        "with": "count"
+      },
+      "forward",
+      "forward",
+      {
+        "on": "acorn",
+        "do": [
+          {
+            "push": "bag",
+            "to": "facing"
+          }
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 5,
+          "y": 0
+        }
+      ],
+      "text": "The lock wants 3."
+    },
+    {
+      "kind": "card",
+      "command": "set",
+      "text": "The bag knows how many it holds. count is a second scoreboard that nobody updates."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 4,
+      "command": "set",
+      "text": "Set count to how many in bag, just before Unlock."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "bag",
+      "kind": "list",
+      "of": "direction",
+      "start": []
+    },
+    {
+      "remember": "count",
+      "kind": "number",
+      "start": 0
+    },
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    {
+      "set": "count",
+      "to": "length:bag"
+    },
+    {
+      "unlock": "a",
+      "with": "count"
+    },
+    "forward",
+    "forward",
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "push": "bag",
+          "to": "facing"
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

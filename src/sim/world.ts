@@ -326,6 +326,7 @@ export function readSource(world: WorldDefinition, state: SimState, source: Sour
   if (source === 'facing') return state.robot.facing;
   if (source === 'here') return { x: state.robot.x, y: state.robot.y };
   if (source === 'acorns') return state.collected.length;
+  if (source === 'acornsLeft') return world.collectibles.length - state.collected.length;
   if (isSenseId(source)) return evaluate(world, state, source);
   return source;
 }

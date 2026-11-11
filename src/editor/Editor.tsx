@@ -1251,7 +1251,7 @@ function sourcesFor(kind: string, programming: Programming, memory: readonly Mem
 
 function ownSources(kind: string, programming: Programming, memory: readonly MemorySlot[]): Source[] {
   const all: Record<string, Source[]> = {
-    number: [0, 1, 2, 3, 'acorns'],
+    number: [0, 1, 2, 3, 'acorns', 'acornsLeft'],
     yesNo: [true, false, ...conditionsFor(programming).filter(isSenseId)],
     direction: ['N', 'E', 'S', 'W', 'facing'],
     position: ['here'],
@@ -1268,7 +1268,7 @@ function ownSources(kind: string, programming: Programming, memory: readonly Mem
     if (r.kind === 'way') return 'direction';
     return memory.find((m) => m.name === r.list)?.of ?? 'number';
   };
-  return allowed.filter((a) => (parseRandom(a) ? randomKind(a) === kind : kind === 'number' ? typeof a === 'number' || a === 'acorns' : fits.includes(a)));
+  return allowed.filter((a) => (parseRandom(a) ? randomKind(a) === kind : kind === 'number' ? typeof a === 'number' || a === 'acorns' || a === 'acornsLeft' : fits.includes(a)));
 }
 
 /** A lightning bolt: something happens, and a When card answers. */
