@@ -29,7 +29,7 @@ import type { IdFactory } from '../ir/ids';
 import { isNoOpMove, type EditOp } from '../ir/ops';
 import { ancestorsOf, branchesOf, branchBody, containerAt, endOfMain, functionsOf, isWithin, locate, mainBody, memoryOf, procedureOfPlace, samePlaceContainer, slotsInUse, walk } from '../ir/program';
 import { buildNodes } from '../ir/spec';
-import { functionContainerId, functionLabel, functionOfContainer, handlerContainerId, handlerOfContainer, isSenseId, lengthOf, MAIN as MAIN_PROCEDURE, parseRandom, readFrom, REPEAT_DEFAULT, REPEAT_MAX, REPEAT_MIN, type Branch, type CardId, type CommandId, type IRNode, type MemorySlot, type NodeId, type Place, type ProgramIR, type Source } from '../ir/types';
+import { functionContainerId, functionLabel, functionOfContainer, handlerContainerId, handlerOfContainer, isSenseId, itemOf, lengthOf, MAIN as MAIN_PROCEDURE, parseRandom, readFrom, REPEAT_DEFAULT, REPEAT_MAX, REPEAT_MIN, type Branch, type CardId, type CommandId, type IRNode, type MemorySlot, type NodeId, type Place, type ProgramIR, type Source } from '../ir/types';
 import type { TraceEvent } from '../runtime/contract';
 import { cardLabel, COMMANDS, conditionLabel, describeNode, eventLabel, FunctionIcon, nodeLabel, placeWords, sourceWords, valueWords } from './commands';
 import { gapCentres, slotForY, type RowBox } from './geometry';
@@ -272,7 +272,7 @@ export function Editor({
         return { id: newId(), kind: command, gate: gates[0] ?? 'a' };
       case 'goRow':
       case 'goColumn':
-        return { id: newId(), kind: command, to: 1 };
+        return { id: newId(), kind: command, to: 0 };
       case 'shift':
         return { id: newId(), kind: 'shift', slot: memory.find((m) => m.kind === 'position')?.name ?? 'spot', dir: 'E' };
       case 'repeat':
@@ -845,7 +845,7 @@ export function Editor({
               >
                 {(() => {
                   const size = node.kind === 'goRow' ? (boardSize?.height ?? 8) : (boardSize?.width ?? 8);
-                  const options: (number | string)[] = [...Array.from({ length: size }, (_, i) => i + 1), ...memory.filter((m) => m.kind === 'number').map((m) => m.name)];
+                  const options: (number | string)[] = [...Array.from({ length: size }, (_, i) => i), ...memory.filter((m) => m.kind === 'number').map((m) => m.name)];
                   return (options.includes(node.to) ? options : [node.to, ...options]).map((o) => (
                     <option key={String(o)} value={JSON.stringify(o)}>
                       {o}
@@ -1236,7 +1236,15 @@ function sourcesFor(kind: string, programming: Programming, memory: readonly Mem
   const reads = memory.filter((m) => m.kind === 'grid' && m.of === kind).flatMap((g) => places.map((at) => readFrom(g.name, at)));
   // How many items a list holds is a number.
   const lengths = kind === 'number' ? memory.filter((m) => m.kind === 'list').map((m) => lengthOf(m.name)) : [];
-  return [...ownSources(kind, programming, memory), ...[...reads, ...lengths].filter((r) => !programming.allowedSources || programming.allowedSources.includes(r))];
+  // An item of a list, by its index from 0: a number, or a number slot's value.
+  const indices: (number | string)[] = [0, 1, 2, 3, ...memory.filter((m) => m.kind === 'number').map((m) => m.name)];
+  const items = memory.filter((m) => m.kind === 'list' && (m.of ?? 'number') === kind).flatMap((l) => indices.map((i) => itemOf(l.name, i)));
+  // Items only show where the level offers them, so earlier list levels keep their short menus.
+  return [
+    ...ownSources(kind, programming, memory),
+    ...[...reads, ...lengths].filter((r) => !programming.allowedSources || programming.allowedSources.includes(r)),
+    ...items.filter((r) => programming.allowedSources?.includes(r)),
+  ];
 }
 
 function ownSources(kind: string, programming: Programming, memory: readonly MemorySlot[]): Source[] {

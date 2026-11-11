@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "id": "i11-item-zero",
+  "title": "Item 0 is first",
+  "intro": "Lists count from 0, like real code: item 0 is the first, item 1 the second. The robot sets way to item 0 of route. Which way is that?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...",
+      "..."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 0,
+      "y": 1
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "lists",
+    "activity": "model"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "set",
+      "face"
+    ],
+    "allowedSources": [
+      "item:route@0",
+      "item:route@1",
+      "item:route@2",
+      "item:route@3"
+    ],
+    "starterProgram": [
+      {
+        "remember": "route",
+        "kind": "list",
+        "of": "direction",
+        "start": [
+          "S",
+          "E",
+          "E"
+        ]
+      },
+      {
+        "remember": "way",
+        "kind": "direction",
+        "start": "N"
+      },
+      {
+        "set": "way",
+        "to": "item:route@0"
+      },
+      {
+        "face": "way"
+      },
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 1
+        }
+      ],
+      "text": "The memory card shows each item with its number underneath."
+    },
+    {
+      "kind": "card",
+      "command": "set",
+      "text": "Item 0 is the very first item, not the second."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "set",
+      "text": "This card reads item 0 of route."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "route",
+      "kind": "list",
+      "of": "direction",
+      "start": [
+        "S",
+        "E",
+        "E"
+      ]
+    },
+    {
+      "remember": "way",
+      "kind": "direction",
+      "start": "N"
+    },
+    {
+      "set": "way",
+      "to": "item:route@0"
+    },
+    {
+      "face": "way"
+    },
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": false,
+    "askMemory": [
+      "slot:way"
+    ]
+  }
+}

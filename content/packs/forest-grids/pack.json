@@ -13,7 +13,7 @@
   "introduction": {
     "concept": "grids",
     "title": "Grids",
-    "explanation": "Every tile has a column number and a row number. Go to column and Go to row walk straight there.",
+    "explanation": "Every tile has a column and a row, counted from 0 like real code: the top left is column 0, row 0. Go to column and Go to row walk straight there.",
     "demo": {
       "world": {
         "rows": [
@@ -33,13 +33,13 @@
       },
       "program": [
         {
+          "goColumn": 1
+        },
+        {
+          "goRow": 2
+        },
+        {
           "goColumn": 2
-        },
-        {
-          "goRow": 3
-        },
-        {
-          "goColumn": 3
         }
       ]
     }

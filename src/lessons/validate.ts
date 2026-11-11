@@ -5,7 +5,7 @@
 import { sequentialIdFactory } from '../ir/ids';
 import { programFromSpec } from '../ir/program';
 import { callsOfSpec, cardsOfSpec, conditionsOfSpec, countSpec, depthOfSpec, gatesOfSpec, specDiff, splitSpec, type NodeSpec } from '../ir/spec';
-import { BASIC_CONDITIONS, BOARD_MAPS, GO_IDS, MEMORY_CARD_IDS, isBlockId, isCommandId, isGateActionId, isSenseId, parseLength, parseRandom, parseRead, parseSlotTest, type CardId, type CommandId, type Key, type Source, type ValueKind } from '../ir/types';
+import { BASIC_CONDITIONS, BOARD_MAPS, GO_IDS, MEMORY_CARD_IDS, isBlockId, isCommandId, isGateActionId, isSenseId, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CardId, type CommandId, type Key, type Source, type ValueKind } from '../ir/types';
 import { interpretAll } from '../runtime/interpreter';
 import { advance, cellKey, gatesOf, initialState, isTimed, moverCell, moversOf, objectiveMet, period, platesOf, stateKey, step, switchesOf, tileAt } from '../sim/world';
 import { hasField } from './memory';
@@ -348,14 +348,19 @@ function slotUses(spec: readonly NodeSpec[]): { slot: string; kind: ValueKind | 
     if (typeof s === 'string') return [];
     const inner = 'do' in s ? [...slotUses(s.do), ...('if' in s && s.else ? slotUses(s.else) : [])] : [];
     const own: { slot: string; kind: ValueKind | 'item'; card: string; list?: string; of?: ValueKind }[] = [];
-    if ('push' in s) own.push({ slot: s.push, kind: 'list', card: 'Add to list', ...(parseRandom(s.to)?.kind !== 'pick' && { of: sourceKind(s.to) }) });
+    if ('push' in s) own.push({ slot: s.push, kind: 'list', card: 'Add to list', ...(parseRandom(s.to)?.kind !== 'pick' && !parseItem(s.to) && { of: sourceKind(s.to) }) });
     for (const to of 'set' in s ? [s.to] : 'push' in s ? [s.to] : []) {
       const counted = parseLength(to);
       if (counted) own.push({ slot: counted, kind: 'list', card: 'a length' });
     }
     const read = 'set' in s ? parseRead(s.to) : null;
     const picked = 'set' in s || 'push' in s ? parseRandom(s.to) : null;
-    if (picked?.kind === 'pick') {
+    const item = 'set' in s || 'push' in s ? parseItem(s.to) : null;
+    if (item) {
+      own.push({ slot: item.list, kind: 'list', card: 'an item' });
+      if (typeof item.index === 'string') own.push({ slot: item.index, kind: 'number', card: 'an item' });
+      if ('set' in s) own.push({ slot: s.set, kind: 'item', card: 'Set', list: item.list });
+    } else if (picked?.kind === 'pick') {
       own.push({ slot: picked.list, kind: 'list', card: 'a random pick' });
       if ('set' in s) own.push({ slot: s.set, kind: 'item', card: 'Set', list: picked.list });
     } else if ('set' in s && read) {

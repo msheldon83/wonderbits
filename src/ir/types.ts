@@ -67,7 +67,7 @@ export const MEMORY_CARD_IDS = ['set', 'change', 'face', 'unlock', 'mark', 'push
 
 /**
  * Moves by coordinates: walk straight along to a row or a column, counted
- * from 1 like the numbers round the board. The robot turns to face the way
+ * from 0 like the numbers round the board. The robot turns to face the way
  * and steps tile by tile, so walls and gates still stop it.
  */
 export const GO_IDS = ['goRow', 'goColumn'] as const;
@@ -124,6 +124,21 @@ export function parseLength(source: Source): string | null {
 }
 
 export const lengthOf = (list: string): Source => `length:${list}`;
+
+const ITEM = /^item:([a-z][A-Za-z0-9]{0,19})@(\d{1,2}|[a-z][A-Za-z0-9]{0,19})$/;
+
+/**
+ * One item of a list by its index, counted from 0 like real lists:
+ * `item:route@0` is the first, `item:route@i` the one a number slot points at.
+ */
+export function parseItem(source: Source): { list: string; index: number | string } | null {
+  if (typeof source !== 'string') return null;
+  const m = ITEM.exec(source);
+  if (!m) return null;
+  return { list: m[1]!, index: /^\d+$/.test(m[2]!) ? Number(m[2]) : m[2]! };
+}
+
+export const itemOf = (list: string, index: number | string): Source => `item:${list}@${index}`;
 
 const RANDOM_RANGE = /^random:(\d{1,2})-(\d{1,2})$/;
 const PICK = /^pick:([a-z][A-Za-z0-9]{0,19})$/;

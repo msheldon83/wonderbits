@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "id": "i13-step-by-index",
+  "title": "Step by index",
+  "intro": "No For each this time: walk the list by its index. i starts at 0. Each go reads item i, steps, and adds 1 to i. Four items are 0 to 3, so stop when i is 4.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..#",
+      "#..",
+      "##."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 2
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "lists",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "set",
+      "face",
+      "until",
+      "change"
+    ],
+    "allowedConditions": [
+      "slot:i=4"
+    ],
+    "allowedSources": [
+      "item:route@i",
+      "item:route@0"
+    ],
+    "maxInstructions": 5,
+    "maxPerCommand": {
+      "forward": 1
+    },
+    "starterProgram": [
+      {
+        "remember": "route",
+        "kind": "list",
+        "of": "direction",
+        "start": [
+          "E",
+          "S",
+          "E",
+          "S"
+        ]
+      },
+      {
+        "remember": "way",
+        "kind": "direction",
+        "start": "N"
+      },
+      {
+        "remember": "i",
+        "kind": "number",
+        "start": 0
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 2
+        }
+      ],
+      "text": "Four items, four steps: i goes 0, 1, 2, 3."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "Repeat until i is 4: set way to item i, face, step, add 1 to i."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        0
+      ],
+      "slot": 0,
+      "command": "set",
+      "text": "Each go starts by reading item i."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "route",
+      "kind": "list",
+      "of": "direction",
+      "start": [
+        "E",
+        "S",
+        "E",
+        "S"
+      ]
+    },
+    {
+      "remember": "way",
+      "kind": "direction",
+      "start": "N"
+    },
+    {
+      "remember": "i",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "until": "slot:i=4",
+      "do": [
+        {
+          "set": "way",
+          "to": "item:route@i"
+        },
+        {
+          "face": "way"
+        },
+        "forward",
+        {
+          "change": "i",
+          "by": 1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

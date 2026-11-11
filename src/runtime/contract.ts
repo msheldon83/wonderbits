@@ -137,7 +137,8 @@ export type RunOutcome =
   | { status: 'incomplete' }
   | { status: 'blocked'; nodeId: NodeId; reason: BlockReason }
   | { status: 'halted'; reason: 'step-limit' | 'time-limit' | 'forever' }
-  | { status: 'error'; message: string };
+  /** The program asked for something impossible. A card's error carries its node and a message a child can read. */
+  | { status: 'error'; message: string; nodeId?: NodeId };
 
 export type RuntimeMessage =
   | { type: 'trace'; requestId: string; event: TraceEvent }

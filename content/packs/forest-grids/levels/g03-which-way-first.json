@@ -59,25 +59,25 @@
     {
       "kind": "card",
       "command": "goColumn",
-      "text": "Column 4 is clear all the way down."
+      "text": "Column 3 is clear all the way down."
     },
     {
       "kind": "fill",
       "path": [],
       "slot": 0,
       "command": "goColumn",
-      "text": "Start with Go to column 4."
+      "text": "Start with Go to column 3."
     }
   ],
   "referenceSolution": [
     {
-      "goColumn": 4
+      "goColumn": 3
     },
     {
-      "goRow": 3
+      "goRow": 2
     },
     {
-      "goColumn": 1
+      "goColumn": 0
     }
   ],
   "stars": {

@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "id": "i12-one-past-the-end",
+  "title": "One past the end",
+  "intro": "route has three items, and the robot should face the last one and step. Run it: why does it stop?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..",
+      ".."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 0,
+      "y": 1
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "lists",
+    "activity": "debug"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "set",
+      "face"
+    ],
+    "allowedSources": [
+      "item:route@0",
+      "item:route@1",
+      "item:route@2",
+      "item:route@3"
+    ],
+    "starterProgram": [
+      {
+        "remember": "route",
+        "kind": "list",
+        "of": "direction",
+        "start": [
+          "E",
+          "E",
+          "S"
+        ]
+      },
+      {
+        "remember": "way",
+        "kind": "direction",
+        "start": "N"
+      },
+      {
+        "set": "way",
+        "to": "item:route@3"
+      },
+      {
+        "face": "way"
+      },
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 1
+        }
+      ],
+      "text": "Three items are numbered 0, 1 and 2."
+    },
+    {
+      "kind": "card",
+      "command": "set",
+      "text": "The last of three items is item 2."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "set",
+      "text": "Change which item this card reads."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "route",
+      "kind": "list",
+      "of": "direction",
+      "start": [
+        "E",
+        "E",
+        "S"
+      ]
+    },
+    {
+      "remember": "way",
+      "kind": "direction",
+      "start": "N"
+    },
+    {
+      "set": "way",
+      "to": "item:route@2"
+    },
+    {
+      "face": "way"
+    },
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "id": "n01-how-many-acorns",
+  "title": "How many acorns?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 2,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "randomness",
+    "activity": "model"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "until"
+    ],
+    "allowedConditions": [
+      "atFlag"
+    ],
+    "maxInstructions": 2,
+    "starterProgram": [
+      {
+        "until": "atFlag",
+        "do": [
+          "forward"
+        ]
+      }
+    ]
+  },
+  "shuffles": [
+    {
+      "collectibles": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "collectibles": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        }
+      ]
+    }
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "text": "Count the acorns on this shuffle."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "The robot walks the whole row, so it picks up every acorn there is."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "until",
+      "text": "One loop walks to the flag."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "until": "atFlag",
+      "do": [
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": false,
+    "askMemory": [
+      "acorns"
+    ]
+  }
+}

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "g02-row-and-column",
   "title": "Row and column",
-  "intro": "Every tile has a column (along the top) and a row (down the side). Find the flag's two numbers.",
+  "intro": "Every tile has a column (along the top) and a row (down the side), both from 0, like a coordinate plane. Find the flag's two numbers.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -47,7 +47,7 @@
           "y": 2
         }
       ],
-      "text": "Column 4, row 3."
+      "text": "Column 3, row 2."
     },
     {
       "kind": "card",
@@ -64,10 +64,10 @@
   ],
   "referenceSolution": [
     {
-      "goColumn": 4
+      "goColumn": 3
     },
     {
-      "goRow": 3
+      "goRow": 2
     }
   ],
   "stars": {

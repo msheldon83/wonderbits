@@ -53,6 +53,7 @@ export function outcomeMessage(outcome: RunOutcome, stepNumber: number | null, s
       }
       return { tone: 'problem', text: 'That program ran too long, so the robot stopped.' };
     case 'error':
+      if (outcome.nodeId) return { tone: 'problem', text: `The robot stopped${at}: ${outcome.message}.` };
       return { tone: 'problem', text: 'Something went wrong. Press Reset and try again.' };
   }
 }

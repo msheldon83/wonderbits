@@ -52,8 +52,8 @@ function describeBoard(world: WorldDefinition): string {
   const extras = world.collectibles.length ? ` ${world.collectibles.length} acorn${world.collectibles.length > 1 ? 's' : ''} to collect.` : '';
   return (
     `Island ${world.width} tiles wide and ${world.height} tiles deep. ` +
-    `Robot at column ${world.robot.x + 1}, row ${world.robot.y + 1}, looking ${FACING_WORDS[world.robot.facing]}. ` +
-    `Flag at column ${world.goal.x + 1}, row ${world.goal.y + 1}.${extras}`
+    `Robot at column ${world.robot.x}, row ${world.robot.y}, looking ${FACING_WORDS[world.robot.facing]}. ` +
+    `Flag at column ${world.goal.x}, row ${world.goal.y}.${extras}`
   );
 }
 
@@ -428,7 +428,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
 
   // ----- Message line -----
 
-  const errorNode = outcome?.status === 'blocked' ? outcome.nodeId : null;
+  const errorNode = outcome?.status === 'blocked' || outcome?.status === 'error' ? (outcome.nodeId ?? null) : null;
   const predictionPrompt = (): { tone: Tone; text: string } => {
     const names = (fields: readonly MemoryField[]) => fields.map((f) => (gateOfField(f) ? gateLabel(gateOfField(f)!) : f === 'facing' ? 'which way it faces' : 'the acorns')).join(' and ');
     const tileMissing = asksTile && !prediction?.cell;

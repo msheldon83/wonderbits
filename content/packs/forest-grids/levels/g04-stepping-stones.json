@@ -61,39 +61,39 @@
           "y": 1
         }
       ],
-      "text": "Column 3 is the way down from the top row."
+      "text": "Column 2 is the way down from the top row."
     },
     {
       "kind": "card",
       "command": "goRow",
-      "text": "Down column 3 to row 3, then along to the first acorn."
+      "text": "Down column 2 to row 2, then along to the first acorn."
     },
     {
       "kind": "fill",
       "path": [],
       "slot": 0,
       "command": "goColumn",
-      "text": "First: Go to column 3."
+      "text": "First: Go to column 2."
     }
   ],
   "referenceSolution": [
     {
-      "goColumn": 3
+      "goColumn": 2
     },
     {
-      "goRow": 3
+      "goRow": 2
     },
     {
-      "goColumn": 1
+      "goColumn": 0
     },
     {
-      "goRow": 5
+      "goRow": 4
     },
     {
-      "goColumn": 5
+      "goColumn": 4
     },
     {
-      "goRow": 1
+      "goRow": 0
     }
   ],
   "stars": {

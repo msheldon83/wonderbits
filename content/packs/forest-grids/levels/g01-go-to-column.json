@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "g01-go-to-column",
   "title": "Go to column",
-  "intro": "The numbers along the top count the columns. Send the robot straight to the flag's column.",
+  "intro": "The numbers along the top count the columns. Like real code, they start at 0. Send the robot straight to the flag's column.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -43,7 +43,7 @@
           "y": 0
         }
       ],
-      "text": "The flag is in column 5."
+      "text": "The flag is in column 4: the robot starts in column 0."
     },
     {
       "kind": "card",
@@ -55,12 +55,12 @@
       "path": [],
       "slot": 0,
       "command": "goColumn",
-      "text": "One card: Go to column 5."
+      "text": "One card: Go to column 4."
     }
   ],
   "referenceSolution": [
     {
-      "goColumn": 5
+      "goColumn": 4
     }
   ],
   "stars": {

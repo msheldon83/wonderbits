@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "g05-every-other-column",
   "title": "Every other column",
-  "intro": "Acorns sit in columns 3, 5, 7 and 9. One Go to column card, with a number from memory, can reach them all.",
+  "intro": "Acorns sit in columns 2, 4, 6 and 8. One Go to column card, with a number from memory, can reach them all.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -58,7 +58,7 @@
       {
         "remember": "col",
         "kind": "number",
-        "start": 3
+        "start": 2
       }
     ]
   },
@@ -102,7 +102,7 @@
     {
       "remember": "col",
       "kind": "number",
-      "start": 3
+      "start": 2
     },
     {
       "repeat": 4,

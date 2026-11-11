@@ -78,7 +78,7 @@ export interface ObjectiveDefinition {
   /**
    * A random level: every run must end with this value among these outcomes,
    * and across many runs each outcome must turn up. Of is a memory slot's
-   * name, or "column" for the robot's column counted from 1.
+   * name, or "column" for the robot's column counted from 0.
    */
   covers?: { of: string; values: Value[] };
 }

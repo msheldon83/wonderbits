@@ -13,7 +13,7 @@
   "introduction": {
     "concept": "representation",
     "title": "Memory",
-    "explanation": "The robot can only remember a few things, and each slot holds one kind: a number, a yes or no, a direction or a place.",
+    "explanation": "The robot can only remember a few things, and each slot holds one kind: a number, a yes or no, a direction or a place. Places count from 0, like real code: the top left tile is column 0, row 0.",
     "demo": {
       "world": {
         "rows": [
