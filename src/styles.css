@@ -2989,6 +2989,17 @@ a.travel-button .travel-icon {
   animation: bird-bob 2.6s ease-in-out infinite;
 }
 
+/* Over the board, the bird glides from tile to tile as its place changes. */
+.board-bird.is-flying {
+  transition: left 320ms ease-in-out, top 320ms ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-bird.is-flying {
+    transition: none;
+  }
+}
+
 @keyframes bird-bob {
   50% {
     transform: translateY(-4px);

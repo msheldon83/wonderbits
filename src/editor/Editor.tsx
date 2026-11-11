@@ -275,6 +275,8 @@ export function Editor({
       case 'goRow':
       case 'goColumn':
         return { id: newId(), kind: command, to: 0 };
+      case 'fly':
+        return { id: newId(), kind: 'fly', slot: memory.find((m) => m.kind === 'position')?.name ?? 'bird', column: 0 };
       case 'shift':
         return { id: newId(), kind: 'shift', slot: memory.find((m) => m.kind === 'position')?.name ?? 'spot', dir: 'E' };
       case 'repeat':
@@ -855,6 +857,36 @@ export function Editor({
                   ));
                 })()}
               </select>
+            </span>
+          )}
+          {node.kind === 'fly' && (
+            <span className="block-param block-condition">
+              {(['column', 'row'] as const).map((axis) => {
+                const value = node[axis];
+                const size = axis === 'row' ? (boardSize?.height ?? 8) : (boardSize?.width ?? 8);
+                const options: (number | string)[] = [...Array.from({ length: size }, (_, i) => i), ...memory.filter((m) => m.kind === 'number').map((m) => m.name)];
+                const other = axis === 'row' ? node.column : node.row;
+                return (
+                  <span key={axis} className="block-param">
+                    <span className="param-word">{axis}</span>
+                    <select
+                      className="param-select"
+                      aria-label={`Which ${axis} to fly to, step ${number}`}
+                      value={value === undefined ? 'stay' : JSON.stringify(value)}
+                      disabled={locked}
+                      onChange={(e) => setParam(node.id, { [axis]: e.target.value === 'stay' ? null : (JSON.parse(e.target.value) as number | string) })}
+                    >
+                      {/* A coordinate left as it is: only while the other one is set. */}
+                      {(value === undefined || other !== undefined) && <option value="stay">stay</option>}
+                      {(value === undefined || options.includes(value) ? options : [value, ...options]).map((o) => (
+                        <option key={String(o)} value={JSON.stringify(o)}>
+                          {o}
+                        </option>
+                      ))}
+                    </select>
+                  </span>
+                );
+              })}
             </span>
           )}
           {node.kind === 'shift' && (

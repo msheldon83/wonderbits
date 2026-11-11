@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "g10-minesweeper",
   "title": "Minesweeper",
-  "intro": "In Minesweeper, a tile's number says how many rocks touch it. Here, count the rocks just above and below. The loop already walks row 1 and counts the rock above each tile. Count the rock below too, then Mark n onto counts.",
+  "intro": "In Minesweeper, a tile's number says how many rocks touch it. Here, count the rocks just above and below. The loop already walks row 1, sends the bird to the tile above and counts its rock. Count the rock below too, then Mark n onto counts.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -59,7 +59,7 @@
       "set",
       "if",
       "change",
-      "shift",
+      "fly",
       "repeat",
       "mark",
       "goColumn"
@@ -69,8 +69,7 @@
     ],
     "allowedSources": [
       0,
-      "here",
-      "read:walls@spot"
+      "read:walls@bird"
     ],
     "maxInstructions": 16,
     "starterProgram": [
@@ -109,7 +108,7 @@
         ]
       },
       {
-        "remember": "spot",
+        "remember": "bird",
         "kind": "position",
         "start": {
           "x": 0,
@@ -139,16 +138,13 @@
             "to": 0
           },
           {
-            "set": "spot",
-            "to": "here"
-          },
-          {
-            "shift": "spot",
-            "dir": "N"
+            "fly": "bird",
+            "column": "col",
+            "row": 0
           },
           {
             "set": "rock",
-            "to": "read:walls@spot"
+            "to": "read:walls@bird"
           },
           {
             "if": "slot:rock=yes",
@@ -187,17 +183,17 @@
     },
     {
       "kind": "card",
-      "command": "shift",
-      "text": "The finger is on the tile above. Move it down twice to reach the tile below, read it, and count it like the one above."
+      "command": "fly",
+      "text": "The bird is over the tile above, in row 0. Fly it straight to row 2, read the map under it, and count it like the one above."
     },
     {
       "kind": "fill",
       "path": [
         0
       ],
-      "slot": 5,
-      "command": "shift",
-      "text": "Right after counting the rock above: move the finger down."
+      "slot": 4,
+      "command": "fly",
+      "text": "Right after counting the rock above: fly the bird to row 2."
     }
   ],
   "referenceSolution": [
@@ -236,7 +232,7 @@
       ]
     },
     {
-      "remember": "spot",
+      "remember": "bird",
       "kind": "position",
       "start": {
         "x": 0,
@@ -266,16 +262,13 @@
           "to": 0
         },
         {
-          "set": "spot",
-          "to": "here"
-        },
-        {
-          "shift": "spot",
-          "dir": "N"
+          "fly": "bird",
+          "column": "col",
+          "row": 0
         },
         {
           "set": "rock",
-          "to": "read:walls@spot"
+          "to": "read:walls@bird"
         },
         {
           "if": "slot:rock=yes",
@@ -287,16 +280,12 @@
           ]
         },
         {
-          "shift": "spot",
-          "dir": "S"
-        },
-        {
-          "shift": "spot",
-          "dir": "S"
+          "fly": "bird",
+          "row": 2
         },
         {
           "set": "rock",
-          "to": "read:walls@spot"
+          "to": "read:walls@bird"
         },
         {
           "if": "slot:rock=yes",

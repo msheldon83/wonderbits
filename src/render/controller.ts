@@ -70,6 +70,13 @@ function wait(ms: number, signal: AbortSignal): Promise<void> {
   });
 }
 
+/** What the bird calls out about the tile under it: "rock!" or "no rock" on a map of walls, "acorn!" on a map of acorns. */
+function seenWords(map: string, value: unknown): string {
+  const thing = map === 'walls' ? 'rock' : map === 'acorns' ? 'acorn' : null;
+  if (thing && typeof value === 'boolean') return value ? `${thing}!` : `no ${thing}`;
+  return `${map}: ${valueWords(value as never)}`;
+}
+
 export class BoardController implements Player {
   /** Current display angle in degrees; may run past 360 or below 0. */
   private angle = 0;
@@ -335,7 +342,7 @@ export class BoardController implements Player {
     // Memory cards: a bubble says what went into the slot, or how the lock answered.
     if (event.op === 'set' && event.asked === 'bird' && this.worldEls.bird) {
       // The robot asks; the bird, high over the board, flaps and calls back what it sees.
-      await this.birdSays(`${valueWords(event.value)} left!`, ms(THINK_MS * 1.6), signal);
+      await this.birdSays(event.seen !== undefined ? seenWords(event.seen, event.value) : `${valueWords(event.value)} left!`, ms(THINK_MS * 1.6), signal);
       if (signal.aborted) return;
     }
     if (event.op === 'set') {

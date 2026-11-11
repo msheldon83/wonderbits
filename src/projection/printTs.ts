@@ -205,6 +205,13 @@ function printNode(node: IRNode, depth: number, lines: string[]): void {
       lines.push(`${pad}${node.slot}.${axis} ${sign}= 1; ${tag}`);
       return;
     }
+    case 'fly': {
+      // Both at once is a new place; one alone changes just that coordinate.
+      if (node.column !== undefined && node.row !== undefined) lines.push(`${pad}${node.slot} = { x: ${node.column}, y: ${node.row} }; ${tag}`);
+      else if (node.column !== undefined) lines.push(`${pad}${node.slot}.x = ${node.column}; ${tag}`);
+      else lines.push(`${pad}${node.slot}.y = ${node.row}; ${tag}`);
+      return;
+    }
     case 'mark':
       lines.push(`${pad}${cellCode(node.grid, node.at)} = ${node.slot}; ${tag}`);
       return;

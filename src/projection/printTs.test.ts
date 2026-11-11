@@ -237,4 +237,11 @@ describe('printProgram', () => {
     expect(code).toContain("  Object.assign(new Bot(0, 0, 'right'), { steps: 2 }),");
     expect(code).toContain('for (const bot of team) bot.main();');
   });
+
+  it('prints the bird as a place the robot sends out and reads the map under', () => {
+    const p = programFromSpec([{ remember: 'bird', kind: 'position' }, { remember: 'walls', kind: 'grid', of: 'yesNo', start: 'board:walls' }, { remember: 'rock', kind: 'yesNo' }, { shift: 'bird', dir: 'E' }, { set: 'rock', to: 'read:walls@bird' }], sequentialIdFactory());
+    const code = printProgram(p);
+    expect(code).toContain('bird.x += 1; // @node n1');
+    expect(code).toContain('rock = walls[bird.y][bird.x]; // @node n2');
+  });
 });

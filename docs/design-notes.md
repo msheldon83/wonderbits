@@ -4,6 +4,37 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Change: the bird replaces the finger in Reading the map (2026-11-11)
+
+Feedback: the finger, a purple hand with nobody holding it, was abstract.
+Reading the map wants something concrete in the world that looks at the
+board while the robot stays put, and the bird already does that.
+
+- **The bird is the place slot.** The six finger levels' place slot `spot`
+  is now `bird`, drawn as the bird hovering over its tile with a dashed
+  ring under it, gliding as it moves. Any other place slot still shows as a
+  pointing hand. The code is the same coordinates as before: `bird.x += 1`,
+  `walls[bird.y][bird.x]`.
+- **Fly the bird** (the old Move finger) moves the bird one tile. Reading a
+  map under the bird reads "walls under the bird", and the bird calls out
+  what it sees ("rock!", "no rock", "acorn!"); the Set event carries
+  `seen` with the map's name.
+- **Fly the bird to** is a new card: walls do not stop a bird, so it can go
+  straight to a column, a row, or both (`{ "fly": "bird", "column": 3,
+  "row": 1 }`), each a number or a number slot. It prints as
+  `bird = { x: 3, y: 1 }`, or `bird.x = 3` alone. A coordinate off the
+  board stops the run, as Go to row does.
+- **The levels.** A new level, Straight there, sends the bird to an acorn
+  with one card. Look before you go starts the bird at column 0 and flies
+  it to column 3 to look; Count the acorns flies straight back to column 0
+  at the end of each row; Minesweeper flies to the tile above, then
+  straight to row 2.
+- **One bird, two kinds of question.** It can fly anywhere; the robot asks
+  it simple things: what is under you (Reading the map), and, later, how
+  many acorns are left (Two scoreboards).
+- **A warm red-orange,** so it reads apart from the blue robot and the
+  green board.
+
 ## Change: the robot's pocket and the bird (2026-11-11)
 
 Feedback: "acorns left on the board" was abstract. Every other reading is

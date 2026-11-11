@@ -56,6 +56,10 @@ export function slotsInUse(program: ProgramIR): Set<string> {
     }
     if (node.kind === 'push') used.add(node.list);
     if (node.kind === 'shift') used.add(node.slot);
+    if (node.kind === 'fly') {
+      used.add(node.slot);
+      for (const t of [node.column, node.row]) if (typeof t === 'string') used.add(t);
+    }
     if ((node.kind === 'goRow' || node.kind === 'goColumn') && typeof node.to === 'string') used.add(node.to);
     if (node.kind === 'set' || node.kind === 'push') {
       const counted = parseLength(node.to);

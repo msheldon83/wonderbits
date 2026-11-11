@@ -503,6 +503,17 @@ describe('a team', () => {
 });
 
 describe('the bird', () => {
+  it('reads the map under it, and says which map', () => {
+    const r = interpretAll({
+      program: programFromSpec([{ remember: 'bird', kind: 'position' }, { remember: 'walls', kind: 'grid', of: 'yesNo', start: 'board:walls' }, { remember: 'rock', kind: 'yesNo' }, { shift: 'bird', dir: 'E' }, { shift: 'bird', dir: 'E' }, { set: 'rock', to: 'read:walls@bird' }], sequentialIdFactory()),
+      world,
+      objective: { reachGoal: false, collectAll: false, memory: { rock: true } },
+      limits: { maxSteps: 100 },
+    });
+    expect(r.outcome).toEqual({ status: 'success' });
+    expect(r.trace.at(-1)).toMatchObject({ op: 'set', asked: 'bird', seen: 'walls', value: true });
+  });
+
   it('marks a value the robot asked the bird for', () => {
     const w: WorldDefinition = { ...world, collectibles: [{ x: 1, y: 1 }, { x: 3, y: 0 }] };
     const r = interpretAll({ program: programFromSpec([{ remember: 'left', kind: 'number' }, 'forward', { set: 'left', to: 'acornsLeft' }, { set: 'left', to: 'acorns' }], sequentialIdFactory()), world: w, objective: { reachGoal: false, collectAll: false, memory: { left: 1 } }, limits: { maxSteps: 100 } });

@@ -64,7 +64,7 @@ export const CALL = 'call' as const;
  * holds, and Unlock a gate with the number a slot holds. For each is a
  * block that walks a list slot.
  */
-export const MEMORY_CARD_IDS = ['set', 'change', 'face', 'unlock', 'mark', 'push', 'shift'] as const;
+export const MEMORY_CARD_IDS = ['set', 'change', 'face', 'unlock', 'mark', 'push', 'shift', 'fly'] as const;
 
 /**
  * Moves by coordinates: walk straight along to a row or a column, counted
@@ -337,12 +337,25 @@ export interface GoNode {
   to: number | string;
 }
 
-/** Moves a remembered place one tile, like a finger on the map; the robot stays put. */
+/** Moves a remembered place one tile: on the board, the bird flies there while the robot stays put. */
 export interface ShiftNode {
   id: NodeId;
   kind: 'shift';
   slot: string;
   dir: 'N' | 'E' | 'S' | 'W';
+}
+
+/**
+ * Sends a place straight to a column, a row, or both: on the board, the bird
+ * flies there. Walls do not stop a bird. Each is a number on the card or a
+ * number slot's value; one left out stays as it is.
+ */
+export interface FlyNode {
+  id: NodeId;
+  kind: 'fly';
+  slot: string;
+  column?: number | string;
+  row?: number | string;
 }
 
 /** A grid slot that starts as a copy of the board: where the rocks are, or the acorns. */
@@ -358,7 +371,7 @@ export interface ForEachNode {
 }
 
 export type BlockNode = RepeatNode | IfNode | IfElseNode | UntilNode | ForEachNode;
-export type IRNode = CommandNode | BlockNode | CallNode | GateActionNode | SetNode | ChangeNode | FaceNode | UnlockNode | MarkNode | PushNode | GoNode | ShiftNode;
+export type IRNode = CommandNode | BlockNode | CallNode | GateActionNode | SetNode | ChangeNode | FaceNode | UnlockNode | MarkNode | PushNode | GoNode | ShiftNode | FlyNode;
 
 export function isBlockNode(node: IRNode): node is BlockNode {
   return isBlockId(node.kind);

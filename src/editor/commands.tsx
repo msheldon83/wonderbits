@@ -177,12 +177,22 @@ export const COMMANDS: Record<CardId, CommandInfo> = {
     ),
   },
   shift: {
-    label: 'Move finger',
-    description: 'Move a remembered place one tile on the map',
+    label: 'Fly the bird',
+    description: 'Send the bird one tile over the board; the robot stays put',
     icon: (
       <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
-        <path d="M12 26v-9a2.5 2.5 0 0 1 5 0v-8a2.5 2.5 0 0 1 5 0v14c0 2-1.5 3-3 3z" {...stroke} strokeWidth={2.4} />
-        <path d="M4 9h6M7 6l3 3-3 3" {...stroke} strokeWidth={2.4} />
+        <path d="M6 18c4-1 7-5 8-10 2 4 2 8 0 11 4-2 9-2 13 1-5 1-9 4-12 6-4 0-7-3-9-8z" {...stroke} strokeWidth={2.2} />
+        <circle cx={22} cy={18} r={1.3} fill="currentColor" />
+      </svg>
+    ),
+  },
+  fly: {
+    label: 'Fly the bird to',
+    description: 'Send the bird straight to a column, a row, or both; walls do not stop it',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <path d="M4 20c3-1 5-4 6-8 1.5 3 1.5 6 0 8 3-1.5 6-1.5 9 1-3.5 1-6 3-8 4.5-3 0-5.5-2-7-5.5z" {...stroke} strokeWidth={2.2} />
+        <path d="M20 8h8v8M28 8l-7 7" {...stroke} strokeWidth={2.2} />
       </svg>
     ),
   },
@@ -254,6 +264,7 @@ export function valueWords(v: Value): string {
 
 /** Where on a grid, in words: "here", "ahead", "at spot". */
 export function placeWords(at: string): string {
+  if (at === 'bird') return 'under the bird';
   return at === 'here' || at === 'ahead' ? at : `at ${at}`;
 }
 
@@ -318,12 +329,16 @@ export function describeNode(node: IRNode): string {
       return `Unlock gate ${node.gate.toUpperCase()} with ${node.slot}`;
     case 'push':
       return `Add ${sourceWords(node.to)} to the end of ${node.list}`;
+    case 'fly': {
+      const where = [node.column !== undefined && `column ${node.column}`, node.row !== undefined && `row ${node.row}`].filter(Boolean).join(', ');
+      return node.slot === 'bird' ? `Fly the bird to ${where}` : `Send ${node.slot} to ${where}`;
+    }
     case 'goRow':
       return `Go to row ${node.to}`;
     case 'goColumn':
       return `Go to column ${node.to}`;
     case 'shift':
-      return `Move ${node.slot} ${DIRECTION_WORDS[node.dir]}`;
+      return node.slot === 'bird' ? `Fly the bird ${DIRECTION_WORDS[node.dir]}` : `Move ${node.slot} ${DIRECTION_WORDS[node.dir]}`;
     case 'mark':
       return `Mark ${node.slot} on ${node.grid} ${placeWords(node.at)}`;
     case 'call':

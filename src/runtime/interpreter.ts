@@ -18,7 +18,7 @@
  * each followed by that key's When card.
  */
 import { functionBody, handlerBody, mainBody } from '../ir/program';
-import { handlerContainerId, isBirdSource, type Key } from '../ir/types';
+import { handlerContainerId, isBirdSource, isPosition, parseRead, type Key } from '../ir/types';
 import { advance, drawSource, morning, nextRobot, faceTo, gridPlace, initialState, markGrid, missingItem, shiftPlace, evaluate, isTimed, objectiveMet, period, remember, setGate, stateKey, step, unlockGate, type WorldEvent } from '../sim/world';
 import type { Facing } from '../sim/types';
 import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
@@ -120,8 +120,11 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
           const drawn = node.kind === 'set' ? drawSource(world, state, node.to) : { value: (typeof old === 'number' ? old : 0) + node.by, state };
           const value = drawn.value;
           const after = remember(drawn.state, node.slot, value);
-          const asked = node.kind === 'set' && isBirdSource(node.to);
-          const ok = yield* emit({ nodeId: node.id, op: 'set', slot: node.slot, value, ...(asked && { asked: 'bird' as const }), before: state, after, result: { kind: 'ok' } });
+          // The bird answers questions about the whole board, and reads the map under it.
+          const read = node.kind === 'set' ? parseRead(node.to) : null;
+          const underBird = read?.at === 'bird';
+          const asked = node.kind === 'set' && (isBirdSource(node.to) || underBird);
+          const ok = yield* emit({ nodeId: node.id, op: 'set', slot: node.slot, value, ...(asked && { asked: 'bird' as const }), ...(underBird && { seen: read.grid }), before: state, after, result: { kind: 'ok' } });
           if (!ok) return;
           state = after;
           break;
@@ -170,6 +173,30 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
           }
           const after = remember(state, node.slot, moved);
           const ok = yield* emit({ nodeId: node.id, op: 'set', slot: node.slot, value: moved, before: state, after, result: { kind: 'ok' } });
+          if (!ok) return;
+          state = after;
+          break;
+        }
+        case 'fly': {
+          // A place goes straight to a column, a row or both. Walls do not stop the bird, but it stays over the board.
+          const from = state.memory?.[node.slot];
+          if (!isPosition(from)) {
+            stop = { status: 'error', message: `${node.slot} holds no place`, nodeId: node.id };
+            return;
+          }
+          const resolve = (target: number | string | undefined, size: number, what: string, keep: number): number | string => {
+            if (target === undefined) return keep;
+            const raw = typeof target === 'number' ? target : state.memory?.[target];
+            return typeof raw === 'number' && Number.isInteger(raw) && raw >= 0 && raw < size ? raw : `There is no ${what} ${String(raw)}`;
+          };
+          const x = resolve(node.column, world.width, 'column', from.x);
+          const y = resolve(node.row, world.height, 'row', from.y);
+          if (typeof x === 'string' || typeof y === 'string') {
+            stop = { status: 'error', message: typeof x === 'string' ? x : (y as string), nodeId: node.id };
+            return;
+          }
+          const after = remember(state, node.slot, { x, y });
+          const ok = yield* emit({ nodeId: node.id, op: 'set', slot: node.slot, value: { x, y }, before: state, after, result: { kind: 'ok' } });
           if (!ok) return;
           state = after;
           break;
