@@ -489,6 +489,10 @@ describe('a team', () => {
     expect(next.after.robot).toEqual({ x: 0, y: 2, facing: 'E' });
     expect(next.after.memory).toEqual({ steps: 1 });
     expect(next.after.team![0]).toEqual({ x: 3, y: 1, facing: 'E' });
+    // Robot 1 keeps its own memory after robot 2 takes over.
+    expect(next.after.teamMemory![0]).toEqual({ steps: 0 });
+    expect(r.final.teamMemory![0]).toEqual({ steps: 0 });
+    expect(r.final.memory).toEqual({ steps: 0 });
     expect(r.final.active).toBe(1);
   });
 

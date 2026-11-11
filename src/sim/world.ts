@@ -107,7 +107,9 @@ export function passable(world: WorldDefinition, state: SimState, cell: Cell): b
 export function initialState(world: WorldDefinition, memory: readonly MemorySlot[] = [], seed?: number): SimState {
   const base = { ...initialWorld(world), ...(seed !== undefined && { rng: seed }) };
   if (memory.length === 0) return base;
-  return { ...base, memory: robotMemory(world, memory, 0) };
+  // On a team board every robot is built with its own memory from the start.
+  const teamMemory = world.team?.map((_, i) => robotMemory(world, memory, i));
+  return { ...base, memory: robotMemory(world, memory, 0), ...(teamMemory && { teamMemory }) };
 }
 
 /** A robot's memory as it is built: the blueprint's starts, with that robot's own values on a team board. */
@@ -126,7 +128,10 @@ export function nextRobot(world: WorldDefinition, memory: readonly MemorySlot[],
   const next = done + 1;
   const team = (state.team ?? []).map((r, i) => (i === done ? { ...state.robot } : r));
   const robot = { ...world.team![next]!.robot };
-  return { ...state, robot, team, active: next, ...(memory.length > 0 && { memory: robotMemory(world, memory, next) }) };
+  if (memory.length === 0) return { ...state, robot, team, active: next };
+  // The robot that ran keeps its memory; the next one takes up its own.
+  const teamMemory = (state.teamMemory ?? world.team!.map((_, i) => robotMemory(world, memory, i))).map((m, i) => (i === done ? { ...state.memory } : m));
+  return { ...state, robot, team, active: next, teamMemory, memory: teamMemory[next] ?? robotMemory(world, memory, next) };
 }
 
 /**

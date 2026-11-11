@@ -252,7 +252,33 @@ export function MemoryCard({ world, state, slots = [], days, team, asking = [], 
                   <span className="visually-hidden">In the backpack: kept overnight.</span>
                 </span>
               )}
-              {asked ? (
+              {team !== undefined && line.slot && state.teamMemory ? (
+                // A team: every robot has its own slot, so the line shows one value per robot. A question is about the last robot, the one running when the run ends.
+                <span className="memory-team-values">
+                  {state.teamMemory.map((own, i) => {
+                    const mine = i === (state.active ?? 0) ? state.memory : own;
+                    const v = mine?.[slotOfField(line.field) ?? ''];
+                    const isAsked = asked && i === team - 1;
+                    return (
+                      <span key={i} className={`memory-team-value team-${i} ${i === (state.active ?? 0) ? 'is-running' : ''}`}>
+                        <span className="memory-team-badge" aria-hidden="true">
+                          {i + 1}
+                        </span>
+                        {isAsked ? (
+                          <span className="memory-question" role="group" aria-label={`Robot ${i + 1}'s ${line.label} at the end? ${isWrong ? 'Not that one last time.' : ''}`}>
+                            {question(line.field as MemoryField, `Robot ${i + 1}'s ${line.label}`, askedKind(line))}
+                          </span>
+                        ) : (
+                          <span className="memory-value">
+                            <span className="visually-hidden">Robot {i + 1}: </span>
+                            {v === undefined ? '?' : Array.isArray(v) ? `[${valueWords(v)}]` : valueWords(v)}
+                          </span>
+                        )}
+                      </span>
+                    );
+                  })}
+                </span>
+              ) : asked ? (
                 <span className="memory-question" role="group" aria-label={`${line.label} at the end? ${isWrong ? 'Not that one last time.' : ''}`}>
                   {question(line.field as MemoryField, line.label, askedKind(line))}
                 </span>
