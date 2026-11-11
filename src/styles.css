@@ -2431,6 +2431,45 @@ button.function-head {
   background: var(--gold-wash);
 }
 
+/* Row and column numbers of a grid on the memory card, counted from 0. */
+.memory-grid th {
+  min-width: 14px;
+  padding: 0 2px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink-soft, #6b7a8c);
+}
+
+/* A list on the memory card: its items in order, each index from 0 underneath. */
+.memory-list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.memory-list-item {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 26px;
+  padding: 2px 6px 1px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+}
+
+.memory-list-value {
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.memory-list-index {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink-soft, #6b7a8c);
+}
+
 /* Row and column numbers around a board that is read as a grid. */
 .board-coord {
   position: absolute;

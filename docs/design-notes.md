@@ -130,6 +130,34 @@ foreign. Now the pattern is on screen before anything moves:
   speeds are met before Three lanes, and Two rivers and Three lanes point at
   the outline and the strip.
 
+## Counting from 0 (2026-11-11)
+
+Real lists count from 0, and so does the coordinate plane children meet in
+4th grade, so every number the robot shows now does too.
+
+- **Places and boards.** The memory card says "column 0, row 0" for the top
+  left tile; the numbers round a board start at 0; Go to row 0 is the top
+  row. Two things to remember, the first pack with places as values, says
+  so in its introduction.
+- **List items by index.** Set can read one item of a list, `item:route@0`,
+  by a number or a number slot, printed `route[0]`. An index past the end
+  stops the run with "route has no item 3: its items are 0 to 2". The
+  memory card shows a list as its items with each index underneath, and a
+  grid with its row and column numbers. Items only appear in a Set card's
+  menu where a level offers them.
+- **In a row** gains three levels after Walk the list: Item 0 is first
+  (model), One past the end (debug: the off-by-one) and Step by index (walk
+  a list with a counter from 0, stopping at its length).
+- **Grids print as real indexing.** `walls[spot.y][spot.x]`, row first:
+  a grid is a list of rows. The `at()` and `put()` helpers are gone.
+- **Run plays every shuffle.** On a shuffled level, Run plays the program
+  on the board on screen, then repaints the board for each other version
+  and plays it there too, until one fails; the message names the shuffle
+  ("Shuffle 3 of 3: Clunk! ..."). Stars come once all have played. This
+  replaces the silent check and the glowing Shuffle button, which left the
+  child to go and find the failing version. Random levels still check
+  their 48 rolls quietly; playing them all would take minutes.
+
 ## Play-test rework: randomness and coordinates (2026-11-10)
 
 Two packs rebuilt after play-testing. Shuffled boards taught a child to
@@ -147,7 +175,7 @@ Randomness now comes first (order 12), then Reading the map (order 13).
   `randomDirection()` and `pick(ways)`. The same seed gives the same rolls,
   so every run can be replayed.
 - **Outcomes.** `objective.covers: { of, values }` names a slot (or
-  `column`, the robot's column from 1) and the outcomes a level wants.
+  `column`, the robot's column from 0) and the outcomes a level wants.
   Every run must end on one of them, and across many runs each must turn
   up. "Set roll to 6" fails because 1 to 5 never come out; "random 1 to 8"
   fails because a 7 is not a die.
@@ -157,7 +185,7 @@ Randomness now comes first (order 12), then Reading the map (order 13).
   seed gave are named ("I ran it 48 times, and roll never came out as 6").
   The validator runs the same checks on the reference solution.
 - **Go to row, Go to column.** Coordinates as moves: the robot turns to
-  face the way and walks straight to a row or column, counted from 1 like
+  face the way and walks straight to a row or column, counted from 0 like
   the numbers round the board. The number is on the card or comes from a
   number slot, so a counter can be a row. Rocks still stop it; a row off
   the board is an error. Printed `robot.goToRow(3)`.
@@ -249,7 +277,8 @@ the same twice** (randomness), ten levels each, each with its introduction.
 - **Reshuffle on the Shuffle button, not on every Run.** Reshuffling on Run
   would move the board under a child predicting or building for it. Run
   plays the version on screen; Shuffle changes it.
-- **Grids count from 1 on screen.** The numbers around the board and the
+- **Grids count from 1 on screen** (superseded 2026-11-11: everything now
+  counts from 0). The numbers around the board and the
   memory card count from 1; the code hides indexing behind `at()` and
   `put()`, so TypeScript's 0-based arrays never show.
 - **The map is not the board.** A grid slot is the robot's notebook of the

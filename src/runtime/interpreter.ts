@@ -19,7 +19,7 @@
  */
 import { functionBody, handlerBody, mainBody } from '../ir/program';
 import { handlerContainerId, type Key } from '../ir/types';
-import { advance, drawSource, faceTo, gridPlace, initialState, markGrid, shiftPlace, evaluate, isTimed, objectiveMet, period, remember, setGate, stateKey, step, unlockGate, type WorldEvent } from '../sim/world';
+import { advance, drawSource, faceTo, gridPlace, initialState, markGrid, missingItem, shiftPlace, evaluate, isTimed, objectiveMet, period, remember, setGate, stateKey, step, unlockGate, type WorldEvent } from '../sim/world';
 import type { Facing } from '../sim/types';
 import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 import type { IRNode, ProgramIR } from '../ir/types';
@@ -110,6 +110,11 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
         }
         case 'set':
         case 'change': {
+          const missing = node.kind === 'set' ? missingItem(state, node.to) : undefined;
+          if (missing) {
+            stop = { status: 'error', message: missing, nodeId: node.id };
+            return;
+          }
           const old = state.memory?.[node.slot];
           const drawn = node.kind === 'set' ? drawSource(world, state, node.to) : { value: (typeof old === 'number' ? old : 0) + node.by, state };
           const value = drawn.value;
@@ -122,7 +127,7 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
         case 'face': {
           const facing = state.memory?.[node.slot];
           if (facing !== 'N' && facing !== 'E' && facing !== 'S' && facing !== 'W') {
-            stop = { status: 'error', message: `${node.slot} holds no direction` };
+            stop = { status: 'error', message: `${node.slot} holds no direction`, nodeId: node.id };
             return;
           }
           const after = faceTo(state, facing as Facing);
@@ -141,6 +146,11 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
           break;
         }
         case 'push': {
+          const missing = missingItem(state, node.to);
+          if (missing) {
+            stop = { status: 'error', message: missing, nodeId: node.id };
+            return;
+          }
           const old = state.memory?.[node.list];
           const drawn = drawSource(world, state, node.to);
           const list = [...(Array.isArray(old) ? old : []), drawn.value];
@@ -153,7 +163,7 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
         case 'shift': {
           const moved = shiftPlace(state.memory?.[node.slot], node.dir);
           if (moved === undefined) {
-            stop = { status: 'error', message: `${node.slot} holds no place` };
+            stop = { status: 'error', message: `${node.slot} holds no place`, nodeId: node.id };
             return;
           }
           const after = remember(state, node.slot, moved);
@@ -164,14 +174,14 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
         }
         case 'goRow':
         case 'goColumn': {
-          // Walk straight to a row or a column, counted from 1: turn to face the way, then step by step.
+          // Walk straight to a row or a column, counted from 0: turn to face the way, then step by step.
           const raw = typeof node.to === 'number' ? node.to : state.memory?.[node.to];
           const size = node.kind === 'goRow' ? world.height : world.width;
-          if (typeof raw !== 'number' || !Number.isInteger(raw) || raw < 1 || raw > size) {
-            stop = { status: 'error', message: `There is no ${node.kind === 'goRow' ? 'row' : 'column'} ${String(raw)}` };
+          if (typeof raw !== 'number' || !Number.isInteger(raw) || raw < 0 || raw >= size) {
+            stop = { status: 'error', message: `There is no ${node.kind === 'goRow' ? 'row' : 'column'} ${String(raw)}`, nodeId: node.id };
             return;
           }
-          const target = raw - 1;
+          const target = raw;
           const at = node.kind === 'goRow' ? state.robot.y : state.robot.x;
           if (target === at) break;
           const facing: Facing = node.kind === 'goRow' ? (target > at ? 'S' : 'N') : target > at ? 'E' : 'W';
@@ -214,7 +224,7 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
         case 'forEach': {
           const list = state.memory?.[node.list];
           if (!Array.isArray(list)) {
-            stop = { status: 'error', message: `${node.list} is not a list` };
+            stop = { status: 'error', message: `${node.list} is not a list`, nodeId: node.id };
             return;
           }
           // The list is read once, when the loop starts, so the cards inside cannot change how many goes it takes.
@@ -251,7 +261,7 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
         case 'call': {
           const body = functionBody(program, node.name);
           if (!body) {
-            stop = { status: 'error', message: `No function named ${node.name}` };
+            stop = { status: 'error', message: `No function named ${node.name}`, nodeId: node.id };
             return;
           }
           // Programs only call from main today, but a deep stack means a function reached itself.

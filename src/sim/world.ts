@@ -1,5 +1,5 @@
 import { randomInt } from './random';
-import { isSenseId, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type GridPlace, type MemorySlot, type SenseId, type Source, type Value } from '../ir/types';
+import { isSenseId, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type GridPlace, type MemorySlot, type SenseId, type Source, type Value } from '../ir/types';
 import type { Cell, Facing, Gate, Mover, ObjectiveDefinition, Plate, SimState, Switch, TileKind, WorldDefinition } from './types';
 
 export const cellKey = (c: Cell): string => `${c.x},${c.y}`;
@@ -317,11 +317,35 @@ export function readSource(world: WorldDefinition, state: SimState, source: Sour
     const list = state.memory?.[counted];
     return Array.isArray(list) ? list.length : 0;
   }
+  const item = parseItem(source);
+  if (item) {
+    const list = state.memory?.[item.list];
+    const index = itemIndex(state, item.index);
+    return Array.isArray(list) && index !== undefined && index < list.length ? list[index]! : false;
+  }
   if (source === 'facing') return state.robot.facing;
   if (source === 'here') return { x: state.robot.x, y: state.robot.y };
   if (source === 'acorns') return state.collected.length;
   if (isSenseId(source)) return evaluate(world, state, source);
   return source;
+}
+
+/** An item's index: the number itself, or a number slot's value. */
+function itemIndex(state: SimState, index: number | string): number | undefined {
+  const v = typeof index === 'number' ? index : state.memory?.[index];
+  return typeof v === 'number' ? v : undefined;
+}
+
+/** Why an item cannot be read: the list has no item at that index. Undefined when it can. */
+export function missingItem(state: SimState, source: Source): string | undefined {
+  const item = parseItem(source);
+  if (!item) return undefined;
+  const list = state.memory?.[item.list];
+  const index = itemIndex(state, item.index);
+  const length = Array.isArray(list) ? list.length : 0;
+  if (index !== undefined && index < length) return undefined;
+  const span = length === 0 ? 'it is empty' : length === 1 ? 'its only item is item 0' : `its items are 0 to ${length - 1}`;
+  return `${item.list} has no item ${String(index)}: ${span}`;
 }
 
 /** Put a value in a memory slot. Pure. */
@@ -348,9 +372,9 @@ export function memoryShortfall(objective: ObjectiveDefinition, state: SimState)
     .map(([slot]) => slot);
 }
 
-/** What a random level looks at once a run ends: a slot's value, or the robot's column counted from 1. */
+/** What a random level looks at once a run ends: a slot's value, or the robot's column counted from 0. */
 export function coveredValue(of: string, state: SimState): Value | undefined {
-  return of === 'column' ? state.robot.x + 1 : state.memory?.[of];
+  return of === 'column' ? state.robot.x : state.memory?.[of];
 }
 
 /** True when a run ended on one of a random level's outcomes, or the level has none. */

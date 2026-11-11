@@ -398,12 +398,12 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
             <>
               {Array.from({ length: world.width }, (_, x) => (
                 <span key={`cx${x}`} className="board-coord" aria-hidden="true" style={{ left: layout.originX + x * TILE, top: 0, width: TILE, height: layout.originY }}>
-                  {x + 1}
+                  {x}
                 </span>
               ))}
               {Array.from({ length: world.height }, (_, y) => (
                 <span key={`cy${y}`} className="board-coord" aria-hidden="true" style={{ left: 0, top: layout.originY + y * TILE, width: layout.originX, height: TILE }}>
-                  {y + 1}
+                  {y}
                 </span>
               ))}
             </>

@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "id": "n06-left-or-right",
+  "title": "Left or right",
+  "intro": "At the top the path turns left or right, a different way each shuffle. Look, then go.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "##.",
+      "#..",
+      "#.#"
+    ],
+    "robot": {
+      "x": 1,
+      "y": 2,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 2,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "randomness",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "ifElse"
+    ],
+    "allowedConditions": [
+      "pathAhead"
+    ],
+    "maxInstructions": 12,
+    "starterProgram": []
+  },
+  "shuffles": [
+    {
+      "rows": [
+        ".##",
+        "..#",
+        "#.#"
+      ],
+      "goal": {
+        "x": 0,
+        "y": 0
+      }
+    }
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 1
+        }
+      ],
+      "text": "One side leads up to the flag. Which side changes."
+    },
+    {
+      "kind": "card",
+      "command": "ifElse",
+      "text": "Turn right and check: if the way is clear go that way, else turn round."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 2,
+      "command": "ifElse",
+      "text": "After turning right, check the way ahead."
+    }
+  ],
+  "referenceSolution": [
+    "forward",
+    "rotateCW",
+    {
+      "if": "pathAhead",
+      "do": [
+        "forward",
+        "rotateCCW",
+        "forward"
+      ],
+      "else": [
+        "rotateCW",
+        "rotateCW",
+        "forward",
+        "rotateCW",
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

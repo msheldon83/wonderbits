@@ -1,6 +1,6 @@
 import type { IdFactory } from './ids';
 import { buildNodes, specOf, splitSpec, type NodeSpec } from './spec';
-import { functionContainerId, functionOfContainer, handlerContainerId, handlerOfContainer, IR_VERSION, MAIN, parseLength, parseRandom, parseRead, parseSlotTest, type Branch, type CommandId, type EventHandler, type IRNode, type MemorySlot, type NodeId, type Place, type Procedure, type ProgramIR } from './types';
+import { functionContainerId, functionOfContainer, handlerContainerId, handlerOfContainer, IR_VERSION, MAIN, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type Branch, type CommandId, type EventHandler, type IRNode, type MemorySlot, type NodeId, type Place, type Procedure, type ProgramIR } from './types';
 
 export function emptyProgram(): ProgramIR {
   return { version: IR_VERSION, procedures: [{ name: MAIN, body: [] }], handlers: [] };
@@ -62,6 +62,11 @@ export function slotsInUse(program: ProgramIR): Set<string> {
       if (counted) used.add(counted);
       const random = parseRandom(node.to);
       if (random?.kind === 'pick') used.add(random.list);
+      const item = parseItem(node.to);
+      if (item) {
+        used.add(item.list);
+        if (typeof item.index === 'string') used.add(item.index);
+      }
     }
     if (node.kind === 'set') {
       const read = parseRead(node.to);

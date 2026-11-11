@@ -52,8 +52,8 @@ function describeBoard(world: WorldDefinition): string {
   const extras = world.collectibles.length ? ` ${world.collectibles.length} acorn${world.collectibles.length > 1 ? 's' : ''} to collect.` : '';
   return (
     `Island ${world.width} tiles wide and ${world.height} tiles deep. ` +
-    `Robot at column ${world.robot.x + 1}, row ${world.robot.y + 1}, looking ${FACING_WORDS[world.robot.facing]}. ` +
-    `Flag at column ${world.goal.x + 1}, row ${world.goal.y + 1}.${extras}`
+    `Robot at column ${world.robot.x}, row ${world.robot.y}, looking ${FACING_WORDS[world.robot.facing]}. ` +
+    `Flag at column ${world.goal.x}, row ${world.goal.y}.${extras}`
   );
 }
 
@@ -155,6 +155,11 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
     };
   }, [store, level.id]);
 
+  /** Waiting for the board to repaint for the next shuffle: called with its new sequencer. */
+  const boardWaiter = useRef<((seq: Sequencer) => void) | null>(null);
+  /** Shuffles a run still has to play through, in order, after the one on screen. */
+  const shufflesLeft = useRef<number[]>([]);
+
   const onControllers = useCallback((cs: BoardController[] | null) => {
     controller.current = cs?.[0] ?? null;
     sequencer.current = controller.current
@@ -167,10 +172,17 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           onPlayed: (e) => setShownState(e.after),
         })
       : null;
+    if (sequencer.current && boardWaiter.current) {
+      const resolve = boardWaiter.current;
+      boardWaiter.current = null;
+      resolve(sequencer.current);
+    }
   }, []);
 
   const reset = useCallback(() => {
     runToken.current++;
+    shufflesLeft.current = [];
+    boardWaiter.current = null;
     celebration.current?.abort();
     sequencer.current?.reset();
     setPhase('editing');
@@ -232,6 +244,8 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
       setHint(null);
       setCompletion(null);
       if (!resuming) store.record({ levelId: level.id, kind: 'run-started', steps: countNodes(program) });
+      // A shuffled level plays every version of the board in turn, starting with the one on screen.
+      if (!resuming) shufflesLeft.current = random ? [] : worlds.map((_, i) => (shuffle + i) % worlds.length).slice(1);
       // A random level rolls afresh on every new run, unless it is replaying a roll it failed on.
       if (!resuming && random && !predicting) {
         seedRef.current = failedRoll ?? newSeed();
@@ -274,20 +288,55 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
         return;
       }
       if (seq.state !== 'finished') return;
-      setOutcome(result.outcome);
-      setPhase('done');
-      const end = result.final ?? result.trace.at(-1)?.after ?? initialState(world);
-      setShortfall({
-        onGoal: end.robot.x === world.goal.x && end.robot.y === world.goal.y,
-        missing: world.collectibles.length - end.collected.length,
-        memory: memoryShortfall(level.objective, end),
-        ...(level.objective.covers && !withinOutcomes(level.objective, end) && { outside: outsideWords(level.objective.covers, end) }),
-      });
-
-      if (result.outcome.status === 'blocked') {
-        store.record({ levelId: level.id, kind: 'trace-halted', nodeId: result.outcome.nodeId, reason: result.outcome.reason });
+      /** The end of one version's run: its outcome, and what fell short, on the board it ran on. */
+      const finish = (r: RunResult, w: WorldDefinition) => {
+        setOutcome(r.outcome);
+        setPhase('done');
+        const end = r.final ?? r.trace.at(-1)?.after ?? initialState(w);
+        setShortfall({
+          onGoal: end.robot.x === w.goal.x && end.robot.y === w.goal.y,
+          missing: w.collectibles.length - end.collected.length,
+          memory: memoryShortfall(level.objective, end),
+          ...(level.objective.covers && !withinOutcomes(level.objective, end) && { outside: outsideWords(level.objective.covers, end) }),
+        });
+        if (r.outcome.status === 'blocked') {
+          store.record({ levelId: level.id, kind: 'trace-halted', nodeId: r.outcome.nodeId, reason: r.outcome.reason });
+        }
+      };
+      // The board on screen played; on to the other shuffles, repainting the board for each, until one fails.
+      let last = result;
+      let lastWorld = world;
+      while (last.outcome.status === 'success' && shufflesLeft.current.length > 0) {
+        const next = shufflesLeft.current.shift()!;
+        const w = worlds[next]!;
+        const r = await runtime.run({ program, world: w, objective: level.objective, limits: DEFAULT_LIMITS, ...(level.inputScript && { input: level.inputScript }) });
+        await new Promise((done) => setTimeout(done, settings.reducedMotion ? 150 : 700));
+        if (token !== runToken.current) return;
+        const repainted = new Promise<Sequencer>((resolve) => (boardWaiter.current = resolve));
+        setShuffle(next);
+        setActiveNode(null);
+        setActiveEvent(null);
+        setShownState(null);
+        const nextSeq = await repainted;
+        if (token !== runToken.current) return;
+        cache.current = { program, world: w, seed: seedRef.current, result: r };
+        nextSeq.load(r.trace, initialState(w));
+        await nextSeq.play();
+        if (token !== runToken.current) return;
+        setPosition(nextSeq.position);
+        if (nextSeq.state === 'paused') {
+          setPhase('paused');
+          return;
+        }
+        last = r;
+        lastWorld = w;
       }
-      if (result.outcome.status === 'success' && random) {
+      finish(last, lastWorld);
+      if (worlds.length > 1 && !random) {
+        store.record({ levelId: level.id, kind: 'shuffles-checked', passed: worlds.length - shufflesLeft.current.length - (last.outcome.status === 'success' ? 0 : 1), total: worlds.length });
+      }
+      const result_ = last;
+      if (result_.outcome.status === 'success' && random) {
         // One roll is not enough: the program must work on every roll, and the rolls must give every outcome.
         const checks = checksOf(level);
         const runs = await Promise.all(
@@ -310,22 +359,8 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           setUnseen(missing);
           return;
         }
-      } else if (result.outcome.status === 'success' && worlds.length > 1) {
-        // One shuffle is not enough: the same program must solve every version of the board.
-        const others = await Promise.all(
-          worlds.map((w, i) =>
-            i === shuffle ? Promise.resolve(true) : runtime.run({ program, world: w, objective: level.objective, limits: DEFAULT_LIMITS, ...(level.inputScript && { input: level.inputScript }) }).then((r) => r.outcome.status === 'success'),
-          ),
-        );
-        if (token !== runToken.current) return;
-        const failed = others.findIndex((ok) => !ok);
-        store.record({ levelId: level.id, kind: 'shuffles-checked', passed: others.filter(Boolean).length, total: worlds.length });
-        if (failed >= 0) {
-          setFailedShuffle(failed);
-          return;
-        }
       }
-      if (result.outcome.status === 'success') {
+      if (result_.outcome.status === 'success') {
         setActiveNode(null);
         setActiveEvent(null);
         const before = store.getSnapshot().progress.badges;
@@ -339,7 +374,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
         setCompletion({ stars, newBadges: after.filter((b) => !before.includes(b)) });
       }
     },
-    [runtime, phase, ensureResult, level, store, program, prediction, predicting, predictionOk, hintsUsed, asking, world, worlds, shuffle, random, failedRoll],
+    [runtime, phase, ensureResult, level, store, program, prediction, predicting, predictionOk, hintsUsed, asking, world, worlds, shuffle, random, failedRoll, settings.reducedMotion],
   );
 
   const run = useCallback(() => void start('play'), [start]);
@@ -428,7 +463,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
 
   // ----- Message line -----
 
-  const errorNode = outcome?.status === 'blocked' ? outcome.nodeId : null;
+  const errorNode = outcome?.status === 'blocked' || outcome?.status === 'error' ? (outcome.nodeId ?? null) : null;
   const predictionPrompt = (): { tone: Tone; text: string } => {
     const names = (fields: readonly MemoryField[]) => fields.map((f) => (gateOfField(f) ? gateLabel(gateOfField(f)!) : f === 'facing' ? 'which way it faces' : 'the acorns')).join(' and ');
     const tileMissing = asksTile && !prediction?.cell;
@@ -442,7 +477,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   };
   let message: { tone: Tone | 'hint'; text: string };
   if (hint) message = { tone: 'hint', text: hint.text };
-  else if (phase === 'running') message = { tone: 'info', text: 'Running…' };
+  else if (phase === 'running') message = { tone: 'info', text: worlds.length > 1 && !random ? `Running shuffle ${shuffle + 1} of ${worlds.length}…` : 'Running…' };
   else if (phase === 'paused') message = { tone: 'info', text: `Paused after step ${position}. Step plays one more. Run keeps going.` };
   else if (outcome) {
     const base =
@@ -453,6 +488,12 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           : outcomeMessage(outcome, errorNode ? stepNumber(program, errorNode) : null, shortfall);
     const guess = !guessedRight ? '' : asksTile && askedFields.length > 0 ? 'Your flag and your memory card were right! ' : asksTile ? 'Your flag was in the right spot! ' : 'Your memory card was right! ';
     message = { tone: base.tone, text: guess + base.text };
+    if (worlds.length > 1 && !random) {
+      message =
+        outcome.status === 'success'
+          ? { tone: 'success', text: `${base.text} It worked on all ${worlds.length} shuffles.` }
+          : { tone: base.tone, text: `Shuffle ${shuffle + 1} of ${worlds.length}: ${base.text}` };
+    }
     if (failedShuffle !== null) message = { tone: 'problem', text: 'That worked on this shuffle, but not on every one. Press Shuffle to see a version it misses.' };
     if (failedRoll !== null) message = { tone: 'problem', text: 'That worked on this roll, but not on every roll. Press Run to see a roll it misses.' };
     if (unseen && level.objective.covers) {
@@ -462,7 +503,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
     }
   } else if (predicting) message = predictionPrompt();
   else message = { tone: 'info', text: level.intro ?? 'Help the robot reach the flag. Tap an instruction to add it to your program.' };
-  if (worlds.length > 1 && phase === 'editing' && !hint && !outcome && !predicting) message = { tone: 'info', text: `${message.text} Shuffle ${shuffle + 1} of ${worlds.length}: the program must work on every one.` };
+  if (worlds.length > 1 && phase === 'editing' && !hint && !outcome && !predicting) message = { tone: 'info', text: `${message.text} Shuffle ${shuffle + 1} of ${worlds.length}: Run plays every shuffle in turn.` };
 
   const busy = !runtime || phase === 'running';
   const marks = [

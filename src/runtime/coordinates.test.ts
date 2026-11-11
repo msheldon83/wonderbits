@@ -20,32 +20,47 @@ const run = (spec: NodeSpec[], world: WorldDefinition, objective: ObjectiveDefin
   interpretAll({ program: programFromSpec(spec, sequentialIdFactory()), world, objective, limits: { maxSteps: 1000 }, ...(seed !== undefined && { seed }) });
 
 describe('go to row and column', () => {
-  it('turns and walks straight to a row or column, counted from 1', () => {
-    const r = run([{ goColumn: 4 }, { goRow: 3 }], floor(4, 3));
+  it('turns and walks straight to a row or column, counted from 0', () => {
+    const r = run([{ goColumn: 3 }, { goRow: 2 }], floor(4, 3));
     expect(r.outcome).toEqual({ status: 'success' });
     expect(r.final.robot).toEqual({ x: 3, y: 2, facing: 'S' });
     expect(r.trace.map((e) => e.op)).toEqual(['forward', 'forward', 'forward', 'face', 'forward', 'forward']);
   });
 
   it('reads the number from a slot', () => {
-    const r = run([{ remember: 'col', kind: 'number', start: 3 }, { goColumn: 'col' }], floor(4, 1));
+    const r = run([{ remember: 'col', kind: 'number', start: 2 }, { goColumn: 'col' }], floor(4, 1));
     expect(r.final.robot.x).toBe(2);
   });
 
   it('is stopped by a rock on the way', () => {
-    const r = run([{ goColumn: 4 }], floor(4, 1, [[2, 0]]));
+    const r = run([{ goColumn: 3 }], floor(4, 1, [[2, 0]]));
     expect(r.outcome.status).toBe('blocked');
     expect(r.final.robot.x).toBe(1);
   });
 
   it('refuses a row that is not on the board', () => {
-    expect(run([{ goRow: 5 }], floor(4, 3)).outcome).toEqual({ status: 'error', message: 'There is no row 5' });
+    expect(run([{ goRow: 3 }], floor(4, 3)).outcome).toMatchObject({ status: 'error', message: 'There is no row 3' });
   });
 
   it('prints as robot calls', () => {
     const code = printProgram(programFromSpec([{ goColumn: 2 }, { goRow: 'row' }], sequentialIdFactory()));
     expect(code).toContain('robot.goToColumn(2);');
     expect(code).toContain('robot.goToRow(row);');
+  });
+});
+
+describe('list items by index', () => {
+  const spec = (index: number): NodeSpec[] => [
+    { remember: 'route', kind: 'list', of: 'direction', start: ['E', 'S', 'W'] },
+    { remember: 'way', kind: 'direction', start: 'N' },
+    { set: 'way', to: `item:route@${index}` },
+  ];
+  it('counts from 0: item 0 is the first', () => {
+    expect(run(spec(0), floor(2, 1), { reachGoal: false, collectAll: false, memory: { way: 'E' } }).outcome).toEqual({ status: 'success' });
+    expect(printProgram(programFromSpec(spec(2), sequentialIdFactory()))).toContain('way = route[2];');
+  });
+  it('stops on an item past the end, naming the indexes there are', () => {
+    expect(run(spec(3), floor(2, 1)).outcome).toMatchObject({ status: 'error', message: 'route has no item 3: its items are 0 to 2' });
   });
 });
 

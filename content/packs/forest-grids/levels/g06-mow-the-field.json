@@ -58,7 +58,7 @@
       {
         "remember": "row",
         "kind": "number",
-        "start": 1
+        "start": 0
       }
     ]
   },
@@ -109,7 +109,7 @@
           "y": 0
         }
       ],
-      "text": "A sweep: along to column 4 and back to column 1."
+      "text": "A sweep: along to column 3 and back to column 0."
     },
     {
       "kind": "card",
@@ -128,7 +128,7 @@
     {
       "remember": "row",
       "kind": "number",
-      "start": 1
+      "start": 0
     },
     {
       "repeat": 3,
@@ -137,10 +137,10 @@
           "goRow": "row"
         },
         {
-          "goColumn": 4
+          "goColumn": 3
         },
         {
-          "goColumn": 1
+          "goColumn": 0
         },
         {
           "change": "row",

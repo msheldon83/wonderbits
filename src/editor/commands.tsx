@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { functionLabel, isSenseId, parseLength, parseRandom, parseRead, parseSlotTest, type CardId, type RandomSource, type ConditionId, type IRNode, type SenseId, type Source, type Value } from '../ir/types';
+import { functionLabel, isSenseId, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CardId, type RandomSource, type ConditionId, type IRNode, type SenseId, type Source, type Value } from '../ir/types';
 import { TurnArrow } from '../render/art';
 
 export interface CommandInfo {
@@ -246,7 +246,7 @@ const DIRECTION_WORDS: Record<string, string> = { N: 'up', E: 'right', S: 'down'
 export function valueWords(v: Value): string {
   if (Array.isArray(v)) return v.length === 0 ? 'nothing yet' : v.map(valueWords).join(', ');
   if (typeof v === 'boolean') return v ? 'yes' : 'no';
-  if (typeof v === 'object') return `column ${v.x + 1}, row ${v.y + 1}`;
+  if (typeof v === 'object') return `column ${v.x}, row ${v.y}`;
   if (typeof v === 'string') return DIRECTION_WORDS[v] ?? v;
   return String(v);
 }
@@ -265,6 +265,8 @@ export function sourceWords(source: Source): string {
   if (counted) return `how many in ${counted}`;
   const random = parseRandom(source);
   if (random) return randomWords(random);
+  const item = parseItem(source);
+  if (item) return `item ${item.index} of ${item.list}`;
   if (source === 'facing') return 'the way it faces';
   if (source === 'here') return 'where it is';
   if (source === 'acorns') return 'acorns held';

@@ -122,7 +122,7 @@ describe('interpreter', () => {
 
   it('stops with an error when a call names no function', () => {
     const p = programFromSpec([{ call: 'hop' }], sequentialIdFactory());
-    expect(interpretAll({ program: p, world, objective, limits: { maxSteps: 100 } }).outcome).toEqual({ status: 'error', message: 'No function named hop' });
+    expect(interpretAll({ program: p, world, objective, limits: { maxSteps: 100 } }).outcome).toMatchObject({ status: 'error', message: 'No function named hop' });
   });
 
   it('halts a function that reaches itself instead of running out of stack', () => {
@@ -329,7 +329,7 @@ describe('interpreter: memory', () => {
   });
 
   it('stops with an error when a For each walks something that is not a list', () => {
-    expect(go([{ remember: 'n', kind: 'number' }, { forEach: 'n', as: 'n', do: [] }]).outcome).toEqual({ status: 'error', message: 'n is not a list' });
+    expect(go([{ remember: 'n', kind: 'number' }, { forEach: 'n', as: 'n', do: [] }]).outcome).toMatchObject({ status: 'error', message: 'n is not a list' });
   });
 });
 

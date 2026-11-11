@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "g08-gap-in-the-wall",
   "title": "Gap in the wall",
-  "intro": "The gap in the wall moves each shuffle. Run your finger down column 4 on the map until there is no rock, counting rows.",
+  "intro": "The gap in the wall moves each shuffle. Run your finger down column 3 on the map until there is no rock, counting rows.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -74,7 +74,7 @@
       {
         "remember": "row",
         "kind": "number",
-        "start": 1
+        "start": 0
       }
     ]
   },
@@ -158,7 +158,7 @@
     {
       "remember": "row",
       "kind": "number",
-      "start": 1
+      "start": 0
     },
     {
       "set": "rock",
@@ -185,10 +185,10 @@
       "goRow": "row"
     },
     {
-      "goColumn": 6
+      "goColumn": 5
     },
     {
-      "goRow": 1
+      "goRow": 0
     }
   ],
   "stars": {

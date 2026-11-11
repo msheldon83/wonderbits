@@ -3,7 +3,7 @@
  * readable TypeScript. Read-only through Phase 3; Phase 4 adds a parser that
  * lifts hand-edited code back into the IR using the @node comments.
  */
-import { isSenseId, MAIN, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type IRNode, type MemorySlot, type ProgramIR, type SenseId, type Source, type Value } from '../ir/types';
+import { isSenseId, MAIN, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type IRNode, type MemorySlot, type ProgramIR, type SenseId, type Source, type Value } from '../ir/types';
 
 const CALL: Record<CommandId, string> = {
   forward: 'robot.forward();',
@@ -46,11 +46,19 @@ function placeCode(at: string): string {
   return at === 'here' ? 'robot.position()' : at === 'ahead' ? 'robot.ahead()' : at;
 }
 
+/** A grid's tile as TypeScript: a list of rows, so row first, both counted from 0. */
+function cellCode(grid: string, at: string): string {
+  const place = placeCode(at);
+  return `${grid}[${place}.y][${place}.x]`;
+}
+
 /** What a Set card reads, as TypeScript. */
 function sourceCode(source: Source): string {
   if (typeof source !== 'string') return String(source);
   const read = parseRead(source);
-  if (read) return `at(${read.grid}, ${placeCode(read.at)})`;
+  if (read) return cellCode(read.grid, read.at);
+  const item = parseItem(source);
+  if (item) return `${item.list}[${item.index}]`;
   const counted = parseLength(source);
   if (counted) return `${counted}.length`;
   const random = parseRandom(source);
@@ -80,8 +88,6 @@ export function conditionCode(c: ConditionId): string {
 function typeImports(program: ProgramIR): string {
   const kinds = new Set((program.memory ?? []).map((m) => (m.kind === 'list' || m.kind === 'grid' ? m.of : m.kind)));
   const types = [...(kinds.has('direction') ? ['Direction'] : []), ...(kinds.has('position') ? ['Position'] : [])];
-  // Grids are read with at() and written with put(), which count rows and columns from the top left.
-  const grids = (program.memory ?? []).some((m) => m.kind === 'grid') ? ['at', 'put'] : [];
   // Random sources come from the library too: random(), coinFlip(), randomDirection(), pick().
   const used = new Set<string>();
   const visit = (nodes: readonly IRNode[]): void => {
@@ -96,7 +102,7 @@ function typeImports(program: ProgramIR): string {
   for (const p of program.procedures) visit(p.body);
   for (const h of program.handlers) visit(h.body);
   const randoms = ['random', 'coinFlip', 'randomDirection', 'pick'].filter((r) => used.has(r));
-  return [...grids, ...randoms].map((g) => `, ${g}`).concat(types.map((t) => `, type ${t}`)).join('');
+  return randoms.map((g) => `, ${g}`).concat(types.map((t) => `, type ${t}`)).join('');
 }
 
 /** A negated check, written the way a person would. */
@@ -173,7 +179,7 @@ function printNode(node: IRNode, depth: number, lines: string[]): void {
       return;
     }
     case 'mark':
-      lines.push(`${pad}put(${node.grid}, ${placeCode(node.at)}, ${node.slot}); ${tag}`);
+      lines.push(`${pad}${cellCode(node.grid, node.at)} = ${node.slot}; ${tag}`);
       return;
     case 'openGate':
       lines.push(`${pad}robot.openGate('${node.gate}'); ${tag}`);

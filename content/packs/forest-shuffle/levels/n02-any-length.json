@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "id": "n02-any-length",
+  "title": "Any length",
+  "intro": "The flag moves each shuffle. Write one program that reaches it every time.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "randomness",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "until"
+    ],
+    "allowedConditions": [
+      "atFlag"
+    ],
+    "maxInstructions": 2,
+    "starterProgram": []
+  },
+  "shuffles": [
+    {
+      "goal": {
+        "x": 3,
+        "y": 0
+      }
+    },
+    {
+      "goal": {
+        "x": 4,
+        "y": 0
+      }
+    }
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        }
+      ],
+      "text": "The flag can be on any of these tiles."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "Counting steps works on one shuffle only. Walk until you are at the flag."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "until",
+      "text": "Use a Repeat until."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "until": "atFlag",
+      "do": [
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

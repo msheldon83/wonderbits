@@ -1,0 +1,256 @@
+{
+  "schemaVersion": 1,
+  "id": "g08-how-many-touch",
+  "title": "How many touch?",
+  "intro": "Count the rocks that touch the robot's tile, mark the number there on the counts grid, then go to the flag.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "###.",
+      "#...",
+      "#.##"
+    ],
+    "robot": {
+      "x": 1,
+      "y": 1,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 2,
+      "y": 1
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false,
+    "memory": {
+      "counts": [
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    }
+  },
+  "curriculum": {
+    "concept": "grids",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "set",
+      "if",
+      "change",
+      "repeat",
+      "mark"
+    ],
+    "allowedConditions": [
+      "slot:wall=yes"
+    ],
+    "allowedSources": [
+      "read:walls@ahead"
+    ],
+    "maxInstructions": 10,
+    "maxPerCommand": {
+      "change": 1
+    },
+    "starterProgram": [
+      {
+        "remember": "walls",
+        "kind": "grid",
+        "of": "yesNo",
+        "start": [
+          [
+            true,
+            true,
+            true,
+            false
+          ],
+          [
+            true,
+            false,
+            false,
+            false
+          ],
+          [
+            true,
+            false,
+            true,
+            true
+          ]
+        ]
+      },
+      {
+        "remember": "counts",
+        "kind": "grid",
+        "of": "number",
+        "start": [
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0
+          ]
+        ]
+      },
+      {
+        "remember": "wall",
+        "kind": "yesNo",
+        "start": false
+      },
+      {
+        "remember": "count",
+        "kind": "number",
+        "start": 0
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        }
+      ],
+      "text": "Two rocks touch the robot: above and to the left."
+    },
+    {
+      "kind": "card",
+      "command": "mark",
+      "text": "After counting, Mark count on counts here writes the number on the robot's tile."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 1,
+      "command": "mark",
+      "text": "Mark the count before you move."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "walls",
+      "kind": "grid",
+      "of": "yesNo",
+      "start": [
+        [
+          true,
+          true,
+          true,
+          false
+        ],
+        [
+          true,
+          false,
+          false,
+          false
+        ],
+        [
+          true,
+          false,
+          true,
+          true
+        ]
+      ]
+    },
+    {
+      "remember": "counts",
+      "kind": "grid",
+      "of": "number",
+      "start": [
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "remember": "wall",
+      "kind": "yesNo",
+      "start": false
+    },
+    {
+      "remember": "count",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "repeat": 4,
+      "do": [
+        {
+          "set": "wall",
+          "to": "read:walls@ahead"
+        },
+        {
+          "if": "slot:wall=yes",
+          "do": [
+            {
+              "change": "count",
+              "by": 1
+            }
+          ]
+        },
+        "rotateCW"
+      ]
+    },
+    {
+      "mark": "counts",
+      "at": "here",
+      "with": "count"
+    },
+    "rotateCW",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

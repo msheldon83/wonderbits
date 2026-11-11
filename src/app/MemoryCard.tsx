@@ -64,14 +64,39 @@ function kindWord(m: MemorySlot | undefined): string {
   return { number: 'number', yesNo: 'yes/no', direction: 'direction', position: 'place' }[m.kind] ?? m.kind;
 }
 
-/** A grid slot drawn as a little table, rows like the board's, the robot's tile ringed. */
+/** A list slot drawn as its items in order, each with its index from 0 underneath. */
+function ListItems({ items }: { items: Value[] }) {
+  if (items.length === 0) return <span className="memory-list-empty">nothing yet</span>;
+  return (
+    <span className="memory-list" aria-hidden="true">
+      {items.map((v, i) => (
+        <span key={i} className="memory-list-item">
+          <span className="memory-list-value">{valueWords(v)}</span>
+          <span className="memory-list-index">{i}</span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** A grid slot drawn as a little table, rows like the board's, numbered from 0, the robot's tile ringed. */
 function GridTable({ rows, here }: { rows: Value[]; here: { x: number; y: number } }) {
   const cell = (v: Value) => (typeof v === 'boolean' ? (v ? '■' : '·') : String(v));
+  const width = Array.isArray(rows[0]) ? rows[0].length : 0;
   return (
     <table className="memory-grid">
+      <thead>
+        <tr>
+          <th />
+          {Array.from({ length: width }, (_, x) => (
+            <th key={x}>{x}</th>
+          ))}
+        </tr>
+      </thead>
       <tbody>
         {rows.map((row, y) => (
           <tr key={y}>
+            <th>{y}</th>
             {(Array.isArray(row) ? row : []).map((v, x) => (
               <td key={x} className={here.x === x && here.y === y ? 'is-here' : ''}>
                 {cell(v)}
@@ -103,7 +128,7 @@ export function MemoryCard({ world, state, slots = [], asking = [], answers = {}
   const gateIds = gatesOf(world).map((g) => g.id);
   const lines = memoryLines(world, slots);
   const valueOf = (line: MemoryLine): string => {
-    if (line.field === 'position') return `column ${state.robot.x + 1}, row ${state.robot.y + 1}`;
+    if (line.field === 'position') return `column ${state.robot.x}, row ${state.robot.y}`;
     if (line.field === 'tick') return String(state.tick);
     const slot = slotOfField(line.field);
     if (slot !== null) {
@@ -185,6 +210,11 @@ export function MemoryCard({ world, state, slots = [], asking = [], answers = {}
               ) : line.kind === 'grid' && Array.isArray(state.memory?.[slotOfField(line.field) ?? '']) ? (
                 <span className="memory-value">
                   <GridTable rows={state.memory![slotOfField(line.field)!] as Value[]} here={state.robot} />
+                  <span className="visually-hidden">{valueOf(line)}</span>
+                </span>
+              ) : line.kind === 'list' && Array.isArray(state.memory?.[slotOfField(line.field) ?? '']) ? (
+                <span className="memory-value">
+                  <ListItems items={state.memory![slotOfField(line.field)!] as Value[]} />
                   <span className="visually-hidden">{valueOf(line)}</span>
                 </span>
               ) : (

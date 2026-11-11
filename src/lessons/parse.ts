@@ -3,7 +3,7 @@
  * contributors may write by hand, so errors name the exact path at fault.
  */
 import { slotOfSpec, type NodeSpec } from '../ir/spec';
-import { FUNCTION_NAME, isCardId, isCommandId, isConditionId, isEventId, isSenseId, KEYS, BOARD_MAPS, parseLength, parseRandom, parseRead, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, VALUE_KINDS, type CardId, type ConditionId, type ItemKind, type Key, type Source, type Value, type ValueKind } from '../ir/types';
+import { FUNCTION_NAME, isCardId, isCommandId, isConditionId, isEventId, isSenseId, KEYS, BOARD_MAPS, parseItem, parseLength, parseRandom, parseRead, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, VALUE_KINDS, type CardId, type ConditionId, type ItemKind, type Key, type Source, type Value, type ValueKind } from '../ir/types';
 import { FACINGS, type Cell, type Facing, type Gate, type Mover, type Plate, type Switch, type TileKind, type WorldDefinition } from '../sim/types';
 import { CONTENT_SCHEMA_VERSION, type MemoryField, type Activity, type ConceptIntroduction, type HintPath, type HintStep, type PackManifest, type PuzzleDefinition } from './types';
 
@@ -252,11 +252,11 @@ class Reader {
     }
     return spec;
   }
-  /** Where a Go card walks to: a row or column number from 1, or a number slot's name. */
+  /** Where a Go card walks to: a row or column number from 0, or a number slot's name. */
   target(v: unknown, path: string): number | string {
-    if (Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 16) return v as number;
+    if (Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 15) return v as number;
     if (typeof v === 'string' && FUNCTION_NAME.test(v)) return v;
-    this.fail(path, 'expected a row or column number from 1 to 16, or a number slot');
+    this.fail(path, 'expected a row or column number from 0 to 15, or a number slot');
     return 1;
   }
   /** Where on a grid: "here", "ahead", or a position slot's name. */
@@ -269,7 +269,7 @@ class Reader {
   source(v: unknown, path: string): Source {
     if (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 999) return v;
     if (typeof v === 'boolean') return v;
-    if (typeof v === 'string' && (['N', 'E', 'S', 'W', 'facing', 'here', 'acorns'].includes(v) || isSenseId(v) || parseRead(v) || parseLength(v) || parseRandom(v))) return v;
+    if (typeof v === 'string' && (['N', 'E', 'S', 'W', 'facing', 'here', 'acorns'].includes(v) || isSenseId(v) || parseRead(v) || parseLength(v) || parseRandom(v) || parseItem(v))) return v;
     this.fail(path, `expected a value to set: a number, true or false, N, E, S or W, "facing", "here", "acorns", a sense or a random source, got ${JSON.stringify(v)}`);
     return 0;
   }

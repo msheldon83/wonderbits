@@ -21,7 +21,7 @@ const world: WorldDefinition = {
 describe('MemoryCard', () => {
   it('shows each line with its value', () => {
     render(<MemoryCard world={world} state={initialState(world)} />);
-    expect(screen.getByText('column 1, row 1')).toBeTruthy();
+    expect(screen.getByText('column 0, row 0')).toBeTruthy();
     expect(screen.getByText('Gate A open')).toBeTruthy();
     expect(screen.getByText('no')).toBeTruthy();
   });

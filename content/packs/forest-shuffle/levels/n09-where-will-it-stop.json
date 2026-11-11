@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "id": "n09-where-will-it-stop",
+  "title": "Where will it stop?",
+  "intro": "The rock moves each shuffle. Walk until blocked: where does the robot stop this time?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....#."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 3,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "transfer",
+    "activity": "predict"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "until"
+    ],
+    "allowedConditions": [
+      "blockedAhead"
+    ],
+    "maxInstructions": 2,
+    "starterProgram": [
+      {
+        "until": "blockedAhead",
+        "do": [
+          "forward"
+        ]
+      }
+    ]
+  },
+  "shuffles": [
+    {
+      "rows": [
+        "..#..."
+      ],
+      "goal": {
+        "x": 1,
+        "y": 0
+      }
+    },
+    {
+      "rows": [
+        ".....#"
+      ],
+      "goal": {
+        "x": 4,
+        "y": 0
+      }
+    }
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "text": "Look for the rock on this shuffle."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "The robot stops on the tile just before the rock."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "until",
+      "text": "One loop: walk until blocked."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "until": "blockedAhead",
+      "do": [
+        "forward"
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": true
+  }
+}
