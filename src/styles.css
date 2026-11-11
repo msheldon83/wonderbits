@@ -3647,6 +3647,7 @@ button.shelf-card {
 
 .made-here .shelf-card {
   background: var(--paper);
+}
 
 /* Snug under the board: the warehouse reads as part of the same scene. */
 .board-viewport + .inventory {
