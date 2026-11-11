@@ -60,6 +60,8 @@ button {
 .app {
   height: 100dvh;
   display: grid;
+  /* One column that never grows past the screen: a long level name is cut with … instead. */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto 1fr;
   padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom))
     max(16px, env(safe-area-inset-left));
@@ -121,9 +123,25 @@ button {
 }
 
 /* The level's instructions, and what a run did, across the top of the page. */
+/* Over the board's column only: the program panel on the right starts at the top and keeps its full height. */
+.app-main {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
 .lesson-banner {
-  grid-column: 1 / -1;
+  grid-column: 1;
+  grid-row: 1;
   display: flex;
+}
+
+.app-main > .stage-col {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.app-main > .side-col {
+  grid-column: 2;
+  grid-row: 1 / span 2;
 }
 
 .lesson-banner .message {
@@ -2043,6 +2061,11 @@ button.function-head {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto minmax(0, 1fr);
     gap: 10px;
+  }
+  /* One column: the instructions, the board, then the program. */
+  .app-main > .side-col {
+    grid-column: 1;
+    grid-row: 3;
   }
   /* Code on: the board shrinks to a strip so the program panel, with blocks
      and code side by side, gets the height. */
