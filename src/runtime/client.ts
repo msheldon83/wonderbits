@@ -5,6 +5,8 @@
  */
 import {
   CONTRACT_VERSION,
+  type Critique,
+  type CritiqueRequest,
   type RunRequest,
   type RunResult,
   type Runtime,
@@ -14,7 +16,7 @@ import {
 
 /** The minimal surface of a Worker (or iframe bridge) the client needs. */
 export interface Endpoint {
-  postMessage(message: RunRequest): void;
+  postMessage(message: RunRequest | CritiqueRequest): void;
   addEventListener(type: 'message', listener: (e: MessageEvent<RuntimeMessage>) => void): void;
   removeEventListener(type: 'message', listener: (e: MessageEvent<RuntimeMessage>) => void): void;
   terminate(): void;
@@ -23,9 +25,14 @@ export interface Endpoint {
 let counter = 0;
 const nextRequestId = () => `run-${Date.now().toString(36)}-${(counter++).toString(36)}`;
 
+/** Beyond the search's own limit: time to start the endpoint and to run the maker's program. */
+const CRITIQUE_GRACE_MILLIS = 3000;
+
 export function createRuntimeClient(createEndpoint: () => Endpoint): Runtime {
   let endpoint: Endpoint | null = null;
   const ensure = () => (endpoint ??= createEndpoint());
+  /** The critic's own endpoint, so a long search never holds up a run. */
+  let critic: Endpoint | null = null;
 
   return {
     run(input) {
@@ -49,7 +56,7 @@ export function createRuntimeClient(createEndpoint: () => Endpoint): Runtime {
               endpoint = null;
               finish({ trace: trace.slice(0, input.limits.maxSteps), outcome: { status: 'halted', reason: 'step-limit' }, final: null, executedSteps: input.limits.maxSteps });
             }
-          } else {
+          } else if (m.type === 'done') {
             finish({ trace, outcome: m.outcome, final: m.final, executedSteps: m.executedSteps });
           }
         };
@@ -62,7 +69,33 @@ export function createRuntimeClient(createEndpoint: () => Endpoint): Runtime {
         ep.postMessage(request);
       });
     },
+    critique(input) {
+      const request: CritiqueRequest = { type: 'critique', contract: CONTRACT_VERSION, requestId: nextRequestId(), ...input };
+      // A fresh question makes the last one stale: stop it, and ask on a new endpoint.
+      critic?.terminate();
+      const ep = (critic = createEndpoint());
+      return new Promise<Critique | null>((resolve) => {
+        const finish = (critique: Critique | null) => {
+          clearTimeout(timer);
+          ep.removeEventListener('message', onMessage);
+          if (critic === ep) {
+            ep.terminate();
+            critic = null;
+          }
+          resolve(critique);
+        };
+        const onMessage = (e: MessageEvent<RuntimeMessage>) => {
+          if (e.data.requestId === request.requestId && e.data.type === 'critique') finish(e.data.critique);
+        };
+        // The search stops itself at searchMillis; this is for a critic that does not.
+        const timer = setTimeout(() => finish(null), input.searchMillis + CRITIQUE_GRACE_MILLIS);
+        ep.addEventListener('message', onMessage);
+        ep.postMessage(request);
+      });
+    },
     dispose() {
+      critic?.terminate();
+      critic = null;
       endpoint?.terminate();
       endpoint = null;
     },

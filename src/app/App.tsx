@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import { introductionBefore } from '../lessons/concepts';
+import { CreateScreen } from '../create/CreateScreen';
+import { CreationScreen } from '../create/CreationScreen';
+import { FREE_PLAY_CARDS } from '../create/blank';
+import { MadeHere } from '../create/MadeHere';
+import { creationToJson } from '../create/parse';
+import { PlayScreen } from '../create/PlayScreen';
+import { remixOf } from '../create/remix';
+import { CreationStore } from '../create/store';
 import { defaultStore } from '../progress/storage';
 import { ProgressStore } from '../progress/store';
 import { CardBookScreen } from './CardBookScreen';
@@ -18,11 +26,15 @@ const BookIcon = () => (
 
 export function App() {
   const { choices, book } = useMemo(loadContent, []);
+  const storage = useMemo(defaultStore, []);
+  const creationStore = useMemo(() => new CreationStore(storage), [storage]);
+  const made = useSyncExternalStore(creationStore.subscribe, creationStore.getSnapshot);
+  useEffect(() => void creationStore.load(), [creationStore]);
   const store = useMemo(() => {
-    const s = new ProgressStore(defaultStore());
+    const s = new ProgressStore(storage);
     s.setLevels(choices.map((c) => c.level));
     return s;
-  }, [choices]);
+  }, [choices, storage]);
   const snap = useSyncExternalStore(store.subscribe, store.getSnapshot);
   useEffect(() => void store.load(), [store]);
   const route = useRoute();
@@ -43,6 +55,22 @@ export function App() {
   useEffect(() => {
     if (route.screen === 'book' && route.packId !== undefined && snap.loaded && !pageOpen) location.hash = hashFor({ screen: 'book' });
   }, [route, snap.loaded, pageOpen]);
+  /** A creation that is not on the shelf (thrown away, or a mistyped address) goes back to the shelf. */
+  const creation = route.screen === 'make' || route.screen === 'play' ? creationStore.get(route.id) : undefined;
+  /** Only a puzzle its maker has solved is offered to play. */
+  const playable = route.screen === 'play' && creation?.status === 'proved';
+  useEffect(() => {
+    if (!made.loaded) return;
+    if (route.screen === 'make' && !creation) location.hash = hashFor({ screen: 'create' });
+    if (route.screen === 'play' && !playable) location.hash = creation ? hashFor({ screen: 'make', id: creation.id }) : hashFor({ screen: 'map' });
+  }, [route, made.loaded, creation, playable]);
+  /** The cards a creation may offer a player: free play's, the level's it came from, and any it has now. */
+  const universe = useMemo(() => {
+    if (!creation) return [];
+    const base = creation.basedOn ? choices.find((c) => c.level.id === creation.basedOn)?.level.programming : undefined;
+    return [...new Set([...FREE_PLAY_CARDS, ...(base?.allowedCommands ?? []), ...(base?.suppliedCards ?? []), ...creation.programming.allowedCommands])];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [creation?.id, creation?.basedOn, choices]);
   /** Where the card book was opened from, for the log: a level id or "map". */
   const cameFrom = useRef('map');
   useEffect(() => {
@@ -50,11 +78,16 @@ export function App() {
     else if (route.screen === 'map') cameFrom.current = 'map';
   }, [route]);
 
+  /** Board tools from a pack not finished yet point at it. Nothing is locked. */
+  const switchPack = choices.filter((c) => c.packId === 'forest-switches');
+  const gateSign = switchPack[0] && !switchPack.every((c) => store.levelProgress(c.level.id).stars.complete) ? { pack: switchPack[0].packTitle, href: hashFor({ screen: 'map', packId: switchPack[0].packId }) } : undefined;
+  const signposts = gateSign ? { gate: gateSign, switch: gateSign } : undefined;
+
   const goTo = (hash: string) => {
     location.hash = hash;
   };
 
-  if (!snap.loaded) {
+  if (!snap.loaded || !made.loaded) {
     return (
       <div className="app">
         <p className="loading" role="status">
@@ -86,6 +119,22 @@ export function App() {
         {route.screen === 'map' && <span className="header-spacer" />}
         {route.screen === 'settings' && <p className="level-title">Settings</p>}
         {route.screen === 'book' && <p className="level-title">Card book</p>}
+        {route.screen === 'create' && <p className="level-title">Create</p>}
+        {route.screen === 'make' && <p className="level-title">Create</p>}
+        {route.screen === 'play' && creation && (
+          <p className="level-title">
+            <span className="level-crumb">Made here</span>
+            <span className="level-name">{creation.title}</span>
+          </p>
+        )}
+        {(route.screen === 'map' || route.screen === 'level') && (
+          <a className="btn btn-quiet btn-create" href={hashFor({ screen: 'create' })} title="Make an island of your own">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+              <path d="M4 20l4-1L19 8l-3-3L5 16zM14 7l3 3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Create
+          </a>
+        )}
         {(route.screen === 'map' || route.screen === 'level') && (
           <a className="btn btn-quiet btn-book" href={hashFor({ screen: 'book' })} title="Every card the robot has learned">
             <BookIcon />
@@ -102,8 +151,11 @@ export function App() {
           </a>
         )}
       </header>
-      {route.screen === 'map' && <MapScreen choices={choices} book={book} store={store} badges={snap.progress.badges} packId={route.packId} />}
-      {route.screen === 'settings' && <SettingsScreen store={store} settings={snap.settings} />}
+      {route.screen === 'map' && <MapScreen choices={choices} book={book} store={store} badges={snap.progress.badges} packId={route.packId} extra={<MadeHere creations={made.creations} progress={store} />} />}
+      {route.screen === 'settings' && <SettingsScreen store={store} settings={snap.settings} creations={() => made.creations.map(creationToJson)} />}
+      {route.screen === 'create' && <CreateScreen creations={made.creations} store={creationStore} progress={store} choices={choices} onGoTo={goTo} />}
+      {route.screen === 'make' && creation && <CreationScreen key={creation.id} creation={creation} store={creationStore} progress={store} runtime={runtime} settings={snap.settings} {...(signposts && { signposts })} universe={universe} />}
+      {route.screen === 'play' && creation && playable && <PlayScreen key={`${creation.id}:${creation.proof?.provedAt}`} creation={creation} progress={store} runtime={runtime} settings={snap.settings} />}
       {route.screen === 'book' && !page && <CardBookScreen book={book} store={store} from={cameFrom.current} />}
       {route.screen === 'book' && page && pageOpen && (
         <ConceptIntro key={`book-${page.packId}`} entry={page} runtime={runtime} store={store} settings={snap.settings} replay onDone={() => goTo(hashFor({ screen: 'book' }))} />
@@ -120,6 +172,11 @@ export function App() {
           settings={snap.settings}
           nextLevelId={nextLevelId(choices, choice.level.id)}
           onGoTo={goTo}
+          onRemix={() => {
+            const remix = creationStore.add(remixOf(choice.level));
+            store.log({ levelId: remix.id, kind: 'creation-started', basedOn: choice.level.id });
+            goTo(hashFor({ screen: 'make', id: remix.id }));
+          }}
         />
       )}
     </div>

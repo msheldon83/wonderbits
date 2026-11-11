@@ -35,6 +35,8 @@ export interface BoardProps {
   signs?: { name: string; cell: Cell; lines: { field: string; text: string }[]; focus?: string }[];
   /** The bird: it flies over the board, sees all of it, and answers when the robot asks. */
   bird?: boolean;
+  /** Tile buttons without the dashed outline that says "pick one": for the board editor, where every tile takes a tool. */
+  plainTiles?: boolean;
 }
 
 /** The bird, side on, wings up: a round body, a beak, an eye and a tail. */
@@ -55,7 +57,7 @@ function BirdArt() {
   );
 }
 
-export function Board({ world, theme, motion, label, onControllers, robotCount = 1, maxScale = 1.6, onTileTap, marks = [], pointers = [], highlightCells, hideIndicator = false, hideGoal = false, coordinates = false, bird = false, signs = [] }: BoardProps) {
+export function Board({ world, theme, motion, label, onControllers, robotCount = 1, maxScale = 1.6, onTileTap, marks = [], pointers = [], highlightCells, hideIndicator = false, hideGoal = false, coordinates = false, bird = false, signs = [], plainTiles = false }: BoardProps) {
   const layout = useMemo(() => layoutFor(world, coordinates), [world, coordinates]);
   const viewport = useRef<HTMLDivElement>(null);
   const robotEls = useRef<Partial<RobotElements>[]>([]);
@@ -367,7 +369,8 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
           <button
             key={`t${x},${y}`}
             type="button"
-            className={`tile-button ${tile === 'floor' ? 'is-choice' : ''}`}
+            className={`tile-button ${tile === 'floor' && !plainTiles ? 'is-choice' : ''}`}
+            data-cell={`${x},${y}`}
             style={{ left: q.x - TILE / 2, top: q.y - TILE / 2, width: TILE, height: TILE, zIndex: LAYER.effect + 1, animationDelay: `${(x + y) * 90}ms` }}
             aria-label={`Column ${x + 1}, row ${y + 1}${tile === 'floor' ? '' : tile === 'wall' ? ', wall' : ', water'}`}
             onClick={() => onTileTap({ x, y })}

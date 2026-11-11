@@ -4,6 +4,151 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Build step 13c: design a puzzle, with the validator as critic (2026-11-11)
+
+The third sub-step of [creation-plan.md](creation-plan.md), and the end of
+the puzzle half of creation mode: a child can make a puzzle for someone
+else on the same device.
+
+- **Puzzle** is a third mode beside Build and Play
+  (`src/create/ChallengePanel.tsx`). The maker sets the goal (reach the
+  flag, collect every acorn, or both), which cards a player gets, and how
+  many cards at most.
+- **The maker's own solution is the proof.** A run in Play that solves the
+  puzzle within its own cards and limit proves it, and the Puzzle mode
+  re-checks the maker's program whenever the puzzle changes. A change to
+  the board, the goal or the cards drops the proof, and the puzzle is a
+  draft again until it is solved afresh. Only a proved puzzle can be
+  played by others; `#/play/<id>` of a draft goes back to its maker's
+  screen.
+- **The critic** (`src/create/critic.ts`) is the level validator's search,
+  now `searchFlat` with a deadline, plus a run of the maker's program. It
+  runs in the Worker behind a new `critique` message of the runtime
+  contract. It says, in a child's words: whether the maker has solved it;
+  the shortest way with plain steps and the limit beside it; that a player
+  can solve it without Repeat, or needs Repeat to fit; that nobody can
+  solve it. It never proposes a change.
+- **Made here** is a shelf on the map with every proved puzzle. A player
+  gets the maker's cards and limit and an empty program, and earns a star
+  for solving it and a second for using no more cards than the maker.
+  Stars are kept under the proof's time, so a puzzle that is changed and
+  proved again starts with none.
+- **The log** records the challenge set, what the critic found, each proof
+  and each play, so the grown-up's export shows creation too.
+
+### Deviations and choices
+
+- **No "Prove it" button.** The plan had the maker prove a puzzle as a
+  separate act. Solving it in Play is that act; a button would only repeat
+  it.
+- **"Nobody can solve this" is said only when it is certain.** The search
+  tries plain steps. Where nothing but the robot's steps can change the
+  board (no gate cards, memory, When cards, keys, days or team) and the
+  search runs out of places to go, no program of any shape can solve it.
+  Otherwise, or past the 1.5 second limit, the critic says it could not
+  try every way and that the maker's solution is the proof.
+- **The critic has an endpoint of its own**, started for each question and
+  closed after, so a long search never holds up a run, and a stale
+  question is simply stopped.
+- **A shelf on the map, not an island.** The plan's "Made here" island
+  would need scenery and a trail like a pack's; a shelf under the island
+  does the job until a child test says otherwise.
+- **Build puzzles only.** "Hide a bug" and "Where will it stop?" puzzles,
+  which the plan lists as later in this step, are not built.
+- **A player's place in a made puzzle is not kept.** Leaving it starts it
+  again.
+- **A goal of "collect every acorn" with no acorns** is met at once; the
+  board checker says there are none, and the critic reports zero cards.
+
+## Build step 13b: remix and free play (2026-11-11)
+
+The second sub-step of [creation-plan.md](creation-plan.md): a child can
+change a board and solve their own version.
+
+- **Build and Play, one tap apart.** A creation's bar has both. Build is
+  the board editor (`src/create/BoardEditor.tsx`); Play is the play surface
+  on the board as it now is. The program survives the switch because it is
+  saved on every edit. A new thing opens in Build; one being worked on
+  opens in Play.
+- **Board tools:** grass, rock, water, acorn, flag, robot, gate, switch and
+  an eraser. Tap a tile to use the tool; grass, rock, water and the eraser
+  paint as a finger drags, and a whole stroke is one undo. Tapping the
+  robot turns it, tapping an acorn picks it up, tapping a gate starts it
+  open or shut, tapping a switch moves it on to the next gate. Wide and
+  Tall steppers resize the board at its right and bottom edges, from what
+  still holds the robot and the flag up to 16 by 16.
+- **Board edits are pure operations** (`src/create/worldOps.ts`) with their
+  own undo history, as `ir/ops.ts` is for programs. Every operation leaves
+  a board the simulation can run: the robot and flag on floor and apart,
+  one thing per tile, a switch always flipping a gate that is there. A test
+  taps at random and checks each board against the level validator's
+  `validateWorld`.
+- **The board checker** (`src/create/problems.ts`) runs on every edit and
+  speaks to the child, with the tiles lit: the flag or an acorn cannot be
+  walked to, a shut gate has no switch. It never changes the board.
+- **Remix** (`src/create/remix.ts`): "Change this level" on the dialog of a
+  solved level, and "Change a level" on the shelf, which lists the levels
+  the child has finished. The board and the cards are copied; the budget,
+  per-card limits and nesting limit are not. The level is never altered. A
+  test remixes all 181 levels through storage and back.
+- **Signposts.** The gate and switch tools carry a link to Flip the switch
+  until that pack is finished. They work either way.
+
+### Deviations and choices
+
+- **No plates, logs or beetles yet.** A plate does nothing without a When
+  card, and a child cannot add one until 13d. Movers need a path drawn on
+  the board, which is its own piece of work. A remix keeps the plates and
+  movers its level had; painting over a mover's path removes the mover.
+- **Steppers, not drag handles**, resize the board. They are easier to hit
+  on an iPad and say the size as a number.
+- **Six gates at most**, the number the board draws apart by colour.
+- **A remix carries the main board only.** A shuffled level's other
+  versions are not copied; editing one board of several has no clear
+  meaning yet.
+- **Board changes are logged once per visit to Build**, not once per tile.
+
+## Build step 13a: creation mode's foundations (2026-11-11)
+
+The first sub-step of [creation-plan.md](creation-plan.md): a shelf, a way
+in, and a play surface shared by lessons and creations.
+
+- **The play surface** (`src/app/PlaySurface.tsx`) is what `Lesson.tsx`
+  was, minus what only a lesson has. It owns the board, the run controls,
+  prediction, the editor and the code panel, and reports through `record`,
+  `onProgram` and `onSolved`. `Lesson.tsx` is now the wrapper that brings
+  the hint ladder, the stars and badges, and the log. No behaviour changed.
+- **Save-my-place.** A level the child edits (build, debug, reorder) keeps
+  its unfinished program in a `drafts` document, restored on the next visit
+  and dropped when the level is solved.
+- **Creations** (`src/create/`). A creation is a board, its rules and the
+  maker's program. Its stored form writes the board as a level file does,
+  and `parseCreation` reads it back through the level parser's own checks
+  (`parseBoardRules`), so a creation is data and gets a level's validation.
+- **The shelf** is `#/create`, reached from a Create button in the header
+  of the map and of every level. One of its things is `#/create/<id>`: the
+  play surface on the child's board, the name and program saved as they
+  change. For now a new thing is an empty 5 by 5 island with the seven
+  cards of free play; the board editor is 13b.
+- **The nudge** is one quiet line under the shelf: the next unfinished
+  island, with a button.
+
+### Deviations and choices
+
+- **No index document.** The plan's index key is replaced by listing the
+  stored keys that start with `creation:`. One document per creation, as
+  planned.
+- **A document that will not parse is left alone**, never overwritten or
+  deleted; it is just not on the shelf.
+- **Reset progress keeps creations.** It used to clear the whole store. It
+  now erases progress, the log and saved places; what the child made stays.
+  The export includes creations.
+- **Creation mode logs without touching progress.** `ProgressStore.log`
+  appends to the observation log only, so a creation never appears among
+  the levels' attempts or badges.
+- **Two statuses, draft and proved.** "Reviewed" waited on sharing, which
+  the owner moved out of step 13.
+
 ## Change: each robot's memory on the memory card (2026-11-11)
 
 Feedback: on Their own memory, the memory card showed one `steps` line, so

@@ -1,11 +1,15 @@
 /**
  * Storage interface over IndexedDB, with an in-memory fallback for tests and
  * for browsers where IndexedDB is unavailable. One key-value store is enough:
- * progress, settings and the log are three small documents.
+ * progress, settings and the log are three small documents, and each of
+ * the child's creations is one more.
  */
 export interface KeyValueStore {
   get<T>(key: string): Promise<T | undefined>;
   set<T>(key: string, value: T): Promise<void>;
+  delete(key: string): Promise<void>;
+  /** Every key that starts with the prefix. */
+  keys(prefix: string): Promise<string[]>;
   clear(): Promise<void>;
 }
 
@@ -17,6 +21,12 @@ export function memoryStore(): KeyValueStore {
     },
     async set(key, value) {
       map.set(key, structuredClone(value));
+    },
+    async delete(key) {
+      map.delete(key);
+    },
+    async keys(prefix) {
+      return [...map.keys()].filter((k) => k.startsWith(prefix));
     },
     async clear() {
       map.clear();
@@ -53,6 +63,15 @@ export function indexedDbStore(): KeyValueStore {
     async set(key, value) {
       const tx = (await db).transaction(STORE, 'readwrite');
       await request(tx.objectStore(STORE).put(value, key));
+    },
+    async delete(key) {
+      const tx = (await db).transaction(STORE, 'readwrite');
+      await request(tx.objectStore(STORE).delete(key));
+    },
+    async keys(prefix) {
+      const tx = (await db).transaction(STORE, 'readonly');
+      const all = await request(tx.objectStore(STORE).getAllKeys());
+      return all.filter((k): k is string => typeof k === 'string' && k.startsWith(prefix));
     },
     async clear() {
       const tx = (await db).transaction(STORE, 'readwrite');

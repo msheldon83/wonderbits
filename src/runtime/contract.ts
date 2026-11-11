@@ -6,7 +6,7 @@
  * cross-origin sandboxed iframe behind the same messages without the app
  * changing. Keep every message structured-clone safe: plain data only.
  */
-import type { CommandId, ConditionId, GateActionId, Key, NodeId, ProgramIR, Value } from '../ir/types';
+import type { CardId, CommandId, ConditionId, GateActionId, Key, NodeId, ProgramIR, Value } from '../ir/types';
 import type { BlockReason } from '../sim/world';
 import type { Cell, ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 
@@ -173,9 +173,40 @@ export type RunOutcome =
   /** The program asked for something impossible. A card's error carries its node and a message a child can read. */
   | { status: 'error'; message: string; nodeId?: NodeId };
 
+/**
+ * A puzzle a child made, sent to the critic: is it solved by its maker's
+ * program, and what is the shortest way through with plain steps?
+ */
+export interface CritiqueRequest {
+  type: 'critique';
+  contract: typeof CONTRACT_VERSION;
+  requestId: string;
+  world: WorldDefinition;
+  objective: ObjectiveDefinition;
+  /** The cards and limits a player gets. */
+  rules: { allowedCommands: CardId[]; allowedConditions?: ConditionId[]; maxInstructions?: number; random: boolean };
+  /** The maker's own program. */
+  program: ProgramIR;
+  input?: Key[];
+  days?: number;
+  /** How long the search for the shortest way may take; past it the critic says only what it knows. */
+  searchMillis: number;
+}
+
+export interface Critique {
+  /** The maker's program: does it stay within the puzzle's cards and limit, and does it solve the puzzle? */
+  own: { fits: boolean; solves: boolean; steps: number };
+  /**
+   * The shortest program of plain steps. `impossible` is certain: no
+   * program at all can solve it. `unknown`: the search could not tell.
+   */
+  flat: { kind: 'found'; steps: number } | { kind: 'impossible' } | { kind: 'unknown' };
+}
+
 export type RuntimeMessage =
   | { type: 'trace'; requestId: string; event: TraceEvent }
-  | { type: 'done'; requestId: string; outcome: RunOutcome; final: SimState; executedSteps: number };
+  | { type: 'done'; requestId: string; outcome: RunOutcome; final: SimState; executedSteps: number }
+  | { type: 'critique'; requestId: string; critique: Critique };
 
 export interface RunResult {
   trace: TraceEvent[];
@@ -187,5 +218,7 @@ export interface RunResult {
 /** What the app depends on. Any runtime implementation satisfies this. */
 export interface Runtime {
   run(input: Omit<RunRequest, 'type' | 'contract' | 'requestId'>): Promise<RunResult>;
+  /** The critic's word on a child's puzzle, or null when it did not answer in time. Runs apart from `run`, so a search never holds up a run. */
+  critique(input: Omit<CritiqueRequest, 'type' | 'contract' | 'requestId'>): Promise<Critique | null>;
   dispose(): void;
 }

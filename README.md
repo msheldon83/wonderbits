@@ -49,8 +49,15 @@ each new concept, a card book to watch them again, a memory card under the
 board wherever the world or the robot's memory can change, prediction of
 the tile and of the memory card, validators in CI, three-rung hint ladders,
 the level map with stars and badges, progress in IndexedDB, and an
-observation log the grown-up can export. Creation mode, step 13, comes
-next. See [docs/design-notes.md](docs/design-notes.md) for what is built, what
+observation log the grown-up can export. Creation mode, step 13, is under
+way, planned in [docs/creation-plan.md](docs/creation-plan.md): the Create
+button opens a shelf of the child's own islands, kept on the device. A
+child can start from an empty island or change a level they finished,
+build the board with tools, play it with their own program, and turn it
+into a puzzle for someone else: set the goal, the cards and the limit,
+solve it, and hear from the critic how short it can be. Solved puzzles
+appear on the map under Made here. That is sub-steps 13a to 13c, the
+puzzle half; the Workshop's games come after a child test. See [docs/design-notes.md](docs/design-notes.md) for what is built, what
 is deliberately not, and any deviations from the plan.
 
 ## Run it
@@ -64,7 +71,9 @@ Open the printed URL. On an iPad on the same network, use the "Network" URL.
 The level map is the home screen (`#/`), one island at a time; an island is
 `#/map/<pack id>`. A level is `#/level/<id>`; the
 first level of a pack opens with the pack's introduction, once. The card
-book is `#/book`, and one of its pages is `#/book/<pack id>`. `#/settings`
+book is `#/book`, and one of its pages is `#/book/<pack id>`. Creation mode
+is `#/create`, and one of the child's things is `#/create/<id>`; a puzzle
+its maker has solved is played at `#/play/<id>`. `#/settings`
 has reduced motion, "open every level" for the grown-up (on by default for
 now, while the curriculum is being tested; turn it off to unlock levels in
 order), the progress export and a reset.
@@ -118,6 +127,7 @@ src/
   lessons/     Level and pack schema, content parser, validator, pack loader, hints, prediction, the concept graph and card book
   progress/    Progress, stars, badges, settings and the observation log over IndexedDB
   render/      Grid math, DOM and SVG board, animation controller, sequencer
+  create/      Creation mode: the child's own boards, their store, shelf and screens
   editor/      Program editor (cursor, move handles, drag and drop) and the code panel
   app/         App shell, routes, level map, settings, lesson flow, concept introductions, card book
   perf/        Performance check page
