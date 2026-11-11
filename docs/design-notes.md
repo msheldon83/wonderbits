@@ -29,8 +29,9 @@ the question asked for.
   sign", the world being the island's number on the map. On phones it takes
   a line of its own.
 - **The level's instructions are at the top of the page,** in a strip
-  across both columns above the board and the program, where they are read
-  first. The same strip says what a run did.
+  over the board's column, where they are read first; the program panel
+  beside it starts at the top and keeps its full height. The same strip
+  says what a run did. On phones it sits above the board.
 - **Fix:** the bird is drawn on every level that can fly it, including
   those offering only Fly the bird to.
 
