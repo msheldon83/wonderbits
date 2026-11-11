@@ -273,7 +273,10 @@ class Reader {
     // A record, or a list of records, names its shape and its fields.
     const shaped = kind === 'record' || of === 'record';
     const shape = shaped ? this.shape(o, path) : undefined;
-    const spec: Extract<NodeSpec, { remember: string }> = { remember: name, kind, ...(of && { of }), ...(shape && { shape: shape.shape, fields: shape.fields }), ...(o.keep !== undefined && this.bool(o.keep, `${path}.keep`) && { keep: true }) };
+    // A record may stand on the board, like a sign: "at" is its tile.
+    if (o.at !== undefined && kind !== 'record') this.fail(`${path}.at`, 'only a record can stand on the board');
+    const at = o.at !== undefined && kind === 'record' ? this.cell(o.at, `${path}.at`) : undefined;
+    const spec: Extract<NodeSpec, { remember: string }> = { remember: name, kind, ...(of && { of }), ...(shape && { shape: shape.shape, fields: shape.fields }), ...(at && { at }), ...(o.keep !== undefined && this.bool(o.keep, `${path}.keep`) && { keep: true }) };
     if (o.start !== undefined) {
       const map = kind === 'grid' && of === 'yesNo' && (BOARD_MAPS as readonly unknown[]).includes(o.start);
       if (!map && !valueFits(o.start, kind, of, shape?.fields)) this.fail(`${path}.start`, `expected a ${kind}${of ? ` of ${of}` : ''} value${shape ? ` with exactly the fields ${Object.keys(shape.fields).join(', ')}` : ''}`);

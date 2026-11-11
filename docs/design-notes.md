@@ -4,6 +4,22 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Change: a sign on the board, and the level page's header (2026-11-11)
+
+- **Records can stand on the board.** A record slot may say where it
+  stands (`"at": { "x": 1, "y": 0 }`); it is then drawn there instead of on
+  the warehouse shelf. Follow the sign's sign is a wooden signpost beside
+  the robot, a line per field ("row 2", "column 1"), and the line being read
+  lights up. Reading it is not a question for the inventory computer.
+- **The header says where you are:** "World 17 · Level 3 · Follow the
+  sign", the world being the island's number on the map. On phones it takes
+  a line of its own.
+- **The level's instructions are at the top of the page,** in a strip
+  across both columns above the board and the program, where they are read
+  first. The same strip says what a run did.
+- **Fix:** the bird is drawn on every level that can fly it, including
+  those offering only Fly the bird to.
+
 ## Change: the warehouse inventory computer (2026-11-11)
 
 Feedback: The notebook's crates lived only as rows on the memory card. To

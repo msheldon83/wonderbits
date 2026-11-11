@@ -98,7 +98,8 @@ export function Inventory({ slots = [], state, event }: { slots?: readonly Memor
 
   const lists = slots.filter((m) => m.kind === 'list' && m.of === 'record');
   const listShapes = new Set(lists.map((m) => m.shape));
-  const records = slots.filter((m) => m.kind === 'record');
+  // A record standing on the board, such as a sign, is drawn there instead.
+  const records = slots.filter((m) => m.kind === 'record' && !m.at);
   // A record slot of a listed shape is the crate being looked at; one of its own shape is a crate by itself.
   const loose = records.filter((m) => !listShapes.has(m.shape));
   if (lists.length === 0 && loose.length === 0) return null;
@@ -145,4 +146,14 @@ export function Inventory({ slots = [], state, event }: { slots?: readonly Memor
       </div>
     </section>
   );
+}
+
+/** Records that stand on the board, such as a sign, as the board draws them: a line per field, the one being read lit up. */
+export function signsOf(slots: readonly MemorySlot[] = [], state: SimState, event: TraceEvent | null) {
+  return slots.flatMap((m) => {
+    if (m.kind !== 'record' || !m.at) return [];
+    const value = (state.memory?.[m.name] ?? {}) as RecordValue;
+    const seen = event?.op === 'set' && event.seen?.startsWith(`${m.name}.`) ? event.seen.slice(m.name.length + 1) : undefined;
+    return [{ name: m.name, cell: m.at, lines: Object.keys(m.fields ?? {}).map((f) => ({ field: f, text: `${f} ${fieldText(value[f])}` })), ...(seen && { focus: seen }) }];
+  });
 }

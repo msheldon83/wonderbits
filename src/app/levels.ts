@@ -13,6 +13,8 @@ export interface LevelChoice {
   packTitle: string;
   /** 1-based position within its pack, for the stepping stones. */
   number: number;
+  /** 1-based number of its pack's island on the map: the world. */
+  world: number;
 }
 
 export interface Content {
@@ -23,7 +25,7 @@ export interface Content {
 export function loadContent(): Content {
   const packs = loadPacks();
   return {
-    choices: packs.flatMap((pack) => pack.levels.map((level, i) => ({ level, packId: pack.manifest.id, packTitle: pack.manifest.title, number: i + 1 }))),
+    choices: packs.flatMap((pack, w) => pack.levels.map((level, i) => ({ level, packId: pack.manifest.id, packTitle: pack.manifest.title, number: i + 1, world: w + 1 }))),
     book: cardBook(packs),
   };
 }

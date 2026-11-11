@@ -496,6 +496,7 @@ function validateMemory(puzzle: PuzzleDefinition, errors: string[]): void {
     else if (!valueFits(want, m.kind, m.of, m.fields)) errors.push(`objective.memory gives ${slot} a value that is not a ${m.kind}`);
   }
   for (const m of [...splitSpec(programming.starterProgram).memory, ...refMemory, ...(options ?? [])]) {
+    if (m.at && tileAt(world, m.at) !== 'floor') errors.push(`${m.name} stands at ${cellKey(m.at)}, which is not a floor tile`);
     if (m.kind === 'grid' && Array.isArray(m.start) && (m.start.length !== world.height || (m.start[0] as unknown[]).length !== world.width)) {
       errors.push(`grid ${m.name} is ${(m.start[0] as unknown[]).length} by ${m.start.length}; it must be the board's ${world.width} by ${world.height}`);
     }

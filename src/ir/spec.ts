@@ -41,7 +41,7 @@ export type NodeSpec =
   | { fly: string; column?: number | string; row?: number | string }
   | { define: string; do: NodeSpec[] }
   | { on: string; do: NodeSpec[] }
-  | { remember: string; kind: ValueKind; of?: ListOf; shape?: string; fields?: Record<string, ItemKind>; start?: Value; keep?: boolean };
+  | { remember: string; kind: ValueKind; of?: ListOf; shape?: string; fields?: Record<string, ItemKind>; at?: { x: number; y: number }; start?: Value; keep?: boolean };
 
 export type DefineSpec = Extract<NodeSpec, { define: string }>;
 export type OnSpec = Extract<NodeSpec, { on: string }>;
@@ -106,7 +106,7 @@ export function emptyRecord(fields: Record<string, ItemKind>): Value {
 
 export function slotOfSpec(s: RememberSpec): MemorySlot {
   const start = s.start ?? (s.kind === 'record' && s.fields ? emptyRecord(s.fields) : defaultStart(s.kind));
-  return { name: s.remember, kind: s.kind, ...(s.of && { of: s.of }), ...(s.shape && { shape: s.shape }), ...(s.fields && { fields: s.fields }), start, ...(s.keep && { keep: true }) };
+  return { name: s.remember, kind: s.kind, ...(s.of && { of: s.of }), ...(s.shape && { shape: s.shape }), ...(s.fields && { fields: s.fields }), ...(s.at && { at: s.at }), start, ...(s.keep && { keep: true }) };
 }
 
 /** A spec split into main's cards, its functions, its When cards and its memory slots, each in the order listed. */

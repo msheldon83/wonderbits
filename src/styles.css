@@ -97,6 +97,39 @@ button {
   text-overflow: ellipsis;
 }
 
+/* World 17 · Level 3 · Follow the sign */
+.level-crumb {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.level-sep {
+  color: var(--ink-soft);
+}
+
+.level-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+/* The level's instructions, and what a run did, across the top of the page. */
+.lesson-banner {
+  grid-column: 1 / -1;
+  display: flex;
+}
+
+.lesson-banner .message {
+  flex: 1;
+}
+
 .level-number {
   flex: none;
   width: 32px;
@@ -2008,7 +2041,7 @@ button.function-head {
   }
   .app-main {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
     gap: 10px;
   }
   /* Code on: the board shrinks to a strip so the program panel, with blocks
@@ -2072,6 +2105,18 @@ button.function-head {
 /* Phones: no room for blocks and code side by side; the code goes under
    the blocks. */
 @media (max-width: 600px) {
+  /* World, level and name get a line of their own under the brand and the buttons. */
+  .app-header {
+    flex-wrap: wrap;
+  }
+  .app-header .level-title {
+    order: 10;
+    flex-basis: 100%;
+  }
+  .level-crumb {
+    font-size: 13px;
+    padding: 2px 8px;
+  }
   .program-body.has-code {
     grid-template-columns: minmax(0, 1fr);
     row-gap: 12px;

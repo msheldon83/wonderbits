@@ -126,7 +126,9 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
           const asked = node.kind === 'set' && (isBirdSource(node.to) || underBird);
           // A field of a crate's record is a question for the inventory computer.
           const field = node.kind === 'set' ? parseField(node.to) : null;
-          const who = asked ? { asked: 'bird' as const, ...(underBird && { seen: read.grid }) } : field ? { asked: 'inventory' as const, seen: `${field.record}.${field.field}` } : {};
+          // A record standing on the board, like a sign, is read where it stands; the others are the inventory computer's.
+          const onBoard = field !== null && program.memory?.some((m) => m.name === field.record && m.at);
+          const who = asked ? { asked: 'bird' as const, ...(underBird && { seen: read.grid }) } : field ? { ...(!onBoard && { asked: 'inventory' as const }), seen: `${field.record}.${field.field}` } : {};
           const ok = yield* emit({ nodeId: node.id, op: 'set', slot: node.slot, value, ...who, before: state, after, result: { kind: 'ok' } });
           if (!ok) return;
           state = after;
