@@ -165,6 +165,28 @@ export function ChallengePanel({ creation, universe, store, progress, runtime, s
             </div>
           </div>
         </section>
+        {creation.days !== undefined && (
+          <section className="tools-panel" aria-labelledby="days-title">
+            <h2 id="days-title" className="panel-title">
+              How many days
+            </h2>
+            <div className="choice-row">
+              <div className="size-stepper" role="group" aria-label="Days the program runs">
+                <span className="size-label">Days</span>
+                <button type="button" className="btn btn-icon" disabled={creation.days <= 2} aria-label="One day fewer" onClick={() => store.update(creation.id, { days: creation.days! - 1 })}>
+                  −
+                </button>
+                <span className="size-value" aria-live="polite">
+                  {creation.days}
+                </span>
+                <button type="button" className="btn btn-icon" disabled={creation.days >= 5} aria-label="One day more" onClick={() => store.update(creation.id, { days: creation.days! + 1 })}>
+                  +
+                </button>
+              </div>
+            </div>
+            <p className="tool-note">The program runs once a day. Only what is in the backpack is kept overnight, and the last day must reach the goal.</p>
+          </section>
+        )}
         <section className="tools-panel critic" aria-labelledby="critic-title" aria-busy={thinking}>
           <h2 id="critic-title" className="panel-title">
             The critic says

@@ -7,8 +7,8 @@
  * come from the supplied cards: each card can be used exactly once. Blocks
  * count like any other card, and so does everything inside them.
  */
-import { cardCounts, countNodes, functionNames } from '../ir/program';
-import { BASIC_CONDITIONS, DEFAULT_CONDITION, type BlockId, type CardId, type ConditionId, type ProgramIR } from '../ir/types';
+import { cardCounts, countNodes, functionNames, memoryOf } from '../ir/program';
+import { BASIC_CONDITIONS, DEFAULT_CONDITION, type BlockId, type CardId, type ConditionId, type MemorySlot, type ProgramIR } from '../ir/types';
 import type { PuzzleDefinition } from '../lessons/types';
 
 export type Programming = PuzzleDefinition['programming'];
@@ -19,8 +19,10 @@ export interface PaletteEntry {
   name?: string;
   /** Cards of this kind still available, or null when the level sets no quota. */
   remaining: number | null;
-  /** False when the quota or the total budget is used up. */
+  /** False when the quota or the total budget is used up, or the card has nothing to work on. */
   available: boolean;
+  /** Creation mode: what the robot must remember before this card can be used, such as "a number". */
+  needs?: string;
 }
 
 export interface PaletteState {
@@ -62,15 +64,59 @@ export function paletteFor(programming: Programming, program: ProgramIR): Palett
     }
     // One call card per function, sharing the call quota.
     if (command === 'call') return names.map((name) => ({ ...entry, name }));
-    return [entry];
+    // Where the child names the memory, a card that works on a slot waits until there is one.
+    const needs = programming.ownNames ? needsOf(command, memoryOf(program)) : null;
+    return [needs ? { ...entry, available: false, needs } : entry];
   });
 
   return { entries, used, max, full };
 }
 
-/** The conditions a level's If and Repeat until may choose from. */
-export function conditionsFor(programming: Programming): readonly ConditionId[] {
-  return programming.allowedConditions ?? BASIC_CONDITIONS;
+/** What a memory card needs the robot to remember before it can be placed, or null when it has it. */
+export function needsOf(command: CardId, memory: readonly MemorySlot[]): string | null {
+  const has = (...kinds: string[]) => memory.some((m) => kinds.includes(m.kind));
+  switch (command) {
+    case 'set':
+      return has('number', 'yesNo', 'direction', 'position') ? null : 'something to remember';
+    case 'change':
+    case 'unlock':
+      return has('number') ? null : 'a number';
+    case 'face':
+      return has('direction') ? null : 'a direction';
+    case 'push':
+      return has('list') ? null : 'a list';
+    case 'forEach': {
+      const lists = memory.filter((m) => m.kind === 'list');
+      if (lists.length === 0) return 'a list';
+      return lists.some((l) => memory.some((m) => m.kind === (l.of ?? 'number'))) ? null : `a ${WORDS[lists[0]!.of ?? 'number'] ?? 'slot'} to hold each item`;
+    }
+    case 'mark':
+      return has('grid') ? null : 'a grid';
+    case 'fly':
+    case 'shift':
+      return has('position') ? null : 'a place';
+    default:
+      return null;
+  }
+}
+const WORDS: Record<string, string> = { number: 'number', yesNo: 'yes/no', direction: 'direction' };
+
+/** Every test of what the program remembers: a number against 0 to 9, a yes/no, a direction, a place against here. */
+export function slotTests(memory: readonly MemorySlot[]): ConditionId[] {
+  return memory.flatMap((m): ConditionId[] => {
+    if (m.kind === 'number') return Array.from({ length: 10 }, (_, n): ConditionId => `slot:${m.name}=${n}`);
+    if (m.kind === 'yesNo') return [`slot:${m.name}=yes`, `slot:${m.name}=no`];
+    if (m.kind === 'direction') return (['N', 'E', 'S', 'W'] as const).map((d): ConditionId => `slot:${m.name}=${d}`);
+    if (m.kind === 'position') return [`slot:${m.name}=here`];
+    return [];
+  });
+}
+
+/** The conditions a level's If and Repeat until may choose from. Where the child names the memory, every test of it is offered too. */
+export function conditionsFor(programming: Programming, memory: readonly MemorySlot[] = []): readonly ConditionId[] {
+  const listed = programming.allowedConditions ?? BASIC_CONDITIONS;
+  if (!programming.ownNames) return listed;
+  return [...new Set([...listed, ...slotTests(memory)])];
 }
 
 /** The condition a fresh block starts with: a loop waits for the flag, an If looks at the way ahead. */

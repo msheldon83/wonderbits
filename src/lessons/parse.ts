@@ -489,6 +489,7 @@ function readProgramming(r: Reader, v: unknown): PuzzleDefinition['programming']
       allowedSources: r.list(programming.allowedSources, 'programming.allowedSources', (v, at) => r.source(v, at)),
     }),
     ...(programming.maxMemory !== undefined && { maxMemory: r.int(programming.maxMemory, 'programming.maxMemory', 1) }),
+    ...(programming.ownNames !== undefined && r.bool(programming.ownNames, 'programming.ownNames') && { ownNames: true }),
     ...(programming.memoryOptions !== undefined && {
       memoryOptions: r.list(programming.memoryOptions, 'programming.memoryOptions', (o, at) => slotOfSpec(r.remember(r.obj(o, at), at))),
     }),

@@ -12,7 +12,7 @@
  * function calling itself.
  */
 import { branchBody, containerAt, functionNames, isWithin, locate, memoryOf, procedureOfPlace, samePlaceContainer, slotsInUse } from './program';
-import { functionOfContainer, handlerOfContainer, MAIN, type MemorySlot, type Source, REPEAT_MAX, REPEAT_MIN, type Branch, type ConditionId, type IRNode, type NodeId, type Place, type ProgramIR } from './types';
+import { FUNCTION_NAME, isCardId, isEventId, RESERVED_NAMES, functionOfContainer, handlerOfContainer, MAIN, type MemorySlot, type Source, REPEAT_MAX, REPEAT_MIN, type Branch, type ConditionId, type IRNode, type NodeId, type Place, type ProgramIR } from './types';
 
 export type EditOp =
   | { op: 'insert'; at: Place; node: IRNode }
@@ -22,7 +22,26 @@ export type EditOp =
   | { op: 'set'; id: NodeId; count?: number; condition?: ConditionId; gate?: string; slot?: string; to?: Source; by?: number; list?: string; item?: string; grid?: string; at?: string; target?: number | string; dir?: 'N' | 'E' | 'S' | 'W'; column?: number | string | null; row?: number | string | null }
   /** Give the robot a memory slot, or forget one no card uses. */
   | { op: 'addSlot'; slot: MemorySlot }
-  | { op: 'removeSlot'; name: string };
+  | { op: 'removeSlot'; name: string }
+  /** Creation mode: a function of the child's own, empty, and its removal once no card calls it. */
+  | { op: 'addFunction'; name: string }
+  | { op: 'removeFunction'; name: string }
+  /** Creation mode: a When card for an event, empty, and its removal with whatever it holds. */
+  | { op: 'addHandler'; event: string }
+  | { op: 'removeHandler'; event: string };
+
+/**
+ * Why a name cannot be given to a new function or memory slot, said to the
+ * child, or null when it can. A name prints as real TypeScript, so it is a
+ * short word that starts with a small letter and is not already taken.
+ */
+export function nameProblem(program: ProgramIR, name: string): string | null {
+  if (name.length === 0) return 'Type a name first.';
+  if (!FUNCTION_NAME.test(name)) return name.length > 20 ? 'That name is too long. Use 20 letters or fewer.' : 'A name starts with a small letter and has only letters and numbers, like hop or bigJump.';
+  if (RESERVED_NAMES.has(name) || isCardId(name) || ['here', 'ahead', 'facing', 'acorns', 'acornsLeft', 'coin', 'randomWay', 'x', 'y', 'column', 'row', 'item', 'list'].includes(name)) return `The robot already uses the word ${name}. Pick another name.`;
+  if (functionNames(program).includes(name) || memoryOf(program).some((m) => m.name === name)) return `There is already something named ${name}.`;
+  return null;
+}
 
 /** Rebuild every procedure's and every When card's body. Handlers are named `on:<event>` here. */
 function mapBodies(program: ProgramIR, update: (body: readonly IRNode[], name: string) => IRNode[]): ProgramIR {
@@ -60,6 +79,11 @@ function checkCalls(program: ProgramIR, node: IRNode, at: Pick<Place, 'parent'>)
     for (const b of ['body', 'else'] as const) (branchBody(n, b) ?? []).forEach(check);
   };
   check(node);
+}
+
+/** True when a call to the named function sits anywhere in these cards. */
+function callsFunction(nodes: readonly IRNode[], name: string): boolean {
+  return nodes.some((n) => (n.kind === 'call' && n.name === name) || (['body', 'else'] as const).some((b) => callsFunction(branchBody(n, b) ?? [], name)));
 }
 
 function assertIndex(index: number, length: number): void {
@@ -131,6 +155,26 @@ export function applyOp(program: ProgramIR, edit: EditOp): ProgramIR {
       const memory = memoryOf(program).filter((m) => m.name !== edit.name);
       const { memory: _old, ...rest } = program;
       return memory.length > 0 ? { ...rest, memory } : rest;
+    }
+    case 'addFunction': {
+      const problem = nameProblem(program, edit.name);
+      if (problem) throw new Error(problem);
+      return { ...program, procedures: [...program.procedures, { name: edit.name, body: [] }] };
+    }
+    case 'removeFunction': {
+      if (edit.name === MAIN || !functionNames(program).includes(edit.name)) throw new Error(`No function named ${edit.name}`);
+      const called = [...program.procedures, ...program.handlers].some((p) => callsFunction(p.body, edit.name));
+      if (called) throw new Error(`${edit.name} is still used by a card`);
+      return { ...program, procedures: program.procedures.filter((p) => p.name !== edit.name) };
+    }
+    case 'addHandler': {
+      if (!isEventId(edit.event)) throw new Error(`No event named ${edit.event}`);
+      if (program.handlers.some((h) => h.event === edit.event)) throw new Error(`There is already a When card for ${edit.event}`);
+      return { ...program, handlers: [...program.handlers, { event: edit.event, body: [] }] };
+    }
+    case 'removeHandler': {
+      if (!program.handlers.some((h) => h.event === edit.event)) throw new Error(`No When card for ${edit.event}`);
+      return { ...program, handlers: program.handlers.filter((h) => h.event !== edit.event) };
     }
     case 'insert': {
       const container = containerAt(program, edit.at);

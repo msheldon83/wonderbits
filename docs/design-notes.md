@@ -4,6 +4,66 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Build step 13d, first part: names of their own, and kits (2026-11-11)
+
+Feedback: a puzzle made from an empty island could only use the early
+cards. The advanced cards all work on something with a name, and only a
+level could supply one. This brings the first part of 13d forward, and adds
+kits on top.
+
+- **Add your own**, under the program in creation mode
+  (`src/editor/OwnNames.tsx`): something to remember (a number, a yes or
+  no, a direction, a place, or a list of numbers, directions or yes/no), a
+  function, and a When card for an acorn, a tick or a plate on the board.
+  Names are typed. The rule is said kindly: starts with a small letter,
+  letters and numbers only, 20 at most, not a word the robot already uses,
+  not already taken. Each part has a remove button; a function a card still
+  calls, and a slot a card still uses, stay.
+- **The IR** gains four edit operations: `addFunction`, `removeFunction`,
+  `addHandler`, `removeHandler`, and `nameProblem`. Nothing else in the IR,
+  the interpreter or the printer changed.
+- **`programming.ownNames`** marks a creation. With it, Set cards offer
+  every value that fits whatever the program remembers, If cards offer
+  every test of it, and a card that needs a slot rests in the palette,
+  saying what to remember first. `allowedSources` then only adds to what
+  is offered: random values and the bird's answers.
+- **A new part brings its cards.** Adding a function adds its call card to
+  the creation; a number adds Set and Add; a direction Set and Face; a
+  list Add to list and For each; a place Set and Fly. Only a new part does
+  this, so a card switched off in Puzzle stays off.
+- **Kits** (`src/create/kits.ts`), behind Add cards on a creation's bar:
+  a trick with a name, When it happens, Tick tock, a way to remember, a
+  counter, a list, a die and a coin, rows and columns, the bird, the
+  backpack. A kit adds its cards and ready-named parts (`count`, `bird`,
+  `kept` in the backpack), so nothing has to be typed. Each kit points at
+  the pack that teaches it until that pack is finished. Adding one twice
+  changes nothing, and a name already taken is left alone.
+- **The backpack kit makes the puzzle two days long.** Puzzle then has a
+  Days setting, two to five.
+- **Plates, beetles and logs** are board tools. A plate takes the next
+  free number. A beetle's or a log's path is drawn by dragging, there and
+  back, or round a ring when the path ends beside its start; a tap on the
+  next tile walks the last one on. The first beetle or log brings the Wait
+  card. The random-taps test now covers these tools with no exceptions.
+- **A player gets the maker's names.** A made puzzle opens with the
+  functions, When cards and memory of the maker's solution, empty, and the
+  player adds none of their own. Start over in the maker's own Play keeps
+  the names and clears the cards.
+- **Older creations** gain `ownNames` when they load.
+
+### Deviations and choices
+
+- **Still to come in 13d:** records that are built, a function calling a
+  function, and `not`. Each touches the IR, the interpreter and the
+  printer, and none was needed to open the existing cards.
+- **No key script.** Remote control's keys are a script the level writes;
+  a child's game wants real keys, which is the live run of 13e.
+- **No Unlock, Mark or Move the finger.** They need a gate's number lock
+  or a grid slot, which a child cannot make yet. A remix keeps them.
+- **A puzzle with a die must work on every roll**, as a random level does:
+  the 48 seeds are checked before a run counts, in Play and by the critic.
+- **Six beetles and logs at most**, and nine plates.
+
 ## Build step 13c: design a puzzle, with the validator as critic (2026-11-11)
 
 The third sub-step of [creation-plan.md](creation-plan.md), and the end of
