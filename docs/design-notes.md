@@ -4,6 +4,25 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Change: the warehouse inventory computer (2026-11-11)
+
+Feedback: The notebook's crates lived only as rows on the memory card. To
+keep them tangible, the robot asks its friend, the warehouse inventory
+computer.
+
+- **A warehouse panel under the board** (`src/app/Inventory.tsx`) on every
+  level with a record or a list of records: the inventory computer, a
+  terminal with a face, and a shelf per list with each crate drawn as a box
+  with its index and its fields (a tick or a cross for yes and no).
+- **The crate being looked at is lifted and outlined:** the one a record
+  slot holds now, as For each walks the shelf or an item is read by index.
+  A slot still at its start has looked at nothing yet.
+- **The computer answers.** Reading a field marks the Set event `asked:
+  'inventory'` with `seen: 'crate.number'`, and the computer's bubble says
+  "number is 3"; an If on a field gets "key? yes".
+- **The words** of the introduction and three levels say the records come
+  from the inventory computer. The code is unchanged.
+
 ## Change: the bird replaces the finger in Reading the map (2026-11-11)
 
 Feedback: the finger, a purple hand with nobody holding it, was abstract.

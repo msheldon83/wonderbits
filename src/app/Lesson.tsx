@@ -38,6 +38,7 @@ import { hashFor } from './levels';
 import { KeyScript } from './KeyScript';
 import { MemoryCard } from './MemoryCard';
 import { TickRules } from './TickRules';
+import { Inventory } from './Inventory';
 import { outcomeMessage, type Shortfall, type Tone } from './messages';
 
 /**
@@ -611,6 +612,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           </p>
         </div>
         <TickRules world={world} state={shownState ?? initialState(world, program.memory)} event={activeEvent} />
+        <Inventory slots={program.memory} state={shownState ?? initialState(world, program.memory)} event={activeEvent} />
       </div>
       <div className="side-col">
         <Editor

@@ -27,6 +27,7 @@ import { hashFor } from './levels';
 import { KeyScript } from './KeyScript';
 import { MemoryCard } from './MemoryCard';
 import { TickRules } from './TickRules';
+import { Inventory } from './Inventory';
 
 /** Pauses between runs, so the eye can rest on the end and the start. */
 const BEFORE_RUN_MS = 700;
@@ -160,6 +161,7 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
           <div className="intro-board">
             <Board world={world} theme={theme} motion={motion} label={label} onControllers={onControllers} maxScale={1.3} coordinates={cards.some((c) => c === 'goRow' || c === 'goColumn' || c === 'shift') || (program.memory ?? []).some((m) => m.kind === 'grid')} bird={specAsksBird(demo.program) || specAsksBird(demo.before ?? [])} />
             <TickRules world={world} state={shownState ?? initialState(world, program.memory)} event={activeEvent} />
+        <Inventory slots={program.memory} state={shownState ?? initialState(world, program.memory)} event={activeEvent} />
             {caption && (
               <p className="intro-caption" role="status" aria-live="polite">
                 {caption}

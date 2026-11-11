@@ -140,9 +140,13 @@ export interface SetEvent extends TraceBase {
   op: 'set';
   slot: string;
   value: Value;
-  /** The robot asked the bird for this value: something on the whole board, or what is under the bird. */
-  asked?: 'bird';
-  /** When the bird read a map under it: the map's name, such as walls. */
+  /**
+   * Who the robot asked for this value: the bird (something on the whole
+   * board, or what is under it), or the inventory computer (a field of a
+   * crate's record).
+   */
+  asked?: 'bird' | 'inventory';
+  /** What was looked at: the map the bird read under it, such as walls, or the field asked for, such as crate.number. */
   seen?: string;
 }
 
