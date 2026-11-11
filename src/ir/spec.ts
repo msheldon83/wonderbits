@@ -18,7 +18,7 @@
  * spec mints fresh ids; specOf throws the ids away again.
  */
 import type { IdFactory } from './ids';
-import type { CommandId, ConditionId, IRNode, ItemKind, MemorySlot, Source, Value, ValueKind } from './types';
+import type { CommandId, ConditionId, IRNode, ItemKind, ListOf, MemorySlot, Source, Value, ValueKind } from './types';
 
 export type NodeSpec =
   | CommandId
@@ -40,7 +40,7 @@ export type NodeSpec =
   | { shift: string; dir: 'N' | 'E' | 'S' | 'W' }
   | { define: string; do: NodeSpec[] }
   | { on: string; do: NodeSpec[] }
-  | { remember: string; kind: ValueKind; of?: ItemKind; start?: Value; keep?: boolean };
+  | { remember: string; kind: ValueKind; of?: ListOf; shape?: string; fields?: Record<string, ItemKind>; start?: Value; keep?: boolean };
 
 export type DefineSpec = Extract<NodeSpec, { define: string }>;
 export type OnSpec = Extract<NodeSpec, { on: string }>;
@@ -92,11 +92,19 @@ export function defaultStart(kind: ValueKind): Value {
     case 'list':
     case 'grid':
       return [];
+    case 'record':
+      return {};
   }
 }
 
+/** A record with every field at nothing yet: 0, no, or up. */
+export function emptyRecord(fields: Record<string, ItemKind>): Value {
+  return Object.fromEntries(Object.entries(fields).map(([f, k]) => [f, k === 'number' ? 0 : k === 'yesNo' ? false : 'N']));
+}
+
 export function slotOfSpec(s: RememberSpec): MemorySlot {
-  return { name: s.remember, kind: s.kind, ...(s.of && { of: s.of }), start: s.start ?? defaultStart(s.kind), ...(s.keep && { keep: true }) };
+  const start = s.start ?? (s.kind === 'record' && s.fields ? emptyRecord(s.fields) : defaultStart(s.kind));
+  return { name: s.remember, kind: s.kind, ...(s.of && { of: s.of }), ...(s.shape && { shape: s.shape }), ...(s.fields && { fields: s.fields }), start, ...(s.keep && { keep: true }) };
 }
 
 /** A spec split into main's cards, its functions, its When cards and its memory slots, each in the order listed. */

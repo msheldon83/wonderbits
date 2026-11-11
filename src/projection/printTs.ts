@@ -3,7 +3,7 @@
  * readable TypeScript. Read-only through Phase 3; Phase 4 adds a parser that
  * lifts hand-edited code back into the IR using the @node comments.
  */
-import { isSenseId, MAIN, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type IRNode, type MemorySlot, type ProgramIR, type SenseId, type Source, type Value } from '../ir/types';
+import { isPosition, isSenseId, MAIN, parseField, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type IRNode, type MemorySlot, type ProgramIR, type SenseId, type Source, type Value } from '../ir/types';
 
 const CALL: Record<CommandId, string> = {
   forward: 'robot.forward();',
@@ -27,13 +27,26 @@ const DIRECTION: Record<string, string> = { N: 'up', E: 'right', S: 'down', W: '
 /** A value as TypeScript: 3, true, 'right', { x: 2, y: 1 }, [true, false]. */
 export function valueCode(v: Value): string {
   if (Array.isArray(v)) return `[${v.map(valueCode).join(', ')}]`;
-  if (typeof v === 'object') return `{ x: ${v.x}, y: ${v.y} }`;
+  if (isPosition(v)) return `{ x: ${v.x}, y: ${v.y} }`;
+  if (typeof v === 'object') return `{ ${Object.entries(v).map(([f, x]) => `${f}: ${valueCode(x)}`).join(', ')} }`;
   if (typeof v === 'string') return `'${DIRECTION[v] ?? v}'`;
   return String(v);
 }
 
 const TYPE: Record<string, string> = { number: 'number', yesNo: 'boolean', direction: 'Direction', position: 'Position' };
-const typeCode = (m: MemorySlot) => (m.kind === 'list' ? `${TYPE[m.of ?? 'number']}[]` : m.kind === 'grid' ? `${TYPE[m.of ?? 'number']}[][]` : TYPE[m.kind]!);
+function typeCode(m: MemorySlot): string {
+  if (m.kind === 'record') return m.shape ?? 'object';
+  if (m.kind === 'list') return `${m.of === 'record' ? (m.shape ?? 'object') : TYPE[m.of ?? 'number']}[]`;
+  if (m.kind === 'grid') return `${TYPE[m.of ?? 'number']}[][]`;
+  return TYPE[m.kind]!;
+}
+
+/** Each record shape the memory uses, once, as an interface: its fields and their types. */
+function shapeCode(memory: readonly MemorySlot[]): string[] {
+  const seen = new Map<string, MemorySlot>();
+  for (const m of memory) if (m.shape && m.fields && !seen.has(m.shape)) seen.set(m.shape, m);
+  return [...seen.values()].flatMap((m) => ['', `interface ${m.shape} {`, ...Object.entries(m.fields!).map(([f, k]) => `${INDENT}${f}: ${TYPE[k]};`), '}']);
+}
 
 /** A slot's start: a value, or a copy of the board's map. */
 function startCode(start: Value): string {
@@ -55,6 +68,8 @@ function cellCode(grid: string, at: string): string {
 /** What a Set card reads, as TypeScript. */
 function sourceCode(source: Source): string {
   if (typeof source !== 'string') return String(source);
+  const field = parseField(source);
+  if (field) return `${field.record}.${field.field}`;
   const read = parseRead(source);
   if (read) return cellCode(read.grid, read.at);
   const item = parseItem(source);
@@ -87,7 +102,7 @@ export function conditionCode(c: ConditionId): string {
 
 /** The types a program's memory needs from the robot's library, beside the robot itself. */
 function typeImports(program: ProgramIR): string {
-  const kinds = new Set((program.memory ?? []).map((m) => (m.kind === 'list' || m.kind === 'grid' ? m.of : m.kind)));
+  const kinds = new Set<string | undefined>((program.memory ?? []).flatMap((m) => [m.kind === 'list' || m.kind === 'grid' ? m.of : m.kind, ...Object.values(m.fields ?? {})]));
   const types = [...(kinds.has('direction') ? ['Direction'] : []), ...(kinds.has('position') ? ['Position'] : [])];
   // Random sources come from the library too: random(), coinFlip(), randomDirection(), pick().
   const used = new Set<string>();
@@ -211,6 +226,7 @@ export function printProgram(program: ProgramIR): string {
   // The robot's memory: one typed variable per slot, before anything uses it.
   // A slot in the backpack starts from what was saved last night, or its start on the first day.
   if (program.memory?.length) {
+    lines.push(...shapeCode(program.memory));
     lines.push('');
     for (const m of program.memory) lines.push(m.keep ? `let ${m.name}: ${typeCode(m)} = backpack.load('${m.name}', ${startCode(m.start)});` : `let ${m.name}: ${typeCode(m)} = ${startCode(m.start)};`);
   }

@@ -1,5 +1,5 @@
 import { randomInt } from './random';
-import { isSenseId, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type GridPlace, type MemorySlot, type SenseId, type Source, type Value } from '../ir/types';
+import { isPosition, isSenseId, parseField, splitSlotPath, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type GridPlace, type MemorySlot, type SenseId, type Source, type Value } from '../ir/types';
 import type { Cell, Facing, Gate, Mover, ObjectiveDefinition, Plate, SimState, Switch, TileKind, WorldDefinition } from './types';
 
 export const cellKey = (c: Cell): string => `${c.x},${c.y}`;
@@ -252,9 +252,11 @@ export function evaluate(world: WorldDefinition, state: SimState, condition: Con
 }
 
 /** The value a memory test compares with: 3, yes, E, or the robot's tile for "here". */
-function slotMatches(state: SimState, slot: string, written: string): boolean {
-  const value = state.memory?.[slot];
-  if (written === 'here') return typeof value === 'object' && value !== null && !Array.isArray(value) && value.x === state.robot.x && value.y === state.robot.y;
+function slotMatches(state: SimState, path: string, written: string): boolean {
+  const { slot, field } = splitSlotPath(path);
+  const whole = state.memory?.[slot];
+  const value = field === undefined ? whole : recordField(whole, field);
+  if (written === 'here') return isPosition(value) && value.x === state.robot.x && value.y === state.robot.y;
   if (written === 'yes' || written === 'no') return value === (written === 'yes');
   if (/^\d+$/.test(written)) return value === Number(written);
   return value === written;
@@ -266,7 +268,7 @@ export function gridPlace(state: SimState, at: GridPlace): Cell | undefined {
   if (at === 'here') return { x: state.robot.x, y: state.robot.y };
   if (at === 'ahead') return ahead(state.robot, state.robot.facing);
   const v = state.memory?.[at];
-  return typeof v === 'object' && v !== null && !Array.isArray(v) ? v : undefined;
+  return isPosition(v) ? v : undefined;
 }
 
 /** A grid's item at a tile, rows first like the board. Off the grid there is nothing: no, or 0. */
@@ -315,12 +317,20 @@ export function drawSource(world: WorldDefinition, state: SimState, source: Sour
 
 /** A remembered place moved one tile in a direction. Pure. */
 export function shiftPlace(value: Value | undefined, dir: Facing): Value | undefined {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined;
+  if (!isPosition(value)) return undefined;
   return ahead(value, dir);
+}
+
+/** One field of a record, or undefined when the value is not a record with that field. */
+export function recordField(record: Value | undefined, field: string): Value | undefined {
+  if (typeof record !== 'object' || record === null || Array.isArray(record) || isPosition(record)) return undefined;
+  return (record as Record<string, Value>)[field];
 }
 
 export function readSource(world: WorldDefinition, state: SimState, source: Source): Value {
   if (typeof source !== 'string') return source;
+  const field = parseField(source);
+  if (field) return recordField(state.memory?.[field.record], field.field) ?? false;
   const read = parseRead(source);
   if (read) return gridItem(state.memory?.[read.grid], gridPlace(state, read.at));
   const counted = parseLength(source);
@@ -350,6 +360,8 @@ function itemIndex(state: SimState, index: number | string): number | undefined 
 
 /** Why an item cannot be read: the list has no item at that index. Undefined when it can. */
 export function missingItem(state: SimState, source: Source): string | undefined {
+  const field = parseField(source);
+  if (field) return recordField(state.memory?.[field.record], field.field) === undefined ? `${field.record} has no ${field.field}: every record of a shape needs all its fields` : undefined;
   const item = parseItem(source);
   if (!item) return undefined;
   const list = state.memory?.[item.list];

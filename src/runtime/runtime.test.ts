@@ -444,3 +444,29 @@ describe('days', () => {
 function F(n: number): NodeSpec[] {
   return Array.from({ length: n }, () => 'forward' as const);
 }
+
+describe('records', () => {
+  const fields = { number: 'number', key: 'yesNo' } as const;
+  const crates = [
+    { number: 1, key: false },
+    { number: 2, key: true },
+  ];
+  const spec = (cond: string): NodeSpec[] => [
+    { remember: 'crates', kind: 'list', of: 'record', shape: 'Crate', fields, start: crates },
+    { remember: 'crate', kind: 'record', shape: 'Crate', fields },
+    { remember: 'code', kind: 'number' },
+    { forEach: 'crates', as: 'crate', do: [{ if: cond as `slot:${string}`, do: [{ set: 'code', to: 'field:crate.number' }] }] },
+  ];
+  const go = (s: NodeSpec[]) => interpretAll({ program: programFromSpec(s, sequentialIdFactory()), world, objective: { reachGoal: false, collectAll: false, memory: { code: 2 } }, limits: { maxSteps: 1000 } });
+
+  it('walks a list of records, testing and reading fields by name', () => {
+    const r = go(spec('slot:crate.key=yes'));
+    expect(r.outcome).toEqual({ status: 'success' });
+    expect(r.final.memory?.crate).toEqual({ number: 2, key: true });
+  });
+
+  it('stops with a message when a record has no such field', () => {
+    const r = go([{ remember: 'crate', kind: 'record', shape: 'Crate', fields, start: { number: 1 } as never }, { remember: 'code', kind: 'number' }, { set: 'code', to: 'field:crate.key' }]);
+    expect(r.outcome).toMatchObject({ status: 'error', message: 'crate has no key: every record of a shape needs all its fields' });
+  });
+});

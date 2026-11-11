@@ -9,7 +9,7 @@
  */
 import type { ReactElement } from 'react';
 
-export type TravelIcon = 'path' | 'logBridge' | 'hill' | 'ropeBridge' | 'stairs' | 'gate' | 'lift' | 'cart' | 'boat' | 'balloon' | 'wagon' | 'ferry' | 'kite' | 'flag' | 'bike' | 'lantern';
+export type TravelIcon = 'path' | 'logBridge' | 'hill' | 'ropeBridge' | 'stairs' | 'gate' | 'lift' | 'cart' | 'boat' | 'balloon' | 'wagon' | 'ferry' | 'kite' | 'flag' | 'bike' | 'lantern' | 'plane';
 
 export interface MapTheme {
   /** Top and bottom of the sky behind the island. */
@@ -372,6 +372,21 @@ const Moon = () => (
     <circle cx={50} cy={28} r={16} fill="#dfe9f3" />
   </svg>
 );
+const Schoolhouse = landmark(
+  <>
+    <Hills a="#b3d98c" b="#9fcb78" />
+    <rect x={76} y={50} width={88} height={50} fill="#d6503c" />
+    <path d="M68 52 L120 18 L172 52 Z" fill="#8a4f1c" />
+    <rect x={112} y={70} width={16} height={30} fill="#f3e3c8" />
+    <rect x={86} y={62} width={16} height={14} fill="#dff1fb" />
+    <rect x={138} y={62} width={16} height={14} fill="#dff1fb" />
+    <path d="M120 18 V6 M120 6 h14 v8 h-14" stroke="#5b4636" strokeWidth={3} fill="#f2c230" />
+    <g transform="translate(176 66) rotate(-8)">
+      <rect width={40} height={30} rx={3} fill="#fff" stroke="#3291d6" strokeWidth={3} />
+      <path d="M8 10 H32 M8 17 H32 M8 24 H24" stroke="#9fb4c8" strokeWidth={2} />
+    </g>
+  </>,
+);
 const Meadow = landmark(
   <>
     <Sun />
@@ -432,6 +447,7 @@ const THEMES: Record<string, MapTheme> = {
   'forest-shuffle': { sky: ['#fbe3ef', '#f7f3f8'], ground: '#e0e8c4', path: '#8a5cc7', landmark: Carnival, decor: [() => <Tent />, () => <Cards />, () => <Tent c="#3291d6" />], travel: { icon: 'flag', verb: 'Head on to' } },
   'forest-scoreboards': { sky: ['#e2f0fb', '#f1f7ee'], ground: '#cde6b0', path: '#b8701a', landmark: Scoreboard, decor: [() => <Pennant />, () => <Tree c="#6bb276" />, () => <Pennant c="#3291d6" />], travel: { icon: 'bike', verb: 'Ride the bike to' } },
   'forest-overnight': { sky: ['#cfd8ef', '#eef0f4'], ground: '#b9d6a8', path: '#6f5338', landmark: Campsite, decor: [() => <Tent c="#e9862b" />, () => <Moon />, () => <Pine />], travel: { icon: 'lantern', verb: 'Follow the lantern to' } },
+  'forest-notebook': { sky: ['#e7eef9', '#f6f6ef'], ground: '#cfe3b0', path: '#3291d6', landmark: Schoolhouse, decor: [() => <Book c="#3291d6" />, () => <Crate />, () => <Book c="#d6503c" />], travel: { icon: 'plane', verb: 'Fly the paper plane to' } },
 };
 
 const FALLBACK = Object.values(THEMES);
@@ -534,6 +550,7 @@ export function TravelIconArt({ icon }: { icon: TravelIcon }) {
         <path d="M20 40 H28 M24 18 q-4 6 0 10 q4 -4 0 -10" {...s} />
       </>
     ),
+    plane: <path d="M4 22 L44 6 L30 42 L22 28 Z M22 28 L44 6" {...s} />,
     flag: (
       <>
         <path d="M12 44 V6" {...s} />

@@ -12,7 +12,7 @@ import { canRedo, canUndo, createHistory, push, redo, undo, type History } from 
 import { randomIdFactory } from '../ir/ids';
 import { applyOp, type EditOp } from '../ir/ops';
 import { countNodes, programFromSpec, stepNumber } from '../ir/program';
-import type { NodeId, ProgramIR, Value } from '../ir/types';
+import { isPosition, type NodeId, type ProgramIR, type Value } from '../ir/types';
 import { valueWords } from '../editor/commands';
 import { coveredValue, withinOutcomes } from '../sim/world';
 import type { ObjectiveDefinition } from '../sim/types';
@@ -517,7 +517,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
   const pointers = level.programming.allowedCommands.includes('shift')
     ? (program.memory ?? []).flatMap((m) => {
         const v = fingerState.memory?.[m.name];
-        return m.kind === 'position' && v && typeof v === 'object' && !Array.isArray(v) ? [{ name: m.name, cell: v }] : [];
+        return m.kind === 'position' && isPosition(v) ? [{ name: m.name, cell: v }] : [];
       })
     : [];
   const starSlots: { key: keyof Stars; label: string }[] = [

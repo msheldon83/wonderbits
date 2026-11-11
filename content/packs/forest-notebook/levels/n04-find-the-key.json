@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 1,
+  "id": "n04-find-the-key",
+  "title": "Find the key",
+  "intro": "The notebook lists four crates, each a record of the same shape. Find the one with the key.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 0
+    },
+    "collectibles": [],
+    "gates": [
+      {
+        "id": "a",
+        "x": 1,
+        "y": 0,
+        "open": false,
+        "code": 3
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "records",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "set",
+      "unlock",
+      "forEach",
+      "if"
+    ],
+    "allowedConditions": [
+      "slot:crate.key=yes"
+    ],
+    "allowedSources": [
+      "field:crate.number"
+    ],
+    "maxInstructions": 6,
+    "starterProgram": [
+      {
+        "remember": "crates",
+        "kind": "list",
+        "of": "record",
+        "shape": "Crate",
+        "fields": {
+          "number": "number",
+          "key": "yesNo"
+        },
+        "start": [
+          {
+            "number": 1,
+            "key": false
+          },
+          {
+            "number": 2,
+            "key": false
+          },
+          {
+            "number": 3,
+            "key": true
+          },
+          {
+            "number": 4,
+            "key": false
+          }
+        ]
+      },
+      {
+        "remember": "crate",
+        "kind": "record",
+        "shape": "Crate",
+        "fields": {
+          "number": "number",
+          "key": "yesNo"
+        }
+      },
+      {
+        "remember": "code",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "unlock": "a",
+        "with": "code"
+      },
+      "forward",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        }
+      ],
+      "text": "The lock wants the number of the crate that holds the key."
+    },
+    {
+      "kind": "card",
+      "command": "forEach",
+      "text": "Go through the notebook one crate at a time."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "forEach",
+      "text": "For each crate in crates: if its key is yes, set code to its number."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "crates",
+      "kind": "list",
+      "of": "record",
+      "shape": "Crate",
+      "fields": {
+        "number": "number",
+        "key": "yesNo"
+      },
+      "start": [
+        {
+          "number": 1,
+          "key": false
+        },
+        {
+          "number": 2,
+          "key": false
+        },
+        {
+          "number": 3,
+          "key": true
+        },
+        {
+          "number": 4,
+          "key": false
+        }
+      ]
+    },
+    {
+      "remember": "crate",
+      "kind": "record",
+      "shape": "Crate",
+      "fields": {
+        "number": "number",
+        "key": "yesNo"
+      }
+    },
+    {
+      "remember": "code",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "forEach": "crates",
+      "as": "crate",
+      "do": [
+        {
+          "if": "slot:crate.key=yes",
+          "do": [
+            {
+              "set": "code",
+              "to": "field:crate.number"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unlock": "a",
+      "with": "code"
+    },
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

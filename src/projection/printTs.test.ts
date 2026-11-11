@@ -201,4 +201,23 @@ describe('printProgram', () => {
     expect(code).toContain('let today: number = 0;');
     expect(code).toContain("robot.on('night', () => { // @node night\n  backpack.save('total', total);\n});");
   });
+
+  it('prints records with an interface for their shape, and their fields with dots', () => {
+    const fields = { number: 'number', key: 'yesNo' } as const;
+    const p = programFromSpec(
+      [
+        { remember: 'crates', kind: 'list', of: 'record', shape: 'Crate', fields, start: [{ number: 1, key: false }, { number: 2, key: true }] },
+        { remember: 'crate', kind: 'record', shape: 'Crate', fields },
+        { remember: 'code', kind: 'number' },
+        { forEach: 'crates', as: 'crate', do: [{ if: 'slot:crate.key=yes', do: [{ set: 'code', to: 'field:crate.number' }] }] },
+      ],
+      sequentialIdFactory(),
+    );
+    const code = printProgram(p);
+    expect(code).toContain('interface Crate {\n  number: number;\n  key: boolean;\n}');
+    expect(code).toContain('let crates: Crate[] = [{ number: 1, key: false }, { number: 2, key: true }];');
+    expect(code).toContain('let crate: Crate = { number: 0, key: false };');
+    expect(code).toContain('if (crate.key) { // @node n2');
+    expect(code).toContain('code = crate.number; // @node n3');
+  });
 });

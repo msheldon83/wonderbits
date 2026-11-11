@@ -3,13 +3,19 @@
  * contributors may write by hand, so errors name the exact path at fault.
  */
 import { slotOfSpec, type NodeSpec } from '../ir/spec';
-import { FUNCTION_NAME, isCardId, isCommandId, isConditionId, isEventId, isSenseId, KEYS, BOARD_MAPS, parseItem, parseLength, parseRandom, parseRead, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, VALUE_KINDS, type CardId, type ConditionId, type ItemKind, type Key, type Source, type Value, type ValueKind } from '../ir/types';
+import { FUNCTION_NAME, isCardId, isCommandId, isConditionId, isEventId, isSenseId, KEYS, BOARD_MAPS, parseItem, parseLength, parseRandom, parseRead, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, VALUE_KINDS, type CardId, type ConditionId, type ItemKind, type Key, type ListOf, parseField, type Source, type Value, type ValueKind } from '../ir/types';
 import { FACINGS, type Cell, type Facing, type Gate, type Mover, type Plate, type Switch, type TileKind, type WorldDefinition } from '../sim/types';
 import { CONTENT_SCHEMA_VERSION, type MemoryField, type Activity, type ConceptIntroduction, type HintPath, type HintStep, type PackManifest, type PuzzleDefinition } from './types';
 
-/** True when a value is of a slot's kind: a list's items of its item kind. */
-export function valueFits(v: unknown, kind: ValueKind, of?: ItemKind): boolean {
+/** True when a value is of a slot's kind: a list's items of its item kind, a record's fields of its shape. */
+export function valueFits(v: unknown, kind: ValueKind, of?: ListOf, fields?: Record<string, ItemKind>): boolean {
   switch (kind) {
+    case 'record': {
+      if (typeof v !== 'object' || v === null || Array.isArray(v) || !fields) return false;
+      const keys = Object.keys(v);
+      // Every record of a shape has exactly its fields: none missing, none extra.
+      return keys.length === Object.keys(fields).length && Object.entries(fields).every(([f, k]) => valueFits((v as Record<string, unknown>)[f], k));
+    }
     case 'number':
       return typeof v === 'number' && Number.isInteger(v) && v >= 0;
     case 'yesNo':
@@ -19,10 +25,10 @@ export function valueFits(v: unknown, kind: ValueKind, of?: ItemKind): boolean {
     case 'position':
       return typeof v === 'object' && v !== null && Number.isInteger((v as Cell).x) && Number.isInteger((v as Cell).y);
     case 'list':
-      return Array.isArray(v) && v.every((x) => valueFits(x, of ?? 'number'));
+      return Array.isArray(v) && v.every((x) => (of === 'record' ? valueFits(x, 'record', undefined, fields) : valueFits(x, of ?? 'number')));
     case 'grid':
       // Rows of items, every row as long as the first.
-      return Array.isArray(v) && v.length > 0 && v.every((row) => Array.isArray(row) && row.length === (v[0] as unknown[]).length && row.every((x) => valueFits(x, of ?? 'number')));
+      return Array.isArray(v) && v.length > 0 && v.every((row) => Array.isArray(row) && row.length === (v[0] as unknown[]).length && row.every((x) => valueFits(x, (of === 'record' ? 'number' : of) ?? 'number')));
   }
 }
 
@@ -243,14 +249,32 @@ class Reader {
   remember(o: Obj, path: string): Extract<NodeSpec, { remember: string }> {
     const name = this.functionName(o.remember, `${path}.remember`);
     const kind = (VALUE_KINDS as readonly unknown[]).includes(o.kind) ? (o.kind as ValueKind) : (this.fail(`${path}.kind`, `expected one of ${VALUE_KINDS.join(', ')}`), 'number');
-    const of = kind === 'list' || kind === 'grid' ? (['number', 'yesNo', 'direction'].includes(o.of as string) ? (o.of as ItemKind) : (this.fail(`${path}.of`, `a ${kind} needs "of": number, yesNo or direction`), 'number')) : undefined;
-    const spec: Extract<NodeSpec, { remember: string }> = { remember: name, kind, ...(of && { of }), ...(o.keep !== undefined && this.bool(o.keep, `${path}.keep`) && { keep: true }) };
+    const itemKinds = kind === 'list' ? ['number', 'yesNo', 'direction', 'record'] : ['number', 'yesNo', 'direction'];
+    const of = kind === 'list' || kind === 'grid' ? (itemKinds.includes(o.of as string) ? (o.of as ListOf) : (this.fail(`${path}.of`, `a ${kind} needs "of": ${itemKinds.join(', ')}`), 'number')) : undefined;
+    // A record, or a list of records, names its shape and its fields.
+    const shaped = kind === 'record' || of === 'record';
+    const shape = shaped ? this.shape(o, path) : undefined;
+    const spec: Extract<NodeSpec, { remember: string }> = { remember: name, kind, ...(of && { of }), ...(shape && { shape: shape.shape, fields: shape.fields }), ...(o.keep !== undefined && this.bool(o.keep, `${path}.keep`) && { keep: true }) };
     if (o.start !== undefined) {
       const map = kind === 'grid' && of === 'yesNo' && (BOARD_MAPS as readonly unknown[]).includes(o.start);
-      if (!map && !valueFits(o.start, kind, of)) this.fail(`${path}.start`, `expected a ${kind}${of ? ` of ${of}` : ''} value`);
+      if (!map && !valueFits(o.start, kind, of, shape?.fields)) this.fail(`${path}.start`, `expected a ${kind}${of ? ` of ${of}` : ''} value${shape ? ` with exactly the fields ${Object.keys(shape.fields).join(', ')}` : ''}`);
       else spec.start = o.start as Value;
     }
     return spec;
+  }
+  /** A record's shape: { "shape": "Crate", "fields": { "number": "number", "key": "yesNo" } }. */
+  shape(o: Obj, path: string): { shape: string; fields: Record<string, ItemKind> } {
+    const shape = typeof o.shape === 'string' && /^[A-Z][A-Za-z0-9]{0,19}$/.test(o.shape) ? o.shape : (this.fail(`${path}.shape`, 'expected a type name like "Crate"'), 'Thing');
+    const raw = this.obj(o.fields, `${path}.fields`);
+    const fields: Record<string, ItemKind> = {};
+    for (const [f, k] of Object.entries(raw)) {
+      if (!FUNCTION_NAME.test(f) || f === 'x' || f === 'y' || RESERVED_NAMES.has(f)) this.fail(`${path}.fields.${f}`, 'expected a field name: a short lower camel case word, not x or y');
+      else if (k !== 'number' && k !== 'yesNo' && k !== 'direction') this.fail(`${path}.fields.${f}`, 'expected number, yesNo or direction');
+      else fields[f] = k;
+    }
+    const count = Object.keys(raw).length;
+    if (count < 1 || count > 4) this.fail(`${path}.fields`, 'expected 1 to 4 fields');
+    return { shape, fields };
   }
   /** Where a Go card walks to: a row or column number from 0, or a number slot's name. */
   target(v: unknown, path: string): number | string {
@@ -269,7 +293,7 @@ class Reader {
   source(v: unknown, path: string): Source {
     if (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 999) return v;
     if (typeof v === 'boolean') return v;
-    if (typeof v === 'string' && (['N', 'E', 'S', 'W', 'facing', 'here', 'acorns', 'acornsLeft'].includes(v) || isSenseId(v) || parseRead(v) || parseLength(v) || parseRandom(v) || parseItem(v))) return v;
+    if (typeof v === 'string' && (['N', 'E', 'S', 'W', 'facing', 'here', 'acorns', 'acornsLeft'].includes(v) || isSenseId(v) || parseRead(v) || parseLength(v) || parseRandom(v) || parseItem(v) || parseField(v))) return v;
     this.fail(path, `expected a value to set: a number, true or false, N, E, S or W, "facing", "here", "acorns", "acornsLeft", a sense or a random source, got ${JSON.stringify(v)}`);
     return 0;
   }

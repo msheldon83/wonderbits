@@ -36,7 +36,8 @@ export function isSenseId(value: unknown): value is SenseId {
   return typeof value === 'string' && (CONDITION_IDS as readonly string[]).includes(value);
 }
 
-const SLOT_TEST = /^slot:([a-z][A-Za-z0-9]{0,19})=(\d{1,3}|yes|no|[NESW]|here)$/;
+/** A memory test may look inside a record: `slot:crate.key=yes`. */
+const SLOT_TEST = /^slot:([a-z][A-Za-z0-9]{0,19}(?:\.[a-z][A-Za-z0-9]{0,19})?)=(\d{1,3}|yes|no|[NESW]|here)$/;
 
 /** The parts of a memory test, or null when the string is not one. */
 export function parseSlotTest(value: string): { slot: string; value: string } | null {
@@ -75,18 +76,38 @@ export type GoId = (typeof GO_IDS)[number];
 export type MemoryCardId = (typeof MEMORY_CARD_IDS)[number];
 
 /** The kinds of value a memory slot can hold. A list holds items of one kind. */
-export const VALUE_KINDS = ['number', 'yesNo', 'direction', 'position', 'list', 'grid'] as const;
+export const VALUE_KINDS = ['number', 'yesNo', 'direction', 'position', 'list', 'grid', 'record'] as const;
 export type ValueKind = (typeof VALUE_KINDS)[number];
 export type ItemKind = 'number' | 'yesNo' | 'direction';
-/** A value in memory: a number, a yes/no, a direction letter (N, E, S, W), a tile, or a list. */
-export type Value = number | boolean | string | { x: number; y: number } | Value[];
+/** What a list holds: items of one kind, or records of one shape. */
+export type ListOf = ItemKind | 'record';
+/** A record: named fields, each a number, a yes/no or a direction. */
+export type RecordValue = { [field: string]: number | boolean | string };
+/** A value in memory: a number, a yes/no, a direction letter (N, E, S, W), a tile, a record, or a list. */
+export type Value = number | boolean | string | { x: number; y: number } | RecordValue | Value[];
+
+/** True when a value is a tile: an object of just x and y. Records are objects too, with their own fields. */
+export function isPosition(v: unknown): v is { x: number; y: number } {
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) return false;
+  const keys = Object.keys(v);
+  return keys.length === 2 && keys.includes('x') && keys.includes('y');
+}
+
+/** A record's shape: its type name, such as Crate, and its fields with their kinds, in order. */
+export interface Shape {
+  shape: string;
+  fields: Record<string, ItemKind>;
+}
 
 /** A named, typed slot in the robot's memory: TypeScript's `let name: type = start`. */
 export interface MemorySlot {
   name: string;
   kind: ValueKind;
-  /** The kind of a list's or a grid's items. */
-  of?: ItemKind;
+  /** The kind of a list's or a grid's items. A list may hold records. */
+  of?: ListOf;
+  /** A record's, or a list of records', type name and fields. */
+  shape?: string;
+  fields?: Record<string, ItemKind>;
   start: Value;
   /** In the backpack: on a level of several days, the slot keeps its value overnight instead of starting again. */
   keep?: boolean;
@@ -127,6 +148,22 @@ export function parseLength(source: Source): string | null {
 }
 
 export const lengthOf = (list: string): Source => `length:${list}`;
+
+const FIELD = /^field:([a-z][A-Za-z0-9]{0,19})\.([a-z][A-Za-z0-9]{0,19})$/;
+
+/** One field of a record slot, written `field:crate.number` and printed `crate.number`. Null when the source is not one. */
+export function parseField(source: Source): { record: string; field: string } | null {
+  const m = typeof source === 'string' ? FIELD.exec(source) : null;
+  return m ? { record: m[1]!, field: m[2]! } : null;
+}
+
+export const fieldOf = (record: string, field: string): Source => `field:${record}.${field}`;
+
+/** A slot test's slot: a slot's name, or a record slot and one of its fields, `crate.key`. */
+export function splitSlotPath(path: string): { slot: string; field?: string } {
+  const [slot, field] = path.split('.');
+  return field ? { slot: slot!, field } : { slot: slot! };
+}
 
 const ITEM = /^item:([a-z][A-Za-z0-9]{0,19})@(\d{1,2}|[a-z][A-Za-z0-9]{0,19})$/;
 

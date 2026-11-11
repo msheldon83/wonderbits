@@ -33,7 +33,7 @@ architecture, and the exit gate for the first child test. Read it before
 starting new work.
 
 The first child test passed on 2026-11-08, and this repository is part way
-through **build step 12 of the plan: data**. It has 155 levels in sixteen
+through **build step 12 of the plan: data**. It has 165 levels in seventeen
 packs (Forest, five levels that teach the game; Forest trails, ten
 sequencing levels; Around and around, Repeat; Look before you leap, If,
 If / else and Repeat until; Same trick, new place, functions; Flip the
@@ -43,13 +43,14 @@ tick card; Two things to remember, typed memory slots under a budget; Keep
 count, variables that change; In a row, lists; Never the same twice, a
 random generator; Reading the map, coordinates and a finger on the map;
 Two scoreboards, values worked out instead of stored; Overnight, levels of
-several days with a backpack kept overnight), a show-first introduction before
+several days with a backpack kept overnight; The notebook, records of named
+fields), a show-first introduction before
 each new concept, a card book to watch them again, a memory card under the
 board wherever the world or the robot's memory can change, prediction of
 the tile and of the memory card, validators in CI, three-rung hint ladders,
 the level map with stars and badges, progress in IndexedDB, and an
 observation log the grown-up can export. The rest of step 12 comes next:
-records (The notebook) and objects (Robot team). See [docs/design-notes.md](docs/design-notes.md) for what is built, what
+objects (Robot team). See [docs/design-notes.md](docs/design-notes.md) for what is built, what
 is deliberately not, and any deviations from the plan.
 
 ## Run it

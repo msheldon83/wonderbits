@@ -4,6 +4,59 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Build step 12, part five: The notebook (2026-11-11)
+
+The records pack, **The notebook** (`content/packs/forest-notebook`), ten
+levels with its introduction, "Records": a crate's record holds its number
+and whether it has the key, and the robot opens a lock with `crate.number`.
+
+### What is built
+
+- **Records.** A memory slot can be a record (`"kind": "record"`) or a list
+  of records (`"of": "record"`), with a shape: a type name and one to four
+  fields, each a number, a yes/no or a direction
+  (`"shape": "Crate", "fields": { "number": "number", "key": "yesNo" }`).
+  Every record of a shape has exactly its fields; the parser and validator
+  reject one with a field missing or extra, as TypeScript would.
+- **Reading fields.** Set can read a field, `field:crate.number`, printed
+  `crate.number` and read aloud as "crate's number". If and Repeat until can
+  test one, `slot:crate.key=yes`, printed `if (crate.key)`. Reading a field
+  a record lacks stops the run with a message, in case a record ever comes
+  without one. For each walks a list of records into a record slot of the
+  same shape, and `item:spots@k` sets a record slot from a list by index.
+- **The code** declares each shape once as an interface (`interface Crate {
+  number: number; key: boolean; }`) and types the slots with it
+  (`let crates: Crate[] = [...]`).
+- **On screen** the memory card draws a record as its fields in a row
+  ("number 2 · key yes"), a list of records as one row per record with its
+  index, and tags each slot with its shape ("list of Crate"). The Set menu
+  offers each field of the right kind.
+- **Validator.** Fields read and tested must be fields of the record, of the
+  kind the card needs; For each and items keep shapes apart. The records
+  introduction must read a field.
+- **The pack.** Read the record (model), The right field (two numbers, pick
+  by name), Follow the sign (a row and a column, in the order a rock
+  allows), Find the key (search a list of records), Fix the search (debug:
+  the If checks the wrong field), How many keys? (model), Cards in order, Go
+  to the crate, Where will it stop? and Two notebooks (find the key crate's
+  number, use it as an index into a second list, and go to that spot's
+  column, under a budget).
+
+### Deviations and choices
+
+- **Labels and colours are not fields.** Fields are numbers, yes/noes and
+  directions, the kinds the robot already has; a crate's label is its
+  number.
+- **The missing-field puzzle is the validator's.** The plan's "a crate
+  missing a field breaks the search" cannot be a solvable level once every
+  record must match its shape, so the shape check lives where TypeScript
+  puts it, before the run, and the run's message stays as a safety net.
+- **Two lists are joined by index.** A check compares a field with a
+  written value, not with another slot, so Two notebooks joins the lists by
+  using the crate number as an index into the second list.
+- **Records are read, not built.** The notebook is given, like the lists of
+  In a row were at first; building records waits for creation mode.
+
 ## Build step 12, part four: Overnight (2026-11-11)
 
 The persistence pack, **Overnight** (`content/packs/forest-overnight`), ten

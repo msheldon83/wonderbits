@@ -5,7 +5,7 @@
 import { sequentialIdFactory } from '../ir/ids';
 import { programFromSpec } from '../ir/program';
 import { callsOfSpec, cardsOfSpec, conditionsOfSpec, countSpec, depthOfSpec, gatesOfSpec, specDiff, splitSpec, type NodeSpec } from '../ir/spec';
-import { BASIC_CONDITIONS, BOARD_MAPS, GO_IDS, MEMORY_CARD_IDS, isBlockId, isCommandId, isGateActionId, isSenseId, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CardId, type CommandId, type Key, type Source, type ValueKind } from '../ir/types';
+import { BASIC_CONDITIONS, BOARD_MAPS, GO_IDS, MEMORY_CARD_IDS, isBlockId, isCommandId, isGateActionId, isSenseId, parseField, splitSlotPath, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CardId, type CommandId, type Key, type Source, type ValueKind } from '../ir/types';
 import { interpretAll } from '../runtime/interpreter';
 import { advance, cellKey, gatesOf, initialState, isTimed, moverCell, moversOf, objectiveMet, period, platesOf, stateKey, step, switchesOf, tileAt } from '../sim/world';
 import { hasField } from './memory';
@@ -346,11 +346,21 @@ function testKind(value: string): ValueKind {
 }
 
 /** Every card that names a slot, and the kind it needs there, walking a spec. */
-function slotUses(spec: readonly NodeSpec[]): { slot: string; kind: ValueKind | 'item'; card: string; list?: string; of?: ValueKind }[] {
+type SlotUse = { slot: string; kind: ValueKind | 'item' | 'field'; card: string; list?: string; of?: ValueKind; field?: string };
+
+function slotUses(spec: readonly NodeSpec[]): SlotUse[] {
   return spec.flatMap((s) => {
     if (typeof s === 'string') return [];
     const inner = 'do' in s ? [...slotUses(s.do), ...('if' in s && s.else ? slotUses(s.else) : [])] : [];
-    const own: { slot: string; kind: ValueKind | 'item'; card: string; list?: string; of?: ValueKind }[] = [];
+    const own: SlotUse[] = [];
+    // A field of a record: the record slot is read, and the value is of that field's kind.
+    const field = 'set' in s || 'push' in s ? parseField(s.to) : null;
+    if (field) {
+      own.push({ slot: field.record, kind: 'record', card: 'a field' });
+      if ('set' in s) own.push({ slot: s.set, kind: 'field', card: 'Set', list: field.record, field: field.field });
+      else if ('push' in s) own.push({ slot: s.push, kind: 'list', card: 'Add to list' });
+      return [...own, ...inner];
+    }
     if ('push' in s) own.push({ slot: s.push, kind: 'list', card: 'Add to list', ...(parseRandom(s.to)?.kind !== 'pick' && !parseItem(s.to) && { of: sourceKind(s.to) }) });
     for (const to of 'set' in s ? [s.to] : 'push' in s ? [s.to] : []) {
       const counted = parseLength(to);
@@ -383,7 +393,10 @@ function slotUses(spec: readonly NodeSpec[]): { slot: string; kind: ValueKind | 
     if ('forEach' in s) own.push({ slot: s.forEach, kind: 'list', card: 'For each' }, { slot: s.as, kind: 'item', card: 'For each', list: s.forEach });
     for (const c of 'if' in s ? [s.if] : 'until' in s ? [s.until] : []) {
       const t = parseSlotTest(c);
-      if (t) own.push({ slot: t.slot, kind: testKind(t.value), card: 'a check' });
+      if (!t) continue;
+      const path = splitSlotPath(t.slot);
+      if (path.field === undefined) own.push({ slot: t.slot, kind: testKind(t.value), card: 'a check' });
+      else own.push({ slot: path.slot, kind: 'record', card: 'a check' }, { slot: `${path.slot}.${path.field}`, kind: 'field', card: 'a check', list: path.slot, field: path.field, of: testKind(t.value) });
     }
     return [...own, ...inner];
   });
@@ -406,21 +419,36 @@ function validateMemory(puzzle: PuzzleDefinition, errors: string[]): void {
     for (const m of memory) {
       if (functions.some((f) => f.name === m.name)) errors.push(`${label}: slot ${m.name} has the same name as a function`);
       const map = m.kind === 'grid' && m.of === 'yesNo' && (BOARD_MAPS as readonly unknown[]).includes(m.start);
-      if (!map && !valueFits(m.start, m.kind, m.of)) errors.push(`${label}: slot ${m.name} starts with a value that is not a ${m.kind}`);
+      if (!map && !valueFits(m.start, m.kind, m.of, m.fields)) errors.push(`${label}: slot ${m.name} starts with a value that is not a ${m.kind}`);
       if (options && !options.some((o) => o.name === m.name && o.kind === m.kind && !!o.keep === !!m.keep)) errors.push(`${label} remembers ${m.name}, which is not one of the memoryOptions`);
     }
     if (puzzle.days === undefined && memory.some((m) => m.keep)) errors.push(`${label} keeps a slot in the backpack, but the level lasts one day`);
     if (programming.maxMemory !== undefined && memory.length > programming.maxMemory) errors.push(`${label} keeps ${memory.length} slots, over the memory budget of ${programming.maxMemory}`);
     const byName = new Map(memory.map((m) => [m.name, m]));
     for (const use of slotUses(spec)) {
+      // A check on a field: the record must have the field, of the kind the check compares with.
+      if (use.kind === 'field' && use.card === 'a check') {
+        const kind = byName.get(use.list ?? '')?.fields?.[use.field ?? ''];
+        if (byName.get(use.list ?? '')?.kind === 'record' && kind === undefined) errors.push(`${label}: a check reads ${use.slot}, but ${use.list} has no field ${use.field}`);
+        else if (kind !== undefined && kind !== use.of) errors.push(`${label}: a check compares ${use.slot}, a ${kind}, with a ${use.of}`);
+        continue;
+      }
       const slot = byName.get(use.slot);
       if (!slot) {
         errors.push(`${label}: ${use.card} uses ${use.slot}, which the robot does not remember`);
         continue;
       }
-      const want = use.kind === 'item' ? byName.get(use.list ?? '')?.of : use.kind;
+      if (use.kind === 'field') {
+        const kind = byName.get(use.list ?? '')?.fields?.[use.field ?? ''];
+        if (kind === undefined) errors.push(`${label}: ${use.card} reads ${use.list}'s ${use.field}, which is not one of its fields`);
+        else if (slot.kind !== kind) errors.push(`${label}: ${use.card} puts ${use.list}'s ${use.field}, a ${kind}, in ${use.slot}, which holds a ${slot.kind}`);
+        continue;
+      }
+      const list = use.kind === 'item' ? byName.get(use.list ?? '') : undefined;
+      const want = use.kind === 'item' ? list?.of : use.kind;
       if (want !== undefined && slot.kind !== want) errors.push(`${label}: ${use.card} needs ${use.slot} to hold a ${want}, but it holds a ${slot.kind}`);
       else if (use.of && slot.of !== use.of) errors.push(`${label}: ${use.card} puts a ${use.of} in ${use.slot}, a list of ${slot.of}`);
+      else if (use.kind === 'item' && want === 'record' && slot.shape !== list?.shape) errors.push(`${label}: ${use.card} puts a ${list?.shape} in ${use.slot}, which holds a ${slot.shape}`);
     }
     if (programming.allowedSources) {
       const allowed = new Set(programming.allowedSources.map((x) => JSON.stringify(x)));
@@ -436,7 +464,7 @@ function validateMemory(puzzle: PuzzleDefinition, errors: string[]): void {
   for (const [slot, want] of Object.entries(puzzle.objective.memory ?? {})) {
     const m = refMemory.find((x) => x.name === slot);
     if (!m) errors.push(`objective.memory asks for ${slot}, which the referenceSolution does not remember`);
-    else if (!valueFits(want, m.kind, m.of)) errors.push(`objective.memory gives ${slot} a value that is not a ${m.kind}`);
+    else if (!valueFits(want, m.kind, m.of, m.fields)) errors.push(`objective.memory gives ${slot} a value that is not a ${m.kind}`);
   }
   for (const m of [...splitSpec(programming.starterProgram).memory, ...refMemory, ...(options ?? [])]) {
     if (m.kind === 'grid' && Array.isArray(m.start) && (m.start.length !== world.height || (m.start[0] as unknown[]).length !== world.width)) {
@@ -584,6 +612,7 @@ export function validateIntroduction(intro: ConceptIntroduction, errors: string[
     grids: [splitSpec(program).memory.some((m) => m.kind === 'grid') || cardsOfSpec(program).some((c) => (GO_IDS as readonly string[]).includes(c)), 'never uses a grid or a row or column'],
     randomness: [setSources(program).some((src) => parseRandom(src) !== null), 'never uses a random source'],
     persistence: [trace.some((e) => e.op === 'night') && splitSpec(program).memory.some((m) => m.keep), 'never keeps a slot in the backpack overnight'],
+    records: [setSources(program).some((src) => parseField(src) !== null) || conditionsOfSpec(program).some((c) => splitSlotPath(parseSlotTest(c)?.slot ?? '').field !== undefined), 'never reads a field of a record'],
     derived: [setSources(program).some((src) => typeof src === 'string' && !parseRandom(src) && !['N', 'E', 'S', 'W'].includes(src)), 'never works a value out from what is there'],
   };
   const check = shows[intro.concept];

@@ -46,6 +46,12 @@ const KIND_ICON: Record<MemoryKind, ReactElement> = {
       <path d="M4 6h2M4 12h2M4 18h2M9 6h11M9 12h11M9 18h11" {...stroke} />
     </svg>
   ),
+  record: (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <rect x="3.5" y="4" width="17" height="16" rx="2.5" {...stroke} />
+      <path d="M7 9h3M7 15h3M13 9h4M13 15h4" {...stroke} strokeWidth={2} />
+    </svg>
+  ),
   grid: (
     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
       <rect x="3.5" y="3.5" width="17" height="17" rx="2" {...stroke} />
@@ -54,12 +60,14 @@ const KIND_ICON: Record<MemoryKind, ReactElement> = {
   ),
 };
 
-const KIND_WORDS: Record<MemoryKind, string> = { position: 'a place', direction: 'a direction', number: 'a number', yesNo: 'a yes or no', list: 'a list', grid: 'a grid of rows and columns' };
+const KIND_WORDS: Record<MemoryKind, string> = { position: 'a place', direction: 'a direction', number: 'a number', yesNo: 'a yes or no', list: 'a list', grid: 'a grid of rows and columns', record: 'a record of named fields' };
 
 const ITEM_WORDS: Record<string, string> = { number: 'numbers', yesNo: 'yes/noes', direction: 'directions' };
 /** A slot's kind as a short tag beside its name: "number", "list of yes/noes", "grid of numbers". */
 function kindWord(m: MemorySlot | undefined): string {
   if (!m) return '';
+  if (m.kind === 'record') return m.shape ?? 'record';
+  if (m.kind === 'list' && m.of === 'record') return `list of ${m.shape ?? 'record'}`;
   if (m.kind === 'list' || m.kind === 'grid') return `${m.kind} of ${ITEM_WORDS[m.of ?? 'number']}`;
   return { number: 'number', yesNo: 'yes/no', direction: 'direction', position: 'place' }[m.kind] ?? m.kind;
 }

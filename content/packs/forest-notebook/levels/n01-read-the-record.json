@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "id": "n01-read-the-record",
+  "title": "Read the record",
+  "intro": "crate is a record: a number and a key, kept together. Fill in what n and found will hold.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "..."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "records",
+    "activity": "model"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "set"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": [
+      {
+        "remember": "crate",
+        "kind": "record",
+        "shape": "Crate",
+        "fields": {
+          "number": "number",
+          "key": "yesNo"
+        },
+        "start": {
+          "number": 3,
+          "key": true
+        }
+      },
+      {
+        "remember": "n",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "remember": "found",
+        "kind": "yesNo",
+        "start": false
+      },
+      {
+        "set": "n",
+        "to": "field:crate.number"
+      },
+      {
+        "set": "found",
+        "to": "field:crate.key"
+      },
+      "forward",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "text": "The walk is short. The cards that matter read the record."
+    },
+    {
+      "kind": "card",
+      "command": "set",
+      "text": "Each Set reads one field of crate, by its name."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "set",
+      "text": "n gets crate's number."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "crate",
+      "kind": "record",
+      "shape": "Crate",
+      "fields": {
+        "number": "number",
+        "key": "yesNo"
+      },
+      "start": {
+        "number": 3,
+        "key": true
+      }
+    },
+    {
+      "remember": "n",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "found",
+      "kind": "yesNo",
+      "start": false
+    },
+    {
+      "set": "n",
+      "to": "field:crate.number"
+    },
+    {
+      "set": "found",
+      "to": "field:crate.key"
+    },
+    "forward",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  },
+  "prediction": {
+    "askTile": false,
+    "askMemory": [
+      "slot:n",
+      "slot:found"
+    ]
+  }
+}

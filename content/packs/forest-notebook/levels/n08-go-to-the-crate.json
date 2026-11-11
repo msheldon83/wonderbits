@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 1,
+  "id": "n08-go-to-the-crate",
+  "title": "Go to the crate",
+  "intro": "Each crate's record says where it is. Walk to the crate with the key.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 3,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "records",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "set",
+      "forEach",
+      "if",
+      "goColumn"
+    ],
+    "allowedConditions": [
+      "slot:crate.key=yes"
+    ],
+    "allowedSources": [
+      "field:crate.column"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": [
+      {
+        "remember": "crates",
+        "kind": "list",
+        "of": "record",
+        "shape": "Crate",
+        "fields": {
+          "key": "yesNo",
+          "column": "number"
+        },
+        "start": [
+          {
+            "key": false,
+            "column": 1
+          },
+          {
+            "key": true,
+            "column": 3
+          },
+          {
+            "key": false,
+            "column": 4
+          }
+        ]
+      },
+      {
+        "remember": "crate",
+        "kind": "record",
+        "shape": "Crate",
+        "fields": {
+          "key": "yesNo",
+          "column": "number"
+        }
+      },
+      {
+        "remember": "c",
+        "kind": "number",
+        "start": 0
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "text": "Three crates, each in its own column. Only one has the key."
+    },
+    {
+      "kind": "card",
+      "command": "forEach",
+      "text": "Find the crate with the key, and keep its column."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 1,
+      "command": "goColumn",
+      "text": "After the search, go to column c."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "crates",
+      "kind": "list",
+      "of": "record",
+      "shape": "Crate",
+      "fields": {
+        "key": "yesNo",
+        "column": "number"
+      },
+      "start": [
+        {
+          "key": false,
+          "column": 1
+        },
+        {
+          "key": true,
+          "column": 3
+        },
+        {
+          "key": false,
+          "column": 4
+        }
+      ]
+    },
+    {
+      "remember": "crate",
+      "kind": "record",
+      "shape": "Crate",
+      "fields": {
+        "key": "yesNo",
+        "column": "number"
+      }
+    },
+    {
+      "remember": "c",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "forEach": "crates",
+      "as": "crate",
+      "do": [
+        {
+          "if": "slot:crate.key=yes",
+          "do": [
+            {
+              "set": "c",
+              "to": "field:crate.column"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "goColumn": "c"
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}
