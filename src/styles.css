@@ -3693,3 +3693,135 @@ button.shelf-card {
     flex: none;
   }
 }
+
+/* Creation mode: adding and naming parts of the program. */
+.own-names {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--purple-wash);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.own-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.own-label {
+  min-width: 78px;
+  font-weight: 800;
+  color: var(--purple-deep);
+}
+
+.own-name {
+  flex: 1 1 110px;
+  min-width: 90px;
+  min-height: 40px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 2px var(--line);
+  font: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 16px;
+  color: var(--ink);
+}
+
+.own-keep {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.own-add {
+  min-height: 40px;
+  padding: 4px 14px;
+}
+
+.own-problem {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--red-wash);
+  color: #8a2c1d;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.function-def {
+  position: relative;
+}
+
+.own-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  min-width: 34px;
+  min-height: 34px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--red);
+}
+
+/* Add cards: the kits. */
+.kit-dialog {
+  width: min(640px, 100%);
+  max-height: 86dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.kit-list {
+  list-style: none;
+  margin: 0;
+  padding: 2px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.kit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: var(--page);
+}
+
+.kit.is-added {
+  background: #e3f6e7;
+}
+
+.kit-words {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 16px;
+}
+
+.kit-words strong {
+  font-size: 18px;
+}
+
+.kit-words small {
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+/* Room for the remove button beside a function's or When card's name. */
+.function-def:has(.own-remove) .function-head {
+  padding-right: 48px;
+}

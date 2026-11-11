@@ -7,6 +7,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Star } from '../app/icons';
 import { hashFor } from '../app/levels';
 import { PlaySurface, type Solved } from '../app/PlaySurface';
+import { skeletonOf } from '../ir/spec';
 import type { ProgressStore } from '../progress/store';
 import type { EventInput, Settings, Stars } from '../progress/types';
 import type { Runtime } from '../runtime/contract';
@@ -28,7 +29,11 @@ export function PlayScreen({ creation, progress, runtime, settings }: { creation
   const [stars, setStars] = useState<Stars | null>(null);
   const key = playKeyOf(creation);
   const makerSteps = creation.proof?.steps;
-  const level = useMemo(() => ({ ...playableOf(creation, `${goalWords(creation)} Tap an instruction to add it to your program.`), id: key }), [creation, key]);
+  // The player opens with the names its maker's solution uses (its functions, When cards and memory), all empty.
+  const level = useMemo(() => {
+    const base = playableOf(creation, `${goalWords(creation)} Tap an instruction to add it to your program.`);
+    return { ...base, id: key, programming: { ...base.programming, starterProgram: skeletonOf(creation.proof?.solution ?? []) } };
+  }, [creation, key]);
   const record = useCallback((event: EventInput) => progress.log(event), [progress]);
   const onSolved = useCallback(({ steps }: Solved) => setStars(progress.complete({ levelId: key, usedHints: false, steps, budget: makerSteps })), [progress, key, makerSteps]);
 
@@ -39,6 +44,7 @@ export function PlayScreen({ creation, progress, runtime, settings }: { creation
       settings={settings}
       record={record}
       onSolved={onSolved}
+      lockNames
       completion={({ restart }) =>
         stars && (
           <div className="dialog-backdrop" role="presentation">

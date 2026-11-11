@@ -44,7 +44,9 @@ export class CreationStore {
     const creations: Creation[] = [];
     for (const key of keys) {
       try {
-        creations.push(parseCreation(await this.storage.get(key), key));
+        // Creations made before a child could name their own parts gain that now.
+        const read = parseCreation(await this.storage.get(key), key);
+        creations.push(read.programming.ownNames ? read : { ...read, programming: { ...read.programming, ownNames: true } });
       } catch (e) {
         if (!(e instanceof ContentError)) throw e;
         this.unreadable.push(key);

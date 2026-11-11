@@ -6,7 +6,8 @@ import type { WorldDefinition } from '../sim/types';
 import { blankWorld } from './blank';
 import { creationToJson, parseCreation } from './parse';
 import { boardProblems, reachable } from './problems';
-import { remixOf, remixTitle, skeletonOf } from './remix';
+import { skeletonOf } from '../ir/spec';
+import { remixOf, remixTitle } from './remix';
 import { amendWorld, applyTool, minSize, pushWorld, redoWorld, resize, TOOLS, undoWorld, worldHistory } from './worldOps';
 
 const at = (x: number, y: number) => ({ x, y });

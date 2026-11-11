@@ -27,7 +27,7 @@ export function blankCreation(title: string): Omit<Creation, 'schemaVersion' | '
     status: 'draft',
     world: blankWorld(),
     objective: { reachGoal: true, collectAll: false },
-    programming: { allowedCommands: [...FREE_PLAY_CARDS], starterProgram: [] },
+    programming: { allowedCommands: [...FREE_PLAY_CARDS], starterProgram: [], ownNames: true },
     program: [],
   };
 }

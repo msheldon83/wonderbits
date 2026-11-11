@@ -33,6 +33,7 @@ import { functionContainerId, functionLabel, functionOfContainer, handlerContain
 import type { TraceEvent } from '../runtime/contract';
 import { cardLabel, COMMANDS, conditionLabel, describeNode, eventLabel, FunctionIcon, nodeLabel, placeWords, sourceWords, valueWords } from './commands';
 import { gapCentres, slotForY, type RowBox } from './geometry';
+import { OwnNames } from './OwnNames';
 import { conditionsFor, defaultCondition, paletteFor, type Programming } from './palette';
 
 export interface EditorProps {
@@ -72,6 +73,12 @@ export interface EditorProps {
   gateCodes?: Readonly<Record<string, number>>;
   /** The board's columns and rows, for Go to column and Go to row cards to choose from. */
   boardSize?: { width: number; height: number };
+  /** Creation mode: events a new When card may wait for. */
+  events?: readonly string[];
+  /** The level runs over several days: a new slot may go in the backpack. */
+  backpack?: boolean;
+  /** The names are someone else's: nothing is added or removed, though every value that fits is still on offer. */
+  lockNames?: boolean;
 }
 
 /** What is being carried to a gap: a palette card, a program block, or the cursor. */
@@ -120,7 +127,12 @@ export function Editor({
   gates = [],
   boardSize,
   gateCodes = {},
+  events = [],
+  backpack = false,
+  lockNames = false,
 }: EditorProps) {
+  /** Creation mode: the child adds and removes the program's named parts. */
+  const own = programming.ownNames === true && !readOnly && !lockNames;
   const locked = lockedProp || readOnly;
   const body = mainBody(program);
   const palette = paletteFor(programming, program);
@@ -158,6 +170,8 @@ export function Editor({
     );
   };
   const handlers = program.handlers;
+  /** True when a card somewhere calls the function, so it cannot be removed yet. */
+  const isCalled = (name: string) => [...walk(program)].some((v) => v.node.kind === 'call' && v.node.name === name);
   /** Functions and When cards: everything listed under the program. */
   const extras = functions.length + handlers.length;
 
@@ -959,7 +973,7 @@ export function Editor({
                 disabled={locked}
                 onChange={(e) => setParam(node.id, { condition: e.target.value as IRNode extends { condition: infer C } ? C : never })}
               >
-                {conditionsFor(programming).map((c) => (
+                {[...new Set([...conditionsFor(programming, memory), node.condition])].map((c) => (
                   <option key={c} value={c}>
                     {conditionLabel(c)}
                   </option>
@@ -1048,7 +1062,7 @@ export function Editor({
                 <code>
                   {m.name}: {kindWords(m)}
                 </code>
-                {programming.memoryOptions && !readOnly && (
+                {(programming.memoryOptions || own) && !readOnly && (
                   <button
                     type="button"
                     className="btn-icon memory-forget"
@@ -1102,7 +1116,7 @@ export function Editor({
             </span>
           </h2>
           <div className="palette-cards" ref={paletteRef}>
-            {palette.entries.map(({ command, name, remaining, available }) => {
+            {palette.entries.map(({ command, name, remaining, available, needs }) => {
               const info = COMMANDS[command];
               const label = cardLabel(command, name);
               const quota = remaining !== null ? `, ${remaining} left` : '';
@@ -1114,8 +1128,8 @@ export function Editor({
                   key={`${command}${name ? `:${name}` : ''}`}
                   type="button"
                   className={`card card-${command} ${drag?.carried.kind === 'palette' && drag.carried.command === command && drag.carried.name === name ? 'is-lifted' : ''} ${highlightCommand === command ? 'is-hinted' : ''}`}
-                  aria-label={`Add ${description}${quota}${highlightCommand === command ? ', the hint points here' : ''}`}
-                  title={resting ? 'Put the insert point in the program to use this card' : 'Tap to add at the insert point, or drag into the program'}
+                  aria-label={`Add ${description}${quota}${needs ? `. Remember ${needs} first` : ''}${highlightCommand === command ? ', the hint points here' : ''}`}
+                  title={needs ? `Remember ${needs} first, under Memory` : resting ? 'Put the insert point in the program to use this card' : 'Tap to add at the insert point, or drag into the program'}
                   disabled={locked || !available || resting}
                   onClick={() => tapCard(command, name)}
                   {...dragHandlers({ kind: 'palette', command, ...(name && { name }) })}
@@ -1182,7 +1196,7 @@ export function Editor({
               </p>
             )}
             {/* Choosing which slots to keep, on budget levels. The slots themselves show on the memory card above. */}
-            {programming.memoryOptions && !readOnly && renderMemory()}
+            {(programming.memoryOptions || (own && memory.length > 0)) && !readOnly && renderMemory()}
             {renderList(MAIN, 0)}
             {functions.map((f) => {
               const container: Container = { parent: functionContainerId(f.name), branch: 'body' };
@@ -1213,6 +1227,18 @@ export function Editor({
                       }}
                     >
                       {head}
+                    </button>
+                  )}
+                  {own && (
+                    <button
+                      type="button"
+                      className="btn-icon own-remove"
+                      disabled={locked || isCalled(f.name)}
+                      aria-label={isCalled(f.name) ? `${label} is used by a card, so it cannot be removed` : `Remove the function ${label}`}
+                      title={isCalled(f.name) ? 'Remove the cards that use it first' : 'Remove this function'}
+                      onClick={() => onEdit({ op: 'removeFunction', name: f.name })}
+                    >
+                      ×
                     </button>
                   )}
                   <div className="function-body">{renderList(container, 1)}</div>
@@ -1249,10 +1275,16 @@ export function Editor({
                       {head}
                     </button>
                   )}
+                  {own && (
+                    <button type="button" className="btn-icon own-remove" disabled={locked} aria-label={`Remove the card ${label}`} title="Remove this When card and the cards in it" onClick={() => onEdit({ op: 'removeHandler', event: h.event })}>
+                      ×
+                    </button>
+                  )}
                   <div className="function-body">{renderList(container, 1)}</div>
                 </section>
               );
             })}
+            {own && <OwnNames program={program} locked={locked} onEdit={onEdit} events={events} backpack={backpack} />}
           </div>
           {codePanel && showCode && <div className="program-code">{codePanel}</div>}
         </div>
@@ -1294,6 +1326,12 @@ function sourcesFor(kind: string, programming: Programming, memory: readonly Mem
   const items = memory.filter((m) => m.kind === 'list' && (m.of ?? 'number') === kind).flatMap((l) => indices.map((i) => itemOf(l.name, i)));
   // A field of a record slot, of the kind wanted: crate.number.
   const fields = memory.filter((m) => m.kind === 'record').flatMap((r) => Object.entries(r.fields ?? {}).flatMap(([f, k]) => (k === kind ? [fieldOf(r.name, f)] : [])));
+  // Where the child names the memory, every value that fits is on offer; the listed sources (random, the bird) add to them.
+  if (programming.ownNames) {
+    const { allowedSources: extra, ...open } = programming;
+    const extras = (extra ?? []).length > 0 ? ownSources(kind, programming, memory) : [];
+    return [...new Set([...ownSources(kind, open, memory), ...reads, ...lengths, ...fields, ...items, ...extras])];
+  }
   // Items only show where the level offers them, so earlier list levels keep their short menus.
   return [
     ...ownSources(kind, programming, memory),
@@ -1304,7 +1342,7 @@ function sourcesFor(kind: string, programming: Programming, memory: readonly Mem
 
 function ownSources(kind: string, programming: Programming, memory: readonly MemorySlot[]): Source[] {
   const all: Record<string, Source[]> = {
-    number: [0, 1, 2, 3, 'acorns'],
+    number: programming.ownNames ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 'acorns'] : [0, 1, 2, 3, 'acorns'],
     yesNo: [true, false, ...conditionsFor(programming).filter(isSenseId)],
     direction: ['N', 'E', 'S', 'W', 'facing'],
     position: ['here'],
