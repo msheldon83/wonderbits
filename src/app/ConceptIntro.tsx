@@ -12,7 +12,7 @@ import { randomIdFactory } from '../ir/ids';
 import { programFromSpec } from '../ir/program';
 import { cardsOfSpec, specAsksBird } from '../ir/spec';
 import type { CardId, NodeId } from '../ir/types';
-import type { BookEntry } from '../lessons/concepts';
+import { wordsOfIntroduction, type BookEntry } from '../lessons/concepts';
 import type { ProgressStore } from '../progress/store';
 import type { Settings } from '../progress/types';
 import { Board } from '../render/Board';
@@ -68,6 +68,8 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
     const specs = demo.before ? [demo.before, demo.program] : [demo.program];
     return specs.map((spec) => programFromSpec(spec, newId));
   }, [demo, newId]);
+  /** The concept's real words, the same for the old way and the new, so they stay put while the demo loops. */
+  const newWords = useMemo(() => wordsOfIntroduction(introduction), [introduction]);
   const [stage, setStage] = useState(0);
   const [folding, setFolding] = useState(false);
   const [activeNode, setActiveNode] = useState<NodeId | null>(null);
@@ -180,7 +182,7 @@ export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }
               errorNodeId={null}
               newId={newId}
               onEdit={() => undefined}
-              codePanel={<CodePanel program={program} activeNodeId={activeNode} {...(demo.world.team && { team: demo.world.team })} />}
+              codePanel={<CodePanel program={program} activeNodeId={activeNode} newWords={newWords} {...(demo.world.team && { team: demo.world.team })} />}
               aboveProgram={
                 <>
                   {demo.input && <KeyScript keys={demo.input} event={activeEvent} />}

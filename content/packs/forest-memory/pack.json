@@ -14,6 +14,12 @@
     "concept": "representation",
     "title": "Memory",
     "explanation": "The robot can only remember a few things, and each slot holds one kind: a number, a yes or no, a direction or a place. Places count from 0, like real code: the top left tile is column 0, row 0.",
+    "realWords": [
+      { "word": "variable", "code": "let", "text": "A memory slot is a variable: a named place that holds a value. The word let makes a new one. Then come its name, its type, and the value it starts with." },
+      { "word": "type", "code": "number", "text": "The word after the colon is the variable's type: the kind of value it may hold. number means numbers only. TypeScript checks types before the program runs, so the wrong kind is caught early." },
+      { "word": "boolean", "code": "boolean", "text": "A yes or no value is called a boolean. In code, yes is written true and no is written false. Every condition in an if or a while is a boolean." },
+      { "word": "assignment", "code": "=", "text": "One equals sign does not ask a question. It takes the value on its right and puts it in the variable on its left. That is called assigning, and the value that was there before is gone." }
+    ],
     "demo": {
       "world": {
         "rows": [

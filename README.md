@@ -45,7 +45,8 @@ random generator; Reading the map, coordinates and a finger on the map;
 Two scoreboards, values worked out instead of stored; Overnight, levels of
 several days with a backpack kept overnight; The notebook, records of named
 fields; Robot team, robots built from one blueprint), a show-first introduction before
-each new concept, a card book to watch them again, a memory card under the
+each new concept, the real words programmers use under the code (tap `for`
+to learn it is a loop), a card book to watch them again, a memory card under the
 board wherever the world or the robot's memory can change, prediction of
 the tile and of the memory card, validators in CI, three-rung hint ladders,
 the level map with stars and badges, progress in IndexedDB, and an

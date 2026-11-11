@@ -14,6 +14,10 @@
     "concept": "persistence",
     "title": "Save it",
     "explanation": "Each night the robot forgets everything except what is in its backpack. A slot in the backpack keeps its value until tomorrow.",
+    "realWords": [
+      { "word": "save", "code": "backpack.save", "text": "Variables are forgotten when a program stops. Saving copies a value to somewhere that lasts, like a file or a database. Data that lasts is called persistent. The name in quotes is the key to find it again." },
+      { "word": "load", "code": "backpack.load", "text": "Loading reads a saved value back by its key. The second argument is the default: the value to use the first time, when nothing has been saved yet." }
+    ],
     "demo": {
       "world": {
         "rows": [

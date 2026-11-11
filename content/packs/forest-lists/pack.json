@@ -14,6 +14,13 @@
     "concept": "lists",
     "title": "Lists",
     "explanation": "A list keeps many things in order. You can add to the end of it, go through it one thing at a time, or read one item by its index: counted from 0, so item 0 is the first.",
+    "realWords": [
+      { "word": "array", "code": "[]", "text": "A list is called an array. Square brackets make one: [] is an array with nothing in it yet, and boolean[] is the type of an array of booleans." },
+      { "word": "push", "code": ".push", "text": "push adds one item to the end of an array, so the array grows by one. The item to add goes in the round brackets." },
+      { "word": "for of loop", "code": "of", "text": "for (way of route) is a loop that goes through an array one item at a time. Each time round, way holds the next item, and the loop ends after the last one." },
+      { "word": "index", "code": "[0]", "text": "The number in square brackets is an index: an item's place in the array. Indexes count from 0, so route[0] is the first item and route[1] is the second." },
+      { "word": "length", "code": ".length", "text": "length is how many items an array holds right now. The last item's index is always one less than the length, because indexes start at 0." }
+    ],
     "demo": {
       "world": {
         "rows": [

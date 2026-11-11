@@ -14,6 +14,10 @@
     "concept": "randomness",
     "title": "Random",
     "explanation": "A random card picks a value by chance, like rolling a die. Run it again and you get a new roll.",
+    "realWords": [
+      { "word": "return value", "code": "coinFlip", "text": "coinFlip() does not move the robot. It hands back a value, true or false, and the equals sign puts it in a variable. What a function hands back is called its return value." },
+      { "word": "arguments", "code": "random", "text": "The values in a call's round brackets are arguments: what the function needs to know to do its job. random(1, 6) needs the lowest and the highest number it may pick." }
+    ],
     "demo": {
       "world": {
         "rows": [

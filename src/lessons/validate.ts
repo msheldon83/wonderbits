@@ -15,6 +15,8 @@ import { valueFits } from './parse';
 import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 import { cardsTeaching } from './concepts';
 import { cardOfSpec, resolveSpecPath } from './paths';
+import { printProgram } from '../projection/printTs';
+import { codeHas } from './realWords';
 import type { ConceptIntroduction, PackManifest, PuzzleDefinition } from './types';
 
 export interface ValidationReport {
@@ -629,6 +631,47 @@ export function validatePack(pack: PackManifest, all: readonly PackManifest[]): 
     }
     validateIntroduction(pack.introduction, errors);
   }
+  return errors;
+}
+
+/** A real word's text stays short enough for a 9-year-old to read under the code. */
+export const REAL_WORD_TEXT_MAX = 260;
+
+/** A program as the code panel prints it, for checking the real words against. */
+function codeOfSpec(spec: readonly NodeSpec[], world: WorldDefinition): string {
+  return printProgram(programFromSpec(spec, sequentialIdFactory()), world.team ? { team: world.team } : {});
+}
+
+/**
+ * The real words of a pack's introduction name code the child will truly
+ * see: each word's piece of code is printed by the demo or by one of the
+ * pack's own reference solutions, and no two words, in this pack or any
+ * other, claim the same piece of code.
+ */
+export function validateRealWords(pack: PackManifest, levels: readonly PuzzleDefinition[], all: readonly PackManifest[]): string[] {
+  const errors: string[] = [];
+  const intro = pack.introduction;
+  if (!intro?.realWords) return errors;
+  const sources = [codeOfSpec(intro.demo.program, intro.demo.world), ...levels.map((l) => codeOfSpec(l.referenceSolution, l.world))];
+  const claimed = new Map<string, string>();
+  for (const other of all) {
+    if (other.id === pack.id) continue;
+    for (const w of other.introduction?.realWords ?? []) if (w.code !== undefined) claimed.set(w.code, other.id);
+  }
+  const mine = new Set<string>();
+  const names = new Set<string>();
+  intro.realWords.forEach((w, i) => {
+    const at = `introduction.realWords[${i}]`;
+    if (names.has(w.word)) errors.push(`${at}: the word "${w.word}" is listed twice`);
+    names.add(w.word);
+    if (w.text.length > REAL_WORD_TEXT_MAX) errors.push(`${at}: text is ${w.text.length} characters; keep it to ${REAL_WORD_TEXT_MAX}`);
+    if (w.code === undefined) return;
+    if (mine.has(w.code)) errors.push(`${at}: the code "${w.code}" is explained twice in this pack`);
+    mine.add(w.code);
+    const owner = claimed.get(w.code);
+    if (owner) errors.push(`${at}: the code "${w.code}" is already explained by pack "${owner}"`);
+    if (!sources.some((src) => codeHas(src, w.code!))) errors.push(`${at}: the code "${w.code}" is never printed by this pack's demo or its reference solutions`);
+  });
   return errors;
 }
 

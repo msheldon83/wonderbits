@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
-import { introductionBefore } from '../lessons/concepts';
+import { introductionBefore, realWordsOf } from '../lessons/concepts';
+import { RealWordsContext } from '../editor/CodePanel';
 import { CreateScreen } from '../create/CreateScreen';
 import { CreationScreen } from '../create/CreationScreen';
 import { FREE_PLAY_CARDS } from '../create/blank';
@@ -78,6 +79,12 @@ export function App() {
     else if (route.screen === 'map') cameFrom.current = 'map';
   }, [route]);
 
+  /** The real words the code panel may offer: those of every concept whose island is open, the newest concept first. */
+  const metWords = useMemo(
+    () => realWordsOf(book.filter((e) => store.isUnlocked(e.firstLevelId)).reverse()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [book, store, snap],
+  );
   /** Board tools from a pack not finished yet point at it. Nothing is locked. */
   const switchPack = choices.filter((c) => c.packId === 'forest-switches');
   const gateSign = switchPack[0] && !switchPack.every((c) => store.levelProgress(c.level.id).stars.complete) ? { pack: switchPack[0].packTitle, href: hashFor({ screen: 'map', packId: switchPack[0].packId }) } : undefined;
@@ -98,6 +105,7 @@ export function App() {
   }
 
   return (
+    <RealWordsContext.Provider value={metWords}>
     <div className={`app screen-${route.screen}`}>
       <header className="app-header">
         <a className="brand" href={hashFor({ screen: 'map' })}>
@@ -180,5 +188,6 @@ export function App() {
         />
       )}
     </div>
+    </RealWordsContext.Provider>
   );
 }

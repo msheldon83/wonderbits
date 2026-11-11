@@ -26,7 +26,10 @@ export function CardBookScreen({ book, store, from }: { book: BookEntry[]; store
                 <h2 className="book-entry-title">{entry.introduction.title}</h2>
                 <p className="book-entry-pack">{entry.packTitle}</p>
                 {open ? (
-                  <p className="book-entry-explanation">{entry.introduction.explanation}</p>
+                  <>
+                    <p className="book-entry-explanation">{entry.introduction.explanation}</p>
+                    {entry.introduction.realWords && <p className="book-entry-words">In real code: {entry.introduction.realWords.map((w) => w.word).join(', ')}</p>}
+                  </>
                 ) : (
                   <p className="book-entry-explanation">Reach the {entry.packTitle} island to open this card.</p>
                 )}

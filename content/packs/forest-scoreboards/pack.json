@@ -14,6 +14,9 @@
     "concept": "derived",
     "title": "Work it out",
     "explanation": "A number you copy and keep by hand can go out of date. The robot always knows what is in its pocket, and the bird flying over the board sees all of it: ask them right when you need a number.",
+    "realWords": [
+      { "word": "derived value", "text": "A value worked out from other values is a derived value. Programmers try to store each fact in one place only, called the single source of truth, and work everything else out from it." }
+    ],
     "demo": {
       "world": {
         "rows": [

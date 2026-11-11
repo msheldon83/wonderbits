@@ -5,7 +5,7 @@
 import { slotOfSpec, type NodeSpec } from '../ir/spec';
 import { FUNCTION_NAME, isCardId, isCommandId, isConditionId, isEventId, isSenseId, KEYS, BOARD_MAPS, parseItem, parseLength, parseRandom, parseRead, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, VALUE_KINDS, type CardId, type ConditionId, type ItemKind, type Key, type ListOf, parseField, type Source, type Value, type ValueKind } from '../ir/types';
 import { FACINGS, type Cell, type Facing, type Gate, type Mover, type ObjectiveDefinition, type Plate, type Switch, type Teammate, type TileKind, type WorldDefinition } from '../sim/types';
-import { CONTENT_SCHEMA_VERSION, type MemoryField, type Activity, type ConceptIntroduction, type HintPath, type HintStep, type PackManifest, type PuzzleDefinition } from './types';
+import { CONTENT_SCHEMA_VERSION, type MemoryField, type Activity, type ConceptIntroduction, type HintPath, type HintStep, type PackManifest, type PuzzleDefinition, type RealWord } from './types';
 
 /** True when a value is of a slot's kind: a list's items of its item kind, a record's fields of its shape. */
 export function valueFits(v: unknown, kind: ValueKind, of?: ListOf, fields?: Record<string, ItemKind>): boolean {
@@ -382,6 +382,20 @@ class Reader {
     }
     return v.map((x, i) => this.str(x, `${path}[${i}]`));
   }
+  realWords(v: unknown, path: string): RealWord[] {
+    if (!Array.isArray(v)) {
+      this.fail(path, 'expected an array of real words');
+      return [];
+    }
+    return v.map((x, i) => {
+      const o = this.obj(x, `${path}[${i}]`);
+      return {
+        word: this.str(o.word, `${path}[${i}].word`),
+        ...(o.code !== undefined && { code: this.str(o.code, `${path}[${i}].code`) }),
+        text: this.str(o.text, `${path}[${i}].text`),
+      };
+    });
+  }
   introduction(v: unknown, path: string): ConceptIntroduction {
     const o = this.obj(v, path);
     const demo = this.obj(o.demo, `${path}.demo`);
@@ -389,6 +403,7 @@ class Reader {
       concept: this.str(o.concept, `${path}.concept`),
       title: this.str(o.title, `${path}.title`),
       explanation: this.str(o.explanation, `${path}.explanation`),
+      ...(o.realWords !== undefined && { realWords: this.realWords(o.realWords, `${path}.realWords`) }),
       demo: {
         world: this.world(demo.world, `${path}.demo.world`),
         program: this.spec(demo.program, `${path}.demo.program`),

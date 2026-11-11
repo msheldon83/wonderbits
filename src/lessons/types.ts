@@ -102,6 +102,20 @@ export interface PuzzleDefinition {
 }
 
 /**
+ * What programmers call something the child has just used: the real word,
+ * the piece of TypeScript it names, and a sentence or two in kid terms that
+ * tie the card to the code.
+ */
+export interface RealWord {
+  /** The word a programmer would say, such as "loop". */
+  word: string;
+  /** The piece of printed TypeScript the word names, such as "for". Absent when the word names an idea and not a piece of code. */
+  code?: string;
+  /** Card to code, in kid terms. */
+  text: string;
+}
+
+/**
  * How a pack introduces its concept: show before tell. The demo is a tiny
  * board and a program the robot plays on it, over and over, with the cards
  * lighting up and the same program printed as code beside them. When the
@@ -116,6 +130,8 @@ export interface ConceptIntroduction {
   title: string;
   /** One sentence in kid terms, shown beside the new card. */
   explanation: string;
+  /** The real words this concept brings, shown under the code. */
+  realWords?: RealWord[];
   demo: {
     world: WorldDefinition;
     /** The program that shows the new idea. It must reach the flag. */

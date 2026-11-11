@@ -14,6 +14,10 @@
     "concept": "input",
     "title": "Keys",
     "explanation": "Each key can have its own When card.",
+    "realWords": [
+      { "word": "input", "code": "'keyPressed'", "text": "Input is anything that comes into a program from outside while it runs: a key, a tap, a mouse click. Each key press arrives as an event, so each key gets a robot.on of its own." },
+      { "word": "string", "text": "Text inside quote marks is called a string. 'keyPressed' and 'right' are strings: the code passes them along as words, and does not run them as instructions." }
+    ],
     "demo": {
       "world": {
         "rows": [
