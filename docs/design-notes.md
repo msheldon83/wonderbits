@@ -150,6 +150,17 @@ Real lists count from 0, and so does the coordinate plane children meet in
   a list with a counter from 0, stopping at its length).
 - **Grids print as real indexing.** `walls[spot.y][spot.x]`, row first:
   a grid is a list of rows. The `at()` and `put()` helpers are gone.
+- **The finger is drawn on the board.** On levels with Move finger, each
+  place slot shows as a purple hand on the tile it points at, moving as the
+  run plays. Reading the map now ramps up to it: Point at it (move the
+  finger onto an acorn), Point and look (read the map under it), Look
+  before you go (one read and an If, on two shuffles), then Gap in the wall.
+- **Mark gets its own level.** Number the tiles writes each tile's column
+  onto a grid before Minesweeper uses Mark. Minesweeper now explains the
+  game and starts with the loop that counts the rock above each tile; the
+  child adds the tile below and the Mark.
+- **Set offers only slots it can fill.** Grids and slots with nothing on
+  offer are left out, and a new Set card starts on one it can fill.
 - **Run plays every shuffle.** On a shuffled level, Run plays the program
   on the board on screen, then repaints the board for each other version
   and plays it there too, until one fails; the message names the shuffle

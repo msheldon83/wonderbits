@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "id": "g11-number-the-tiles",
+  "title": "Number the tiles",
+  "intro": "A new card: Mark writes a slot's value onto a grid, on the tile where the robot stands. Walk along the row, and on each tile mark its column number onto steps.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false,
+    "memory": {
+      "steps": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
+      ]
+    }
+  },
+  "curriculum": {
+    "concept": "grids",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "mark",
+      "change",
+      "goColumn",
+      "repeat"
+    ],
+    "maxInstructions": 4,
+    "maxPerCommand": {
+      "mark": 1,
+      "goColumn": 1
+    },
+    "starterProgram": [
+      {
+        "remember": "steps",
+        "kind": "grid",
+        "of": "number",
+        "start": [
+          [
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ]
+      },
+      {
+        "remember": "col",
+        "kind": "number",
+        "start": 0
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        }
+      ],
+      "text": "Column 1 should get a 1 on steps, column 2 a 2, and so on."
+    },
+    {
+      "kind": "card",
+      "command": "mark",
+      "text": "Each go: add 1 to col, go to column col, then Mark col on steps here."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        0
+      ],
+      "slot": 2,
+      "command": "mark",
+      "text": "Last in the loop: Mark."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "steps",
+      "kind": "grid",
+      "of": "number",
+      "start": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "remember": "col",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "repeat": 4,
+      "do": [
+        {
+          "change": "col",
+          "by": 1
+        },
+        {
+          "goColumn": "col"
+        },
+        {
+          "mark": "steps",
+          "at": "here",
+          "with": "col"
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "g10-minesweeper",
   "title": "Minesweeper",
-  "intro": "Walk the middle row. On each of the first four tiles, count the rocks above and below, and mark the number in counts.",
+  "intro": "In Minesweeper, a tile's number says how many rocks touch it. Here, count the rocks just above and below. The loop already walks row 1 and counts the rock above each tile. Count the rock below too, then Mark n onto counts.",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -56,51 +56,29 @@
   },
   "programming": {
     "allowedCommands": [
-      "forward",
-      "rotateCW",
-      "rotateCCW",
       "set",
       "if",
       "change",
+      "shift",
       "repeat",
-      "mark"
+      "mark",
+      "goColumn"
     ],
     "allowedConditions": [
-      "slot:wall=yes"
+      "slot:rock=yes"
     ],
     "allowedSources": [
       0,
-      "read:walls@ahead"
+      "here",
+      "read:walls@spot"
     ],
-    "maxInstructions": 15,
+    "maxInstructions": 16,
     "starterProgram": [
       {
         "remember": "walls",
         "kind": "grid",
         "of": "yesNo",
-        "start": [
-          [
-            true,
-            false,
-            true,
-            true,
-            false
-          ],
-          [
-            false,
-            false,
-            false,
-            false,
-            false
-          ],
-          [
-            true,
-            true,
-            false,
-            true,
-            false
-          ]
-        ]
+        "start": "board:walls"
       },
       {
         "remember": "counts",
@@ -131,7 +109,15 @@
         ]
       },
       {
-        "remember": "wall",
+        "remember": "spot",
+        "kind": "position",
+        "start": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "remember": "rock",
         "kind": "yesNo",
         "start": false
       },
@@ -139,6 +125,48 @@
         "remember": "n",
         "kind": "number",
         "start": 0
+      },
+      {
+        "remember": "col",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "repeat": 4,
+        "do": [
+          {
+            "set": "n",
+            "to": 0
+          },
+          {
+            "set": "spot",
+            "to": "here"
+          },
+          {
+            "shift": "spot",
+            "dir": "N"
+          },
+          {
+            "set": "rock",
+            "to": "read:walls@spot"
+          },
+          {
+            "if": "slot:rock=yes",
+            "do": [
+              {
+                "change": "n",
+                "by": 1
+              }
+            ]
+          },
+          {
+            "change": "col",
+            "by": 1
+          },
+          {
+            "goColumn": "col"
+          }
+        ]
       }
     ]
   },
@@ -155,21 +183,21 @@
           "y": 2
         }
       ],
-      "text": "Above and below the first tile: two rocks."
+      "text": "Column 0 has a rock above and a rock below: its number is 2."
     },
     {
       "kind": "card",
-      "command": "mark",
-      "text": "Each go: start n at 0, look up, look down, turn back, mark n, step."
+      "command": "shift",
+      "text": "The finger is on the tile above. Move it down twice to reach the tile below, read it, and count it like the one above."
     },
     {
       "kind": "fill",
       "path": [
         0
       ],
-      "slot": 0,
-      "command": "set",
-      "text": "Each tile starts counting from 0."
+      "slot": 5,
+      "command": "shift",
+      "text": "Right after counting the rock above: move the finger down."
     }
   ],
   "referenceSolution": [
@@ -177,29 +205,7 @@
       "remember": "walls",
       "kind": "grid",
       "of": "yesNo",
-      "start": [
-        [
-          true,
-          false,
-          true,
-          true,
-          false
-        ],
-        [
-          false,
-          false,
-          false,
-          false,
-          false
-        ],
-        [
-          true,
-          true,
-          false,
-          true,
-          false
-        ]
-      ]
+      "start": "board:walls"
     },
     {
       "remember": "counts",
@@ -230,12 +236,25 @@
       ]
     },
     {
-      "remember": "wall",
+      "remember": "spot",
+      "kind": "position",
+      "start": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "remember": "rock",
       "kind": "yesNo",
       "start": false
     },
     {
       "remember": "n",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "col",
       "kind": "number",
       "start": 0
     },
@@ -246,13 +265,20 @@
           "set": "n",
           "to": 0
         },
-        "rotateCCW",
         {
-          "set": "wall",
-          "to": "read:walls@ahead"
+          "set": "spot",
+          "to": "here"
         },
         {
-          "if": "slot:wall=yes",
+          "shift": "spot",
+          "dir": "N"
+        },
+        {
+          "set": "rock",
+          "to": "read:walls@spot"
+        },
+        {
+          "if": "slot:rock=yes",
           "do": [
             {
               "change": "n",
@@ -260,14 +286,20 @@
             }
           ]
         },
-        "rotateCW",
-        "rotateCW",
         {
-          "set": "wall",
-          "to": "read:walls@ahead"
+          "shift": "spot",
+          "dir": "S"
         },
         {
-          "if": "slot:wall=yes",
+          "shift": "spot",
+          "dir": "S"
+        },
+        {
+          "set": "rock",
+          "to": "read:walls@spot"
+        },
+        {
+          "if": "slot:rock=yes",
           "do": [
             {
               "change": "n",
@@ -275,18 +307,22 @@
             }
           ]
         },
-        "rotateCCW",
         {
           "mark": "counts",
           "at": "here",
           "with": "n"
         },
-        "forward"
+        {
+          "change": "col",
+          "by": 1
+        },
+        {
+          "goColumn": "col"
+        }
       ]
     }
   ],
   "stars": {
-    "noHints": true,
-    "budget": 14
+    "noHints": true
   }
 }

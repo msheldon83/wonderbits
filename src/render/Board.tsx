@@ -21,6 +21,8 @@ export interface BoardProps {
   onTileTap?: (cell: Cell) => void;
   /** The child's flags: the one placed now, and earlier wrong guesses. */
   marks?: { cell: Cell; state: 'pending' | 'right' | 'wrong' }[];
+  /** Fingers on the map: place slots, drawn as a pointing hand on the tile each one holds. */
+  pointers?: { name: string; cell: Cell }[];
   /** Cells a hint is pointing at. */
   highlightCells?: Cell[];
   /** Hide the next-tile ghost, for prediction levels before the guess is made. */
@@ -31,7 +33,7 @@ export interface BoardProps {
   coordinates?: boolean;
 }
 
-export function Board({ world, theme, motion, label, onControllers, robotCount = 1, maxScale = 1.6, onTileTap, marks = [], highlightCells, hideIndicator = false, hideGoal = false, coordinates = false }: BoardProps) {
+export function Board({ world, theme, motion, label, onControllers, robotCount = 1, maxScale = 1.6, onTileTap, marks = [], pointers = [], highlightCells, hideIndicator = false, hideGoal = false, coordinates = false }: BoardProps) {
   const layout = useMemo(() => layoutFor(world, coordinates), [world, coordinates]);
   const viewport = useRef<HTMLDivElement>(null);
   const robotEls = useRef<Partial<RobotElements>[]>([]);
@@ -269,7 +271,7 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
   // a red ring with a cross, left on the board until the next fresh start.
   const markerEls = marks.map((m) => {
     const q = toScreen(layout, m.cell);
-    const where = `column ${m.cell.x + 1}, row ${m.cell.y + 1}`;
+    const where = `column ${m.cell.x}, row ${m.cell.y}`;
     return (
       <Anchored
         key={`m${cellKey(m.cell)}-${m.state}`}
@@ -291,6 +293,25 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
       </Anchored>
     );
   });
+
+  // A finger on the map: a dashed ring and a pointing hand on the tile a place slot holds, with the slot's name.
+  // The robot does not move with it; off the board there is nothing to point at.
+  const pointerEls = pointers
+    .filter((p) => p.cell.x >= 0 && p.cell.y >= 0 && p.cell.x < world.width && p.cell.y < world.height)
+    .map((p) => {
+      const q = toScreen(layout, p.cell);
+      return (
+        <Anchored key={`f${p.name}`} x={q.x} y={q.y} size={TILE} z={LAYER.effect} className="board-pointer" label={`${p.name} points at column ${p.cell.x}, row ${p.cell.y}`}>
+          <rect x={-TILE / 2 + 5} y={-TILE / 2 + 5} width={TILE - 10} height={TILE - 10} rx={14} fill="rgba(124, 77, 255, 0.12)" stroke="#7c4dff" strokeWidth={4} strokeDasharray="10 7" />
+          <g transform={`translate(${TILE / 2 - 30} ${TILE / 2 - 34}) scale(1.15)`}>
+            <path d="M6 22v-11a3 3 0 0 1 6 0v-9a3 3 0 0 1 6 0v17c0 3-2 5-5 5h-3c-2 0-4-1-4-2z" fill="#fff" stroke="#7c4dff" strokeWidth={2.4} strokeLinejoin="round" />
+          </g>
+          <text x={0} y={-TILE / 2 + 22} textAnchor="middle" fontSize={16} fontWeight={800} fill="#5b2fd6">
+            {p.name}
+          </text>
+        </Anchored>
+      );
+    });
 
   const tileButtons =
     onTileTap &&
@@ -393,6 +414,7 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
             </div>
           ))}
           {markerEls}
+          {pointerEls}
           {tileButtons}
           {coordinates && (
             <>

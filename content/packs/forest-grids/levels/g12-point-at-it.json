@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "id": "g12-point-at-it",
+  "title": "Point at it",
+  "intro": "A new card: Move finger. spot is a finger on the map, the purple hand on the board. Moving it moves only the finger: the robot stays where it is. Point spot at the acorn.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....",
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 0,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 3,
+        "y": 1
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": false,
+    "collectAll": false,
+    "memory": {
+      "spot": {
+        "x": 3,
+        "y": 1
+      }
+    }
+  },
+  "curriculum": {
+    "concept": "grids",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "shift"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": [
+      {
+        "remember": "spot",
+        "kind": "position",
+        "start": {
+          "x": 0,
+          "y": 0
+        }
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 1
+        }
+      ],
+      "text": "The acorn is at column 3, row 1. The finger starts at column 0, row 0."
+    },
+    {
+      "kind": "card",
+      "command": "shift",
+      "text": "Each Move finger moves spot one tile: right three times, down once."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "shift",
+      "text": "Start by moving spot right."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "spot",
+      "kind": "position",
+      "start": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "shift": "spot",
+      "dir": "E"
+    },
+    {
+      "shift": "spot",
+      "dir": "E"
+    },
+    {
+      "shift": "spot",
+      "dir": "E"
+    },
+    {
+      "shift": "spot",
+      "dir": "S"
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

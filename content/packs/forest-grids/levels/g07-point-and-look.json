@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "g07-point-and-look",
   "title": "Point and look",
-  "intro": "spot is a finger on the map: moving it does not move the robot. Where does it end up, and is there a rock there?",
+  "intro": "Now the finger reads the map. spot moves two tiles right, then Set reads the map where spot points. Watch the purple hand: is there a rock under it?",
   "themeId": "forest",
   "world": {
     "rows": [
