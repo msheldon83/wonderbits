@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "o02-pack-the-backpack",
   "title": "Pack the backpack",
-  "intro": "The lock wants 4 acorns, and the robot gets 2 a day. Remember one slot: which one lasts until tomorrow?",
+  "intro": "The lock wants 6 acorns, and the robot finds 2 a day. Even adding 2 for every acorn, one day is not enough. Remember one slot: which one lasts until tomorrow?",
   "themeId": "forest",
   "world": {
     "rows": [
@@ -33,7 +33,7 @@
         "x": 3,
         "y": 0,
         "open": false,
-        "code": 4
+        "code": 6
       }
     ]
   },
@@ -55,7 +55,7 @@
     "allowedConditions": [
       "pathAhead"
     ],
-    "maxInstructions": 8,
+    "maxInstructions": 7,
     "maxMemory": 1,
     "memoryOptions": [
       {
@@ -86,7 +86,7 @@
       }
     ]
   },
-  "days": 2,
+  "days": 3,
   "hints": [
     {
       "kind": "region",
@@ -96,7 +96,7 @@
           "y": 0
         }
       ],
-      "text": "The lock wants 4, but there are only 2 acorns a day."
+      "text": "The lock wants 6, but there are only 2 acorns a day: it takes three days."
     },
     {
       "kind": "card",
