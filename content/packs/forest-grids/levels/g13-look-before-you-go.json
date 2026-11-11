@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "id": "g13-look-before-you-go",
+  "title": "Look before you go",
+  "intro": "A rock sits in column 3, in row 0 or row 1: it changes each shuffle. spot already points at column 3, row 0. Read the map there: if it says rock, go round by row 1.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...#..",
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "grids",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "set",
+      "if",
+      "goRow",
+      "goColumn"
+    ],
+    "allowedConditions": [
+      "slot:rock=yes"
+    ],
+    "allowedSources": [
+      "read:walls@spot"
+    ],
+    "maxInstructions": 6,
+    "starterProgram": [
+      {
+        "remember": "walls",
+        "kind": "grid",
+        "of": "yesNo",
+        "start": "board:walls"
+      },
+      {
+        "remember": "spot",
+        "kind": "position",
+        "start": {
+          "x": 3,
+          "y": 0
+        }
+      },
+      {
+        "remember": "rock",
+        "kind": "yesNo",
+        "start": false
+      }
+    ]
+  },
+  "shuffles": [
+    {
+      "rows": [
+        "......",
+        "...#.."
+      ]
+    }
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 1
+        }
+      ],
+      "text": "The rock is in one of these two tiles. The finger points at the top one."
+    },
+    {
+      "kind": "card",
+      "command": "if",
+      "text": "Set rock to walls at spot. If rock is yes, go to row 1 before going along."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 1,
+      "command": "if",
+      "text": "Second: an If on rock."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "walls",
+      "kind": "grid",
+      "of": "yesNo",
+      "start": "board:walls"
+    },
+    {
+      "remember": "spot",
+      "kind": "position",
+      "start": {
+        "x": 3,
+        "y": 0
+      }
+    },
+    {
+      "remember": "rock",
+      "kind": "yesNo",
+      "start": false
+    },
+    {
+      "set": "rock",
+      "to": "read:walls@spot"
+    },
+    {
+      "if": "slot:rock=yes",
+      "do": [
+        {
+          "goRow": 1
+        }
+      ]
+    },
+    {
+      "goColumn": 5
+    },
+    {
+      "goRow": 0
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

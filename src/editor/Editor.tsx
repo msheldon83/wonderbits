@@ -139,6 +139,8 @@ export function Editor({
   const functions = functionsOf(program);
   const memory = memoryOf(program);
   const usedSlots = slotsInUse(program);
+  /** A slot a Set card can fill: one of a single value, with something on offer to put in it. */
+  const settable = (m: MemorySlot) => m.kind !== 'list' && m.kind !== 'grid' && sourcesFor(m.kind, programming, memory).length > 0;
   /** A picker of slots of some kinds, for a memory card. */
   const slotSelect = (label: string, value: string, kinds: readonly string[], onPick: (name: string) => void) => {
     const names = memory.filter((m) => kinds.includes(m.kind)).map((m) => m.name);
@@ -245,7 +247,7 @@ export function Editor({
       case 'call':
         return { id: newId(), kind: 'call', name: name ?? functions[0]?.name ?? MAIN_PROCEDURE };
       case 'set': {
-        const slot = memory.find((m) => m.kind !== 'list');
+        const slot = memory.find((m) => settable(m));
         return { id: newId(), kind: 'set', slot: slot?.name ?? 'count', to: slot ? (sourcesFor(slot.kind, programming, memory)[0] ?? 0) : 0 };
       }
       case 'change':
@@ -761,7 +763,7 @@ export function Editor({
           )}
           {node.kind === 'set' && (
             <span className="block-param block-condition">
-              {slotSelect(`Which slot, step ${number}`, node.slot, ['number', 'yesNo', 'direction', 'position'], (slot) => {
+              {slotSelect(`Which slot, step ${number}`, node.slot, [...new Set(memory.filter(settable).map((m) => m.kind))], (slot) => {
                 const kind = memory.find((m) => m.name === slot)?.kind ?? 'number';
                 setParam(node.id, { slot, to: sourcesFor(kind, programming, memory)[0] ?? 0 });
               })}

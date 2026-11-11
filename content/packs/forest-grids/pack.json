@@ -51,9 +51,12 @@
     "g04-stepping-stones",
     "g05-every-other-column",
     "g06-mow-the-field",
+    "g12-point-at-it",
     "g07-point-and-look",
+    "g13-look-before-you-go",
     "g08-gap-in-the-wall",
     "g09-count-the-acorns",
+    "g11-number-the-tiles",
     "g10-minesweeper"
   ]
 }

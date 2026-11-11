@@ -510,6 +510,14 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
     ...wrongGuesses.map((cell) => ({ cell, state: 'wrong' as const })),
     ...(prediction?.cell ? [{ cell: prediction.cell, state: guessedRight ? ('right' as const) : ('pending' as const) }] : []),
   ];
+  /** On finger levels, each place slot is drawn on the board where it points, moving as the run plays. */
+  const fingerState = shownState ?? initialState(world, program.memory);
+  const pointers = level.programming.allowedCommands.includes('shift')
+    ? (program.memory ?? []).flatMap((m) => {
+        const v = fingerState.memory?.[m.name];
+        return m.kind === 'position' && v && typeof v === 'object' && !Array.isArray(v) ? [{ name: m.name, cell: v }] : [];
+      })
+    : [];
   const starSlots: { key: keyof Stars; label: string }[] = [
     { key: 'complete', label: 'Reached the flag' },
     { key: 'noHints', label: 'No hints' },
@@ -528,6 +536,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo }:
           onControllers={onControllers}
           onTileTap={predicting && asksTile && phase === 'editing' ? (cell) => setPrediction((p) => ({ ...p, cell })) : undefined}
           marks={marks}
+          pointers={pointers}
           highlightCells={hint?.cells}
           hideIndicator={predicting}
           hideGoal={(predicting && asksTile) || !level.objective.reachGoal}

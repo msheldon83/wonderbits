@@ -1301,7 +1301,7 @@ button.function-head {
   bottom: -9px;
   width: 16px;
   height: 16px;
-  margin-left: -8px;
+  margin-left: calc(-8px + var(--tail-shift, 0px));
   background: inherit;
   transform: rotate(45deg);
   border-radius: 3px;

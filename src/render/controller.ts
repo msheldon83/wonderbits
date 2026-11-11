@@ -231,7 +231,11 @@ export class BoardController implements Player {
     const p = toScreen(this.layout, robot);
     bubble.textContent = text;
     bubble.dataset.tone = tone;
-    const base = `translate(${p.x}px, ${p.y - TILE * 0.62}px) translate(-50%, -100%)`;
+    // Keep a wide bubble on the stage: slide it in from the edge, and point its tail back at the robot.
+    const half = bubble.offsetWidth / 2;
+    const x = half > 0 ? Math.min(Math.max(p.x, half + 4), this.layout.stageW - half - 4) : p.x;
+    bubble.style.setProperty('--tail-shift', `${p.x - x}px`);
+    const base = `translate(${x}px, ${p.y - TILE * 0.62}px) translate(-50%, -100%)`;
     if (this.motion.reducedMotion) {
       bubble.style.transform = base;
       bubble.style.opacity = '1';
