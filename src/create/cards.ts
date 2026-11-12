@@ -4,10 +4,19 @@
  * child adds to their program.
  */
 import { functionNames, memoryOf } from '../ir/program';
-import type { CardId, MemorySlot, ProgramIR } from '../ir/types';
+import type { CardId, MemorySlot, ProgramIR, Source } from '../ir/types';
+import type { Creation } from './types';
 
 /** Every card a creation may offer a player. Unlock, Mark and Move the finger need parts a child cannot make yet. */
 export const CREATION_CARDS: readonly CardId[] = ['forward', 'rotateCW', 'rotateCCW', 'wait', 'repeat', 'if', 'ifElse', 'until', 'call', 'set', 'change', 'face', 'push', 'forEach', 'fly', 'goRow', 'goColumn', 'openGate', 'closeGate'];
+
+/** Random values every creation's Set card offers: a small roll, a die, a digit, a coin and a random way. */
+export const CREATION_SOURCES: readonly Source[] = ['random:1-3', 'random:1-6', 'random:0-9', 'coin', 'randomWay'];
+
+/** A creation's rules with creation mode's own on: names of the child's own, and the random values. */
+export function withCreationRules(programming: Creation['programming']): Creation['programming'] {
+  return { ...programming, allowedSources: [...new Set([...(programming.allowedSources ?? []), ...CREATION_SOURCES])], ownNames: true };
+}
 
 /** The cards that work on a slot of this kind. */
 export function cardsForSlot(slot: Pick<MemorySlot, 'kind'>): CardId[] {

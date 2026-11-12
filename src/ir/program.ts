@@ -250,3 +250,9 @@ export function endOfMain(program: ProgramIR): Place {
 
 export const samePlaceContainer = (a: Pick<Place, 'parent' | 'branch'>, b: Pick<Place, 'parent' | 'branch'>): boolean =>
   a.parent === b.parent && a.branch === b.branch;
+
+/** True when a card somewhere takes a random value: a roll, a coin, a random way or a random pick. */
+export function usesRandom(program: ProgramIR): boolean {
+  for (const { node } of walk(program)) if ((node.kind === 'set' || node.kind === 'push') && parseRandom(node.to) !== null) return true;
+  return false;
+}
