@@ -52,10 +52,11 @@ the level map with stars and badges, progress in IndexedDB, and an
 observation log the grown-up can export. Creation mode, step 13, is under
 way, planned in [docs/creation-plan.md](docs/creation-plan.md): the Create
 button opens a shelf of the child's own islands, kept on the device. A
-child can start from an empty island or change a level they finished,
-build the board with tools, play it with their own program, and turn it
-into a puzzle for someone else: set the goal, the cards and the limit,
-solve it, and hear from the critic how short it can be. Solved puzzles
+child can start from an empty island of a size they choose, or change a
+level they finished, and make a puzzle for someone else in three steps:
+Board (lay out the island), Mechanics (their own program beside the rules
+for players: the goal, the cards and the limit, with a critic that says
+how short it can be) and Preview (the puzzle as a player will see it). Solved puzzles
 appear on the map under Made here. Add cards brings the later packs'
 ideas as kits (a counter, a list, the bird, the backpack and more), and a
 child can add and name their own functions, memory and When cards. That

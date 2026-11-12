@@ -80,7 +80,7 @@ export function criticWords(c: Critique, rules: Pick<Rules, 'allowedCommands' | 
 
   if (!c.own.fits) lines.push({ tone: 'problem', text: limit !== undefined && c.own.steps > limit ? `Your own program has ${cards(c.own.steps)}. Your puzzle allows ${limit}.` : 'Your own program uses a card your puzzle does not give the player.' });
   else if (c.own.solves) lines.push({ tone: 'good', text: `You solved it yourself in ${cards(c.own.steps)}. Others can play it now.` });
-  else lines.push({ tone: 'note', text: 'You have not solved it yourself yet. Press Play and solve it. Then others can play it.' });
+  else lines.push({ tone: 'note', text: 'You have not solved it yourself yet. Build your program and press Run. Once it works, others can play it.' });
 
   if (c.flat.kind === 'impossible') lines.push({ tone: 'problem', text: 'Nobody can solve this with these cards. I tried every way the robot can go.' });
   else if (c.flat.kind === 'unknown') lines.push({ tone: 'note', text: 'This puzzle is too big for me to try every way. Your own solution is the proof that it works.' });

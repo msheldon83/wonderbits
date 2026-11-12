@@ -300,3 +300,42 @@ describe('a mover\'s steps', () => {
     expect(removeMover(placed, 'nobody')).toEqual(placed);
   });
 });
+
+describe('a new island\'s size', () => {
+  it('is what the maker chose, within the limits', async () => {
+    const { SIZE_MAX, SIZE_MIN } = await import('./types');
+    const { SIZE_PRESETS } = await import('./CreateScreen');
+    const size = (w?: number, h?: number) => {
+      const { world } = blankCreation('Mine', w, h);
+      return [world.width, world.height];
+    };
+    expect(size()).toEqual([5, 5]);
+    expect(size(10, 8)).toEqual([10, 8]);
+    expect(size(1, 40)).toEqual([SIZE_MIN, SIZE_MAX]);
+    for (const p of SIZE_PRESETS) {
+      const made = whole(blankCreation('Mine', p.width, p.height));
+      expect([made.world.width, made.world.height]).toEqual([p.width, p.height]);
+      // The robot and the flag stand apart on floor, whatever the size.
+      const errors: string[] = [];
+      validateWorld(made.world, made.objective, errors);
+      expect(errors).toEqual([]);
+      expect(parseCreation(JSON.parse(JSON.stringify(creationToJson(made))), p.label)).toEqual(made);
+    }
+    const narrow = whole(blankCreation('Mine', SIZE_MIN, SIZE_MIN));
+    const errors: string[] = [];
+    validateWorld(narrow.world, narrow.objective, errors);
+    expect(errors).toEqual([]);
+  });
+});
+
+describe('the rules in a few words', () => {
+  it('names the goal, the limit and the days', async () => {
+    const { rulesWords, goalWords } = await import('./goal');
+    const c = blankCreation('Mine');
+    expect(rulesWords(c)).toBe('reach the flag');
+    expect(rulesWords({ ...c, programming: { ...c.programming, maxInstructions: 8 }, days: 2 })).toBe('reach the flag, 8 cards at most, 2 days');
+    expect(rulesWords({ ...c, objective: { reachGoal: true, collectAll: true }, programming: { ...c.programming, maxInstructions: 1 } })).toBe('acorns and flag, 1 card at most');
+    expect(rulesWords({ ...c, objective: { reachGoal: false, collectAll: true } })).toBe('every acorn');
+    expect(goalWords({ objective: { reachGoal: false, collectAll: true } })).toBe('Collect every acorn.');
+  });
+});

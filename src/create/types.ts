@@ -56,3 +56,8 @@ export const TITLE_MAX = 40;
 /** The coordinate cards count rows and columns from 0 to 15. */
 export const BOARD_MAX = 16;
 export const BOARD_MIN = 1;
+/** The sizes a maker can choose: big enough for a puzzle, small enough to see whole on an iPad. */
+export const SIZE_MIN = 3;
+export const SIZE_MAX = 12;
+/** A new island's size until its maker says otherwise. */
+export const SIZE_DEFAULT = { width: 5, height: 5 } as const;

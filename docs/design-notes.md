@@ -4,6 +4,48 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Change: making a puzzle in three steps, and choosing the island's size (2026-11-12)
+
+Feedback: the Puzzle tab felt cut off from Play, where much of a puzzle is
+really defined; and a new puzzle should let its maker choose the map's
+size.
+
+- **Three steps replace Build, Play and Puzzle:** 1 Board, 2 Mechanics,
+  3 Preview, numbered in the creation's bar.
+  - **Board** is the board editor, as before.
+  - **Mechanics** is how the puzzle works, on one screen: the board and
+    the run controls on the left; on the right a switch between My program
+    (the maker's own solution, with Add your own) and Rules (the critic
+    first, then the goal, the cards a player gets, the most cards, the
+    days). The switch's Rules button says the rules in a few words:
+    "reach the flag, 8 cards at most". Changing a rule takes effect on the
+    program beside it at once: the palette, the limit and the goal. Add
+    cards is among the run controls and in the Rules.
+  - **Preview** is the puzzle as a player meets it: the maker's cards and
+    limit, the maker's named parts empty, the goal as the first line, and
+    no way to add names. Solving it there within the rules is a proof too.
+    A line above says what it is, and whether the puzzle is on the map.
+- **The bar says where the puzzle stands**: "Ready to play", or "Not
+  solved yet".
+- **A new island asks how big it is.** Small (5 by 5), Medium (7 by 6) and
+  Large (10 by 8), or any size from 3 to 12 tiles each way with steppers,
+  with a picture of the empty island. The Board step's steppers use the
+  same upper limit.
+- **The play surface** takes a header and an alternative for its side
+  column, and drops a finished run when the rules change under it, so a
+  result never outlives the rules it was run under.
+
+### Deviations and choices
+
+- **12 by 12 at most.** The engine allows 16, the limit of the coordinate
+  cards; at 12 a tile is still easy to hit on an iPad. A remix of a larger
+  level keeps its size.
+- **Rules beside the program, not under it.** Both at once would not fit
+  beside the board on an iPad; one tap switches, the board stays, and the
+  program keeps its place while the rules show.
+- **A limit starts at the maker's own program's size**, or the shortest
+  plain way, or ten, when first switched on.
+
 ## Change: random values everywhere, and steps for beetles and logs (2026-11-12)
 
 Feedback: the random number was missing, and there was no way to program

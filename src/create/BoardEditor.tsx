@@ -11,7 +11,7 @@ import { Board } from '../render/Board';
 import { themeFor } from '../render/themes';
 import type { Cell, ObjectiveDefinition, WorldDefinition } from '../sim/types';
 import { boardProblems } from './problems';
-import { BOARD_MAX } from './types';
+import { SIZE_MAX } from './types';
 import { moverLabel } from '../sim/world';
 import { amendWorld, applyStroke, canExtend, isPaintTool, minSize, nextCell, pushWorld, redoWorld, removeMover, resize, stepMover, stepsOf, TOOLS, undoWorld, unstepMover, worldHistory, type Tool, type Way } from './worldOps';
 
@@ -218,7 +218,7 @@ export function BoardEditor({ world, objective, cards, settings, onChange, signp
       <span className="size-value" aria-live="polite">
         {value}
       </span>
-      <button type="button" className="btn btn-icon" onClick={() => set(value + 1)} disabled={value >= BOARD_MAX} aria-label={`${label}: one more`}>
+      <button type="button" className="btn btn-icon" onClick={() => set(value + 1)} disabled={value >= SIZE_MAX} aria-label={`${label}: one more`}>
         +
       </button>
     </div>
