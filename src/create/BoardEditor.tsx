@@ -12,7 +12,8 @@ import { themeFor } from '../render/themes';
 import type { Cell, ObjectiveDefinition, WorldDefinition } from '../sim/types';
 import { boardProblems } from './problems';
 import { BOARD_MAX } from './types';
-import { amendWorld, applyStroke, isPaintTool, minSize, pushWorld, redoWorld, resize, TOOLS, undoWorld, worldHistory, type Tool } from './worldOps';
+import { moverLabel } from '../sim/world';
+import { amendWorld, applyStroke, canExtend, isPaintTool, minSize, nextCell, pushWorld, redoWorld, removeMover, resize, stepMover, stepsOf, TOOLS, undoWorld, unstepMover, worldHistory, type Tool, type Way } from './worldOps';
 
 const TOOL_INFO: Record<Tool, { name: string; tip: string }> = {
   floor: { name: 'Grass', tip: 'Tap or drag to lay ground the robot can walk on.' },
@@ -24,8 +25,8 @@ const TOOL_INFO: Record<Tool, { name: string; tip: string }> = {
   gate: { name: 'Gate', tip: 'Tap a tile to put a gate there. Tap a gate to start it open or shut.' },
   switch: { name: 'Switch', tip: 'Tap a tile to put a switch there. Stepping on it flips a gate. Tap the switch to pick another gate.' },
   plate: { name: 'Plate', tip: 'Tap a tile to put a plate there. Stepping on it sets off its When card. Tap the plate to pick it up.' },
-  beetle: { name: 'Beetle', tip: 'Drag across grass to draw where a beetle walks, there and back. It moves one tile each time the robot does, and stops the robot if they meet.' },
-  log: { name: 'Log', tip: 'Drag across water to draw where a log floats, there and back. The robot can ride it.' },
+  beetle: { name: 'Beetle', tip: 'Tap grass to put a beetle there, then give it steps with the arrows beside the board, or drag to draw its path. It walks there and back, one tile each time the robot moves.' },
+  log: { name: 'Log', tip: 'Tap water to put a log there, then give it steps with the arrows beside the board, or drag to draw its path. It floats there and back, and the robot can ride it.' },
   erase: { name: 'Eraser', tip: 'Tap or drag to take acorns, gates, switches, plates, beetles and logs off the tiles.' },
 };
 
@@ -128,6 +129,9 @@ const cellOf = (el: Element | null): Cell | null => {
   const [x, y] = raw.split(',').map(Number);
   return { x: x!, y: y! };
 };
+
+const WAY_ARROWS: Record<Way, string> = { N: '↑', E: '→', S: '↓', W: '←' };
+const WAY_WORDS: Record<Way, string> = { N: 'up', E: 'right', S: 'down', W: 'left' };
 
 const noControllers = () => {};
 
@@ -282,6 +286,44 @@ export function BoardEditor({ world, objective, cards, settings, onChange, signp
             </p>
           )}
         </section>
+        {(present.movers?.length ?? 0) > 0 && (
+          <section className="panel tools-panel" aria-labelledby="movers-title">
+            <h2 id="movers-title" className="panel-title">
+              How they move
+            </h2>
+            <p className="tool-note">Each takes its steps in order, then walks back the same way, over and over. One step each time the robot moves.</p>
+            <ul className="mover-list">
+              {present.movers!.map((m) => {
+                const label = moverLabel(present, m);
+                const steps = stepsOf(m);
+                const edit = (next: (w: WorldDefinition) => WorldDefinition) => setHistory((h) => pushWorld(h, next(h.present)));
+                return (
+                  <li key={m.id} className={`mover-row mover-${m.kind}`}>
+                    <div className="mover-head">
+                      <strong>{label}</strong>
+                      <span className="mover-steps" aria-label={steps.length === 0 ? `${label} stands still` : `${label}'s steps: ${steps.map((w) => WAY_WORDS[w]).join(', ')}`}>
+                        {steps.length === 0 ? 'stands still' : steps.map((w, i) => <span key={i}>{WAY_ARROWS[w]}</span>)}
+                      </span>
+                    </div>
+                    <div className="mover-keys">
+                      {(['N', 'E', 'S', 'W'] as const).map((way) => (
+                        <button key={way} type="button" className="btn btn-icon" disabled={!canExtend(present, m, nextCell(m, way))} aria-label={`${label}: add a step ${WAY_WORDS[way]}`} onClick={() => edit((w) => stepMover(w, m.id, way))}>
+                          {WAY_ARROWS[way]}
+                        </button>
+                      ))}
+                      <button type="button" className="btn btn-icon" disabled={steps.length === 0} aria-label={`${label}: take back the last step`} title="Take back the last step" onClick={() => edit((w) => unstepMover(w, m.id))}>
+                        ⌫
+                      </button>
+                      <button type="button" className="btn btn-icon mover-remove" aria-label={`Remove ${label}`} title="Remove" onClick={() => edit((w) => removeMover(w, m.id))}>
+                        ×
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
         {problems.length > 0 && (
           <section className="panel tools-panel" aria-labelledby="check-title">
             <h2 id="check-title" className="panel-title">

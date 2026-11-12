@@ -42,7 +42,7 @@ export const KITS: readonly Kit[] = [
       { remember: 'step', kind: 'direction', start: 'N' },
     ],
   },
-  { id: 'die', title: 'A die and a coin', blurb: 'Roll a number, flip a coin, or pick a random way. The puzzle must work whatever comes up.', packId: 'forest-shuffle', cards: ['set'], sources: ['random:1-6', 'coin', 'randomWay'], parts: [{ remember: 'roll', kind: 'number', start: 0 }] },
+  { id: 'die', title: 'A die and a coin', blurb: 'A number called roll to hold a random number. Set it to a roll of the die, or set a yes or no to a coin flip. The puzzle must work whatever comes up.', packId: 'forest-shuffle', cards: ['set'], parts: [{ remember: 'roll', kind: 'number', start: 0 }] },
   { id: 'map', title: 'Rows and columns', blurb: 'Walk straight to a row or a column by its number.', packId: 'forest-grids', cards: ['goRow', 'goColumn'] },
   {
     id: 'bird',

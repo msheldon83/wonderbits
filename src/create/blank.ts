@@ -1,6 +1,7 @@
 /** What a new creation starts from: an empty island and the cards of free play. */
 import type { CardId } from '../ir/types';
 import type { TileKind, WorldDefinition } from '../sim/types';
+import { withCreationRules } from './cards';
 import type { Creation } from './types';
 
 /** The cards every creation starts with: moving, turning and the blocks. */
@@ -27,7 +28,7 @@ export function blankCreation(title: string): Omit<Creation, 'schemaVersion' | '
     status: 'draft',
     world: blankWorld(),
     objective: { reachGoal: true, collectAll: false },
-    programming: { allowedCommands: [...FREE_PLAY_CARDS], starterProgram: [], ownNames: true },
+    programming: withCreationRules({ allowedCommands: [...FREE_PLAY_CARDS], starterProgram: [] }),
     program: [],
   };
 }

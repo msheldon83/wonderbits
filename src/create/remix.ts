@@ -6,6 +6,7 @@
 import { skeletonOf, splitSpec } from '../ir/spec';
 import type { CardId } from '../ir/types';
 import type { PuzzleDefinition } from '../lessons/types';
+import { withCreationRules } from './cards';
 import { TITLE_MAX, type Creation } from './types';
 
 export function remixTitle(title: string): string {
@@ -29,16 +30,15 @@ export function remixOf(level: PuzzleDefinition): Omit<Creation, 'schemaVersion'
     // The main board; a shuffled level's other versions are not carried over.
     world: structuredClone(level.world),
     objective: structuredClone(level.objective),
-    programming: {
+    // The level's sources stay on offer, beside creation mode's own; its maker may add names of their own.
+    programming: withCreationRules({
       allowedCommands: cards,
       ...(allowedConditions && { allowedConditions: [...allowedConditions] }),
       ...(allowedSources && { allowedSources: [...allowedSources] }),
       ...(maxMemory !== undefined && { maxMemory }),
       ...(memoryOptions && { memoryOptions: structuredClone(memoryOptions) }),
       starterProgram: skeleton,
-      // The level's sources stay on offer, and its maker may add names of their own.
-      ownNames: true,
-    },
+    }),
     ...(level.inputScript && { inputScript: [...level.inputScript] }),
     ...(level.days !== undefined && { days: level.days }),
     program: structuredClone(maker),

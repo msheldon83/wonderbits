@@ -3,18 +3,21 @@ import { conditionsFor, needsOf, paletteFor, slotTests } from '../editor/palette
 import { newSlot } from '../editor/OwnNames';
 import { sequentialIdFactory } from '../ir/ids';
 import { applyOp, nameProblem } from '../ir/ops';
-import { programFromSpec, programSpec } from '../ir/program';
+import { programFromSpec, programSpec, usesRandom } from '../ir/program';
 import { skeletonOf, type NodeSpec } from '../ir/spec';
 import { interpretAll } from '../runtime/interpreter';
 import { validateWorld } from '../lessons/validate';
 import { memoryStore } from '../progress/storage';
 import { blankCreation, blankWorld } from './blank';
-import { cardsForSlot, cardsGained, CREATION_CARDS, inPaletteOrder } from './cards';
+import { cardsForSlot, cardsGained, CREATION_CARDS, CREATION_SOURCES, inPaletteOrder, withCreationRules } from './cards';
 import { applyKit, hasKit, KITS } from './kits';
 import { creationToJson, parseCreation } from './parse';
 import { CreationStore } from './store';
 import type { Creation } from './types';
-import { applyStroke, applyTool, drawMover, pathOf, routeOf } from './worldOps';
+import { remixOf } from './remix';
+import { allLevels } from '../app/levels';
+import { isRandomLevel } from '../lessons/checks';
+import { applyStroke, applyTool, canExtend, drawMover, nextCell, pathOf, removeMover, routeOf, stepMover, stepsOf, unstepMover } from './worldOps';
 
 const ir = (spec: NodeSpec[]) => programFromSpec(spec, sequentialIdFactory());
 const at = (x: number, y: number) => ({ x, y });
@@ -123,7 +126,7 @@ describe('kits', () => {
     const made = whole(all);
     expect(parseCreation(JSON.parse(JSON.stringify(creationToJson(made))), 'all')).toEqual(made);
     expect(made.days).toBe(2);
-    expect(made.programming.allowedSources).toEqual(['random:1-6', 'coin', 'randomWay', 'acornsLeft']);
+    expect(made.programming.allowedSources).toEqual([...CREATION_SOURCES, 'acornsLeft']);
     for (const card of made.programming.allowedCommands) expect(CREATION_CARDS).toContain(card);
     expect(new Set(KITS.map((k) => k.id)).size).toBe(KITS.length);
   });
@@ -163,6 +166,7 @@ describe('creations made before names could be added', () => {
     const store = new CreationStore(storage);
     await store.load();
     expect(store.get('c-1')?.programming.ownNames).toBe(true);
+    expect(store.get('c-1')?.programming.allowedSources).toEqual([...CREATION_SOURCES]);
   });
   function blank() {
     return blankCreation('Old');
@@ -233,5 +237,66 @@ describe('plates, beetles and logs on the board', () => {
         expect(errors).toEqual([]);
       }
     }
+  });
+});
+
+describe('random values', () => {
+  it('are offered on every creation: a new island, a remix, with the level\'s own sources kept', () => {
+    expect(blankCreation('Mine').programming.allowedSources).toEqual([...CREATION_SOURCES]);
+    expect(isRandomLevel(blankCreation('Mine'))).toBe(true);
+    const bird = allLevels().find((c) => c.level.programming.allowedSources?.includes('acornsLeft'))!.level;
+    const remix = remixOf(bird);
+    expect(remix.programming.allowedSources).toEqual([...bird.programming.allowedSources!, ...CREATION_SOURCES.filter((s) => !bird.programming.allowedSources!.includes(s))]);
+    expect(withCreationRules(withCreationRules({ allowedCommands: ['forward'], starterProgram: [] })).allowedSources).toEqual([...CREATION_SOURCES]);
+  });
+
+  it('make a program random only once a card takes one', () => {
+    const slot: NodeSpec = { remember: 'roll', kind: 'number', start: 0 };
+    expect(usesRandom(ir([slot, { set: 'roll', to: 3 }, 'forward']))).toBe(false);
+    expect(usesRandom(ir([slot, { repeat: 2, do: [{ set: 'roll', to: 'random:1-6' }] }]))).toBe(true);
+    expect(usesRandom(ir([{ remember: 'heads', kind: 'yesNo', start: false }, { define: 'flip', do: [{ set: 'heads', to: 'coin' }] }]))).toBe(true);
+  });
+
+  it('a roll runs, the same for the same seed', () => {
+    const program = ir([{ remember: 'roll', kind: 'number', start: 0 }, { set: 'roll', to: 'random:1-6' }, 'forward', 'forward', 'forward', 'forward']);
+    const run = (seed: number) => interpretAll({ program, world: blankWorld(), objective: { reachGoal: true, collectAll: false }, limits: { maxSteps: 1000 }, seed });
+    expect(run(5).outcome.status).toBe('success');
+    expect(run(5).final.memory).toEqual(run(5).final.memory);
+    const rolls = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((seed) => (run(seed).final.memory as { roll: number }).roll));
+    expect([...rolls].every((r) => r >= 1 && r <= 6)).toBe(true);
+    expect(rolls.size).toBeGreaterThan(2);
+  });
+});
+
+describe('a mover\'s steps', () => {
+  const blank = blankWorld();
+  const placed = applyStroke(blank, 'beetle', at(1, 0), true);
+  const beetle = (w: typeof blank) => w.movers![0]!;
+
+  it('are added one at a time, by direction, and taken back', () => {
+    expect(stepsOf(beetle(placed))).toEqual([]);
+    let w = stepMover(placed, 'beetle1', 'E');
+    w = stepMover(w, 'beetle1', 'E');
+    w = stepMover(w, 'beetle1', 'S');
+    expect(stepsOf(beetle(w))).toEqual(['E', 'E', 'S']);
+    expect(beetle(w).path).toEqual([at(1, 0), at(2, 0), at(3, 0), at(3, 1), at(3, 0), at(2, 0)]);
+    w = unstepMover(w, 'beetle1');
+    expect(stepsOf(beetle(w))).toEqual(['E', 'E']);
+    expect(unstepMover(placed, 'beetle1')).toBe(placed);
+    expect(stepMover(placed, 'nobody', 'E')).toBe(placed);
+  });
+
+  it('cannot step off the board, onto the wrong ground, or back over its own path', () => {
+    expect(canExtend(placed, beetle(placed), nextCell(beetle(placed), 'N'))).toBe(false);
+    expect(stepMover(placed, 'beetle1', 'N')).toBe(placed);
+    const wet = applyTool(placed, 'gap', at(2, 0));
+    expect(stepMover(wet, 'beetle1', 'E')).toBe(wet);
+    const out = stepMover(placed, 'beetle1', 'E');
+    expect(stepMover(out, 'beetle1', 'W')).toBe(out);
+  });
+
+  it('is removed by name', () => {
+    expect(removeMover(placed, 'beetle1')).not.toHaveProperty('movers');
+    expect(removeMover(placed, 'nobody')).toEqual(placed);
   });
 });

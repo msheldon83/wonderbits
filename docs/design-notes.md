@@ -4,6 +4,33 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Change: random values everywhere, and steps for beetles and logs (2026-11-12)
+
+Feedback: the random number was missing, and there was no way to program
+how logs and beetles move.
+
+- **Random values are on every creation**, not behind the die kit. Any
+  Set card offers a random number 1 to 3, 1 to 6 or 0 to 9 for a number, a
+  coin flip for a yes or no, and a random way for a direction. Creations
+  made earlier gain them when they load. The die kit now only adds a
+  number called `roll` to hold one.
+- **A creation is a random puzzle only once a card takes a random value.**
+  Then, as on a random level, a run counts only if it works on every roll,
+  and the critic stops claiming certainty.
+- **How they move**, a panel in Build beside the board, lists each beetle
+  and log with the steps it takes as arrows. Four arrow buttons add a
+  step, one takes the last step back, one removes it. An arrow rests when
+  the step would leave the board, cross the wrong ground or go back over
+  the path. Tapping the tool on a tile puts one down standing still;
+  dragging still draws a path.
+
+### Deviations and choices
+
+- **A mover follows a list of steps, not a program of cards.** It walks
+  its steps and back, on its own clock, without looking at the robot. A
+  beetle that runs cards (chases the robot, turns at a wall) needs the
+  engine to give other actors a program, which is 13f.
+
 ## Build step 13d, first part: names of their own, and kits (2026-11-11)
 
 Feedback: a puzzle made from an empty island could only use the early

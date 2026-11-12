@@ -12,7 +12,7 @@ import { paletteFor } from '../editor/palette';
 import { canRedo, canUndo, createHistory, push, redo, undo, type History } from '../ir/history';
 import { randomIdFactory } from '../ir/ids';
 import { applyOp, type EditOp } from '../ir/ops';
-import { countNodes, programFromSpec, programSpec, stepNumber } from '../ir/program';
+import { countNodes, programFromSpec, programSpec, stepNumber, usesRandom } from '../ir/program';
 import { skeletonOf, specAsksBird, type NodeSpec } from '../ir/spec';
 import { isBirdSource, isPosition, type NodeId, type ProgramIR, type Value } from '../ir/types';
 import { valueWords } from '../editor/commands';
@@ -129,7 +129,8 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
   const world = worlds[shuffle] ?? level.world;
   const [failedShuffle, setFailedShuffle] = useState<number | null>(null);
   /** Random levels: the seed of this run's rolls, a seed the program failed on, and outcomes no roll gave. */
-  const random = useMemo(() => isRandomLevel(level), [level]);
+  // A creation offers random values on every Set card; it is a random level only once a card takes one.
+  const random = useMemo(() => isRandomLevel(level) && (!level.programming.ownNames || level.objective.covers !== undefined || usesRandom(program)), [level, program]);
   const seedRef = useRef(newSeed());
   const [failedRoll, setFailedRoll] = useState<number | null>(null);
   const [unseen, setUnseen] = useState<Value[] | null>(null);

@@ -9,7 +9,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMotion } from '../app/hooks';
 import { cardLabel } from '../editor/commands';
 import { randomIdFactory } from '../ir/ids';
-import { programFromSpec } from '../ir/program';
+import { programFromSpec, usesRandom } from '../ir/program';
 import { countSpec } from '../ir/spec';
 import type { CardId } from '../ir/types';
 import { isRandomLevel } from '../lessons/checks';
@@ -72,7 +72,8 @@ export function ChallengePanel({ creation, universe, store, progress, runtime, s
       } catch {
         ir = programFromSpec([], randomIdFactory());
       }
-      void runtime.critique({ world, objective, rules, program: ir, ...(creation.inputScript && { input: creation.inputScript }), ...(creation.days !== undefined && { days: creation.days }), searchMillis: SEARCH_MILLIS }).then((c) => {
+      // Every creation offers random values; the puzzle is random only when the maker's program takes one.
+      void runtime.critique({ world, objective, rules: { ...rules, random: rules.random && usesRandom(ir) }, program: ir, ...(creation.inputScript && { input: creation.inputScript }), ...(creation.days !== undefined && { days: creation.days }), searchMillis: SEARCH_MILLIS }).then((c) => {
         if (stale) return;
         setCritique(c);
         setThinking(false);

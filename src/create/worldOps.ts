@@ -168,6 +168,57 @@ export function pathOf(route: readonly Cell[]): Cell[] {
   return ring ? [...route] : [...route, ...route.slice(1, -1).reverse()];
 }
 
+const suits = (world: WorldDefinition, kind: Mover['kind'], cell: Cell) => inside(world, cell) && tile(world, cell) === (kind === 'log' ? 'gap' : 'floor');
+
+/** Whether a mover's way out can go on to this tile: the next tile along, of the right ground, not one it already crosses. */
+export function canExtend(world: WorldDefinition, mover: Mover, cell: Cell): boolean {
+  const route = routeOf(mover.path);
+  const end = route.at(-1)!;
+  return suits(world, mover.kind, cell) && Math.abs(end.x - cell.x) + Math.abs(end.y - cell.y) === 1 && !route.some((c) => same(c, cell));
+}
+
+/** A mover's way out, one tile longer. */
+export function extendMover(world: WorldDefinition, id: string, cell: Cell): WorldDefinition {
+  const mover = (world.movers ?? []).find((m) => m.id === id);
+  if (!mover || !canExtend(world, mover, cell)) return world;
+  return { ...world, movers: world.movers!.map((m) => (m === mover ? { ...m, path: pathOf([...routeOf(m.path), cell]) } : m)) };
+}
+
+const STEP = { N: [0, -1], E: [1, 0], S: [0, 1], W: [-1, 0] } as const;
+export type Way = keyof typeof STEP;
+
+/** The tile one step from the end of a mover's way out. */
+export function nextCell(mover: Mover, way: Way): Cell {
+  const end = routeOf(mover.path).at(-1)!;
+  return { x: end.x + STEP[way][0], y: end.y + STEP[way][1] };
+}
+
+/** A mover's way out as the steps it takes, one letter each: "EES" is right, right, down. */
+export function stepsOf(mover: Mover): Way[] {
+  const route = routeOf(mover.path);
+  return route.slice(1).map((c, i) => {
+    const from = route[i]!;
+    return c.x > from.x ? 'E' : c.x < from.x ? 'W' : c.y > from.y ? 'S' : 'N';
+  });
+}
+
+/** One more step for a mover, in a direction. */
+export const stepMover = (world: WorldDefinition, id: string, way: Way): WorldDefinition => {
+  const mover = (world.movers ?? []).find((m) => m.id === id);
+  return mover ? extendMover(world, id, nextCell(mover, way)) : world;
+};
+
+/** Take back a mover's last step. One that has no steps left stays where it is, standing still. */
+export function unstepMover(world: WorldDefinition, id: string): WorldDefinition {
+  const mover = (world.movers ?? []).find((m) => m.id === id);
+  if (!mover) return world;
+  const route = routeOf(mover.path);
+  if (route.length < 2) return world;
+  return { ...world, movers: world.movers!.map((m) => (m === mover ? { ...m, path: pathOf(route.slice(0, -1)) } : m)) };
+}
+
+export const removeMover = (world: WorldDefinition, id: string): WorldDefinition => tidy({ ...world, movers: (world.movers ?? []).filter((m) => m.id !== id) });
+
 /**
  * Drawing a beetle's or a log's path. A fresh touch on a tile puts a new
  * one there, standing still, unless the tile is the next step of the one
@@ -176,17 +227,11 @@ export function pathOf(route: readonly Cell[]): Cell[] {
  * water, one tile at a time, and no path crosses itself.
  */
 export function drawMover(world: WorldDefinition, kind: Mover['kind'], cell: Cell, fresh: boolean): WorldDefinition {
-  if (tile(world, cell) !== (kind === 'log' ? 'gap' : 'floor')) return world;
+  if (!suits(world, kind, cell)) return world;
   if (kind === 'beetle' && same(world.robot, cell)) return world;
   const movers = world.movers ?? [];
   const last = movers.filter((m) => m.kind === kind).at(-1);
-  if (last) {
-    const route = routeOf(last.path);
-    const end = route.at(-1)!;
-    const next = Math.abs(end.x - cell.x) + Math.abs(end.y - cell.y) === 1 && !route.some((c) => same(c, cell));
-    if (next) return { ...world, movers: movers.map((m) => (m === last ? { ...m, path: pathOf([...route, cell]) } : m)) };
-    if (!fresh) return world;
-  }
+  if (last && canExtend(world, last, cell)) return extendMover(world, last.id, cell);
   if (!fresh || movers.length >= MAX_MOVERS || movers.some((m) => m.path.some((c) => same(c, cell)))) return world;
   const used = new Set(movers.map((m) => m.id));
   let n = 1;

@@ -3825,3 +3825,56 @@ button.shelf-card {
 .function-def:has(.own-remove) .function-head {
   padding-right: 48px;
 }
+
+/* Build: the steps a beetle or a log takes. */
+.mover-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mover-row {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--page);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mover-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 17px;
+}
+
+.mover-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  color: var(--ink-soft);
+  font-weight: 800;
+}
+
+.mover-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mover-keys .btn-icon {
+  min-width: var(--tap);
+  min-height: var(--tap);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.mover-remove {
+  margin-left: auto;
+  color: var(--red);
+}
