@@ -4,6 +4,34 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Change: a limit on one kind of card (2026-11-12)
+
+Asked for: the ability to limit the number of a particular type of card.
+
+- **Limits has "Most of one kind of card".** "+ Limit a card" lists the
+  cards the player gets; choosing one adds a stepper for it, from 1 to 20,
+  with a button to lift the limit. A new limit starts at what the maker's
+  own solution uses of that card, so setting it does not break the
+  solution. Taking a card away from the player takes its limit with it.
+- **It is the level's `maxPerCommand`**, so nothing new in the engine: the
+  palette already counts a limited card down and rests it at nought, for
+  the maker and for the player.
+- **The proof and the critic respect it.** A solution that uses more of a
+  card than allowed does not prove the puzzle, and the critic says which
+  card: "Your own solution uses 4 Forward cards. Your puzzle allows 3."
+  When the shortest plain way breaks a card's limit, the critic says that
+  way is closed and a player has to find another, and no longer says the
+  puzzle can be solved without Repeat.
+- **In the rules the two Rotates are told apart** by their arrows, where
+  there is no icon to do it.
+
+### Deviations and choices
+
+- **The critic does not search for a plain way within the card limits.**
+  Its search ignores them, as the level validator's does; it only notices
+  when the way it found breaks one. Whether another way exists is shown by
+  the maker's solution.
+
 ## Change: Mechanics on one screen, with the rules always in view (2026-11-12)
 
 Feedback: the switch between the program and the rules did not feel

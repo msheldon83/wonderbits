@@ -10,6 +10,7 @@ import { isRandomLevel } from '../lessons/checks';
 import type { ProgressStore } from '../progress/store';
 import type { Critique, Runtime } from '../runtime/contract';
 import { criticWords, type CriticLine } from './critic';
+import { cardName } from './RulesColumn';
 import type { CreationStore } from './store';
 import type { Creation } from './types';
 
@@ -25,6 +26,7 @@ export function useCritic(creation: Creation, runtime: Runtime | null, store: Cr
       allowedCommands: programming.allowedCommands,
       ...(programming.allowedConditions && { allowedConditions: programming.allowedConditions }),
       ...(programming.maxInstructions !== undefined && { maxInstructions: programming.maxInstructions }),
+      ...(programming.maxPerCommand && { maxPerCommand: programming.maxPerCommand }),
       random: isRandomLevel({ objective, programming }),
     }),
     [objective, programming],
@@ -57,5 +59,5 @@ export function useCritic(creation: Creation, runtime: Runtime | null, store: Cr
     };
   }, [runtime, world, objective, rules, program, creation.id, creation.inputScript, creation.days, store, progress]);
 
-  return { critique, lines: critique ? criticWords(critique, rules) : [], thinking };
+  return { critique, lines: critique ? criticWords(critique, rules, cardName) : [], thinking };
 }

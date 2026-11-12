@@ -98,7 +98,7 @@ describe('the critic\'s words', () => {
 
   it('says what it could not check, and when the maker\'s program breaks the puzzle\'s own rules', () => {
     expect(words({ own, flat: { kind: 'unknown' } }, plain)[1]).toMatch(/too big for me/);
-    expect(words({ own: { fits: false, solves: true, steps: 7 }, flat: { kind: 'unknown' } }, { ...plain, maxInstructions: 5 })[0]).toBe('problem: Your own program has 7 cards. Your puzzle allows 5.');
+    expect(words({ own: { fits: false, solves: true, steps: 7 }, flat: { kind: 'unknown' } }, { ...plain, maxInstructions: 5 })[0]).toBe('problem: Your own solution has 7 cards. Your puzzle allows 5.');
     expect(words({ own: { fits: false, solves: true, steps: 1 }, flat: { kind: 'unknown' } }, plain)[0]).toMatch(/uses a card your puzzle does not give/);
   });
 });
@@ -179,5 +179,36 @@ describe('the critic behind the runtime contract', () => {
     expect(await answer).toBeNull();
     expect(made[0]!.terminated).toBe(true);
     vi.useRealTimers();
+  });
+});
+
+describe('limits on one kind of card', () => {
+  const rules = { allowedCommands: [...FREE_PLAY_CARDS], maxPerCommand: { forward: 3 } };
+
+  it('hold the maker\'s own solution to them', () => {
+    expect(fitsRules(rules, ir(four))).toBe(false);
+    expect(fitsRules(rules, ir(['forward', 'forward', 'forward']))).toBe(true);
+    expect(fitsRules(rules, ir([{ repeat: 4, do: ['forward'] }]))).toBe(true);
+    expect(fitsRules({ ...rules, maxPerCommand: { forward: 3, repeat: 1 } }, ir([{ repeat: 2, do: [{ repeat: 2, do: ['forward'] }] }]))).toBe(false);
+  });
+
+  it('are reported by the critic: which card the solution over-uses, and that the plain way is closed', () => {
+    const c = ask(blankWorld(), four, { maxPerCommand: { forward: 3 } });
+    expect(c.own).toEqual({ fits: false, solves: true, steps: 4, over: [{ card: 'forward', used: 4, most: 3 }] });
+    expect(c.flat).toEqual({ kind: 'found', steps: 4, overCardLimit: true });
+    const lines = criticWords(c, rules, (card) => (card === 'forward' ? 'Forward' : card)).map((l) => `${l.tone}: ${l.text}`);
+    expect(lines).toEqual([
+      'problem: Your own solution uses 4 Forward cards. Your puzzle allows 3.',
+      'note: The shortest way with plain steps takes 4 cards.',
+      'note: But that way uses more of one card than your puzzle allows, so a player has to find another, or use Repeat.',
+    ]);
+  });
+
+  it('leave a puzzle provable with a loop', () => {
+    const c = ask(blankWorld(), [{ repeat: 4, do: ['forward'] }], { maxPerCommand: { forward: 1 } });
+    expect(c.own).toEqual({ fits: true, solves: true, steps: 2 });
+    expect(c.flat).toEqual({ kind: 'found', steps: 4, overCardLimit: true });
+    // A limit the plain way stays within changes nothing.
+    expect(ask(blankWorld(), four, { maxPerCommand: { forward: 4 } }).flat).toEqual({ kind: 'found', steps: 4 });
   });
 });
