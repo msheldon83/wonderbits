@@ -29,7 +29,7 @@ import type { IdFactory } from '../ir/ids';
 import { isNoOpMove, type EditOp } from '../ir/ops';
 import { ancestorsOf, branchesOf, branchBody, callsIn, canCall, containerAt, endOfMain, functionsOf, isWithin, locate, mainBody, memoryOf, procedureOfPlace, samePlaceContainer, slotsInUse, walk } from '../ir/program';
 import { buildNodes } from '../ir/spec';
-import { functionContainerId, functionLabel, functionOfContainer, handlerContainerId, handlerOfContainer, isSenseId, itemOf, fieldOf, lengthOf, MAIN as MAIN_PROCEDURE, parseRandom, readFrom, REPEAT_DEFAULT, REPEAT_MAX, REPEAT_MIN, type Branch, type CardId, type CommandId, type IRNode, type MemorySlot, type NodeId, type Place, type ProgramIR, type Source } from '../ir/types';
+import { functionContainerId, functionLabel, functionOfContainer, handlerContainerId, handlerOfContainer, isSenseId, itemOf, fieldOf, lengthOf, wholeOf, MAIN as MAIN_PROCEDURE, parseRandom, readFrom, REPEAT_DEFAULT, REPEAT_MAX, REPEAT_MIN, type Branch, type CardId, type CommandId, type IRNode, type MemorySlot, type NodeId, type Place, type ProgramIR, type Source } from '../ir/types';
 import type { TraceEvent } from '../runtime/contract';
 import { cardLabel, COMMANDS, conditionLabel, describeNode, eventLabel, FunctionIcon, nodeLabel, placeWords, sourceWords, valueWords } from './commands';
 import { gapCentres, slotForY, type RowBox } from './geometry';
@@ -160,14 +160,25 @@ export function Editor({
   const usedSlots = slotsInUse(program);
   /** A slot a Set card can fill: one of a single value, with something on offer to put in it. */
   const settable = (m: MemorySlot) => m.kind !== 'list' && m.kind !== 'grid' && sourcesFor(m.kind, programming, memory).length > 0;
-  /** A picker of slots of some kinds, for a memory card. */
-  const slotSelect = (label: string, value: string, kinds: readonly string[], onPick: (name: string) => void) => {
-    const names = memory.filter((m) => kinds.includes(m.kind)).map((m) => m.name);
+  /** What a Set or Add card can fill, of some kinds: slots, and with `fields` the fields of record slots too, as `crate.number`. */
+  const targets = (kinds: readonly string[], fields: boolean): { path: string; label: string; kind: string }[] => [
+    ...memory.filter((m) => kinds.includes(m.kind)).map((m) => ({ path: m.name, label: m.name, kind: m.kind as string })),
+    ...(fields ? memory.filter((m) => m.kind === 'record').flatMap((m) => Object.entries(m.fields ?? {}).flatMap(([f, k]) => (kinds.includes(k) ? [{ path: `${m.name}.${f}`, label: `${m.name}'s ${f}`, kind: k as string }] : []))) : []),
+  ];
+  /** The kind of value a slot, or a record's field, holds. */
+  const kindAt = (path: string): string => {
+    const [slot, field] = path.split('.');
+    const m = memory.find((x) => x.name === slot);
+    return (field ? m?.fields?.[field] : m?.kind) ?? 'number';
+  };
+  /** A picker of slots of some kinds, for a memory card. With `fields`, a record's fields can be picked too. */
+  const slotSelect = (label: string, value: string, kinds: readonly string[], onPick: (name: string) => void, fields = false) => {
+    const options = targets(kinds, fields);
     return (
       <select className="param-select" aria-label={label} value={value} disabled={locked} onChange={(e) => onPick(e.target.value)}>
-        {(names.includes(value) ? names : [value, ...names]).map((n) => (
-          <option key={n} value={n}>
-            {n}
+        {(options.some((o) => o.path === value) ? options : [{ path: value, label: value.replace('.', "'s "), kind: '' }, ...options]).map((o) => (
+          <option key={o.path} value={o.path}>
+            {o.label}
           </option>
         ))}
       </select>
@@ -268,11 +279,14 @@ export function Editor({
       case 'call':
         return { id: newId(), kind: 'call', name: name ?? functions[0]?.name ?? MAIN_PROCEDURE };
       case 'set': {
+        // Where the child names the memory, a single value comes first, then a record's field.
+        const own = programming.ownNames ? targets(['number', 'yesNo', 'direction', 'position'], true)[0] : undefined;
+        if (own) return { id: newId(), kind: 'set', slot: own.path, to: sourcesFor(own.kind, programming, memory)[0] ?? 0 };
         const slot = memory.find((m) => settable(m));
         return { id: newId(), kind: 'set', slot: slot?.name ?? 'count', to: slot ? (sourcesFor(slot.kind, programming, memory)[0] ?? 0) : 0 };
       }
       case 'change':
-        return { id: newId(), kind: 'change', slot: memory.find((m) => m.kind === 'number')?.name ?? 'count', by: 1 };
+        return { id: newId(), kind: 'change', slot: (programming.ownNames ? targets(['number'], true)[0]?.path : undefined) ?? memory.find((m) => m.kind === 'number')?.name ?? 'count', by: 1 };
       case 'face':
         return { id: newId(), kind: 'face', slot: memory.find((m) => m.kind === 'direction')?.name ?? 'way' };
       case 'unlock':
@@ -786,10 +800,13 @@ export function Editor({
           )}
           {node.kind === 'set' && (
             <span className="block-param block-condition">
-              {slotSelect(`Which slot, step ${number}`, node.slot, [...new Set(memory.filter(settable).map((m) => m.kind))], (slot) => {
-                const kind = memory.find((m) => m.name === slot)?.kind ?? 'number';
-                setParam(node.id, { slot, to: sourcesFor(kind, programming, memory)[0] ?? 0 });
-              })}
+              {slotSelect(
+                `Which slot, step ${number}`,
+                node.slot,
+                [...new Set([...memory.filter(settable).map((m) => m.kind as string), ...(programming.ownNames ? ['number', 'yesNo', 'direction'] : [])])],
+                (slot) => setParam(node.id, { slot, to: sourcesFor(kindAt(slot), programming, memory)[0] ?? 0 }),
+                programming.ownNames === true,
+              )}
               <span className="param-word param-eq" aria-hidden="true">
                 =
               </span>
@@ -801,7 +818,7 @@ export function Editor({
                 onChange={(e) => setParam(node.id, { to: JSON.parse(e.target.value) as Source })}
               >
                 {(() => {
-                  const options = sourcesFor(memory.find((m) => m.name === node.slot)?.kind ?? 'number', programming, memory);
+                  const options = sourcesFor(kindAt(node.slot), programming, memory);
                   return (options.some((o) => o === node.to) ? options : [node.to, ...options]).map((o) => (
                     <option key={JSON.stringify(o)} value={JSON.stringify(o)}>
                       {sourceWords(o)}
@@ -820,7 +837,7 @@ export function Editor({
                   </option>
                 ))}
               </select>
-              {slotSelect(`To which slot, step ${number}`, node.slot, ['number'], (slot) => setParam(node.id, { slot }))}
+              {slotSelect(`To which slot, step ${number}`, node.slot, ['number'], (slot) => setParam(node.id, { slot }), programming.ownNames === true)}
             </span>
           )}
           {node.kind === 'push' && (
@@ -1335,7 +1352,10 @@ function sourcesFor(kind: string, programming: Programming, memory: readonly Mem
   if (programming.ownNames) {
     const { allowedSources: extra, ...open } = programming;
     const extras = (extra ?? []).length > 0 ? ownSources(kind, programming, memory) : [];
-    return [...new Set([...ownSources(kind, open, memory), ...reads, ...lengths, ...fields, ...items, ...extras])];
+    // A record can be filled with a copy of another record: how a list of records is built.
+    const wholes = kind === 'record' ? memory.filter((m) => m.kind === 'record').map((m) => wholeOf(m.name)) : [];
+    // A copy comes first: it is what a new Add to list card starts with.
+    return [...new Set([...wholes, ...ownSources(kind, open, memory), ...reads, ...lengths, ...fields, ...items, ...extras])];
   }
   // Items only show where the level offers them, so earlier list levels keep their short menus.
   return [

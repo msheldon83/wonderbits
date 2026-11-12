@@ -1,5 +1,5 @@
 import { randomInt } from './random';
-import { isPosition, isSenseId, negationOf, parseField, splitSlotPath, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type GridPlace, type MemorySlot, type SenseId, type Source, type Value } from '../ir/types';
+import { isPosition, isSenseId, negationOf, parseWhole, parseField, splitSlotPath, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type GridPlace, type MemorySlot, type SenseId, type Source, type Value } from '../ir/types';
 import type { Cell, Facing, Gate, Mover, ObjectiveDefinition, Plate, SimState, Switch, TileKind, WorldDefinition } from './types';
 
 export const cellKey = (c: Cell): string => `${c.x},${c.y}`;
@@ -371,6 +371,9 @@ export function readSource(world: WorldDefinition, state: SimState, source: Sour
   if (typeof source !== 'string') return source;
   const field = parseField(source);
   if (field) return recordField(state.memory?.[field.record], field.field) ?? false;
+  // A whole record is copied, so the list it goes into keeps its own.
+  const whole = parseWhole(source);
+  if (whole) return structuredClone(state.memory?.[whole] ?? {});
   const read = parseRead(source);
   if (read) return gridItem(state.memory?.[read.grid], gridPlace(state, read.at));
   const counted = parseLength(source);
@@ -412,9 +415,20 @@ export function missingItem(state: SimState, source: Source): string | undefined
   return `${item.list} has no item ${String(index)}: ${span}`;
 }
 
-/** Put a value in a memory slot. Pure. */
-export function remember(state: SimState, slot: string, value: Value): SimState {
-  return { ...state, memory: { ...state.memory, [slot]: value } };
+/** What a slot holds, or one field of the record it holds when the path is `slot.field`. */
+export function recall(state: SimState, path: string): Value | undefined {
+  const { slot, field } = splitSlotPath(path);
+  const whole = state.memory?.[slot];
+  return field === undefined ? whole : recordField(whole, field);
+}
+
+/** Put a value in a memory slot, or in one field of the record a slot holds when the path is `slot.field`. Pure. */
+export function remember(state: SimState, path: string, value: Value): SimState {
+  const { slot, field } = splitSlotPath(path);
+  if (field === undefined) return { ...state, memory: { ...state.memory, [slot]: value } };
+  const whole = state.memory?.[slot];
+  const record = typeof whole === 'object' && whole !== null && !Array.isArray(whole) && !isPosition(whole) ? (whole as Record<string, Value>) : {};
+  return { ...state, memory: { ...state.memory, [slot]: { ...record, [field]: value } as Value } };
 }
 
 /** Open a numbered gate when the value is its code. Pure: returns the state unchanged otherwise. */

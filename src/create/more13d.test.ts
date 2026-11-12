@@ -124,3 +124,79 @@ describe('a function that uses a function', async () => {
     expect(code).toMatch(/function twoHops\(\)[^}]*hop\(\);[^}]*hop\(\);/s);
   });
 });
+
+describe('records a child builds', async () => {
+  const { parseWhole, wholeOf } = await import('../ir/types');
+  const { newRecord, newRecordList, fieldsProblem } = await import('./RulesColumn');
+  const { needsOf, slotTests } = await import('../editor/palette');
+  const { cardsForSlot } = await import('./cards');
+  const crate: NodeSpec = { remember: 'crate', kind: 'record', shape: 'Crate', fields: { number: 'number', key: 'yesNo' }, start: { number: 0, key: false } };
+  const crates: NodeSpec = { remember: 'crates', kind: 'list', of: 'record', shape: 'Crate', fields: { number: 'number', key: 'yesNo' }, start: [] };
+  const walk: NodeSpec[] = ['forward', 'forward', 'forward', 'forward'];
+
+  it('sets one field and leaves the others', () => {
+    const r = run([crate, { set: 'crate.number', to: 7 }, { set: 'crate.key', to: true }, { change: 'crate.number', by: 2 }, ...walk]);
+    expect(r.outcome.status).toBe('success');
+    expect(r.final.memory).toEqual({ crate: { number: 9, key: true } });
+  });
+
+  it('adds copies of a record to a list, each its own', () => {
+    const r = run([crate, crates, { set: 'crate.number', to: 1 }, { push: 'crates', to: 'whole:crate' }, { set: 'crate.number', to: 2 }, { set: 'crate.key', to: true }, { push: 'crates', to: 'whole:crate' }, ...walk]);
+    expect(r.final.memory?.crates).toEqual([{ number: 1, key: false }, { number: 2, key: true }]);
+  });
+
+  it('reads a built list back: find the crate with the key', () => {
+    const found: NodeSpec = { remember: 'found', kind: 'number', start: 0 };
+    const item: NodeSpec = { remember: 'item', kind: 'record', shape: 'Crate', fields: { number: 'number', key: 'yesNo' }, start: { number: 0, key: false } };
+    const r = run([
+      crate, crates, found, item,
+      { set: 'crate.number', to: 4 }, { push: 'crates', to: 'whole:crate' },
+      { set: 'crate.number', to: 5 }, { set: 'crate.key', to: true }, { push: 'crates', to: 'whole:crate' },
+      { forEach: 'crates', as: 'item', do: [{ if: 'slot:item.key=yes', do: [{ set: 'found', to: 'field:item.number' }] }] },
+      ...walk,
+    ]);
+    expect(r.outcome.status).toBe('success');
+    expect(r.final.memory?.found).toBe(5);
+  });
+
+  it('prints as real TypeScript', () => {
+    const code = printProgram(ir([crate, crates, { set: 'crate.number', to: 3 }, { change: 'crate.number', by: 1 }, { push: 'crates', to: 'whole:crate' }]));
+    expect(code).toContain('crate.number = 3;');
+    expect(code).toContain('crate.number += 1;');
+    expect(code).toContain('crates.push({ ...crate });');
+  });
+
+  it('counts as using the record, and stores and loads', () => {
+    const spec: NodeSpec[] = [crate, crates, { set: 'crate.number', to: 3 }, { push: 'crates', to: 'whole:crate' }, { if: 'slot:crate.key=yes', do: ['forward'] }];
+    expect([...slotsInUse(ir(spec))].sort()).toEqual(['crate', 'crates']);
+    expect(slotsInUse(ir([crate, { remember: 'n', kind: 'number', start: 0 }, { set: 'n', to: 'field:crate.number' }])).has('crate')).toBe(true);
+    const made = { schemaVersion: 1 as const, id: 'c-1', createdAt: 1, updatedAt: 1, ...blankCreation('Mine'), program: spec };
+    expect(parseBoardRules(JSON.parse(JSON.stringify(creationToJson(made))), 'rec', ['program']).programs.program).toEqual(spec);
+    expect(parseWhole(wholeOf('crate'))).toBe('crate');
+    expect(parseWhole('whole:Crate')).toBeNull();
+    expect(() => parseBoardRules({ ...creationToJson(made), program: [{ set: 'crate.number.deep', to: 1 }] }, 'bad', ['program'])).toThrow(/slot name/);
+  });
+
+  it('is made from a name and its parts', () => {
+    const slot = newRecord('crate', [{ name: 'number', kind: 'number' }, { name: ' key ', kind: 'yesNo' }], false);
+    expect(slot).toEqual({ name: 'crate', kind: 'record', shape: 'Crate', fields: { number: 'number', key: 'yesNo' }, start: { number: 0, key: false } });
+    expect(newRecordList('crates', slot, true)).toEqual({ name: 'crates', kind: 'list', of: 'record', shape: 'Crate', fields: { number: 'number', key: 'yesNo' }, start: [], keep: true });
+    expect(fieldsProblem([{ name: 'number' }, { name: 'key' }])).toBeNull();
+    expect(fieldsProblem([{ name: '' }])).toMatch(/Give every part/);
+    expect(fieldsProblem([{ name: 'x' }])).toMatch(/cannot be a part's name/);
+    expect(fieldsProblem([{ name: 'Big' }])).toMatch(/cannot be a part's name/);
+    expect(fieldsProblem([{ name: 'key' }, { name: 'key' }])).toMatch(/same name/);
+  });
+
+  it('opens the cards and tests that work on it', () => {
+    const memory = ir([crate]).memory!;
+    expect(needsOf('set', memory)).toBeNull();
+    expect(needsOf('change', memory)).toBeNull();
+    expect(needsOf('change', ir([{ remember: 'flag', kind: 'record', shape: 'Flag', fields: { up: 'yesNo' }, start: { up: false } }]).memory!)).toBe('a number');
+    expect(needsOf('forEach', ir([crates]).memory!)).toBe('a record to hold each item');
+    expect(needsOf('forEach', ir([crates, crate]).memory!)).toBeNull();
+    expect(slotTests(memory)).toEqual(expect.arrayContaining(['slot:crate.number=3', 'slot:crate.key=yes', 'slot:crate.key=no']));
+    expect(cardsForSlot({ kind: 'record' })).toEqual(['set']);
+    expect(cardsForSlot(memory[0]!)).toEqual(['set', 'change']);
+  });
+});

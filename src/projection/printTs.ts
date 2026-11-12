@@ -3,7 +3,7 @@
  * readable TypeScript. Read-only through Phase 3; Phase 4 adds a parser that
  * lifts hand-edited code back into the IR using the @node comments.
  */
-import { isBirdSource, isPosition, isSenseId, MAIN, negationOf, parseField, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type IRNode, type MemorySlot, type ProgramIR, type SenseId, type Source, type Value } from '../ir/types';
+import { isBirdSource, isPosition, isSenseId, MAIN, negationOf, parseWhole, parseField, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type IRNode, type MemorySlot, type ProgramIR, type SenseId, type Source, type Value } from '../ir/types';
 import type { Teammate } from '../sim/types';
 
 const CALL: Record<CommandId, string> = {
@@ -83,6 +83,8 @@ function sourceCode(source: Source): string {
   if (random?.kind === 'way') return 'randomDirection()';
   if (random?.kind === 'pick') return `pick(${random.list})`;
   if (source === 'facing') return 'robot.facing()';
+  const whole = parseWhole(source);
+  if (whole) return `{ ...${whole} }`;
   if (source === 'here') return 'robot.position()';
   if (source === 'acorns') return 'robot.acorns()';
   if (source === 'acornsLeft') return 'bird.acornsLeft()';

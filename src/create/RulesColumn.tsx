@@ -11,7 +11,8 @@ import { newSlot, SLOT_KINDS } from '../editor/OwnNames';
 import { needsOf } from '../editor/palette';
 import { nameProblem, type EditOp } from '../ir/ops';
 import { cardCounts, countNodes, functionNames, memoryOf, slotsInUse, walk } from '../ir/program';
-import type { CardId, MemorySlot, ProgramIR } from '../ir/types';
+import { emptyRecord } from '../ir/spec';
+import { FUNCTION_NAME, RESERVED_NAMES, type CardId, type ItemKind, type MemorySlot, type ProgramIR } from '../ir/types';
 import type { ProgressStore } from '../progress/store';
 import type { Critique } from '../runtime/contract';
 import type { CreationStore } from './store';
@@ -44,7 +45,43 @@ export const CARD_GROUPS: { title: string; cards: CardId[] }[] = [
 export const cardName = (card: CardId): string => (card === 'call' ? 'Use a function' : card === 'rotateCW' ? 'Rotate ↻' : card === 'rotateCCW' ? 'Rotate ↺' : cardLabel(card));
 
 const KIND_WORDS: Record<string, string> = { number: 'number', yesNo: 'yes/no', direction: 'direction', position: 'place', list: 'list', grid: 'grid', record: 'record' };
-const kindWords = (m: MemorySlot) => (m.kind === 'list' || m.kind === 'grid' ? `${m.kind} of ${KIND_WORDS[m.of ?? 'number']}` : (KIND_WORDS[m.kind] ?? m.kind)) + (m.keep ? ', in the backpack' : '');
+const kindWords = (m: MemorySlot) =>
+  (m.kind === 'record'
+    ? `${m.shape ?? 'record'} with ${Object.keys(m.fields ?? {}).join(', ')}`
+    : m.kind === 'list' && m.of === 'record'
+      ? `list of ${m.shape ?? 'record'}`
+      : m.kind === 'list' || m.kind === 'grid'
+        ? `${m.kind} of ${KIND_WORDS[m.of ?? 'number']}`
+        : (KIND_WORDS[m.kind] ?? m.kind)) + (m.keep ? ', in the backpack' : '');
+
+/** As many fields as a record can have, as in the level schema. */
+export const FIELDS_MAX = 4;
+const FIELD_KINDS: { id: ItemKind; label: string }[] = [
+  { id: 'number', label: 'a number' },
+  { id: 'yesNo', label: 'a yes or no' },
+  { id: 'direction', label: 'a direction' },
+];
+
+/** Why a record's fields cannot be used, said to the child, or null when they can. */
+export function fieldsProblem(fields: readonly { name: string }[]): string | null {
+  const names = fields.map((f) => f.name.trim());
+  if (names.some((n) => n.length === 0)) return 'Give every part of the record a name.';
+  const bad = names.find((n) => !FUNCTION_NAME.test(n) || n === 'x' || n === 'y' || RESERVED_NAMES.has(n));
+  if (bad) return `"${bad}" cannot be a part's name. Use a short word that starts with a small letter, like number or key.`;
+  if (new Set(names).size !== names.length) return 'Two parts have the same name.';
+  return null;
+}
+
+/** A record slot the child asked for: its type is its name with a capital, and every field starts empty. */
+export function newRecord(name: string, fields: readonly { name: string; kind: ItemKind }[], keep: boolean): MemorySlot {
+  const shape = Object.fromEntries(fields.map((f) => [f.name.trim(), f.kind])) as Record<string, ItemKind>;
+  return { name, kind: 'record', shape: name.charAt(0).toUpperCase() + name.slice(1), fields: shape, start: emptyRecord(shape), ...(keep && { keep: true }) };
+}
+
+/** A list of records shaped like an existing record slot, empty. */
+export function newRecordList(name: string, like: MemorySlot, keep: boolean): MemorySlot {
+  return { name, kind: 'list', of: 'record', ...(like.shape && { shape: like.shape }), ...(like.fields && { fields: like.fields }), start: [], ...(keep && { keep: true }) };
+}
 
 export interface RulesColumnProps {
   creation: Creation;
@@ -70,6 +107,8 @@ export function RulesColumn({ creation, universe, store, progress, program, edit
   const [name, setName] = useState('');
   const [kind, setKind] = useState('number');
   const [keep, setKeep] = useState(false);
+  /** The parts of a record being made. */
+  const [fields, setFields] = useState<{ name: string; kind: ItemKind }[]>([{ name: '', kind: 'number' }]);
   const [problem, setProblem] = useState<string | null>(null);
 
   const setRules = (patch: Partial<Creation['programming']>, goal?: (typeof GOALS)[number]) => {
@@ -124,12 +163,23 @@ export function RulesColumn({ creation, universe, store, progress, program, edit
     setAdding(what);
     setName('');
     setProblem(null);
+    setFields([{ name: '', kind: 'number' }]);
   };
   const add = () => {
     const trimmed = name.trim();
     const text = nameProblem(program, trimmed);
     if (text) return setProblem(text);
-    edit(adding === 'memory' ? { op: 'addSlot', slot: newSlot(trimmed, kind, days > 1 && keep) } : { op: 'addFunction', name: trimmed });
+    const kept = days > 1 && keep;
+    if (adding === 'function') edit({ op: 'addFunction', name: trimmed });
+    else if (kind === 'record') {
+      const wrong = fieldsProblem(fields);
+      if (wrong) return setProblem(wrong);
+      edit({ op: 'addSlot', slot: newRecord(trimmed, fields, kept) });
+    } else if (kind.startsWith('listOf:')) {
+      const like = memory.find((m) => m.name === kind.slice('listOf:'.length));
+      if (!like) return setProblem('Make the record first, then a list of it.');
+      edit({ op: 'addSlot', slot: newRecordList(trimmed, like, kept) });
+    } else edit({ op: 'addSlot', slot: newSlot(trimmed, kind, kept) });
     setAdding(null);
   };
   const nameForm = (what: 'memory' | 'function') =>
@@ -166,8 +216,57 @@ export function RulesColumn({ creation, universe, store, progress, program, edit
                   {k.label}
                 </option>
               ))}
+              <option value="record">a record: a few named things together</option>
+              {memory
+                .filter((m) => m.kind === 'record')
+                .map((m) => (
+                  <option key={m.name} value={`listOf:${m.name}`}>
+                    a list of {m.shape ?? m.name} records
+                  </option>
+                ))}
             </select>
           </label>
+        )}
+        {what === 'memory' && kind === 'record' && (
+          <div className="record-fields" role="group" aria-label="The parts of the record">
+            <span className="rule-note">A record keeps a few things together, like a crate with a number and whether it holds a key. Name each part.</span>
+            {fields.map((f, i) => (
+              <div key={i} className="part-field">
+                <input
+                  type="text"
+                  className="own-name"
+                  aria-label={`Name of part ${i + 1}`}
+                  placeholder={i === 0 ? 'number' : 'key'}
+                  value={f.name}
+                  maxLength={20}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  onChange={(e) => {
+                    setFields(fields.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)));
+                    setProblem(null);
+                  }}
+                />
+                <select className="param-select" aria-label={`What part ${i + 1} holds`} value={f.kind} onChange={(e) => setFields(fields.map((x, j) => (j === i ? { ...x, kind: e.target.value as ItemKind } : x)))}>
+                  {FIELD_KINDS.map((k) => (
+                    <option key={k.id} value={k.id}>
+                      {k.label}
+                    </option>
+                  ))}
+                </select>
+                {fields.length > 1 && (
+                  <button type="button" className="btn-icon part-remove" aria-label={`Remove part ${i + 1}`} onClick={() => setFields(fields.filter((_, j) => j !== i))}>
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
+            {fields.length < FIELDS_MAX && (
+              <button type="button" className="btn btn-quiet part-new" onClick={() => setFields([...fields, { name: '', kind: 'yesNo' }])}>
+                + Another part
+              </button>
+            )}
+          </div>
         )}
         {what === 'memory' && days > 1 && (
           <label className="own-keep">

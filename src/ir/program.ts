@@ -1,6 +1,6 @@
 import type { IdFactory } from './ids';
 import { buildNodes, specOf, splitSpec, type NodeSpec } from './spec';
-import { functionContainerId, functionOfContainer, handlerContainerId, handlerOfContainer, innerCondition, IR_VERSION, MAIN, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type Branch, type CommandId, type EventHandler, type IRNode, type MemorySlot, type NodeId, type Place, type Procedure, type ProgramIR } from './types';
+import { functionContainerId, functionOfContainer, handlerContainerId, handlerOfContainer, innerCondition, IR_VERSION, MAIN, parseField, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, parseWhole, type Branch, type CommandId, type EventHandler, type IRNode, type MemorySlot, type NodeId, type Place, type Procedure, type ProgramIR } from './types';
 
 export function emptyProgram(): ProgramIR {
   return { version: IR_VERSION, procedures: [{ name: MAIN, body: [] }], handlers: [] };
@@ -49,7 +49,8 @@ export function slotOf(program: ProgramIR, name: string): MemorySlot | undefined
 export function slotsInUse(program: ProgramIR): Set<string> {
   const used = new Set<string>();
   for (const { node } of walk(program)) {
-    if (node.kind === 'set' || node.kind === 'change' || node.kind === 'face' || node.kind === 'unlock' || node.kind === 'mark') used.add(node.slot);
+    // A Set or Add on a record's field uses the record.
+    if (node.kind === 'set' || node.kind === 'change' || node.kind === 'face' || node.kind === 'unlock' || node.kind === 'mark') used.add(node.slot.split('.')[0]!);
     if (node.kind === 'mark') {
       used.add(node.grid);
       if (node.at !== 'here' && node.at !== 'ahead') used.add(node.at);
@@ -64,6 +65,10 @@ export function slotsInUse(program: ProgramIR): Set<string> {
     if (node.kind === 'set' || node.kind === 'push') {
       const counted = parseLength(node.to);
       if (counted) used.add(counted);
+      const whole = parseWhole(node.to);
+      if (whole) used.add(whole);
+      const field = parseField(node.to);
+      if (field) used.add(field.record);
       const random = parseRandom(node.to);
       if (random?.kind === 'pick') used.add(random.list);
       const item = parseItem(node.to);
@@ -85,7 +90,8 @@ export function slotsInUse(program: ProgramIR): Set<string> {
     }
     if (node.kind === 'if' || node.kind === 'ifElse' || node.kind === 'until') {
       const test = parseSlotTest(innerCondition(node.condition));
-      if (test) used.add(test.slot);
+      // A test of a record's field uses the record.
+      if (test) used.add(test.slot.split('.')[0]!);
     }
   }
   return used;

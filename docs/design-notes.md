@@ -4,6 +4,48 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Build step 13d, the rest: not, functions using functions, records that are built (2026-11-12)
+
+The three parts of 13d left after names and kits. Each touched the IR and
+what runs, prints and edits it, as a concept pack did. 13d is complete.
+
+- **`not`.** A condition may be `not:<check>`, one deep: "not at the
+  flag", "count is not 3". The simulation turns the answer round; the
+  printer writes `!robot.atFlag()` and `count !== 3`, and a Repeat until
+  on a `not` prints the plain check. Creation mode offers a `not` for
+  every check that has no opposite of its own: not for path ahead and
+  blocked ahead, which are each other's, nor for a yes or no test.
+- **A function may use a function**, in creation mode. It may never use
+  itself, directly or by way of others: the edit operations refuse a call
+  that would close a ring, on insert and on move, and the editor rests the
+  call card where it would. Lessons keep "a function cannot use a
+  function"; the rule is an option of `applyOp`.
+- **Records are built.**
+  - New memory can be "a record: a few named things together", with one
+    to four parts, each a number, a yes or no or a direction. Its type is
+    its name with a capital: `crate` is a `Crate`. Once a record exists,
+    new memory can also be "a list of Crate records".
+  - A Set card can fill one part (`crate.number = 7`), and an Add card
+    can add to a part that is a number. The slot of a Set or Add is a
+    slot's name or `record.part`.
+  - A new source, `whole:<record>`, is a copy of a record: Add to list
+    with "a copy of crate" is how a list of records is built
+    (`crates.push({ ...crate })`). Each item is its own.
+  - If cards test a record's parts: "crate's key is yes".
+  - A record counts as used by any card that sets, reads, tests or copies
+    it, so it cannot be removed from under them.
+
+### Deviations and choices
+
+- **One `not`, no `and` or `or`.** The plan waits for a starter game to
+  prove it needs them.
+- **A copy does not check the shape.** A list of Crate records will take a
+  copy of any record slot. The editor offers what exists; mixing shapes
+  is on the maker.
+- **The lessons are untouched.** No level uses `not`, a nested call or a
+  built record, and the level validator still rejects a nested call in a
+  reference solution.
+
 ## Change: a limit on one kind of card (2026-11-12)
 
 Asked for: the ability to limit the number of a particular type of card.

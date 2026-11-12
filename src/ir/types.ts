@@ -190,6 +190,19 @@ export function splitSlotPath(path: string): { slot: string; field?: string } {
   return field ? { slot: slot!, field } : { slot: slot! };
 }
 
+const WHOLE = /^whole:([a-z][A-Za-z0-9]{0,19})$/;
+
+/** A whole record held by a record slot, copied: `whole:crate`, printed `{ ...crate }`. The slot's name, or null when the source is not one. */
+export function parseWhole(source: Source): string | null {
+  const m = typeof source === 'string' ? WHOLE.exec(source) : null;
+  return m ? m[1]! : null;
+}
+
+export const wholeOf = (record: string): Source => `whole:${record}`;
+
+/** Where a Set or Add card puts its value: a slot, or one field of a record slot, `crate.number`. */
+export const SLOT_PATH = /^[a-z][A-Za-z0-9]{0,19}(\.[a-z][A-Za-z0-9]{0,19})?$/;
+
 const ITEM = /^item:([a-z][A-Za-z0-9]{0,19})@(\d{1,2}|[a-z][A-Za-z0-9]{0,19})$/;
 
 /**

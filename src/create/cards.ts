@@ -19,7 +19,7 @@ export function withCreationRules(programming: Creation['programming']): Creatio
 }
 
 /** The cards that work on a slot of this kind. */
-export function cardsForSlot(slot: Pick<MemorySlot, 'kind'>): CardId[] {
+export function cardsForSlot(slot: Pick<MemorySlot, 'kind' | 'fields'>): CardId[] {
   switch (slot.kind) {
     case 'number':
       return ['set', 'change'];
@@ -31,6 +31,9 @@ export function cardsForSlot(slot: Pick<MemorySlot, 'kind'>): CardId[] {
       return ['set', 'fly'];
     case 'list':
       return ['push', 'forEach'];
+    case 'record':
+      // Set fills its parts; Add works on a part that is a number.
+      return Object.values(slot.fields ?? {}).includes('number') ? ['set', 'change'] : ['set'];
     default:
       return [];
   }

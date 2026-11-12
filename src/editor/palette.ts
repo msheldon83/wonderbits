@@ -77,8 +77,10 @@ export function needsOf(command: CardId, memory: readonly MemorySlot[]): string 
   const has = (...kinds: string[]) => memory.some((m) => kinds.includes(m.kind));
   switch (command) {
     case 'set':
-      return has('number', 'yesNo', 'direction', 'position') ? null : 'something to remember';
+      return has('number', 'yesNo', 'direction', 'position', 'record') ? null : 'something to remember';
     case 'change':
+      // A number of its own, or a number inside a record.
+      return has('number') || memory.some((m) => m.kind === 'record' && Object.values(m.fields ?? {}).includes('number')) ? null : 'a number';
     case 'unlock':
       return has('number') ? null : 'a number';
     case 'face':
@@ -99,7 +101,7 @@ export function needsOf(command: CardId, memory: readonly MemorySlot[]): string 
       return null;
   }
 }
-const WORDS: Record<string, string> = { number: 'number', yesNo: 'yes/no', direction: 'direction' };
+const WORDS: Record<string, string> = { number: 'number', yesNo: 'yes/no', direction: 'direction', record: 'record' };
 
 /** Every test of what the program remembers: a number against 0 to 9, a yes/no, a direction, a place against here. */
 export function slotTests(memory: readonly MemorySlot[]): ConditionId[] {
@@ -108,6 +110,8 @@ export function slotTests(memory: readonly MemorySlot[]): ConditionId[] {
     if (m.kind === 'yesNo') return [`slot:${m.name}=yes`, `slot:${m.name}=no`];
     if (m.kind === 'direction') return (['N', 'E', 'S', 'W'] as const).map((d): ConditionId => `slot:${m.name}=${d}`);
     if (m.kind === 'position') return [`slot:${m.name}=here`];
+    // A record is tested field by field: crate's key is yes.
+    if (m.kind === 'record') return Object.entries(m.fields ?? {}).flatMap(([f, k]) => slotTests([{ name: `${m.name}.${f}`, kind: k, start: 0 }]));
     return [];
   });
 }
