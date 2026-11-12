@@ -6,7 +6,7 @@
  * its bubble. Presentation only: the values come from the trace state.
  */
 import { useEffect, useState } from 'react';
-import { parseSlotTest, splitSlotPath, type MemorySlot, type RecordValue, type Value } from '../ir/types';
+import { innerCondition, parseSlotTest, splitSlotPath, type MemorySlot, type RecordValue, type Value } from '../ir/types';
 import type { TraceEvent } from '../runtime/contract';
 import type { SimState } from '../sim/types';
 
@@ -28,7 +28,7 @@ function answerFor(event: TraceEvent | null): string | null {
     return `${field} is ${typeof v === 'boolean' ? (v ? 'yes' : 'no') : fieldText(v)}`;
   }
   if (event.op === 'check') {
-    const t = parseSlotTest(event.condition);
+    const t = parseSlotTest(innerCondition(event.condition));
     const field = t && splitSlotPath(t.slot).field;
     if (!t || !field) return null;
     const asked = t.value === 'yes' || t.value === 'no' ? `${field}?` : `${field} ${ARROW[t.value] ?? t.value}?`;

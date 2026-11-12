@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { functionLabel, isPosition, isSenseId, parseField, splitSlotPath, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CardId, type RandomSource, type ConditionId, type IRNode, type SenseId, type Source, type Value } from '../ir/types';
+import { functionLabel, isPosition, isSenseId, negationOf, parseField, splitSlotPath, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CardId, type RandomSource, type ConditionId, type IRNode, type SenseId, type Source, type Value } from '../ir/types';
 import { TurnArrow } from '../render/art';
 
 export interface CommandInfo {
@@ -299,6 +299,9 @@ export function randomWords(r: RandomSource): string {
 
 /** A check in words: "blocked ahead", "count is 3", "found is yes", "way is right", "spot is here". */
 export function conditionLabel(c: ConditionId): string {
+  // A check turned round: "not at the flag", "count is not 3".
+  const inner = negationOf(c);
+  if (inner) return isSenseId(inner) ? `not ${CONDITIONS[inner].label}` : conditionLabel(inner).replace(' is ', ' is not ');
   if (isSenseId(c)) return CONDITIONS[c].label;
   const t = parseSlotTest(c);
   if (!t) return c;

@@ -1,5 +1,5 @@
 import { randomInt } from './random';
-import { isPosition, isSenseId, parseField, splitSlotPath, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type GridPlace, type MemorySlot, type SenseId, type Source, type Value } from '../ir/types';
+import { isPosition, isSenseId, negationOf, parseField, splitSlotPath, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type GridPlace, type MemorySlot, type SenseId, type Source, type Value } from '../ir/types';
 import type { Cell, Facing, Gate, Mover, ObjectiveDefinition, Plate, SimState, Switch, TileKind, WorldDefinition } from './types';
 
 export const cellKey = (c: Cell): string => `${c.x},${c.y}`;
@@ -265,6 +265,8 @@ export function step(world: WorldDefinition, state: SimState, command: CommandId
 
 /** What the robot senses right now. Pure. */
 export function evaluate(world: WorldDefinition, state: SimState, condition: ConditionId): boolean {
+  const inner = negationOf(condition);
+  if (inner) return !evaluate(world, state, inner);
   const { robot } = state;
   const target = ahead(robot, robot.facing);
   const test = parseSlotTest(condition);

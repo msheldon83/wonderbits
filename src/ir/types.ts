@@ -28,7 +28,9 @@ export type SenseId = (typeof CONDITION_IDS)[number];
  * `slot:way=E` or `slot:spot=here`.
  */
 export type SlotTest = `slot:${string}`;
-export type ConditionId = SenseId | SlotTest;
+/** A check turned round: `not:atFlag`, `not:slot:count=3`. One `not` deep; a child builds these in creation mode. */
+export type NotCondition = `not:${string}`;
+export type ConditionId = SenseId | SlotTest | NotCondition;
 /** What a level offers when it does not list its conditions: the senses every board has. Gate senses are listed by the levels that have gates. */
 export const BASIC_CONDITIONS: readonly ConditionId[] = ['pathAhead', 'blockedAhead', 'acornAhead', 'atFlag'];
 
@@ -45,8 +47,24 @@ export function parseSlotTest(value: string): { slot: string; value: string } | 
   return m ? { slot: m[1]!, value: m[2]! } : null;
 }
 
+const NOT = 'not:';
+
+/** The check a `not:` condition turns round, or null when the condition is not a negation. */
+export function negationOf(condition: string): ConditionId | null {
+  if (!condition.startsWith(NOT)) return null;
+  const inner = condition.slice(NOT.length);
+  return isSenseId(inner) || parseSlotTest(inner) !== null ? (inner as ConditionId) : null;
+}
+
+/** A condition without its `not`, if it has one: the sense or the memory test underneath. */
+export const innerCondition = (condition: ConditionId): ConditionId => negationOf(condition) ?? condition;
+
+/** A check turned round. Turning a negation round gives the check back. */
+export const negate = (condition: ConditionId): ConditionId => negationOf(condition) ?? (`${NOT}${condition}` as ConditionId);
+
 export function isConditionId(value: unknown): value is ConditionId {
-  return isSenseId(value) || (typeof value === 'string' && parseSlotTest(value) !== null);
+  if (typeof value !== 'string') return false;
+  return isSenseId(value) || parseSlotTest(value) !== null || negationOf(value) !== null;
 }
 
 /** Blocks that hold other cards. */

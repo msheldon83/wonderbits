@@ -1,6 +1,6 @@
 import type { IdFactory } from './ids';
 import { buildNodes, specOf, splitSpec, type NodeSpec } from './spec';
-import { functionContainerId, functionOfContainer, handlerContainerId, handlerOfContainer, IR_VERSION, MAIN, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type Branch, type CommandId, type EventHandler, type IRNode, type MemorySlot, type NodeId, type Place, type Procedure, type ProgramIR } from './types';
+import { functionContainerId, functionOfContainer, handlerContainerId, handlerOfContainer, innerCondition, IR_VERSION, MAIN, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type Branch, type CommandId, type EventHandler, type IRNode, type MemorySlot, type NodeId, type Place, type Procedure, type ProgramIR } from './types';
 
 export function emptyProgram(): ProgramIR {
   return { version: IR_VERSION, procedures: [{ name: MAIN, body: [] }], handlers: [] };
@@ -84,7 +84,7 @@ export function slotsInUse(program: ProgramIR): Set<string> {
       used.add(node.item);
     }
     if (node.kind === 'if' || node.kind === 'ifElse' || node.kind === 'until') {
-      const test = parseSlotTest(node.condition);
+      const test = parseSlotTest(innerCondition(node.condition));
       if (test) used.add(test.slot);
     }
   }

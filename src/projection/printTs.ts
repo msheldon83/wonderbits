@@ -3,7 +3,7 @@
  * readable TypeScript. Read-only through Phase 3; Phase 4 adds a parser that
  * lifts hand-edited code back into the IR using the @node comments.
  */
-import { isBirdSource, isPosition, isSenseId, MAIN, parseField, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type IRNode, type MemorySlot, type ProgramIR, type SenseId, type Source, type Value } from '../ir/types';
+import { isBirdSource, isPosition, isSenseId, MAIN, negationOf, parseField, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type IRNode, type MemorySlot, type ProgramIR, type SenseId, type Source, type Value } from '../ir/types';
 import type { Teammate } from '../sim/types';
 
 const CALL: Record<CommandId, string> = {
@@ -92,6 +92,8 @@ function sourceCode(source: Source): string {
 
 /** A check as TypeScript: a sense call, or a comparison with a memory slot. */
 export function conditionCode(c: ConditionId): string {
+  const inner = negationOf(c);
+  if (inner) return notCode(inner);
   if (isSenseId(c)) return SENSE[c];
   const t = parseSlotTest(c)!;
   if (t.value === 'yes') return t.slot;
@@ -136,6 +138,7 @@ function typeImports(program: ProgramIR): string {
 function notCode(c: ConditionId): string {
   const code = conditionCode(c);
   if (code.startsWith('!')) return code.slice(1);
+  if (code.includes(' !== ')) return code.replace(' !== ', ' === ');
   if (code.includes(' === ')) return code.replace(' === ', ' !== ');
   return /^[\w.()]+$/.test(code) ? `!${code}` : `!(${code})`;
 }

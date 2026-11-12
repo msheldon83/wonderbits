@@ -8,7 +8,7 @@
  * count like any other card, and so does everything inside them.
  */
 import { cardCounts, countNodes, functionNames, memoryOf } from '../ir/program';
-import { BASIC_CONDITIONS, DEFAULT_CONDITION, type BlockId, type CardId, type ConditionId, type MemorySlot, type ProgramIR } from '../ir/types';
+import { BASIC_CONDITIONS, DEFAULT_CONDITION, negate, negationOf, type BlockId, type CardId, type ConditionId, type MemorySlot, type ProgramIR } from '../ir/types';
 import type { PuzzleDefinition } from '../lessons/types';
 
 export type Programming = PuzzleDefinition['programming'];
@@ -112,11 +112,15 @@ export function slotTests(memory: readonly MemorySlot[]): ConditionId[] {
   });
 }
 
+/** Checks that already have their opposite on the list: path and blocked ahead, and a yes or no test. The rest gain a `not`. */
+const hasNoOpposite = (c: ConditionId): boolean => c !== 'pathAhead' && c !== 'blockedAhead' && !c.endsWith('=yes') && !c.endsWith('=no') && negationOf(c) === null;
+
 /** The conditions a level's If and Repeat until may choose from. Where the child names the memory, every test of it is offered too. */
 export function conditionsFor(programming: Programming, memory: readonly MemorySlot[] = []): readonly ConditionId[] {
   const listed = programming.allowedConditions ?? BASIC_CONDITIONS;
   if (!programming.ownNames) return listed;
-  return [...new Set([...listed, ...slotTests(memory)])];
+  const plain = [...new Set([...listed, ...slotTests(memory)])];
+  return [...plain, ...plain.filter(hasNoOpposite).map(negate)];
 }
 
 /** The condition a fresh block starts with: a loop waits for the flag, an If looks at the way ahead. */

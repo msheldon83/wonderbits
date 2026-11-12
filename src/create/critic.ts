@@ -6,7 +6,7 @@
  * run in the Worker so a long search cannot freeze the page.
  */
 import { cardCounts, countNodes, walk } from '../ir/program';
-import { GO_IDS, isBlockId, isCommandId, isGateActionId, MEMORY_CARD_IDS, type CardId, type ProgramIR } from '../ir/types';
+import { GO_IDS, innerCondition, isBlockId, isCommandId, isGateActionId, MEMORY_CARD_IDS, type CardId, type ConditionId, type ProgramIR } from '../ir/types';
 import { missingOutcomes } from '../lessons/checks';
 import { searchFlat } from '../lessons/validate';
 import type { Critique, CritiqueRequest } from '../runtime/contract';
@@ -16,6 +16,9 @@ import { CHECK_SEEDS } from '../sim/random';
 type Rules = CritiqueRequest['rules'];
 
 /** True when a program uses only the puzzle's cards and no more of them than its limit. */
+/** A test of the program's own memory, plain or turned round: creation mode offers every one. */
+const isSlotTestOf = (c: ConditionId): boolean => innerCondition(c).startsWith('slot:');
+
 /** The cards a program uses more of than the puzzle allows of that kind. */
 export function overCardLimits(limits: Rules['maxPerCommand'], counts: ReadonlyMap<string, number>): CardId[] {
   return (Object.entries(limits ?? {}) as [CardId, number][]).filter(([card, most]) => (counts.get(card) ?? 0) > most).map(([card]) => card);
@@ -29,7 +32,7 @@ export function fitsRules(rules: Pick<Rules, 'allowedCommands' | 'allowedConditi
   if (overCardLimits(rules.maxPerCommand, counts).length > 0) return false;
   if (rules.allowedConditions) {
     const senses = new Set<string>(rules.allowedConditions);
-    for (const { node } of walk(program)) if ('condition' in node && !senses.has(node.condition)) return false;
+    for (const { node } of walk(program)) if ('condition' in node && !senses.has(innerCondition(node.condition)) && !isSlotTestOf(node.condition)) return false;
   }
   return true;
 }
