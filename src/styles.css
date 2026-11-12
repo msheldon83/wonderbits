@@ -1977,6 +1977,43 @@ button.function-head {
   color: var(--ink-soft);
 }
 
+/* Holding and stepping the demo: under the board, where the eye already is. */
+.intro-controls,
+.intro-speed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.intro-controls .btn,
+.intro-speed .btn {
+  padding: 0 14px;
+}
+
+.intro-steps {
+  margin: 0;
+  min-width: 96px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.intro-speed-label {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+}
+
+.intro-speed .btn-speed {
+  min-height: 40px;
+  font-size: 15px;
+}
+
 .intro-program .editor {
   gap: 0;
 }

@@ -4,6 +4,35 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Change: a demo the child can study (2026-11-12)
+
+Feedback: the teaching card animations help, but they move too quickly to
+study and understand.
+
+- **Slow is the pace a demo plays at** (`PACE` in
+  `src/app/ConceptIntro.tsx`): the robot moves at about half speed, each
+  step is followed by a rest of 0.7 s so its card and its line of code can
+  be found, and the end stays on screen for 2.8 s before the demo goes
+  round again. A Speed switch under the board offers Normal, the pace of a
+  level's own run. The choice is a setting (`demoSpeed`), so it is kept.
+- **Pause, Back and Step** sit under the board with "Step 3 of 4". Pause
+  holds after the step that is playing; Play lets the demo run by itself
+  again. Step while the demo is playing only stops it, so nothing moves
+  that the child did not ask for; after that each tap plays one step. Back
+  shows the step before, with no animation, and its card, its line of code
+  and the memory card go back with it. A hold lasts as long as the child
+  likes, the end included; Step at the end goes on to the new way, or
+  round again.
+- **How.** The demo loop plays one event at a time and rests between them
+  through a `Pacer` (`src/render/pacer.ts`), which waits while playing and
+  holds while paused. Back is the sequencer's new `seek`.
+- **The log** has `intro-paced`: the first pause, step or back of a
+  showing, and each change of speed.
+
+Choices: Back stays inside one run, so it does not go from the new way
+back to the old; Watch again does that. The speed switch is on the demo
+and not on the Settings screen, where a child would not look for it.
+
 ## Change: Mechanics on one screen, with the rules always in view (2026-11-12)
 
 Feedback: the switch between the program and the rules did not feel
