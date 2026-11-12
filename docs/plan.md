@@ -261,7 +261,7 @@ Ten levels is a floor. When play shows a concept needs more practice, it gets a 
 
 Every new concept opens with a short introduction that shows before it tells, then hands off to the puzzles. It takes under a minute and can be replayed anytime.
 
-- **Show.** A 10 to 20 second animated demo of the robot using the new card, readable without text.
+- **Show.** A short animated demo of the robot using the new card, readable without text. It plays slowly by itself, and the child can pause it, step through it one card at a time and go back a step.
 - **Name it.** One sentence in kid terms, beside the new card.
 - **Peek at the code.** The same idea as one line in the see-the-code panel.
 - **Say the real word.** Under the code, the words a programmer would use for what the child just built: the piece of code to tap (`for`), its name (loop), and a sentence or two tying the card to the code. Words for code the demo does not print wait for the level that first prints it.

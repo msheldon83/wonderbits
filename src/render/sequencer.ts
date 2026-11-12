@@ -77,6 +77,22 @@ export class Sequencer {
     this.setStatus('idle');
   }
 
+  /**
+   * Jump to just after the event before `position`, with no animation: the
+   * board shows that event's after state and it is the active event again.
+   * Position 0 is the start. Playback stops; Step and Play go on from there.
+   */
+  seek(position: number): void {
+    if (!this.initial) return;
+    this.abort();
+    this.cursor = Math.max(0, Math.min(this.trace.length, position));
+    const last = this.cursor > 0 ? this.trace[this.cursor - 1]! : null;
+    this.player.showState(last ? last.after : this.initial);
+    this.listener.onEvent?.(last);
+    if (last) this.listener.onPlayed?.(last);
+    this.setStatus(this.cursor === 0 ? 'idle' : this.cursor >= this.trace.length ? 'finished' : 'paused');
+  }
+
   /** Abort immediately and return to the initial state. */
   reset(): void {
     this.abort();
