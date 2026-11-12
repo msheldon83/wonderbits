@@ -261,9 +261,10 @@ Ten levels is a floor. When play shows a concept needs more practice, it gets a 
 
 Every new concept opens with a short introduction that shows before it tells, then hands off to the puzzles. It takes under a minute and can be replayed anytime.
 
-- **Show.** A 10 to 20 second animated demo of the robot using the new card, readable without text.
+- **Show.** A short animated demo of the robot using the new card, readable without text. It plays slowly by itself, and the child can pause it, step through it one card at a time and go back a step.
 - **Name it.** One sentence in kid terms, beside the new card.
 - **Peek at the code.** The same idea as one line in the see-the-code panel.
+- **Say the real word.** Under the code, the words a programmer would use for what the child just built: the piece of code to tap (`for`), its name (loop), and a sentence or two tying the card to the code. Words for code the demo does not print wait for the level that first prints it.
 - **First try.** Every pack's first level introduces its concept in the most straightforward way: one new card, an obvious use, and nothing else to figure out.
 - **Save it to the card book.** The demo, sentence and code line go into a card book the child can open anytime, from puzzles or creation mode.
 
@@ -290,7 +291,7 @@ Every new concept opens with a short introduction that shows before it tells, th
 
 Explanations stay short enough for a 9-year-old to read, and the demo carries the rest. In creation mode, the AI's explanations link to the same card book page. The three packs built before step 8 have theirs, replacing the single `intro` sentence their first levels used to carry, and Same trick, new place shipped with its own (built 2026-11-08; see design-notes.md).
 
-A pack's introduction lives in its `pack.json` beside `concepts` and `prerequisites`: a `title`, one `explanation` sentence, and a `demo` with a small board and the `program` the robot plays on it, plus an optional `before` program that shows the old way first and folds into the new one. The code shown is printed from the demo program by the same projection as the see-the-code panel, so the three parts of the introduction can never disagree. The validator proves the demo reaches the flag, that the old way is the longer one, and that the program uses a card of the concept it introduces.
+A pack's introduction lives in its `pack.json` beside `concepts` and `prerequisites`: a `title`, one `explanation` sentence, a list of `realWords` (each a `word`, the `code` it names when it names any, and a `text`), and a `demo` with a small board and the `program` the robot plays on it, plus an optional `before` program that shows the old way first and folds into the new one. The code shown is printed from the demo program by the same projection as the see-the-code panel, so the three parts of the introduction can never disagree. The validator proves the demo reaches the flag, that the old way is the longer one, and that the program uses a card of the concept it introduces. It also proves that each real word's code is printed by the demo or by one of the pack's reference solutions, and that no piece of code is explained twice.
 
 ## 5. Puzzle rules and lesson schema
 

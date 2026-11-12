@@ -10,6 +10,12 @@
     "concept": "conditionals",
     "title": "If",
     "explanation": "An If card checks the world first, then picks what to do.",
+    "realWords": [
+      { "word": "if statement", "code": "if", "text": "An If card is an if statement. The question in its round brackets is called the condition. The lines in the curly brackets run only when the condition is true." },
+      { "word": "else", "code": "else", "text": "Otherwise is else. The lines after else run when the condition is false, so exactly one of the two parts runs, never both." },
+      { "word": "while loop", "code": "while", "text": "Repeat until is a while loop. It checks its condition before every time round and stops when the condition is false. Until blocked is written the other way round: while not blocked." },
+      { "word": "not", "code": "!", "text": "An exclamation mark means not. It flips true to false and false to true, so !robot.blockedAhead() is true when nothing is in the way." }
+    ],
     "demo": {
       "world": {
         "rows": ["...#", "...."],

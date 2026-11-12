@@ -1,7 +1,7 @@
 /** CI gate: every shipped level parses and proves itself solvable. */
 import { describe, expect, it } from 'vitest';
 import { loadPacks } from './content';
-import { validatePack, validatePuzzle } from './validate';
+import { validatePack, validatePuzzle, validateRealWords } from './validate';
 
 const packs = loadPacks();
 
@@ -19,6 +19,9 @@ describe('content packs', () => {
     describe(`pack ${manifest.id}`, () => {
       it('declares its concepts, prerequisites and introduction consistently', () => {
         expect(validatePack(manifest, packs.map((p) => p.manifest))).toEqual([]);
+      });
+      it('names real words for code the child will see', () => {
+        expect(validateRealWords(manifest, levels, packs.map((p) => p.manifest))).toEqual([]);
       });
       it('has unique level ids', () => {
         const ids = levels.map((l) => l.id);

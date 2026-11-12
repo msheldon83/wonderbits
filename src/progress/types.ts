@@ -47,9 +47,11 @@ export interface Settings {
   themeId: string;
   /** For the adult: play any level without finishing the ones before it. */
   openAllLevels: boolean;
+  /** How fast a concept's demo plays: slow gives each step time to be read. */
+  demoSpeed: 'slow' | 'normal';
 }
 
-export const DEFAULT_SETTINGS: Settings = { muted: false, reducedMotion: 'system', themeId: 'forest', openAllLevels: true };
+export const DEFAULT_SETTINGS: Settings = { muted: false, reducedMotion: 'system', themeId: 'forest', openAllLevels: true, demoSpeed: 'slow' };
 
 /**
  * One structured event per thing the child did. Timestamps are epoch ms.
@@ -59,6 +61,8 @@ export const DEFAULT_SETTINGS: Settings = { muted: false, reducedMotion: 'system
 export type ObservationEvent = { t: number; levelId: string } & (
   | { kind: 'level-opened' }
   | { kind: 'intro-shown'; packId: string; replay: boolean }
+  /** The child took hold of a demo: the first pause, step or back of a showing, or a change of speed. */
+  | { kind: 'intro-paced'; packId: string; action: 'pause' | 'step' | 'back' | 'slow' | 'normal' }
   | { kind: 'card-book-opened' }
   | { kind: 'level-restarted' }
   | { kind: 'card-placed'; command: string; at: Place }

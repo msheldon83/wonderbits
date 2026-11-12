@@ -10,6 +10,9 @@
     "concept": "worldState",
     "title": "Switches and gates",
     "explanation": "Things in the world can change, and they stay changed until something changes them back.",
+    "realWords": [
+      { "word": "state", "text": "Everything that can change while a program runs, like whether a gate is open, is called state. The code says what to do. The state is what is true right now, and the memory card shows it." }
+    ],
     "demo": {
       "world": {
         "rows": [".....", "##.##"],

@@ -14,6 +14,12 @@
     "concept": "objects",
     "title": "Blueprints",
     "explanation": "A program can be a blueprint. Every robot built from it runs the same cards, from its own start, with its own memory.",
+    "realWords": [
+      { "word": "class", "code": "class", "text": "A blueprint is a class. It lists what every robot built from it remembers and what it can do. A function inside a class, like main, is called a method." },
+      { "word": "instance", "code": "new", "text": "new builds one robot from the class. Each robot built is called an instance, or an object. The arguments say where this one starts and which way it faces." },
+      { "word": "this", "code": "this", "text": "Inside a class, this means the robot that is running the line right now. this.steps is that robot's own steps, not another robot's." },
+      { "word": "inheritance", "code": "extends", "text": "Bot extends Robot means a Bot starts with everything a Robot can do, like forward, and adds its own. Getting abilities from another class is called inheritance." }
+    ],
     "demo": {
       "world": {
         "rows": [

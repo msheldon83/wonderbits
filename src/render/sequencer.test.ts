@@ -126,4 +126,37 @@ describe('Sequencer', () => {
     expect(m.shown.at(-1)).toBe(0);
     expect(m.played).toEqual(['n1', 'n2']);
   });
+
+  it('seek goes back to an earlier step without animating, and plays on from there', async () => {
+    const m = manualPlayer();
+    const events: (string | null)[] = [];
+    const seq = new Sequencer(m.player, { onEvent: (e) => events.push(e?.nodeId ?? null) });
+    seq.load(trace, state(0));
+    const playing = seq.play();
+    await m.finishCurrent();
+    await m.finishCurrent();
+    await m.finishCurrent();
+    await playing;
+    expect(seq.state).toBe('finished');
+
+    seq.seek(1);
+    expect(seq.state).toBe('paused');
+    expect(seq.position).toBe(1);
+    expect(m.shown.at(-1)).toBe(1);
+    expect(events.at(-1)).toBe('n1');
+
+    const stepping = seq.step();
+    await m.finishCurrent();
+    await stepping;
+    expect(seq.position).toBe(2);
+    expect(m.played.at(-1)).toBe('n2');
+
+    seq.seek(0);
+    expect(seq.state).toBe('idle');
+    expect(m.shown.at(-1)).toBe(0);
+    expect(events.at(-1)).toBeNull();
+    seq.seek(99);
+    expect(seq.state).toBe('finished');
+    expect(seq.position).toBe(3);
+  });
 });

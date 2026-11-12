@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
-import { introductionBefore } from '../lessons/concepts';
+import { introductionBefore, realWordsOf } from '../lessons/concepts';
+import { RealWordsContext } from '../editor/CodePanel';
 import { CreateScreen } from '../create/CreateScreen';
 import { CreationScreen } from '../create/CreationScreen';
 import { CREATION_CARDS } from '../create/cards';
@@ -78,6 +79,12 @@ export function App() {
     else if (route.screen === 'map') cameFrom.current = 'map';
   }, [route]);
 
+  /** The real words the code panel may offer: those of every concept whose island is open, the newest concept first. */
+  const metWords = useMemo(
+    () => realWordsOf(book.filter((e) => store.isUnlocked(e.firstLevelId)).reverse()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [book, store, snap],
+  );
   /** Each pack's name, place on the map and whether it is finished: tools and kits from an unfinished pack point at it. Nothing is locked. */
   const packs = useMemo(() => {
     const out: Record<string, { title: string; href: string; done: boolean }> = {};
@@ -109,6 +116,7 @@ export function App() {
   }
 
   return (
+    <RealWordsContext.Provider value={metWords}>
     <div className={`app screen-${route.screen}`}>
       <header className="app-header">
         <a className="brand" href={hashFor({ screen: 'map' })}>
@@ -191,5 +199,6 @@ export function App() {
         />
       )}
     </div>
+    </RealWordsContext.Provider>
   );
 }

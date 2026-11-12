@@ -14,6 +14,10 @@
     "concept": "events",
     "title": "When cards",
     "explanation": "A When card waits for something to happen, then runs its cards.",
+    "realWords": [
+      { "word": "event", "code": "robot.on", "text": "An event is something that happens, like a plate being stepped on. robot.on tells the robot: when this event happens, run this code. Programmers call that listening for an event." },
+      { "word": "arrow function", "code": "=>", "text": "() => { } is a function with no name, called an arrow function. The robot keeps it and runs it later, each time the event happens. A function kept to run later is called a callback, or a handler." }
+    ],
     "demo": {
       "world": {
         "rows": [

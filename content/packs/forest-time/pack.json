@@ -14,6 +14,9 @@
     "concept": "time",
     "title": "Ticks",
     "explanation": "The world moves one tick at a time, and Every tick cards run on each tick.",
+    "realWords": [
+      { "word": "game loop", "code": "'tick'", "text": "A game runs in a loop that never stops: move everything a little, draw it, go round again. Each time round is a tick. Real games tick about 60 times a second and call each one a frame." }
+    ],
     "demo": {
       "world": {
         "rows": [
