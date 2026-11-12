@@ -3,21 +3,11 @@
  * the cards are copied; the limits are not, because a remix is free play
  * until its maker sets a challenge. The level itself is never altered.
  */
-import { splitSpec, type NodeSpec } from '../ir/spec';
+import { skeletonOf, splitSpec } from '../ir/spec';
 import type { CardId } from '../ir/types';
 import type { PuzzleDefinition } from '../lessons/types';
+import { withCreationRules } from './cards';
 import { TITLE_MAX, type Creation } from './types';
-
-/** The named parts of a program with nothing in them: its memory, and its functions and When cards left empty. */
-export function skeletonOf(spec: readonly NodeSpec[]): NodeSpec[] {
-  return spec.flatMap((s): NodeSpec[] => {
-    if (typeof s === 'string') return [];
-    if ('remember' in s) return [s];
-    if ('define' in s) return [{ define: s.define, do: [] }];
-    if ('on' in s) return [{ on: s.on, do: [] }];
-    return [];
-  });
-}
 
 export function remixTitle(title: string): string {
   const suffix = ' remix';
@@ -40,14 +30,15 @@ export function remixOf(level: PuzzleDefinition): Omit<Creation, 'schemaVersion'
     // The main board; a shuffled level's other versions are not carried over.
     world: structuredClone(level.world),
     objective: structuredClone(level.objective),
-    programming: {
+    // The level's sources stay on offer, beside creation mode's own; its maker may add names of their own.
+    programming: withCreationRules({
       allowedCommands: cards,
       ...(allowedConditions && { allowedConditions: [...allowedConditions] }),
       ...(allowedSources && { allowedSources: [...allowedSources] }),
       ...(maxMemory !== undefined && { maxMemory }),
       ...(memoryOptions && { memoryOptions: structuredClone(memoryOptions) }),
       starterProgram: skeleton,
-    },
+    }),
     ...(level.inputScript && { inputScript: [...level.inputScript] }),
     ...(level.days !== undefined && { days: level.days }),
     program: structuredClone(maker),

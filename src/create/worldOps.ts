@@ -5,15 +5,15 @@
  * shares a tile; a switch always flips a gate that is there. An operation
  * that cannot be done returns the same world, so the caller can tell.
  */
-import { FACINGS, type Cell, type Gate, type Switch, type TileKind, type WorldDefinition } from '../sim/types';
+import { FACINGS, type Cell, type Gate, type Mover, type Switch, type TileKind, type WorldDefinition } from '../sim/types';
 import { BOARD_MAX, BOARD_MIN } from './types';
 
 /** What a tap on a tile does. */
-export const TOOLS = ['floor', 'wall', 'gap', 'acorn', 'flag', 'robot', 'gate', 'switch', 'erase'] as const;
+export const TOOLS = ['floor', 'wall', 'gap', 'acorn', 'flag', 'robot', 'gate', 'switch', 'plate', 'beetle', 'log', 'erase'] as const;
 export type Tool = (typeof TOOLS)[number];
 
-/** Tools that paint as a finger drags across tiles; the others place one thing per tap. */
-export const isPaintTool = (tool: Tool): boolean => tool === 'floor' || tool === 'wall' || tool === 'gap' || tool === 'erase';
+/** Tools that work as a finger drags across tiles: the tile tools and the eraser paint, and a beetle or a log has its path drawn. The others place one thing per tap. */
+export const isPaintTool = (tool: Tool): boolean => tool === 'floor' || tool === 'wall' || tool === 'gap' || tool === 'erase' || tool === 'beetle' || tool === 'log';
 
 const same = (a: Cell, b: Cell) => a.x === b.x && a.y === b.y;
 const inside = (world: WorldDefinition, c: Cell) => c.x >= 0 && c.y >= 0 && c.x < world.width && c.y < world.height;
@@ -81,7 +81,8 @@ export function applyTool(world: WorldDefinition, tool: Tool, cell: Cell): World
     case 'gap':
       return setTile(world, cell, tool);
     case 'erase': {
-      const cleared = clearThings(world, [cell]);
+      // A beetle or log goes when any tile of its path is erased.
+      const cleared = tidy({ ...clearThings(world, [cell]), movers: (world.movers ?? []).filter((m) => !m.path.some((c) => same(c, cell))) });
       return JSON.stringify(cleared) === JSON.stringify(world) ? world : cleared;
     }
     case 'acorn': {
@@ -101,7 +102,9 @@ export function applyTool(world: WorldDefinition, tool: Tool, cell: Cell): World
       const robot = same(world.robot, cell) ? { ...world.robot, facing: FACINGS[(FACINGS.indexOf(world.robot.facing) + 1) % 4]! } : { ...world.robot, ...cell };
       const free = same(world.robot, cell) ? world : freeFloor({ ...world, robot: { ...world.robot, x: -1, y: -1 } }, cell);
       if (!free) return world;
-      return { ...free, robot, ...(world.team && { team: world.team.map((t, i) => (i === 0 ? { ...t, robot } : t)) }) };
+      // A beetle may not start where the robot does.
+      const movers = (free.movers ?? []).filter((m) => !(m.kind === 'beetle' && same(m.path[0]!, robot)));
+      return tidy({ ...free, movers, robot, ...(world.team && { team: world.team.map((t, i) => (i === 0 ? { ...t, robot } : t)) }) });
     }
     case 'gate': {
       // Tapping a gate changes how it starts: shut, or open.
@@ -113,6 +116,17 @@ export function applyTool(world: WorldDefinition, tool: Tool, cell: Cell): World
       const free = freeFloor(world, cell);
       return free ? { ...free, gates: [...(free.gates ?? []), { id, ...cell, open: false }] } : world;
     }
+    case 'plate': {
+      // Tapping a plate picks it back up.
+      if ((world.plates ?? []).some((p) => same(p, cell))) return tidy({ ...world, plates: world.plates!.filter((p) => !same(p, cell)) });
+      const used = new Set((world.plates ?? []).map((p) => p.id));
+      const id = [...'123456789'].find((d) => !used.has(d));
+      const free = id ? freeFloor(world, cell) : null;
+      return free && id ? { ...free, plates: [...(free.plates ?? []), { id, ...cell }] } : world;
+    }
+    case 'beetle':
+    case 'log':
+      return drawMover(world, tool, cell, true);
     case 'switch': {
       const gates = world.gates ?? [];
       if (gates.length === 0) return world;
@@ -132,6 +146,103 @@ export function applyTool(world: WorldDefinition, tool: Tool, cell: Cell): World
       return gate ? { ...free, switches: [...(free.switches ?? []), { ...cell, toggles: [gate.id] }] } : world;
     }
   }
+}
+
+/** As many beetles and logs as a board stays readable with. */
+export const MAX_MOVERS = 6;
+
+/** The way out of a mover's round: a there-and-back patrol lists the way back too, so its way out is the first part. */
+export function routeOf(path: readonly Cell[]): Cell[] {
+  const n = path.length;
+  if (n <= 2) return [...path];
+  const out = n / 2 + 1;
+  const thereAndBack = n % 2 === 0 && path.slice(out).every((c, i) => same(c, path[out - 2 - i]!));
+  return thereAndBack ? path.slice(0, out) : [...path];
+}
+
+/** A round from a way out: there and back again, or round a ring when the way out ends beside its start. */
+export function pathOf(route: readonly Cell[]): Cell[] {
+  const first = route[0]!;
+  const last = route.at(-1)!;
+  const ring = route.length >= 4 && Math.abs(first.x - last.x) + Math.abs(first.y - last.y) === 1;
+  return ring ? [...route] : [...route, ...route.slice(1, -1).reverse()];
+}
+
+const suits = (world: WorldDefinition, kind: Mover['kind'], cell: Cell) => inside(world, cell) && tile(world, cell) === (kind === 'log' ? 'gap' : 'floor');
+
+/** Whether a mover's way out can go on to this tile: the next tile along, of the right ground, not one it already crosses. */
+export function canExtend(world: WorldDefinition, mover: Mover, cell: Cell): boolean {
+  const route = routeOf(mover.path);
+  const end = route.at(-1)!;
+  return suits(world, mover.kind, cell) && Math.abs(end.x - cell.x) + Math.abs(end.y - cell.y) === 1 && !route.some((c) => same(c, cell));
+}
+
+/** A mover's way out, one tile longer. */
+export function extendMover(world: WorldDefinition, id: string, cell: Cell): WorldDefinition {
+  const mover = (world.movers ?? []).find((m) => m.id === id);
+  if (!mover || !canExtend(world, mover, cell)) return world;
+  return { ...world, movers: world.movers!.map((m) => (m === mover ? { ...m, path: pathOf([...routeOf(m.path), cell]) } : m)) };
+}
+
+const STEP = { N: [0, -1], E: [1, 0], S: [0, 1], W: [-1, 0] } as const;
+export type Way = keyof typeof STEP;
+
+/** The tile one step from the end of a mover's way out. */
+export function nextCell(mover: Mover, way: Way): Cell {
+  const end = routeOf(mover.path).at(-1)!;
+  return { x: end.x + STEP[way][0], y: end.y + STEP[way][1] };
+}
+
+/** A mover's way out as the steps it takes, one letter each: "EES" is right, right, down. */
+export function stepsOf(mover: Mover): Way[] {
+  const route = routeOf(mover.path);
+  return route.slice(1).map((c, i) => {
+    const from = route[i]!;
+    return c.x > from.x ? 'E' : c.x < from.x ? 'W' : c.y > from.y ? 'S' : 'N';
+  });
+}
+
+/** One more step for a mover, in a direction. */
+export const stepMover = (world: WorldDefinition, id: string, way: Way): WorldDefinition => {
+  const mover = (world.movers ?? []).find((m) => m.id === id);
+  return mover ? extendMover(world, id, nextCell(mover, way)) : world;
+};
+
+/** Take back a mover's last step. One that has no steps left stays where it is, standing still. */
+export function unstepMover(world: WorldDefinition, id: string): WorldDefinition {
+  const mover = (world.movers ?? []).find((m) => m.id === id);
+  if (!mover) return world;
+  const route = routeOf(mover.path);
+  if (route.length < 2) return world;
+  return { ...world, movers: world.movers!.map((m) => (m === mover ? { ...m, path: pathOf(route.slice(0, -1)) } : m)) };
+}
+
+export const removeMover = (world: WorldDefinition, id: string): WorldDefinition => tidy({ ...world, movers: (world.movers ?? []).filter((m) => m.id !== id) });
+
+/**
+ * Drawing a beetle's or a log's path. A fresh touch on a tile puts a new
+ * one there, standing still, unless the tile is the next step of the one
+ * drawn last, which then walks on to it; the rest of a stroke always
+ * extends the one being drawn. A beetle walks on grass and a log floats on
+ * water, one tile at a time, and no path crosses itself.
+ */
+export function drawMover(world: WorldDefinition, kind: Mover['kind'], cell: Cell, fresh: boolean): WorldDefinition {
+  if (!suits(world, kind, cell)) return world;
+  if (kind === 'beetle' && same(world.robot, cell)) return world;
+  const movers = world.movers ?? [];
+  const last = movers.filter((m) => m.kind === kind).at(-1);
+  if (last && canExtend(world, last, cell)) return extendMover(world, last.id, cell);
+  if (!fresh || movers.length >= MAX_MOVERS || movers.some((m) => m.path.some((c) => same(c, cell)))) return world;
+  const used = new Set(movers.map((m) => m.id));
+  let n = 1;
+  while (used.has(`${kind}${n}`)) n++;
+  return { ...world, movers: [...movers, { id: `${kind}${n}`, kind, path: [cell] }] };
+}
+
+/** One touch of a tool during a stroke of the finger: the first touch is fresh, the rest carry on from it. */
+export function applyStroke(world: WorldDefinition, tool: Tool, cell: Cell, fresh: boolean): WorldDefinition {
+  if (!inside(world, cell)) return world;
+  return tool === 'beetle' || tool === 'log' ? drawMover(world, tool, cell, fresh) : applyTool(world, tool, cell);
 }
 
 /** The smallest board that still holds every robot and flag. */

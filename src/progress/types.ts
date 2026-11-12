@@ -79,6 +79,9 @@ export type ObservationEvent = { t: number; levelId: string } & (
   // Creation mode: levelId is the creation's id.
   | { kind: 'creation-started'; basedOn?: string }
   | { kind: 'creation-removed' }
+  | { kind: 'kit-added'; kit: string }
+  | { kind: 'name-added'; what: 'function' | 'when'; name: string }
+  | { kind: 'name-removed'; what: 'function' | 'when'; name: string }
   | { kind: 'board-changed'; width: number; height: number }
   | { kind: 'creation-solved' }
   | { kind: 'puzzle-set'; goal: string; cards: number; limit: number | null }

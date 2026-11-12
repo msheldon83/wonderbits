@@ -4,6 +4,182 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Change: Mechanics on one screen, with the rules always in view (2026-11-12)
+
+Feedback: the switch between the program and the rules did not feel
+natural; the instructions seemed limited until the rules were visited;
+"Add your own" was not clear; and it was not clear why a maker was adding
+steps to a program at all. The owner chose one screen with the rules
+always visible.
+
+- **Three columns in Mechanics:** the board with its run controls and the
+  critic under them; Rules for the player; Your solution. Nothing is
+  hidden behind a switch. On a narrow or upright screen they stack and
+  the page scrolls: board, rules, solution.
+- **Rules for the player** (`src/create/RulesColumn.tsx`) has four parts,
+  none of them a step of a program:
+  - **The goal.**
+  - **Cards the player gets:** every card creation mode has, in groups
+    named for the idea (Moves, Loops and ifs, Functions, Memory, Lists,
+    Map and bird, Gates), each a switch. A card that is on but has
+    nothing to work on says so under its group: "Set needs something to
+    remember. Add it under Parts, below."
+  - **Parts the player starts with:** Memory, Functions and When cards,
+    each with a line saying what it is and its own button: "+ New
+    memory", "+ New function", "+ New When card". A name is asked for in
+    a small form with the kind it holds. Ready-made sets (the kits) are a
+    button here.
+  - **Limits:** the most cards, and days, from one. More than one day
+    lets new memory go in the backpack.
+- **Your solution** is the program panel, renamed, with a line under its
+  title: "Solve your own puzzle here, with the cards the player gets. It
+  proves the puzzle can be solved. The player never sees it." It has the
+  player's cards and no "Add your own" box: parts are made in the rules
+  and appear in the solution, empty.
+- **The critic** sits under the run controls and speaks whenever the
+  rules or the solution change.
+- **The play surface** takes a middle column, given the program and a way
+  to edit it, so a part added in the rules goes through the same edit
+  path, undo included.
+
+### Deviations and choices
+
+- **The board has a third of the screen** in Mechanics, less than
+  elsewhere. Board and Preview give it the usual room.
+- **The program/rules switch and the Add your own box are gone** from
+  creation mode. `OwnNames` stays in the editor for a surface that does
+  not lock its names; nothing uses it now.
+- **The days setting no longer needs the backpack kit.**
+
+## Change: making a puzzle in three steps, and choosing the island's size (2026-11-12)
+
+Feedback: the Puzzle tab felt cut off from Play, where much of a puzzle is
+really defined; and a new puzzle should let its maker choose the map's
+size.
+
+- **Three steps replace Build, Play and Puzzle:** 1 Board, 2 Mechanics,
+  3 Preview, numbered in the creation's bar.
+  - **Board** is the board editor, as before.
+  - **Mechanics** is how the puzzle works, on one screen: the board and
+    the run controls on the left; on the right a switch between My program
+    (the maker's own solution, with Add your own) and Rules (the critic
+    first, then the goal, the cards a player gets, the most cards, the
+    days). The switch's Rules button says the rules in a few words:
+    "reach the flag, 8 cards at most". Changing a rule takes effect on the
+    program beside it at once: the palette, the limit and the goal. Add
+    cards is among the run controls and in the Rules.
+  - **Preview** is the puzzle as a player meets it: the maker's cards and
+    limit, the maker's named parts empty, the goal as the first line, and
+    no way to add names. Solving it there within the rules is a proof too.
+    A line above says what it is, and whether the puzzle is on the map.
+- **The bar says where the puzzle stands**: "Ready to play", or "Not
+  solved yet".
+- **A new island asks how big it is.** Small (5 by 5), Medium (7 by 6) and
+  Large (10 by 8), or any size from 3 to 12 tiles each way with steppers,
+  with a picture of the empty island. The Board step's steppers use the
+  same upper limit.
+- **The play surface** takes a header and an alternative for its side
+  column, and drops a finished run when the rules change under it, so a
+  result never outlives the rules it was run under.
+
+### Deviations and choices
+
+- **12 by 12 at most.** The engine allows 16, the limit of the coordinate
+  cards; at 12 a tile is still easy to hit on an iPad. A remix of a larger
+  level keeps its size.
+- **Rules beside the program, not under it.** Both at once would not fit
+  beside the board on an iPad; one tap switches, the board stays, and the
+  program keeps its place while the rules show.
+- **A limit starts at the maker's own program's size**, or the shortest
+  plain way, or ten, when first switched on.
+
+## Change: random values everywhere, and steps for beetles and logs (2026-11-12)
+
+Feedback: the random number was missing, and there was no way to program
+how logs and beetles move.
+
+- **Random values are on every creation**, not behind the die kit. Any
+  Set card offers a random number 1 to 3, 1 to 6 or 0 to 9 for a number, a
+  coin flip for a yes or no, and a random way for a direction. Creations
+  made earlier gain them when they load. The die kit now only adds a
+  number called `roll` to hold one.
+- **A creation is a random puzzle only once a card takes a random value.**
+  Then, as on a random level, a run counts only if it works on every roll,
+  and the critic stops claiming certainty.
+- **How they move**, a panel in Build beside the board, lists each beetle
+  and log with the steps it takes as arrows. Four arrow buttons add a
+  step, one takes the last step back, one removes it. An arrow rests when
+  the step would leave the board, cross the wrong ground or go back over
+  the path. Tapping the tool on a tile puts one down standing still;
+  dragging still draws a path.
+
+### Deviations and choices
+
+- **A mover follows a list of steps, not a program of cards.** It walks
+  its steps and back, on its own clock, without looking at the robot. A
+  beetle that runs cards (chases the robot, turns at a wall) needs the
+  engine to give other actors a program, which is 13f.
+
+## Build step 13d, first part: names of their own, and kits (2026-11-11)
+
+Feedback: a puzzle made from an empty island could only use the early
+cards. The advanced cards all work on something with a name, and only a
+level could supply one. This brings the first part of 13d forward, and adds
+kits on top.
+
+- **Add your own**, under the program in creation mode
+  (`src/editor/OwnNames.tsx`): something to remember (a number, a yes or
+  no, a direction, a place, or a list of numbers, directions or yes/no), a
+  function, and a When card for an acorn, a tick or a plate on the board.
+  Names are typed. The rule is said kindly: starts with a small letter,
+  letters and numbers only, 20 at most, not a word the robot already uses,
+  not already taken. Each part has a remove button; a function a card still
+  calls, and a slot a card still uses, stay.
+- **The IR** gains four edit operations: `addFunction`, `removeFunction`,
+  `addHandler`, `removeHandler`, and `nameProblem`. Nothing else in the IR,
+  the interpreter or the printer changed.
+- **`programming.ownNames`** marks a creation. With it, Set cards offer
+  every value that fits whatever the program remembers, If cards offer
+  every test of it, and a card that needs a slot rests in the palette,
+  saying what to remember first. `allowedSources` then only adds to what
+  is offered: random values and the bird's answers.
+- **A new part brings its cards.** Adding a function adds its call card to
+  the creation; a number adds Set and Add; a direction Set and Face; a
+  list Add to list and For each; a place Set and Fly. Only a new part does
+  this, so a card switched off in Puzzle stays off.
+- **Kits** (`src/create/kits.ts`), behind Add cards on a creation's bar:
+  a trick with a name, When it happens, Tick tock, a way to remember, a
+  counter, a list, a die and a coin, rows and columns, the bird, the
+  backpack. A kit adds its cards and ready-named parts (`count`, `bird`,
+  `kept` in the backpack), so nothing has to be typed. Each kit points at
+  the pack that teaches it until that pack is finished. Adding one twice
+  changes nothing, and a name already taken is left alone.
+- **The backpack kit makes the puzzle two days long.** Puzzle then has a
+  Days setting, two to five.
+- **Plates, beetles and logs** are board tools. A plate takes the next
+  free number. A beetle's or a log's path is drawn by dragging, there and
+  back, or round a ring when the path ends beside its start; a tap on the
+  next tile walks the last one on. The first beetle or log brings the Wait
+  card. The random-taps test now covers these tools with no exceptions.
+- **A player gets the maker's names.** A made puzzle opens with the
+  functions, When cards and memory of the maker's solution, empty, and the
+  player adds none of their own. Start over in the maker's own Play keeps
+  the names and clears the cards.
+- **Older creations** gain `ownNames` when they load.
+
+### Deviations and choices
+
+- **Still to come in 13d:** records that are built, a function calling a
+  function, and `not`. Each touches the IR, the interpreter and the
+  printer, and none was needed to open the existing cards.
+- **No key script.** Remote control's keys are a script the level writes;
+  a child's game wants real keys, which is the live run of 13e.
+- **No Unlock, Mark or Move the finger.** They need a gate's number lock
+  or a grid slot, which a child cannot make yet. A remix keeps them.
+- **A puzzle with a die must work on every roll**, as a random level does:
+  the 48 seeds are checked before a run counts, in Play and by the critic.
+- **Six beetles and logs at most**, and nine plates.
+
 ## Real words: from cards to TypeScript vocabulary (2026-11-11)
 
 The code panel showed the TypeScript but never said what any of it is

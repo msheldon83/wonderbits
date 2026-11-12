@@ -3,7 +3,7 @@ import { introductionBefore, realWordsOf } from '../lessons/concepts';
 import { RealWordsContext } from '../editor/CodePanel';
 import { CreateScreen } from '../create/CreateScreen';
 import { CreationScreen } from '../create/CreationScreen';
-import { FREE_PLAY_CARDS } from '../create/blank';
+import { CREATION_CARDS } from '../create/cards';
 import { MadeHere } from '../create/MadeHere';
 import { creationToJson } from '../create/parse';
 import { PlayScreen } from '../create/PlayScreen';
@@ -65,11 +65,11 @@ export function App() {
     if (route.screen === 'make' && !creation) location.hash = hashFor({ screen: 'create' });
     if (route.screen === 'play' && !playable) location.hash = creation ? hashFor({ screen: 'make', id: creation.id }) : hashFor({ screen: 'map' });
   }, [route, made.loaded, creation, playable]);
-  /** The cards a creation may offer a player: free play's, the level's it came from, and any it has now. */
+  /** The cards a creation may offer a player: creation mode's, the level's it came from, and any it has now. */
   const universe = useMemo(() => {
     if (!creation) return [];
     const base = creation.basedOn ? choices.find((c) => c.level.id === creation.basedOn)?.level.programming : undefined;
-    return [...new Set([...FREE_PLAY_CARDS, ...(base?.allowedCommands ?? []), ...(base?.suppliedCards ?? []), ...creation.programming.allowedCommands])];
+    return [...new Set([...CREATION_CARDS, ...(base?.allowedCommands ?? []), ...(base?.suppliedCards ?? []), ...creation.programming.allowedCommands])];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [creation?.id, creation?.basedOn, choices]);
   /** Where the card book was opened from, for the log: a level id or "map". */
@@ -85,10 +85,21 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [book, store, snap],
   );
-  /** Board tools from a pack not finished yet point at it. Nothing is locked. */
-  const switchPack = choices.filter((c) => c.packId === 'forest-switches');
-  const gateSign = switchPack[0] && !switchPack.every((c) => store.levelProgress(c.level.id).stars.complete) ? { pack: switchPack[0].packTitle, href: hashFor({ screen: 'map', packId: switchPack[0].packId }) } : undefined;
-  const signposts = gateSign ? { gate: gateSign, switch: gateSign } : undefined;
+  /** Each pack's name, place on the map and whether it is finished: tools and kits from an unfinished pack point at it. Nothing is locked. */
+  const packs = useMemo(() => {
+    const out: Record<string, { title: string; href: string; done: boolean }> = {};
+    for (const c of choices) {
+      const pack = (out[c.packId] ??= { title: c.packTitle, href: hashFor({ screen: 'map', packId: c.packId }), done: true });
+      if (!store.levelProgress(c.level.id).stars.complete) pack.done = false;
+    }
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [choices, store, snap.progress]);
+  const signposts = useMemo(() => {
+    const sign = (packId: string) => (packs[packId] && !packs[packId].done ? { pack: packs[packId].title, href: packs[packId].href } : undefined);
+    const [gates, plates, movers] = [sign('forest-switches'), sign('forest-events'), sign('forest-time')];
+    return { ...(gates && { gate: gates, switch: gates }), ...(plates && { plate: plates }), ...(movers && { beetle: movers, log: movers }) };
+  }, [packs]);
 
   const goTo = (hash: string) => {
     location.hash = hash;
@@ -162,7 +173,7 @@ export function App() {
       {route.screen === 'map' && <MapScreen choices={choices} book={book} store={store} badges={snap.progress.badges} packId={route.packId} extra={<MadeHere creations={made.creations} progress={store} />} />}
       {route.screen === 'settings' && <SettingsScreen store={store} settings={snap.settings} creations={() => made.creations.map(creationToJson)} />}
       {route.screen === 'create' && <CreateScreen creations={made.creations} store={creationStore} progress={store} choices={choices} onGoTo={goTo} />}
-      {route.screen === 'make' && creation && <CreationScreen key={creation.id} creation={creation} store={creationStore} progress={store} runtime={runtime} settings={snap.settings} {...(signposts && { signposts })} universe={universe} />}
+      {route.screen === 'make' && creation && <CreationScreen key={creation.id} creation={creation} store={creationStore} progress={store} runtime={runtime} settings={snap.settings} signposts={signposts} universe={universe} packs={packs} />}
       {route.screen === 'play' && creation && playable && <PlayScreen key={`${creation.id}:${creation.proof?.provedAt}`} creation={creation} progress={store} runtime={runtime} settings={snap.settings} />}
       {route.screen === 'book' && !page && <CardBookScreen book={book} store={store} from={cameFrom.current} />}
       {route.screen === 'book' && page && pageOpen && (

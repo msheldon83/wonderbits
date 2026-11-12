@@ -78,6 +78,13 @@ export interface PuzzleDefinition {
     memoryOptions?: MemorySlot[];
     /** What Set cards may put in a slot. Every value that fits the slot when left out. */
     allowedSources?: Source[];
+    /**
+     * Creation mode: the child may add and name functions, memory slots and
+     * When cards of their own. Set cards then offer every value that fits
+     * whatever the program remembers, and If cards every test of it;
+     * `allowedSources` only adds to that (random values, the bird's answers).
+     */
+    ownNames?: boolean;
   };
   /** When set, the level opens in prediction mode before Run is enabled. */
   prediction?: PredictionSettings;

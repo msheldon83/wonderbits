@@ -8,6 +8,7 @@
 import type { NodeSpec } from '../ir/spec';
 import { ContentError } from '../lessons/parse';
 import type { KeyValueStore } from '../progress/storage';
+import { withCreationRules } from './cards';
 import { creationToJson, parseCreation } from './parse';
 import { CREATION_SCHEMA_VERSION, TITLE_MAX, type Creation } from './types';
 
@@ -44,7 +45,9 @@ export class CreationStore {
     const creations: Creation[] = [];
     for (const key of keys) {
       try {
-        creations.push(parseCreation(await this.storage.get(key), key));
+        // Creations made before a child could name their own parts, or roll a die, gain that now.
+        const read = parseCreation(await this.storage.get(key), key);
+        creations.push({ ...read, programming: withCreationRules(read.programming) });
       } catch (e) {
         if (!(e instanceof ContentError)) throw e;
         this.unreadable.push(key);

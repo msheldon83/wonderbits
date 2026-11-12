@@ -311,3 +311,14 @@ export function specDiff(a: readonly NodeSpec[], b: readonly NodeSpec[]): number
   }
   return diffs;
 }
+
+/** The named parts of a program with nothing in them: its memory, and its functions and When cards left empty. */
+export function skeletonOf(spec: readonly NodeSpec[]): NodeSpec[] {
+  return spec.flatMap((s): NodeSpec[] => {
+    if (typeof s === 'string') return [];
+    if ('remember' in s) return [s];
+    if ('define' in s) return [{ define: s.define, do: [] }];
+    if ('on' in s) return [{ on: s.on, do: [] }];
+    return [];
+  });
+}

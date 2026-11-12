@@ -12,8 +12,8 @@ import { paletteFor } from '../editor/palette';
 import { canRedo, canUndo, createHistory, push, redo, undo, type History } from '../ir/history';
 import { randomIdFactory } from '../ir/ids';
 import { applyOp, type EditOp } from '../ir/ops';
-import { countNodes, programFromSpec, stepNumber } from '../ir/program';
-import { specAsksBird, type NodeSpec } from '../ir/spec';
+import { countNodes, programFromSpec, programSpec, stepNumber, usesRandom } from '../ir/program';
+import { skeletonOf, specAsksBird, type NodeSpec } from '../ir/spec';
 import { isBirdSource, isPosition, type NodeId, type ProgramIR, type Value } from '../ir/types';
 import { valueWords } from '../editor/commands';
 import { coveredValue, teamOnFlags, withinOutcomes } from '../sim/world';
@@ -57,6 +57,9 @@ function describeBoard(world: WorldDefinition): string {
   );
 }
 
+/** What can happen on a board that a When card may wait for: an acorn picked up, a tick, a plate stepped on. */
+export const eventsOf = (world: WorldDefinition): string[] => [...(world.collectibles.length > 0 ? ['acorn'] : []), 'tick', ...(world.plates ?? []).map((p) => `stepOn:${p.id}`)];
+
 const isTypingTarget = (t: EventTarget | null) =>
   t instanceof HTMLElement && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
 
@@ -90,6 +93,20 @@ export interface PlaySurfaceProps {
   completion?(actions: { restart(): void; close(): void }): ReactNode;
   /** Extra buttons at the end of the run controls. */
   toolbarExtra?: ReactNode;
+  /** A puzzle someone else made: the player uses its named parts and adds none. */
+  lockNames?: boolean;
+  /**
+   * A column between the board and the program: a maker's rules. It is
+   * given the program as it is now and a way to edit it, so parts added
+   * there (memory, functions, When cards) land in the program beside it.
+   */
+  middle?(api: { program: ProgramIR; edit(op: EditOp): void; locked: boolean }): ReactNode;
+  /** Shown under the run controls. */
+  belowControls?: ReactNode;
+  /** What the program panel is called, when not "Program". */
+  programLabel?: string;
+  /** One line under the program panel's title saying what the program is for. */
+  programNote?: string;
 }
 
 /** A fresh seed for the robot's random generator. */
@@ -103,7 +120,7 @@ function outsideWords(covers: NonNullable<ObjectiveDefinition['covers']>, end: S
   return `${covers.of} ended as ${got === undefined ? 'nothing' : valueWords(got)}. It should be one of ${want}.`;
 }
 
-export function PlaySurface({ level, runtime, settings, initialProgram, onProgram, record, hintFor, onSolved, completion: renderCompletion, toolbarExtra }: PlaySurfaceProps) {
+export function PlaySurface({ level, runtime, settings, initialProgram, onProgram, record, hintFor, onSolved, completion: renderCompletion, toolbarExtra, lockNames = false, middle, belowControls, programLabel, programNote }: PlaySurfaceProps) {
   const theme = themeFor(level.themeId);
   const newId = useMemo(() => randomIdFactory(), []);
   const [history, setHistory] = useState<History>(() => {
@@ -124,7 +141,8 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
   const world = worlds[shuffle] ?? level.world;
   const [failedShuffle, setFailedShuffle] = useState<number | null>(null);
   /** Random levels: the seed of this run's rolls, a seed the program failed on, and outcomes no roll gave. */
-  const random = useMemo(() => isRandomLevel(level), [level]);
+  // A creation offers random values on every Set card; it is a random level only once a card takes one.
+  const random = useMemo(() => isRandomLevel(level) && (!level.programming.ownNames || level.objective.covers !== undefined || usesRandom(program)), [level, program]);
   const seedRef = useRef(newSeed());
   const [failedRoll, setFailedRoll] = useState<number | null>(null);
   const [unseen, setUnseen] = useState<Value[] | null>(null);
@@ -170,6 +188,16 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
     [...(program.memory ?? []), ...(level.programming.memoryOptions ?? [])].some((m) => m.kind === 'grid') ||
     level.programming.allowedCommands.some((c) => c === 'goRow' || c === 'goColumn' || c === 'shift');
   const showMemory = world.team !== undefined || gatesOf(world).length > 0 || moversOf(world).length > 0 || askedFields.length > 0 || (program.memory?.length ?? 0) > 0 || level.programming.memoryOptions !== undefined;
+
+  // The goal, the days or the cards changed while the surface was open (a maker editing the rules): what was run no longer stands.
+  const ranUnder = useRef(level);
+  useEffect(() => {
+    if (ranUnder.current === level) return;
+    ranUnder.current = level;
+    cache.current = null;
+    if (phaseRef.current !== 'editing') reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [level]);
 
   // Tell whoever keeps the child's place, on every change after the first paint.
   const shownProgram = useRef(program);
@@ -241,11 +269,13 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
   const restart = useCallback(() => {
     reset();
     cache.current = null;
-    setHistory(createHistory(programFromSpec(level.programming.starterProgram, newId)));
+    // Where the child named the program's parts, a fresh start keeps the names and clears the cards.
+    const starter = level.programming.ownNames && !lockNames ? skeletonOf(programSpec(history.present)) : level.programming.starterProgram;
+    setHistory(createHistory(programFromSpec(starter, newId)));
     setHintsUsed(0);
     setHint(null);
     record({ levelId: level.id, kind: 'level-restarted' });
-  }, [reset, level, newId, record]);
+  }, [reset, level, newId, record, history.present, lockNames]);
 
   const ensureResult = useCallback(async (): Promise<RunResult | null> => {
     const seed = seedRef.current;
@@ -425,6 +455,8 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
         record({ levelId: level.id, kind: 'card-changed', nodeId: id, ...change });
       } else if (op.op === 'addSlot') record({ levelId: level.id, kind: 'slot-added', slot: op.slot.name });
       else if (op.op === 'removeSlot') record({ levelId: level.id, kind: 'slot-removed', slot: op.name });
+      else if (op.op === 'addFunction' || op.op === 'removeFunction') record({ levelId: level.id, kind: op.op === 'addFunction' ? 'name-added' : 'name-removed', what: 'function', name: op.name });
+      else if (op.op === 'addHandler' || op.op === 'removeHandler') record({ levelId: level.id, kind: op.op === 'addHandler' ? 'name-added' : 'name-removed', what: 'when', name: op.event });
       else record({ levelId: level.id, kind: 'card-removed', nodeId: op.id });
     },
     [change, record, level.id],
@@ -545,7 +577,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
       })
     : [];
   return (
-    <main className={`app-main ${showCode ? 'is-showing-code' : ''}`}>
+    <main className={`app-main ${showCode ? 'is-showing-code' : ''} ${middle ? 'has-mid' : ''}`}>
       {/* What to do on this level, and after a run what happened: at the top, where it is read first. */}
       <div className="lesson-banner">
         <p className={`message tone-${message.tone}`} role="status" aria-live="polite">
@@ -567,7 +599,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
           hideIndicator={predicting}
           hideGoal={(predicting && asksTile) || !level.objective.reachGoal}
           signs={signsOf(program.memory, shownState ?? initialState(world, program.memory), activeEvent)}
-          bird={(level.programming.allowedSources ?? []).some(isBirdSource) || specAsksBird(level.programming.starterProgram)}
+          bird={(level.programming.allowedSources ?? []).some(isBirdSource) || specAsksBird(level.programming.starterProgram) || (program.memory ?? []).some((m) => m.kind === 'position' && m.name === 'bird')}
         />
         {/* The warehouse sits right under the board, next to what the robot is doing. */}
         <Inventory slots={program.memory} state={shownState ?? initialState(world, program.memory)} event={activeEvent} />
@@ -635,7 +667,9 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
           {toolbarExtra}
         </div>
         <TickRules world={world} state={shownState ?? initialState(world, program.memory)} event={activeEvent} />
+        {belowControls}
       </div>
+      {middle && <div className="mid-col">{middle({ program, edit: onEdit, locked: phase === 'running' })}</div>}
       <div className="side-col">
         <Editor
           program={program}
@@ -681,6 +715,11 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
           gates={gatesOf(world).map((g) => g.id)}
           gateCodes={Object.fromEntries(gatesOf(world).flatMap((g) => (g.code !== undefined ? [[g.id, g.code]] : [])))}
           boardSize={{ width: world.width, height: world.height }}
+          events={eventsOf(world)}
+          backpack={level.days !== undefined}
+          lockNames={lockNames}
+          {...(programLabel && { programLabel })}
+          {...(programNote && { programNote })}
           showCode={showCode}
           onToggleCode={() => setShowCode((v) => !v)}
         />
