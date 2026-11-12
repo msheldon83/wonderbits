@@ -14,6 +14,10 @@
     "concept": "records",
     "title": "Records",
     "explanation": "The warehouse's inventory computer, the robot's friend, keeps a record for every crate: facts about one crate kept together, each with a name, like its number and whether it holds the key. The robot asks for one fact by its name: crate.number.",
+    "realWords": [
+      { "word": "interface", "code": "interface", "text": "An interface describes a shape: the name of each part and its type. Every Crate has the same parts, so code that is handed a Crate knows what is inside before it looks." },
+      { "word": "property", "text": "Each named part of an object is a property. A dot reads one: crate.number is the number property of crate. Records, places and robots are all objects with properties." }
+    ],
     "demo": {
       "world": {
         "rows": [

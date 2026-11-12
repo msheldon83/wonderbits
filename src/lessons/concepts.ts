@@ -5,7 +5,11 @@
  */
 import { COMMAND_IDS, type CardId } from '../ir/types';
 import type { LoadedPack } from './content';
-import type { ConceptIntroduction } from './types';
+import { printProgram } from '../projection/printTs';
+import { sequentialIdFactory } from '../ir/ids';
+import { programFromSpec } from '../ir/program';
+import { codeHas } from './realWords';
+import type { ConceptIntroduction, RealWord } from './types';
 
 /** The cards that show a concept, for the validator. Concepts without cards yet return null. */
 export function cardsTeaching(concept: string): readonly CardId[] | null {
@@ -48,4 +52,20 @@ export function cardBook(packs: readonly LoadedPack[]): BookEntry[] {
 /** The introduction a level opens with: only a pack's first level has one. */
 export function introductionBefore(book: readonly BookEntry[], levelId: string): BookEntry | undefined {
   return book.find((e) => e.firstLevelId === levelId);
+}
+
+/**
+ * The real words an introduction shows under its demo: the ideas, and the
+ * words whose code the demo prints. Words for code that first appears in a
+ * later level wait for that level's code panel.
+ */
+export function wordsOfIntroduction(introduction: ConceptIntroduction): RealWord[] {
+  const { program, world } = introduction.demo;
+  const source = printProgram(programFromSpec(program, sequentialIdFactory()), world.team ? { team: world.team } : {});
+  return (introduction.realWords ?? []).filter((w) => w.code === undefined || codeHas(source, w.code));
+}
+
+/** Every real word of the pages given, in map order: what the code panel may offer. */
+export function realWordsOf(book: readonly BookEntry[]): RealWord[] {
+  return book.flatMap((e) => e.introduction.realWords ?? []);
 }

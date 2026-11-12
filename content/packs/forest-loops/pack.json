@@ -10,6 +10,10 @@
     "concept": "loops",
     "title": "Repeat",
     "explanation": "A Repeat card runs the cards inside it again and again.",
+    "realWords": [
+      { "word": "loop", "code": "for", "text": "A Repeat card is a loop: code that runs again and again. In TypeScript a loop that counts starts with the word for, and the lines to repeat go inside its curly brackets." },
+      { "word": "counter", "code": "i++", "text": "A for loop keeps count in a counter called i. It starts at 0, the loop goes round while i is less than the number on your card, and i++ adds 1 each time. For Repeat 4, i goes 0, 1, 2, 3: four times round." }
+    ],
     "demo": {
       "world": {
         "rows": ["....."],

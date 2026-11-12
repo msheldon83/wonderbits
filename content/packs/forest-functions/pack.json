@@ -10,6 +10,10 @@
     "concept": "functions",
     "title": "Functions",
     "explanation": "Give a set of moves a name, then use the name anywhere.",
+    "realWords": [
+      { "word": "function", "code": "function", "text": "A function is a set of instructions with a name. The word function, then the name, then the lines in curly brackets: that is defining it. Writing the name with round brackets, like hop(), is calling it." },
+      { "word": "return type", "code": "void", "text": "Some functions hand back an answer when they finish, and the word after the colon says what kind. void means nothing: this function does its job and hands nothing back." }
+    ],
     "demo": {
       "world": {
         "rows": ["..#", "#..", "##."],

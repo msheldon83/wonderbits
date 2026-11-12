@@ -14,6 +14,11 @@
     "concept": "grids",
     "title": "Grids",
     "explanation": "Every tile has a column and a row, counted from 0 like real code: the top left is column 0, row 0. Go to column and Go to row walk straight there.",
+    "realWords": [
+      { "word": "coordinates", "text": "Two numbers that name one tile are called coordinates. In code the column is x and the row is y, and both count from 0." },
+      { "word": "object", "code": "{ x:", "text": "Curly brackets with named values inside make an object: several values kept together as one thing. { x: 4, y: 2 } is one place. A dot reads one part, so bird.x is its column." },
+      { "word": "2D array", "code": "[][]", "text": "An array of arrays is a 2D array: a list of rows, where each row is a list of tiles. Two indexes read one tile, row first: walls[y][x]." }
+    ],
     "demo": {
       "world": {
         "rows": [

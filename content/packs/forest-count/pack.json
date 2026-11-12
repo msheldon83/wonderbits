@@ -14,6 +14,11 @@
     "concept": "variables",
     "title": "Variables",
     "explanation": "A named slot can change while the program runs.",
+    "realWords": [
+      { "word": "increment", "code": "+=", "text": "+= adds to what the variable already holds. count += 1 means: take count, add 1, and put the answer back in count. Adding 1 like this is called incrementing." },
+      { "word": "decrement", "code": "-=", "text": "-= takes away from what the variable holds, so left -= 1 makes left one smaller. Taking 1 away is called decrementing, and it is how a countdown works." },
+      { "word": "comparison", "code": "!==", "text": "!== asks: are these two different? Its partner === asks: are these two the same? Each gives true or false. Both need three signs, because one equals sign alone means assign." }
+    ],
     "demo": {
       "world": {
         "rows": [

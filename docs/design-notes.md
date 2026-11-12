@@ -180,6 +180,44 @@ kits on top.
   the 48 seeds are checked before a run counts, in Play and by the critic.
 - **Six beetles and logs at most**, and nine plates.
 
+## Real words: from cards to TypeScript vocabulary (2026-11-11)
+
+The code panel showed the TypeScript but never said what any of it is
+called. Now each concept brings its real words: what a programmer would
+say for the thing the child just built with cards.
+
+- **Where the text lives.** In the pack's `introduction`, as `realWords`
+  beside the kid sentence: `word` (loop), `code` (`for`), `text` (two or
+  three short sentences from the card to the code). A word for an idea
+  that no line of code shows, such as state, coordinates or derived value,
+  has no `code`. There are 44 words across the 17 introductions.
+- **Where the child meets it.** Under the code, in the code panel
+  (`RealWords` in `src/editor/CodePanel.tsx`): a row of pieces of code to
+  tap, one open at a time. In an introduction, and so in the card book's
+  replay, the panel shows that concept's new words with the first one
+  open. In a level or in creation mode it shows every word met so far
+  whose code is in the program on screen, newest concept first, so the
+  list grows as the program does. The card book's list names each page's
+  words.
+- **Met so far** means the concept's island is open. `function` and
+  `void` are on screen from the first level but only become tappable when
+  Functions opens, because their text leans on that pack.
+- **Matching** (`src/lessons/realWords.ts`) is on the printed code, not
+  the IR, with comments left out, and never inside a longer name or
+  operator: `for` is not found in `forward`, nor `=` in `+=` or `!==`.
+- **The validator** (`validateRealWords`, run over all content in CI)
+  proves each word's code is printed by the pack's demo or by one of its
+  reference solutions, that no piece of code is explained by two words,
+  and that a text stays under 260 characters. So the words cannot drift
+  from the projection.
+
+Choices: the words sit under the code, not in the cards or between the
+lines, for the reason given on 2026-11-06: code interwoven with blocks was
+confusing. The printer has no `===` in any reference solution, so
+comparison is taught on `!==` and names `===` in its text. Taps on a word
+are not in the observation log yet; worth adding before the next child
+test, to see whether the words are read at all.
+
 ## Build step 13c: design a puzzle, with the validator as critic (2026-11-11)
 
 The third sub-step of [creation-plan.md](creation-plan.md), and the end of

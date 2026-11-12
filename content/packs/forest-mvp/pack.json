@@ -10,6 +10,12 @@
     "concept": "sequencing",
     "title": "Cards in order",
     "explanation": "The robot does your cards in order, one at a time, top to bottom.",
+    "realWords": [
+      { "word": "statement", "code": ";", "text": "Each card is one line of code. Programmers call a line that does one thing a statement. In TypeScript a statement ends with a semicolon, like the full stop at the end of a sentence." },
+      { "word": "call", "code": "robot.forward()", "text": "This line calls forward: it tells the robot to do it now. The dot means forward belongs to the robot, and the round brackets mean go." },
+      { "word": "main", "code": "main", "text": "Your cards go between the curly brackets of main. A program has to start somewhere, and programmers often name that place main." },
+      { "word": "import", "code": "import", "text": "The robot was written by someone else and kept in a library called wonderbits. import brings it into your program so you can use it. Real programs import other people's code all the time." }
+    ],
     "demo": {
       "world": {
         "rows": ["....", "...."],
