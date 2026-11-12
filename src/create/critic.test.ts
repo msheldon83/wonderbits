@@ -90,7 +90,7 @@ describe('the critic\'s words', () => {
 
   it('says when nobody can solve it', () => {
     expect(words({ own: { fits: true, solves: false, steps: 1 }, flat: { kind: 'impossible' } }, plain)).toEqual([
-      'note: You have not solved it yourself yet. Build your program and press Run. Once it works, others can play it.',
+      'note: You have not solved it yourself yet. Build your solution and press Run. Once it works, others can play it.',
       'problem: Nobody can solve this with these cards. I tried every way the robot can go.',
     ]);
     expect(words({ own: { fits: true, solves: false, steps: 0 }, flat: { kind: 'found', steps: 8 } }, { ...plain, maxInstructions: 5 })[2]).toBe('problem: Nobody can solve this: no way through is shorter than 8 cards.');

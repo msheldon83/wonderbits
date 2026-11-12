@@ -77,6 +77,10 @@ export interface EditorProps {
   events?: readonly string[];
   /** The level runs over several days: a new slot may go in the backpack. */
   backpack?: boolean;
+  /** What the program panel is called, when not "Program": a maker's "Your solution". */
+  programLabel?: string;
+  /** One line under the panel's title saying what the program is for. */
+  programNote?: string;
   /** The names are someone else's: nothing is added or removed, though every value that fits is still on offer. */
   lockNames?: boolean;
 }
@@ -130,6 +134,8 @@ export function Editor({
   events = [],
   backpack = false,
   lockNames = false,
+  programLabel = 'Program',
+  programNote,
 }: EditorProps) {
   /** Creation mode: the child adds and removes the program's named parts. */
   const own = programming.ownNames === true && !readOnly && !lockNames;
@@ -1149,10 +1155,10 @@ export function Editor({
         </section>
       )}
 
-      <section className="program" aria-label="Your program">
+      <section className="program" aria-label={programLabel === 'Program' ? 'Your program' : programLabel}>
         <h2 className="panel-title">
           <span className="panel-title-text">
-            Program
+            {programLabel}
             {palette.max !== undefined && (
               <span className={`capacity ${budgetTone}`} role="status">
                 {palette.used} of {palette.max} steps
@@ -1187,6 +1193,7 @@ export function Editor({
             )}
           </span>
         </h2>
+        {programNote && <p className="program-purpose">{programNote}</p>}
         <div className={`program-body ${codePanel && showCode ? 'has-code' : ''}`}>
           <div className="program-blocks">
             {aboveProgram}

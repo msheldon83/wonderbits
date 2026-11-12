@@ -1,14 +1,15 @@
 /**
  * One creation, made in three steps on one screen. Board lays out the
- * island. Mechanics is how the puzzle works: the maker's own program
- * beside the rules for players (the goal, the cards, the limit) and the
- * critic. Preview is the puzzle as a player will meet it. Switching is one
+ * island. Mechanics is how the puzzle works, all in view at once: the
+ * board, the rules for players (the goal, the cards, the named parts, the
+ * limits) and the maker's own solution, which proves it can be solved.
+ * Preview is the puzzle as a player will meet it. Switching is one
  * tap, and the board, the name and the program are saved as they change,
  * so nothing is lost on the way.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { hashFor } from '../app/levels';
-import { PlaySurface, type Playable, type Solved } from '../app/PlaySurface';
+import { eventsOf, PlaySurface, type Playable, type Solved } from '../app/PlaySurface';
 import { randomIdFactory } from '../ir/ids';
 import { skeletonOf } from '../ir/spec';
 import { programFromSpec, programSpec } from '../ir/program';
@@ -20,10 +21,11 @@ import type { WorldDefinition } from '../sim/types';
 import type { CardId } from '../ir/types';
 import { BoardEditor, type BoardEditorProps } from './BoardEditor';
 import { cardsGained, inPaletteOrder } from './cards';
-import { ChallengePanel } from './ChallengePanel';
+import { RulesColumn } from './RulesColumn';
+import { useCritic } from './useCritic';
 import { fitsRules } from './critic';
 import { KitPicker, type PackInfo } from './KitPicker';
-import { goalWords, rulesWords } from './goal';
+import { goalWords } from './goal';
 import type { CreationStore } from './store';
 import { TITLE_MAX, type Creation } from './types';
 
@@ -45,7 +47,7 @@ export function playableOf(creation: Creation, intro: string): Playable {
 type Step = 'board' | 'mechanics' | 'preview';
 const STEPS: { id: Step; label: string; about: string }[] = [
   { id: 'board', label: 'Board', about: 'Lay out the island: its size, tiles and everything on it' },
-  { id: 'mechanics', label: 'Mechanics', about: 'How the puzzle works: your own program, and the rules for players' },
+  { id: 'mechanics', label: 'Mechanics', about: 'How the puzzle works: the rules for players, and your own solution' },
   { id: 'preview', label: 'Preview', about: 'The puzzle as a player will see it' },
 ];
 
@@ -68,11 +70,9 @@ export function CreationScreen({ creation, store, progress, runtime, settings, s
   const [surface, setSurface] = useState(0);
   /** A new thing opens on its board; one being worked on opens on its mechanics. */
   const [step, setStep] = useState<Step>(() => (creation.program.length === 0 || creation.updatedAt === creation.createdAt ? 'board' : 'mechanics'));
-  /** In Mechanics, the side column shows the maker's program or the rules for players. */
-  const [side, setSide] = useState<'program' | 'rules'>('program');
   const [title, setTitle] = useState(creation.title);
   const level = useMemo(
-    () => playableOf(creation, 'This island is yours. Tap an instruction to add it to your program, then press Run.'),
+    () => playableOf(creation, 'Set the rules, then solve it yourself and press Run.'),
     // The board and rules, not the program or the name: saving those must not restart the surface.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [creation.id, creation.world, creation.objective, creation.programming],
@@ -84,6 +84,7 @@ export function CreationScreen({ creation, store, progress, runtime, settings, s
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [creation.id, creation.world, creation.objective, creation.programming, creation.days, step],
   );
+  const critic = useCritic(creation, step === 'mechanics' ? runtime : null, store, progress);
   const record = useCallback((event: EventInput) => progress.log(event), [progress]);
   /** The program as it was at the last save, to see which named parts are new. */
   const lastProgram = useRef<ProgramIR | null>(null);
@@ -198,21 +199,27 @@ export function CreationScreen({ creation, store, progress, runtime, settings, s
           onProgram={onProgram}
           record={record}
           onSolved={onSolved}
-          sideHeader={
-            <div className="side-switch" role="group" aria-label="Your program, or the rules for players">
-              <button type="button" className={`btn btn-choice ${side === 'program' ? 'is-on' : ''}`} aria-pressed={side === 'program'} onClick={() => setSide('program')}>
-                My program
-              </button>
-              <button type="button" className={`btn btn-choice ${side === 'rules' ? 'is-on' : ''}`} aria-pressed={side === 'rules'} onClick={() => setSide('rules')}>
-                Rules: {rulesWords(creation)}
-              </button>
-            </div>
-          }
-          sideAlt={side === 'rules' ? <ChallengePanel creation={creation} universe={universe} store={store} progress={progress} runtime={runtime} onAddCards={() => setPicking(true)} /> : null}
-          toolbarExtra={
-            <button type="button" className="btn btn-quiet btn-create" onClick={() => setPicking(true)}>
-              Add cards
-            </button>
+          programLabel="Your solution"
+          programNote="Solve your own puzzle here, with the cards the player gets. It proves the puzzle can be solved. The player never sees it."
+          lockNames
+          middle={({ program, edit, locked }) => (
+            <RulesColumn creation={creation} universe={universe} store={store} progress={progress} program={program} edit={edit} locked={locked} events={eventsOf(creation.world)} critique={critic.critique} onAddSets={() => setPicking(true)} />
+          )}
+          belowControls={
+            <section className={`critic-strip ${critic.thinking ? 'is-thinking' : ''}`} aria-label="What the critic says" aria-busy={critic.thinking}>
+              <h3 className="rule-title">The critic says</h3>
+              {critic.lines.length === 0 ? (
+                <p className="rule-note">{critic.thinking ? 'Trying your puzzle…' : 'The critic could not check this puzzle.'}</p>
+              ) : (
+                <ul className="critic-lines">
+                  {critic.lines.map((l) => (
+                    <li key={l.text} className={`critic-line tone-${l.tone}`}>
+                      {l.text}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           }
         />
       )}
