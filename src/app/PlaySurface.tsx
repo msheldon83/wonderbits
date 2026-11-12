@@ -95,10 +95,18 @@ export interface PlaySurfaceProps {
   toolbarExtra?: ReactNode;
   /** A puzzle someone else made: the player uses its named parts and adds none. */
   lockNames?: boolean;
-  /** Shown at the top of the side column, above the program: a switch between the program and something else. */
-  sideHeader?: ReactNode;
-  /** Shown in the side column in place of the program, which keeps its state while hidden. */
-  sideAlt?: ReactNode;
+  /**
+   * A column between the board and the program: a maker's rules. It is
+   * given the program as it is now and a way to edit it, so parts added
+   * there (memory, functions, When cards) land in the program beside it.
+   */
+  middle?(api: { program: ProgramIR; edit(op: EditOp): void; locked: boolean }): ReactNode;
+  /** Shown under the run controls. */
+  belowControls?: ReactNode;
+  /** What the program panel is called, when not "Program". */
+  programLabel?: string;
+  /** One line under the program panel's title saying what the program is for. */
+  programNote?: string;
 }
 
 /** A fresh seed for the robot's random generator. */
@@ -112,7 +120,7 @@ function outsideWords(covers: NonNullable<ObjectiveDefinition['covers']>, end: S
   return `${covers.of} ended as ${got === undefined ? 'nothing' : valueWords(got)}. It should be one of ${want}.`;
 }
 
-export function PlaySurface({ level, runtime, settings, initialProgram, onProgram, record, hintFor, onSolved, completion: renderCompletion, toolbarExtra, lockNames = false, sideHeader, sideAlt }: PlaySurfaceProps) {
+export function PlaySurface({ level, runtime, settings, initialProgram, onProgram, record, hintFor, onSolved, completion: renderCompletion, toolbarExtra, lockNames = false, middle, belowControls, programLabel, programNote }: PlaySurfaceProps) {
   const theme = themeFor(level.themeId);
   const newId = useMemo(() => randomIdFactory(), []);
   const [history, setHistory] = useState<History>(() => {
@@ -569,7 +577,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
       })
     : [];
   return (
-    <main className={`app-main ${showCode ? 'is-showing-code' : ''}`}>
+    <main className={`app-main ${showCode ? 'is-showing-code' : ''} ${middle ? 'has-mid' : ''}`}>
       {/* What to do on this level, and after a run what happened: at the top, where it is read first. */}
       <div className="lesson-banner">
         <p className={`message tone-${message.tone}`} role="status" aria-live="polite">
@@ -659,11 +667,10 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
           {toolbarExtra}
         </div>
         <TickRules world={world} state={shownState ?? initialState(world, program.memory)} event={activeEvent} />
+        {belowControls}
       </div>
+      {middle && <div className="mid-col">{middle({ program, edit: onEdit, locked: phase === 'running' })}</div>}
       <div className="side-col">
-        {sideHeader}
-        {sideAlt}
-        <div className="side-program" hidden={sideAlt !== undefined && sideAlt !== null}>
         <Editor
           program={program}
           programming={level.programming}
@@ -711,10 +718,11 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
           events={eventsOf(world)}
           backpack={level.days !== undefined}
           lockNames={lockNames}
+          {...(programLabel && { programLabel })}
+          {...(programNote && { programNote })}
           showCode={showCode}
           onToggleCode={() => setShowCode((v) => !v)}
         />
-        </div>
       </div>
 
       {completion && renderCompletion?.({ restart, close: () => setCompletion(false) })}

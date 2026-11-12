@@ -4,6 +4,53 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Change: Mechanics on one screen, with the rules always in view (2026-11-12)
+
+Feedback: the switch between the program and the rules did not feel
+natural; the instructions seemed limited until the rules were visited;
+"Add your own" was not clear; and it was not clear why a maker was adding
+steps to a program at all. The owner chose one screen with the rules
+always visible.
+
+- **Three columns in Mechanics:** the board with its run controls and the
+  critic under them; Rules for the player; Your solution. Nothing is
+  hidden behind a switch. On a narrow or upright screen they stack and
+  the page scrolls: board, rules, solution.
+- **Rules for the player** (`src/create/RulesColumn.tsx`) has four parts,
+  none of them a step of a program:
+  - **The goal.**
+  - **Cards the player gets:** every card creation mode has, in groups
+    named for the idea (Moves, Loops and ifs, Functions, Memory, Lists,
+    Map and bird, Gates), each a switch. A card that is on but has
+    nothing to work on says so under its group: "Set needs something to
+    remember. Add it under Parts, below."
+  - **Parts the player starts with:** Memory, Functions and When cards,
+    each with a line saying what it is and its own button: "+ New
+    memory", "+ New function", "+ New When card". A name is asked for in
+    a small form with the kind it holds. Ready-made sets (the kits) are a
+    button here.
+  - **Limits:** the most cards, and days, from one. More than one day
+    lets new memory go in the backpack.
+- **Your solution** is the program panel, renamed, with a line under its
+  title: "Solve your own puzzle here, with the cards the player gets. It
+  proves the puzzle can be solved. The player never sees it." It has the
+  player's cards and no "Add your own" box: parts are made in the rules
+  and appear in the solution, empty.
+- **The critic** sits under the run controls and speaks whenever the
+  rules or the solution change.
+- **The play surface** takes a middle column, given the program and a way
+  to edit it, so a part added in the rules goes through the same edit
+  path, undo included.
+
+### Deviations and choices
+
+- **The board has a third of the screen** in Mechanics, less than
+  elsewhere. Board and Preview give it the usual room.
+- **The program/rules switch and the Add your own box are gone** from
+  creation mode. `OwnNames` stays in the editor for a surface that does
+  not lock its names; nothing uses it now.
+- **The days setting no longer needs the backpack kit.**
+
 ## Change: making a puzzle in three steps, and choosing the island's size (2026-11-12)
 
 Feedback: the Puzzle tab felt cut off from Play, where much of a puzzle is

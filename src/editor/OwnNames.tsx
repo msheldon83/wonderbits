@@ -10,7 +10,7 @@ import type { ListOf, MemorySlot, ProgramIR, ValueKind } from '../ir/types';
 import { eventLabel } from './commands';
 
 /** The kinds of slot a child can add, in the words the memory card uses. */
-const SLOT_KINDS: { id: string; label: string; kind: ValueKind; of?: ListOf }[] = [
+export const SLOT_KINDS: { id: string; label: string; kind: ValueKind; of?: ListOf }[] = [
   { id: 'number', label: 'a number', kind: 'number' },
   { id: 'yesNo', label: 'a yes or no', kind: 'yesNo' },
   { id: 'direction', label: 'a direction', kind: 'direction' },
