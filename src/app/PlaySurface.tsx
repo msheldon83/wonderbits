@@ -447,7 +447,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
   );
   const applyEdit = useCallback(
     (op: EditOp) => {
-      change((h) => push(h, applyOp(h.present, op)));
+      change((h) => push(h, applyOp(h.present, op, { nestedCalls: level.programming.ownNames === true })));
       if (op.op === 'insert') record({ levelId: level.id, kind: 'card-placed', command: op.node.kind, at: op.at });
       else if (op.op === 'move') record({ levelId: level.id, kind: 'card-moved', nodeId: op.id, to: op.to });
       else if (op.op === 'set') {
@@ -459,7 +459,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
       else if (op.op === 'addHandler' || op.op === 'removeHandler') record({ levelId: level.id, kind: op.op === 'addHandler' ? 'name-added' : 'name-removed', what: 'when', name: op.event });
       else record({ levelId: level.id, kind: 'card-removed', nodeId: op.id });
     },
-    [change, record, level.id],
+    [change, record, level.id, level.programming.ownNames],
   );
   const onEdit = useCallback(
     (op: EditOp) => {

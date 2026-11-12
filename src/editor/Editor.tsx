@@ -27,7 +27,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import type { IdFactory } from '../ir/ids';
 import { isNoOpMove, type EditOp } from '../ir/ops';
-import { ancestorsOf, branchesOf, branchBody, containerAt, endOfMain, functionsOf, isWithin, locate, mainBody, memoryOf, procedureOfPlace, samePlaceContainer, slotsInUse, walk } from '../ir/program';
+import { ancestorsOf, branchesOf, branchBody, callsIn, canCall, containerAt, endOfMain, functionsOf, isWithin, locate, mainBody, memoryOf, procedureOfPlace, samePlaceContainer, slotsInUse, walk } from '../ir/program';
 import { buildNodes } from '../ir/spec';
 import { functionContainerId, functionLabel, functionOfContainer, handlerContainerId, handlerOfContainer, isSenseId, itemOf, fieldOf, lengthOf, MAIN as MAIN_PROCEDURE, parseRandom, readFrom, REPEAT_DEFAULT, REPEAT_MAX, REPEAT_MIN, type Branch, type CardId, type CommandId, type IRNode, type MemorySlot, type NodeId, type Place, type ProgramIR, type Source } from '../ir/types';
 import type { TraceEvent } from '../runtime/contract';
@@ -88,8 +88,6 @@ export interface EditorProps {
 /** What is being carried to a gap: a palette card, a program block, or the cursor. */
 type Carried = { kind: 'palette'; command: CardId; name?: string } | { kind: 'program'; id: NodeId } | { kind: 'cursor' };
 
-/** True when the nodes hold a call anywhere, which keeps them out of functions. */
-const holdsCall = (node: IRNode): boolean => node.kind === 'call' || branchesOf(node).some((b) => branchBody(node, b)!.some(holdsCall));
 
 type Focus = { kind: 'card' | 'move'; id: NodeId } | 'palette' | 'caret' | 'cursor' | null;
 
@@ -315,16 +313,16 @@ export function Editor({
     }
   };
 
-  /** Whether a carried card or block may go into a container: calls stay out of functions, but may go in When cards. */
+  /** Whether a carried card or block may go into a container: a call goes where a call to that function may. */
+  const nested = programming.ownNames === true;
   const fits = (carried: Carried, container: Container): boolean => {
-    const call = carried.kind === 'palette' ? carried.command === 'call' : carried.kind === 'program' ? holdsCall(locate(program, carried.id)?.node ?? { id: '', kind: 'forward' }) : false;
+    const called = carried.kind === 'palette' ? (carried.command === 'call' ? [carried.name ?? ''] : []) : carried.kind === 'program' ? callsIn([locate(program, carried.id)?.node ?? { id: '', kind: 'forward' }]) : [];
     const procedure = procedureOfPlace(program, container);
-    return !call || procedure === MAIN_PROCEDURE || procedure?.startsWith('on:') === true;
+    return called.every((name) => canCall(program, procedure, name, nested));
   };
-  const cursorInFunction = !fits({ kind: 'palette', command: 'call' }, cursor);
 
   const insertAt = (command: CardId, at: Place, focus: Focus, name?: string) => {
-    if (full || !fits({ kind: 'palette', command }, at)) return;
+    if (full || !fits({ kind: 'palette', command, ...(name && { name }) }, at)) return;
     const node = nodeFor(command, name);
     onEdit({ op: 'insert', at, node });
     setCursor({ ...at, index: at.index + 1 });
@@ -1127,15 +1125,15 @@ export function Editor({
               const label = cardLabel(command, name);
               const quota = remaining !== null ? `, ${remaining} left` : '';
               /** A call cannot go inside a function, so its card rests while the insert point is in one. */
-              const resting = command === 'call' && cursorInFunction;
-              const description = command === 'call' ? `${label}: run the cards of ${label}${resting ? '. It goes in the program, not inside a function' : ''}` : info.description;
+              const resting = command === 'call' && !fits({ kind: 'palette', command, ...(name && { name }) }, cursor);
+              const description = command === 'call' ? `${label}: run the cards of ${label}${resting ? (nested ? '. A function cannot use itself' : '. It goes in the program, not inside a function') : ''}` : info.description;
               return (
                 <button
                   key={`${command}${name ? `:${name}` : ''}`}
                   type="button"
                   className={`card card-${command} ${drag?.carried.kind === 'palette' && drag.carried.command === command && drag.carried.name === name ? 'is-lifted' : ''} ${highlightCommand === command ? 'is-hinted' : ''}`}
                   aria-label={`Add ${description}${quota}${needs ? `. Remember ${needs} first` : ''}${highlightCommand === command ? ', the hint points here' : ''}`}
-                  title={needs ? `Remember ${needs} first, under Memory` : resting ? 'Put the insert point in the program to use this card' : 'Tap to add at the insert point, or drag into the program'}
+                  title={needs ? `Remember ${needs} first, under Memory` : resting ? (nested ? 'A function cannot use itself, even by way of another' : 'Put the insert point in the program to use this card') : 'Tap to add at the insert point, or drag into the program'}
                   disabled={locked || !available || resting}
                   onClick={() => tapCard(command, name)}
                   {...dragHandlers({ kind: 'palette', command, ...(name && { name }) })}

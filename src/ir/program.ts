@@ -256,3 +256,27 @@ export function usesRandom(program: ProgramIR): boolean {
   for (const { node } of walk(program)) if ((node.kind === 'set' || node.kind === 'push') && parseRandom(node.to) !== null) return true;
   return false;
 }
+
+/** The functions a list of cards calls, anywhere inside it. */
+export function callsIn(nodes: readonly IRNode[]): string[] {
+  return nodes.flatMap((n) => [...(n.kind === 'call' ? [n.name] : []), ...branchesOf(n).flatMap((b) => callsIn(branchBody(n, b) ?? []))]);
+}
+
+/** True when running one function can end up running another: it calls it, or calls something that does. */
+export function reaches(program: ProgramIR, from: string, target: string, seen: Set<string> = new Set()): boolean {
+  if (seen.has(from)) return false;
+  seen.add(from);
+  return callsIn(functionBody(program, from) ?? []).some((name) => name === target || reaches(program, name, target, seen));
+}
+
+/**
+ * Whether a call to a function may sit in a procedure. Main and When cards
+ * may call anything. A function may call another only where that is
+ * allowed (creation mode), and never itself, directly or round a loop of
+ * calls: a program that can run for ever is not one the robot can finish.
+ */
+export function canCall(program: ProgramIR, procedure: string | undefined, callee: string, nested: boolean): boolean {
+  if (procedure === undefined) return false;
+  if (procedure === MAIN || procedure.startsWith('on:')) return true;
+  return nested && callee !== procedure && !reaches(program, callee, procedure);
+}

@@ -76,3 +76,51 @@ describe('not', () => {
     expect(r.outcome.status).toBe('success');
   });
 });
+
+describe('a function that uses a function', async () => {
+  const { applyOp } = await import('../ir/ops');
+  const { canCall, reaches } = await import('../ir/program');
+  const { functionContainerId } = await import('../ir/types');
+  const base = () => ir([{ define: 'hop', do: ['forward'] }, { define: 'twoHops', do: [] }, { define: 'three', do: [] }]);
+  const callInto = (p: ReturnType<typeof ir>, fn: string, callee: string, id: string, nestedCalls = true) =>
+    applyOp(p, { op: 'insert', at: { parent: functionContainerId(fn), branch: 'body', index: 0 }, node: { id, kind: 'call', name: callee } }, { nestedCalls });
+
+  it('is allowed in creation mode and not in a lesson', () => {
+    expect(() => callInto(base(), 'twoHops', 'hop', 'c1', false)).toThrow(/cannot use a function/);
+    const p = callInto(base(), 'twoHops', 'hop', 'c1');
+    expect(reaches(p, 'twoHops', 'hop')).toBe(true);
+    expect(reaches(p, 'hop', 'twoHops')).toBe(false);
+  });
+
+  it('never itself, directly or round a ring of calls', () => {
+    expect(() => callInto(base(), 'hop', 'hop', 'c1')).toThrow(/cannot use itself/);
+    let p = callInto(base(), 'twoHops', 'hop', 'c1');
+    p = callInto(p, 'three', 'twoHops', 'c2');
+    expect(() => callInto(p, 'hop', 'three', 'c3')).toThrow(/cannot use itself/);
+    expect(canCall(p, 'hop', 'three', true)).toBe(false);
+    expect(canCall(p, 'three', 'hop', true)).toBe(true);
+    expect(canCall(p, 'main', 'three', false)).toBe(true);
+    expect(canCall(p, 'on:tick', 'three', false)).toBe(true);
+    expect(canCall(p, undefined, 'three', true)).toBe(false);
+  });
+
+  it('holds when a block of cards is moved into a function', () => {
+    let p = ir([{ define: 'hop', do: [] }, { repeat: 2, do: [{ call: 'hop' }] }]);
+    const repeat = p.procedures[0]!.body[0]!;
+    expect(() => applyOp(p, { op: 'move', id: repeat.id, to: { parent: functionContainerId('hop'), branch: 'body', index: 0 } }, { nestedCalls: true })).toThrow(/cannot use itself/);
+    p = applyOp(p, { op: 'addFunction', name: 'twice' });
+    p = applyOp(p, { op: 'move', id: repeat.id, to: { parent: functionContainerId('twice'), branch: 'body', index: 0 } }, { nestedCalls: true });
+    expect(reaches(p, 'twice', 'hop')).toBe(true);
+    // A function another still uses cannot be removed.
+    expect(() => applyOp(p, { op: 'removeFunction', name: 'hop' })).toThrow(/still used/);
+  });
+
+  it('runs and prints', () => {
+    const spec: NodeSpec[] = [{ define: 'hop', do: ['forward'] }, { define: 'twoHops', do: [{ call: 'hop' }, { call: 'hop' }] }, { call: 'twoHops' }, { call: 'twoHops' }];
+    const r = run(spec);
+    expect(r.outcome.status).toBe('success');
+    expect(r.trace.filter((e) => e.op === 'forward')).toHaveLength(4);
+    const code = printProgram(ir(spec));
+    expect(code).toMatch(/function twoHops\(\)[^}]*hop\(\);[^}]*hop\(\);/s);
+  });
+});
