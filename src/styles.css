@@ -4337,3 +4337,18 @@ button.shelf-card {
     overflow: visible;
   }
 }
+
+/* Limits on one kind of card. */
+.card-limits {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--page);
+}
+
+.card-limits .size-stepper {
+  box-shadow: inset 0 0 0 2px var(--line);
+  background: var(--paper);
+}

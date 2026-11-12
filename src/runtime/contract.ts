@@ -184,7 +184,7 @@ export interface CritiqueRequest {
   world: WorldDefinition;
   objective: ObjectiveDefinition;
   /** The cards and limits a player gets. */
-  rules: { allowedCommands: CardId[]; allowedConditions?: ConditionId[]; maxInstructions?: number; random: boolean };
+  rules: { allowedCommands: CardId[]; allowedConditions?: ConditionId[]; maxInstructions?: number; /** The most of one kind of card, by card. */ maxPerCommand?: Partial<Record<CardId, number>>; random: boolean };
   /** The maker's own program. */
   program: ProgramIR;
   input?: Key[];
@@ -195,12 +195,12 @@ export interface CritiqueRequest {
 
 export interface Critique {
   /** The maker's program: does it stay within the puzzle's cards and limit, and does it solve the puzzle? */
-  own: { fits: boolean; solves: boolean; steps: number };
+  own: { fits: boolean; solves: boolean; steps: number; /** Cards the maker's program uses more of than the puzzle allows of that kind. */ over?: { card: CardId; used: number; most: number }[] };
   /**
    * The shortest program of plain steps. `impossible` is certain: no
    * program at all can solve it. `unknown`: the search could not tell.
    */
-  flat: { kind: 'found'; steps: number } | { kind: 'impossible' } | { kind: 'unknown' };
+  flat: { kind: 'found'; steps: number; /** That way uses more of some card than the puzzle allows, so a player cannot take it. */ overCardLimit?: boolean } | { kind: 'impossible' } | { kind: 'unknown' };
 }
 
 export type RuntimeMessage =

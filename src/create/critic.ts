@@ -16,10 +16,17 @@ import { CHECK_SEEDS } from '../sim/random';
 type Rules = CritiqueRequest['rules'];
 
 /** True when a program uses only the puzzle's cards and no more of them than its limit. */
-export function fitsRules(rules: Pick<Rules, 'allowedCommands' | 'allowedConditions' | 'maxInstructions'>, program: ProgramIR): boolean {
+/** The cards a program uses more of than the puzzle allows of that kind. */
+export function overCardLimits(limits: Rules['maxPerCommand'], counts: ReadonlyMap<string, number>): CardId[] {
+  return (Object.entries(limits ?? {}) as [CardId, number][]).filter(([card, most]) => (counts.get(card) ?? 0) > most).map(([card]) => card);
+}
+
+export function fitsRules(rules: Pick<Rules, 'allowedCommands' | 'allowedConditions' | 'maxInstructions' | 'maxPerCommand'>, program: ProgramIR): boolean {
   if (rules.maxInstructions !== undefined && countNodes(program) > rules.maxInstructions) return false;
   const allowed = new Set<string>(rules.allowedCommands);
-  for (const card of cardCounts(program).keys()) if (!allowed.has(card)) return false;
+  const counts = cardCounts(program);
+  for (const card of counts.keys()) if (!allowed.has(card)) return false;
+  if (overCardLimits(rules.maxPerCommand, counts).length > 0) return false;
   if (rules.allowedConditions) {
     const senses = new Set<string>(rules.allowedConditions);
     for (const { node } of walk(program)) if ('condition' in node && !senses.has(node.condition)) return false;
@@ -51,15 +58,21 @@ function plain(req: Pick<CritiqueRequest, 'world' | 'objective' | 'rules' | 'pro
 
 export function critique(req: Omit<CritiqueRequest, 'type' | 'contract' | 'requestId'>, now: () => number = Date.now): Critique {
   const fits = fitsRules(req.rules, req.program);
+  const used = cardCounts(req.program);
+  const overOwn = overCardLimits(req.rules.maxPerCommand, used).map((card) => ({ card, used: used.get(card) ?? 0, most: req.rules.maxPerCommand![card]! }));
   let own: Critique['own'];
   try {
-    own = { fits, solves: solves(req), steps: countNodes(req.program) };
+    own = { fits, solves: solves(req), steps: countNodes(req.program), ...(overOwn.length > 0 && { over: overOwn }) };
   } catch {
     // A program the interpreter cannot run does not solve anything.
-    own = { fits, solves: false, steps: countNodes(req.program) };
+    own = { fits, solves: false, steps: countNodes(req.program), ...(overOwn.length > 0 && { over: overOwn }) };
   }
   const found = searchFlat({ world: req.world, objective: req.objective, programming: req.rules }, 64, now() + req.searchMillis);
-  const flat: Critique['flat'] = found.kind === 'found' ? { kind: 'found', steps: found.path.length } : found.kind === 'none' && plain(req) ? { kind: 'impossible' } : { kind: 'unknown' };
+  // A plain way that needs more of one card than the puzzle allows is no way for a player.
+  const tally = new Map<string, number>();
+  if (found.kind === 'found') for (const c of found.path) tally.set(c, (tally.get(c) ?? 0) + 1);
+  const over = overCardLimits(req.rules.maxPerCommand, tally).length > 0;
+  const flat: Critique['flat'] = found.kind === 'found' ? { kind: 'found', steps: found.path.length, ...(over && { overCardLimit: true }) } : found.kind === 'none' && plain(req) ? { kind: 'impossible' } : { kind: 'unknown' };
   return { own, flat };
 }
 
@@ -72,13 +85,23 @@ export interface CriticLine {
 const cards = (n: number) => `${n} ${n === 1 ? 'card' : 'cards'}`;
 
 /** The critic's report in a child's words. It says what is so, and leaves what to do about it to the maker. */
-export function criticWords(c: Critique, rules: Pick<Rules, 'allowedCommands' | 'maxInstructions'>): CriticLine[] {
+export function criticWords(c: Critique, rules: Pick<Rules, 'allowedCommands' | 'maxInstructions' | 'maxPerCommand'>, label: (card: CardId) => string = (card) => card): CriticLine[] {
   const lines: CriticLine[] = [];
   const limit = rules.maxInstructions;
   const blocks = rules.allowedCommands.filter((card) => isBlockId(card) || card === 'call');
   const block = blocks.includes('repeat') ? 'Repeat' : 'a block';
 
-  if (!c.own.fits) lines.push({ tone: 'problem', text: limit !== undefined && c.own.steps > limit ? `Your own program has ${cards(c.own.steps)}. Your puzzle allows ${limit}.` : 'Your own program uses a card your puzzle does not give the player.' });
+  const over = c.own.over?.[0];
+  if (!c.own.fits)
+    lines.push({
+      tone: 'problem',
+      text:
+        limit !== undefined && c.own.steps > limit
+          ? `Your own solution has ${cards(c.own.steps)}. Your puzzle allows ${limit}.`
+          : over
+            ? `Your own solution uses ${over.used} ${label(over.card)} cards. Your puzzle allows ${over.most}.`
+            : 'Your own solution uses a card your puzzle does not give the player.',
+    });
   else if (c.own.solves) lines.push({ tone: 'good', text: `You solved it yourself in ${cards(c.own.steps)}. Others can play it now.` });
   else lines.push({ tone: 'note', text: 'You have not solved it yourself yet. Build your solution and press Run. Once it works, others can play it.' });
 
@@ -87,7 +110,10 @@ export function criticWords(c: Critique, rules: Pick<Rules, 'allowedCommands' | 
   else {
     const n = c.flat.steps;
     lines.push({ tone: 'note', text: `The shortest way with plain steps takes ${cards(n)}.${limit !== undefined ? ` Your puzzle allows ${limit}.` : ''}` });
-    if (limit !== undefined && limit < n) {
+    if (c.flat.overCardLimit) {
+      // The limit on one kind of card closes the plain way; whether another way is open, only a solution shows.
+      lines.push({ tone: 'note', text: `But that way uses more of one card than your puzzle allows, so a player has to find another${blocks.length > 0 ? `, or use ${block}` : ''}.` });
+    } else if (limit !== undefined && limit < n) {
       if (blocks.length > 0) lines.push({ tone: 'note', text: `So a player needs ${block} to fit under ${limit}.` });
       else lines.push({ tone: 'problem', text: `Nobody can solve this: no way through is shorter than ${cards(n)}.` });
     } else if (blocks.length > 0) lines.push({ tone: 'note', text: `A player can solve it without ${block}.` });

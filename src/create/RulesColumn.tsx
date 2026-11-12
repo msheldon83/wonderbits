@@ -10,7 +10,7 @@ import { cardLabel, eventLabel } from '../editor/commands';
 import { newSlot, SLOT_KINDS } from '../editor/OwnNames';
 import { needsOf } from '../editor/palette';
 import { nameProblem, type EditOp } from '../ir/ops';
-import { countNodes, functionNames, memoryOf, slotsInUse, walk } from '../ir/program';
+import { cardCounts, countNodes, functionNames, memoryOf, slotsInUse, walk } from '../ir/program';
 import type { CardId, MemorySlot, ProgramIR } from '../ir/types';
 import type { ProgressStore } from '../progress/store';
 import type { Critique } from '../runtime/contract';
@@ -19,6 +19,8 @@ import type { Creation } from './types';
 
 export const LIMIT_MAX = 40;
 export const DAYS_MAX = 5;
+/** The most a limit on one kind of card can be set to. */
+export const CARD_LIMIT_MAX = 20;
 
 type Goal = 'flag' | 'acorns' | 'both';
 const GOALS: { id: Goal; label: string; reachGoal: boolean; collectAll: boolean }[] = [
@@ -37,6 +39,9 @@ export const CARD_GROUPS: { title: string; cards: CardId[] }[] = [
   { title: 'Map and bird', cards: ['goRow', 'goColumn', 'fly'] },
   { title: 'Gates', cards: ['openGate', 'closeGate'] },
 ];
+
+/** A card's name in the rules, where there is no icon to tell the two Rotates apart. */
+export const cardName = (card: CardId): string => (card === 'call' ? 'Use a function' : card === 'rotateCW' ? 'Rotate ↻' : card === 'rotateCCW' ? 'Rotate ↺' : cardLabel(card));
 
 const KIND_WORDS: Record<string, string> = { number: 'number', yesNo: 'yes/no', direction: 'direction', position: 'place', list: 'list', grid: 'grid', record: 'record' };
 const kindWords = (m: MemorySlot) => (m.kind === 'list' || m.kind === 'grid' ? `${m.kind} of ${KIND_WORDS[m.of ?? 'number']}` : (KIND_WORDS[m.kind] ?? m.kind)) + (m.keep ? ', in the backpack' : '');
@@ -70,6 +75,7 @@ export function RulesColumn({ creation, universe, store, progress, program, edit
   const setRules = (patch: Partial<Creation['programming']>, goal?: (typeof GOALS)[number]) => {
     const next = { ...programming, ...patch };
     if (patch.maxInstructions === undefined && 'maxInstructions' in patch) delete next.maxInstructions;
+    if (next.maxPerCommand && Object.keys(next.maxPerCommand).length === 0) delete next.maxPerCommand;
     const nextObjective = goal ? { ...objective, reachGoal: goal.reachGoal, collectAll: goal.collectAll } : objective;
     store.update(creation.id, { programming: next, objective: nextObjective });
     progress.log({ levelId: creation.id, kind: 'puzzle-set', goal: nextObjective.reachGoal ? (nextObjective.collectAll ? 'both' : 'flag') : 'acorns', cards: next.allowedCommands.length, limit: next.maxInstructions ?? null });
@@ -87,8 +93,19 @@ export function RulesColumn({ creation, universe, store, progress, program, edit
     const on = programming.allowedCommands.includes(card);
     if (on && programming.allowedCommands.length === 1) return;
     // Keep the cards in the order the palette shows them.
-    setRules({ allowedCommands: universe.filter((c) => (c === card ? !on : programming.allowedCommands.includes(c))) });
+    // A card taken away takes its own limit with it.
+    const { [card]: _gone, ...keptLimits } = programming.maxPerCommand ?? {};
+    setRules({ allowedCommands: universe.filter((c) => (c === card ? !on : programming.allowedCommands.includes(c))), maxPerCommand: on ? keptLimits : programming.maxPerCommand });
   };
+  /** The most of one kind of card: a number, or null to lift the limit. */
+  const cardLimits = programming.maxPerCommand ?? {};
+  const setCardLimit = (card: CardId, most: number | null) => {
+    const { [card]: _old, ...rest } = cardLimits;
+    setRules({ maxPerCommand: most === null ? rest : { ...rest, [card]: Math.min(CARD_LIMIT_MAX, Math.max(1, most)) } });
+  };
+  const usedOf = cardCounts(program);
+  const limited = programming.allowedCommands.filter((c) => cardLimits[c] !== undefined);
+  const unlimited = programming.allowedCommands.filter((c) => cardLimits[c] === undefined);
   const grouped = new Set(CARD_GROUPS.flatMap((g) => g.cards));
   const groups = [...CARD_GROUPS.map((g) => ({ ...g, cards: g.cards.filter((c) => universe.includes(c)) })), { title: 'From the level', cards: universe.filter((c) => !grouped.has(c)) }].filter((g) => g.cards.length > 0);
   const memory = memoryOf(program);
@@ -213,7 +230,7 @@ export function RulesColumn({ creation, universe, store, progress, program, edit
         </h3>
         <p className="rule-note">Tap a card to give it or take it away. The blue ones are in the player's hand, and in yours.</p>
         {groups.map((g) => {
-          const lacking = g.cards.flatMap((c) => (lacks(c) ? [`${cardLabel(c)} needs ${lacks(c)}`] : []));
+          const lacking = g.cards.flatMap((c) => (lacks(c) ? [`${cardName(c)} needs ${lacks(c)}`] : []));
           return (
             <div key={g.title} className="card-group">
               <span className="card-group-title">{g.title}</span>
@@ -222,7 +239,7 @@ export function RulesColumn({ creation, universe, store, progress, program, edit
                   const on = programming.allowedCommands.includes(card);
                   return (
                     <button key={card} type="button" className={`btn btn-choice card-switch ${on ? 'is-on' : ''}`} aria-pressed={on} onClick={() => toggleCard(card)}>
-                      {card === 'call' ? 'Use a function' : cardLabel(card)}
+                      {cardName(card)}
                     </button>
                   );
                 })}
@@ -340,6 +357,45 @@ export function RulesColumn({ creation, universe, store, progress, program, edit
             <button type="button" className="btn btn-quiet" onClick={() => setRules({ maxInstructions: undefined })}>
               No limit
             </button>
+          )}
+        </div>
+        <div className="card-limits">
+          <span className="card-group-title">Most of one kind of card</span>
+          <p className="rule-note">Give the player only so many of a card, such as three Forward cards, so they have to find another way.</p>
+          {limited.map((card) => {
+            const most = cardLimits[card]!;
+            return (
+              <div key={card} className="choice-row">
+                {stepper(
+                  cardName(card),
+                  most,
+                  { off: most <= 1, say: `${cardName(card)}: one fewer`, go: () => setCardLimit(card, most - 1) },
+                  { off: most >= CARD_LIMIT_MAX, say: `${cardName(card)}: one more`, go: () => setCardLimit(card, most + 1) },
+                )}
+                <button type="button" className="btn-icon part-remove" aria-label={`No limit on ${cardName(card)}`} title="Lift this limit" onClick={() => setCardLimit(card, null)}>
+                  ×
+                </button>
+              </div>
+            );
+          })}
+          {unlimited.length > 0 && (
+            <select
+              className="param-select part-new"
+              aria-label="Limit one kind of card"
+              value=""
+              onChange={(e) => {
+                const card = e.target.value as CardId;
+                // Start at what the maker's own solution uses, so the limit does not break it.
+                if (card) setCardLimit(card, usedOf.get(card) || 1);
+              }}
+            >
+              <option value="">+ Limit a card…</option>
+              {unlimited.map((c) => (
+                <option key={c} value={c}>
+                  {cardName(c)}
+                </option>
+              ))}
+            </select>
           )}
         </div>
         <div className="choice-row">
