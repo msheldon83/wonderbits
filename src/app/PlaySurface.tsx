@@ -95,6 +95,10 @@ export interface PlaySurfaceProps {
   toolbarExtra?: ReactNode;
   /** A puzzle someone else made: the player uses its named parts and adds none. */
   lockNames?: boolean;
+  /** Shown at the top of the side column, above the program: a switch between the program and something else. */
+  sideHeader?: ReactNode;
+  /** Shown in the side column in place of the program, which keeps its state while hidden. */
+  sideAlt?: ReactNode;
 }
 
 /** A fresh seed for the robot's random generator. */
@@ -108,7 +112,7 @@ function outsideWords(covers: NonNullable<ObjectiveDefinition['covers']>, end: S
   return `${covers.of} ended as ${got === undefined ? 'nothing' : valueWords(got)}. It should be one of ${want}.`;
 }
 
-export function PlaySurface({ level, runtime, settings, initialProgram, onProgram, record, hintFor, onSolved, completion: renderCompletion, toolbarExtra, lockNames = false }: PlaySurfaceProps) {
+export function PlaySurface({ level, runtime, settings, initialProgram, onProgram, record, hintFor, onSolved, completion: renderCompletion, toolbarExtra, lockNames = false, sideHeader, sideAlt }: PlaySurfaceProps) {
   const theme = themeFor(level.themeId);
   const newId = useMemo(() => randomIdFactory(), []);
   const [history, setHistory] = useState<History>(() => {
@@ -176,6 +180,16 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
     [...(program.memory ?? []), ...(level.programming.memoryOptions ?? [])].some((m) => m.kind === 'grid') ||
     level.programming.allowedCommands.some((c) => c === 'goRow' || c === 'goColumn' || c === 'shift');
   const showMemory = world.team !== undefined || gatesOf(world).length > 0 || moversOf(world).length > 0 || askedFields.length > 0 || (program.memory?.length ?? 0) > 0 || level.programming.memoryOptions !== undefined;
+
+  // The goal, the days or the cards changed while the surface was open (a maker editing the rules): what was run no longer stands.
+  const ranUnder = useRef(level);
+  useEffect(() => {
+    if (ranUnder.current === level) return;
+    ranUnder.current = level;
+    cache.current = null;
+    if (phaseRef.current !== 'editing') reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [level]);
 
   // Tell whoever keeps the child's place, on every change after the first paint.
   const shownProgram = useRef(program);
@@ -647,6 +661,9 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
         <TickRules world={world} state={shownState ?? initialState(world, program.memory)} event={activeEvent} />
       </div>
       <div className="side-col">
+        {sideHeader}
+        {sideAlt}
+        <div className="side-program" hidden={sideAlt !== undefined && sideAlt !== null}>
         <Editor
           program={program}
           programming={level.programming}
@@ -697,6 +714,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
           showCode={showCode}
           onToggleCode={() => setShowCode((v) => !v)}
         />
+        </div>
       </div>
 
       {completion && renderCompletion?.({ restart, close: () => setCompletion(false) })}

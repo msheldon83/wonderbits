@@ -12,18 +12,11 @@ import type { ProgressStore } from '../progress/store';
 import type { EventInput, Settings, Stars } from '../progress/types';
 import type { Runtime } from '../runtime/contract';
 import { playableOf } from './CreationScreen';
+import { goalWords } from './goal';
 import type { Creation } from './types';
 
 /** Where a made puzzle's stars are kept: a new proof is a new puzzle, so its stars start again. */
 export const playKeyOf = (creation: Creation): string => `made:${creation.id}:${creation.proof?.provedAt ?? 0}`;
-
-/** What the player is asked to do, from the goal its maker chose. */
-export function goalWords(creation: Pick<Creation, 'objective'>): string {
-  const { reachGoal, collectAll } = creation.objective;
-  if (reachGoal && collectAll) return 'Collect every acorn, then get the robot to the flag.';
-  if (collectAll) return 'Collect every acorn.';
-  return 'Help the robot reach the flag.';
-}
 
 export function PlayScreen({ creation, progress, runtime, settings }: { creation: Creation; progress: ProgressStore; runtime: Runtime | null; settings: Settings }) {
   const [stars, setStars] = useState<Stars | null>(null);

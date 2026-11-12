@@ -1,7 +1,8 @@
 /**
- * One creation, in three modes on one screen. Build changes the board;
- * Play is the play surface on it, with the creation's cards; Puzzle sets
- * the challenge for others and hears the critic. Switching is one
+ * One creation, made in three steps on one screen. Board lays out the
+ * island. Mechanics is how the puzzle works: the maker's own program
+ * beside the rules for players (the goal, the cards, the limit) and the
+ * critic. Preview is the puzzle as a player will meet it. Switching is one
  * tap, and the board, the name and the program are saved as they change,
  * so nothing is lost on the way.
  */
@@ -9,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { hashFor } from '../app/levels';
 import { PlaySurface, type Playable, type Solved } from '../app/PlaySurface';
 import { randomIdFactory } from '../ir/ids';
+import { skeletonOf } from '../ir/spec';
 import { programFromSpec, programSpec } from '../ir/program';
 import type { ProgramIR } from '../ir/types';
 import type { ProgressStore } from '../progress/store';
@@ -21,6 +23,7 @@ import { cardsGained, inPaletteOrder } from './cards';
 import { ChallengePanel } from './ChallengePanel';
 import { fitsRules } from './critic';
 import { KitPicker, type PackInfo } from './KitPicker';
+import { goalWords, rulesWords } from './goal';
 import type { CreationStore } from './store';
 import { TITLE_MAX, type Creation } from './types';
 
@@ -39,6 +42,13 @@ export function playableOf(creation: Creation, intro: string): Playable {
   };
 }
 
+type Step = 'board' | 'mechanics' | 'preview';
+const STEPS: { id: Step; label: string; about: string }[] = [
+  { id: 'board', label: 'Board', about: 'Lay out the island: its size, tiles and everything on it' },
+  { id: 'mechanics', label: 'Mechanics', about: 'How the puzzle works: your own program, and the rules for players' },
+  { id: 'preview', label: 'Preview', about: 'The puzzle as a player will see it' },
+];
+
 export interface CreationScreenProps {
   creation: Creation;
   store: CreationStore;
@@ -56,14 +66,23 @@ export function CreationScreen({ creation, store, progress, runtime, settings, s
   const [picking, setPicking] = useState(false);
   /** Bumped when a kit changes the program from outside the play surface, so the surface opens afresh on it. */
   const [surface, setSurface] = useState(0);
-  /** A new thing, or one with no program yet, opens ready to be built; one being worked on opens ready to play. */
-  const [mode, setMode] = useState<'build' | 'play' | 'puzzle'>(() => (creation.program.length === 0 || creation.updatedAt === creation.createdAt ? 'build' : 'play'));
+  /** A new thing opens on its board; one being worked on opens on its mechanics. */
+  const [step, setStep] = useState<Step>(() => (creation.program.length === 0 || creation.updatedAt === creation.createdAt ? 'board' : 'mechanics'));
+  /** In Mechanics, the side column shows the maker's program or the rules for players. */
+  const [side, setSide] = useState<'program' | 'rules'>('program');
   const [title, setTitle] = useState(creation.title);
   const level = useMemo(
     () => playableOf(creation, 'This island is yours. Tap an instruction to add it to your program, then press Run.'),
     // The board and rules, not the program or the name: saving those must not restart the surface.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [creation.id, creation.world, creation.objective, creation.programming],
+  );
+  // Preview: the puzzle as a player meets it. The maker's names, empty; the maker's cards and limit; the goal in words.
+  const preview = useMemo(
+    () => ({ ...playableOf(creation, `${goalWords(creation)} Tap an instruction to add it to your program.`), programming: { ...creation.programming, starterProgram: skeletonOf(creation.program) } }),
+    // Taken when the step opens (the surface is keyed by it), so the maker's later edits do not restart a preview in play.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [creation.id, creation.world, creation.objective, creation.programming, creation.days, step],
   );
   const record = useCallback((event: EventInput) => progress.log(event), [progress]);
   /** The program as it was at the last save, to see which named parts are new. */
@@ -137,32 +156,73 @@ export function CreationScreen({ creation, store, progress, runtime, settings, s
             }}
           />
         </label>
-        <div className="mode-switch" role="group" aria-label="Build, play or set the puzzle">
-          {(['build', 'play', 'puzzle'] as const).map((m) => (
-            <button key={m} type="button" className={`btn btn-choice ${mode === m ? 'is-on' : ''}`} aria-pressed={mode === m} onClick={() => {
-                logBoard();
-                setMode(m);
-              }}
-            >
-              {m === 'build' ? 'Build' : m === 'play' ? 'Play' : 'Puzzle'}
-            </button>
+        <ol className="step-switch" aria-label="Steps of making a puzzle">
+          {STEPS.map(({ id, label, about }, i) => (
+            <li key={id}>
+              <button
+                type="button"
+                className={`btn btn-choice step-button ${step === id ? 'is-on' : ''}`}
+                aria-current={step === id ? 'step' : undefined}
+                title={about}
+                onClick={() => {
+                  logBoard();
+                  setStep(id);
+                }}
+              >
+                <span className="step-number" aria-hidden="true">
+                  {i + 1}
+                </span>
+                {label}
+              </button>
+            </li>
           ))}
-        </div>
-        <button type="button" className="btn btn-quiet btn-create" onClick={() => setPicking(true)}>
-          Add cards
-        </button>
-        {creation.status === 'proved' && (
+        </ol>
+        {creation.status === 'proved' ? (
           <span className="ready-tag" title="You solved it, so others can play it. It is on the map, under Made here.">
             Ready to play
           </span>
+        ) : (
+          <span className="ready-tag is-draft" title="Solve it yourself in Mechanics, within its own rules, and others can play it.">
+            Not solved yet
+          </span>
         )}
       </div>
-      {mode === 'build' ? (
-        <BoardEditor world={creation.world} objective={creation.objective} cards={creation.programming.allowedCommands} settings={settings} onChange={onWorld} {...(signposts && { signposts })} />
-      ) : mode === 'puzzle' ? (
-        <ChallengePanel creation={creation} universe={universe} store={store} progress={progress} runtime={runtime} settings={settings} />
-      ) : (
-        <PlaySurface key={surface} level={level} runtime={runtime} settings={settings} initialProgram={creation.program} onProgram={onProgram} record={record} onSolved={onSolved} />
+      {step === 'board' && <BoardEditor world={creation.world} objective={creation.objective} cards={creation.programming.allowedCommands} settings={settings} onChange={onWorld} {...(signposts && { signposts })} />}
+      {step === 'mechanics' && (
+        <PlaySurface
+          key={surface}
+          level={level}
+          runtime={runtime}
+          settings={settings}
+          initialProgram={creation.program}
+          onProgram={onProgram}
+          record={record}
+          onSolved={onSolved}
+          sideHeader={
+            <div className="side-switch" role="group" aria-label="Your program, or the rules for players">
+              <button type="button" className={`btn btn-choice ${side === 'program' ? 'is-on' : ''}`} aria-pressed={side === 'program'} onClick={() => setSide('program')}>
+                My program
+              </button>
+              <button type="button" className={`btn btn-choice ${side === 'rules' ? 'is-on' : ''}`} aria-pressed={side === 'rules'} onClick={() => setSide('rules')}>
+                Rules: {rulesWords(creation)}
+              </button>
+            </div>
+          }
+          sideAlt={side === 'rules' ? <ChallengePanel creation={creation} universe={universe} store={store} progress={progress} runtime={runtime} onAddCards={() => setPicking(true)} /> : null}
+          toolbarExtra={
+            <button type="button" className="btn btn-quiet btn-create" onClick={() => setPicking(true)}>
+              Add cards
+            </button>
+          }
+        />
+      )}
+      {step === 'preview' && (
+        <>
+          <p className="preview-note" role="note">
+            This is what a player sees: your island, your cards, an empty program. {creation.status === 'proved' ? 'It is on the map, under Made here.' : 'It goes on the map once you have solved it in Mechanics, or here.'}
+          </p>
+          <PlaySurface key="preview" level={preview} runtime={runtime} settings={settings} record={record} onSolved={onSolved} lockNames />
+        </>
       )}
       {picking && (
         <KitPicker

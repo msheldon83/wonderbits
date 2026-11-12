@@ -1,12 +1,12 @@
 /**
- * Puzzle mode: the maker sets the challenge (the goal, the cards a player
- * gets, how many cards at most) and the critic says what is true about it.
- * A puzzle is offered to others only once its maker's own program solves
- * it under these limits; the critic checks that here, and Play checks it
- * whenever a run succeeds.
+ * The rules of a puzzle, for its maker: the goal, the cards a player gets,
+ * how many cards at most, how many days, and what the critic says about
+ * it all. It sits beside the board and the maker's own program, in the
+ * Mechanics step. A puzzle is offered to others only once its maker's
+ * program solves it under these rules; the critic checks that here, and a
+ * solving run checks it too.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { useMotion } from '../app/hooks';
 import { cardLabel } from '../editor/commands';
 import { randomIdFactory } from '../ir/ids';
 import { programFromSpec, usesRandom } from '../ir/program';
@@ -14,9 +14,6 @@ import { countSpec } from '../ir/spec';
 import type { CardId } from '../ir/types';
 import { isRandomLevel } from '../lessons/checks';
 import type { ProgressStore } from '../progress/store';
-import type { Settings } from '../progress/types';
-import { Board } from '../render/Board';
-import { themeFor } from '../render/themes';
 import type { Critique, Runtime } from '../runtime/contract';
 import { criticWords } from './critic';
 import type { CreationStore } from './store';
@@ -33,8 +30,6 @@ const GOALS: { id: Goal; label: string; reachGoal: boolean; collectAll: boolean 
   { id: 'both', label: 'Both', reachGoal: true, collectAll: true },
 ];
 
-const noControllers = () => {};
-
 export interface ChallengePanelProps {
   creation: Creation;
   /** Every card this creation may offer: free play's, and the cards of the level it came from. */
@@ -42,14 +37,14 @@ export interface ChallengePanelProps {
   store: CreationStore;
   progress: ProgressStore;
   runtime: Runtime | null;
-  settings: Settings;
+  /** Open the kits: more cards for this creation. */
+  onAddCards(): void;
 }
 
-export function ChallengePanel({ creation, universe, store, progress, runtime, settings }: ChallengePanelProps) {
+export function ChallengePanel({ creation, universe, store, progress, runtime, onAddCards }: ChallengePanelProps) {
   const { world, objective, programming, program } = creation;
   const [critique, setCritique] = useState<Critique | null>(null);
   const [thinking, setThinking] = useState(true);
-  const motion = useMotion(1, settings.reducedMotion);
   const rules = useMemo(
     () => ({
       allowedCommands: programming.allowedCommands,
@@ -103,20 +98,28 @@ export function ChallengePanel({ creation, universe, store, progress, runtime, s
     // Keep the cards in the order the palette shows them.
     setRules({ allowedCommands: universe.filter((c) => (c === card ? !on : programming.allowedCommands.includes(c))) });
   };
+  /** Where a limit starts when the maker first sets one: the size of their own program, or the shortest plain way, or ten. */
+  const firstLimit = Math.min(LIMIT_MAX, countSpec(program) > 0 ? countSpec(program) : critique?.flat.kind === 'found' && critique.flat.steps > 0 ? critique.flat.steps : 10);
   const lines = critique ? criticWords(critique, rules) : [];
-  const proved = creation.status === 'proved';
 
   return (
-    <main className="app-main challenge-main">
-      <div className="lesson-banner">
-        <p className={`message tone-${proved ? 'success' : 'info'}`} role="status" aria-live="polite">
-          {proved ? 'Others can play this puzzle now. It is on the map, under Made here.' : 'Set the challenge here. Then solve it yourself in Play, and others can play it.'}
-        </p>
-      </div>
-      <div className="stage-col">
-        <Board world={world} theme={themeFor('forest')} motion={motion} label="Your island" onControllers={noControllers} hideIndicator hideGoal={!objective.reachGoal} />
-      </div>
-      <div className="side-col">
+    <div className="rules-panel">
+        <section className="tools-panel critic" aria-labelledby="critic-title" aria-busy={thinking}>
+          <h2 id="critic-title" className="panel-title">
+            The critic says
+          </h2>
+          {lines.length === 0 ? (
+            <p className="tool-note">{thinking ? 'Trying your puzzle…' : 'The critic could not check this puzzle.'}</p>
+          ) : (
+            <ul className={`critic-lines ${thinking ? 'is-thinking' : ''}`}>
+              {lines.map((l) => (
+                <li key={l.text} className={`critic-line tone-${l.tone}`}>
+                  {l.text}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
         <section className="tools-panel" aria-labelledby="goal-title">
           <h2 id="goal-title" className="panel-title">
             The goal
@@ -143,6 +146,9 @@ export function ChallengePanel({ creation, universe, store, progress, runtime, s
               );
             })}
           </div>
+          <button type="button" className="btn btn-quiet btn-create rules-add" onClick={onAddCards}>
+            Add more cards
+          </button>
         </section>
         <section className="tools-panel" aria-labelledby="limit-title">
           <h2 id="limit-title" className="panel-title">
@@ -154,13 +160,13 @@ export function ChallengePanel({ creation, universe, store, progress, runtime, s
             </button>
             <div className="size-stepper" role="group" aria-label="Most cards a player may use">
               <span className="size-label">At most</span>
-              <button type="button" className="btn btn-icon" disabled={limit !== undefined && limit <= 1} aria-label="One card fewer" onClick={() => setRules({ maxInstructions: Math.max(1, (limit ?? Math.max(1, countSpec(program)) + 1) - 1) })}>
+              <button type="button" className="btn btn-icon" disabled={limit !== undefined && limit <= 1} aria-label="One card fewer" onClick={() => setRules({ maxInstructions: Math.max(1, (limit ?? firstLimit + 1) - 1) })}>
                 −
               </button>
               <span className="size-value" aria-live="polite">
                 {limit ?? '∞'}
               </span>
-              <button type="button" className="btn btn-icon" disabled={limit !== undefined && limit >= LIMIT_MAX} aria-label="One card more" onClick={() => setRules({ maxInstructions: Math.min(LIMIT_MAX, limit === undefined ? Math.max(1, countSpec(program)) : limit + 1) })}>
+              <button type="button" className="btn btn-icon" disabled={limit !== undefined && limit >= LIMIT_MAX} aria-label="One card more" onClick={() => setRules({ maxInstructions: Math.min(LIMIT_MAX, limit === undefined ? firstLimit : limit + 1) })}>
                 +
               </button>
             </div>
@@ -188,23 +194,6 @@ export function ChallengePanel({ creation, universe, store, progress, runtime, s
             <p className="tool-note">The program runs once a day. Only what is in the backpack is kept overnight, and the last day must reach the goal.</p>
           </section>
         )}
-        <section className="tools-panel critic" aria-labelledby="critic-title" aria-busy={thinking}>
-          <h2 id="critic-title" className="panel-title">
-            The critic says
-          </h2>
-          {lines.length === 0 ? (
-            <p className="tool-note">{thinking ? 'Trying your puzzle…' : 'The critic could not check this puzzle.'}</p>
-          ) : (
-            <ul className={`critic-lines ${thinking ? 'is-thinking' : ''}`}>
-              {lines.map((l) => (
-                <li key={l.text} className={`critic-line tone-${l.tone}`}>
-                  {l.text}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </div>
-    </main>
+    </div>
   );
 }
