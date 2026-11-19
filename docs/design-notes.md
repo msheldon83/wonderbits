@@ -4,6 +4,52 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## The More or less pack: comparison (2026-11-19)
+
+Concept 10b, the pack the entry below planned. It is `forest-compare`,
+island 12, between Keep count and In a row; the later packs each move one
+place along. Ten levels, ids q01 to q10:
+
+| Level | Activity | What it asks |
+| --- | --- | --- |
+| Less than three | predict | left goes 10, 7, 4, 1; where does "until left is less than 3" stop? |
+| Which branch? | model | count is 2; is that less than 3? What does count hold after the If? |
+| Two points each | build | acorns score 2; walk until score is more than 5, which it never exactly is |
+| More than two | reorder | a loop that counts its steps until steps is more than 2 |
+| The wrong way round | debug | "less than 2" where "more than 2" was meant |
+| Big pile, small pile | build, shuffled | 1 to 4 acorns: more than 2 and the flag is up, otherwise down |
+| Where do they cross? | predict | near counts up, far counts down; until near is more than far |
+| Points against steps | build, shuffled | stop when score is more than steps |
+| The bigger number | debug | the lock wants the larger of score and steps; the check picks the smaller |
+| Keep the bigger | build, shuffled | unlock with whichever of score and steps is larger |
+
+The first six compare with a number, the last four compare two slots.
+"Is" is always among the choices where it is the tempting wrong answer.
+
+### Deviations and choices
+
+- **The plan's "gate that opens only while the counter is less than 3"
+  was not built.** It needs a new kind of gate. The same idea is taught
+  with what the board has: a loop's stopping check, an If that picks a
+  turn, and the number lock.
+- **The second number is steps, not a second pile.** One When card fires
+  for every acorn and plates have a card each, so two piles cannot be
+  counted apart with cards the child has by now. Steps counted in a loop
+  and points counted by a When card give two numbers that truly change.
+- **"Keep the bigger" unlocks with the bigger; it does not copy it into
+  a slot called best.** Copying one slot into another is not a value a
+  Set card offers in the lessons yet.
+- **A loop prints the other way round.** "Repeat until left is less than
+  3" prints as `while (left >= 3)`. That was already how Repeat until
+  prints; here it brings `<=` and `>=` with it, and the real words say so.
+- **The validator knows the concept.** An introduction for "comparison"
+  must use a check that is less, more, or against another slot.
+- **A finished level stays open.** Levels unlock in a row, so a new pack
+  in the middle would have locked the first level after it for a child
+  already past it. A level once completed is now always open; the child
+  still meets the new pack as the next thing to do.
+- **The island's picture** is a pair of scales on a hill.
+
 ## Change: ready-made functions, comparison, and a winner that is named (2026-11-19)
 
 Feedback on the starter games: the chasing beetle may be too hard and
@@ -51,9 +97,8 @@ needed for a high score; and Noughts and crosses should say who won.
 
 ### Deviations and choices
 
-- **The More or less pack is planned, not written.** The cards are in
-  creation mode now; the lessons that teach them are the next piece of
-  curriculum work.
+- **The More or less pack was planned here**, and built the same day:
+  see the entry above.
 - **A full board with no line still says "Game over"**, not "a draw".
   The Game over card has no words of its own.
 - **Flee and wander have no starter game yet.** They are there for a

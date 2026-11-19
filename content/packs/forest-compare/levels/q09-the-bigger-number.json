@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 1,
+  "id": "q09-the-bigger-number",
+  "title": "The bigger number",
+  "intro": "The lock wants the bigger of the two: score or steps. The robot tried the smaller one. Fix the check.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 6,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      },
+      {
+        "x": 4,
+        "y": 0
+      }
+    ],
+    "gates": [
+      {
+        "id": "a",
+        "x": 5,
+        "y": 0,
+        "open": false,
+        "code": 6
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "comparison",
+    "activity": "debug"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "until",
+      "ifElse",
+      "change",
+      "unlock"
+    ],
+    "allowedConditions": [
+      "blockedAhead",
+      "slot:score>steps",
+      "slot:score<steps"
+    ],
+    "maxInstructions": 10,
+    "starterProgram": [
+      {
+        "remember": "score",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "remember": "steps",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "until": "blockedAhead",
+        "do": [
+          "forward",
+          {
+            "change": "steps",
+            "by": 1
+          }
+        ]
+      },
+      {
+        "if": "slot:score<steps",
+        "do": [
+          {
+            "unlock": "a",
+            "with": "score"
+          }
+        ],
+        "else": [
+          {
+            "unlock": "a",
+            "with": "steps"
+          }
+        ]
+      },
+      "forward",
+      "forward",
+      {
+        "on": "acorn",
+        "do": [
+          {
+            "change": "score",
+            "by": 2
+          }
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        }
+      ],
+      "text": "At the gate: 4 steps and 6 points. The lock is set to 6."
+    },
+    {
+      "kind": "step",
+      "path": [],
+      "index": 1,
+      "text": "Is 6 less than 4? So which branch runs, and what does it try?"
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 1,
+      "command": "ifElse",
+      "text": "Ask it the other way: is score more than steps? Then score is the bigger."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "score",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "steps",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "until": "blockedAhead",
+      "do": [
+        "forward",
+        {
+          "change": "steps",
+          "by": 1
+        }
+      ]
+    },
+    {
+      "if": "slot:score>steps",
+      "do": [
+        {
+          "unlock": "a",
+          "with": "score"
+        }
+      ],
+      "else": [
+        {
+          "unlock": "a",
+          "with": "steps"
+        }
+      ]
+    },
+    "forward",
+    "forward",
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "change": "score",
+          "by": 2
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

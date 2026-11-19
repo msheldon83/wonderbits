@@ -1,0 +1,198 @@
+{
+  "schemaVersion": 1,
+  "id": "q06-big-pile-small-pile",
+  "title": "Big pile, small pile",
+  "intro": "One program for every shuffle. More than 2 acorns: the flag is up. Otherwise it is down. Count them, then choose.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......",
+      "......",
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 1,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 5,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 1
+      },
+      {
+        "x": 2,
+        "y": 1
+      },
+      {
+        "x": 3,
+        "y": 1
+      },
+      {
+        "x": 4,
+        "y": 1
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "comparison",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "repeat",
+      "ifElse",
+      "change"
+    ],
+    "allowedConditions": [
+      "slot:count>2",
+      "slot:count<2",
+      "slot:count=2"
+    ],
+    "maxInstructions": 8,
+    "maxPerCommand": {
+      "change": 1
+    },
+    "starterProgram": [
+      {
+        "remember": "count",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "on": "acorn",
+        "do": [
+          {
+            "change": "count",
+            "by": 1
+          }
+        ]
+      }
+    ]
+  },
+  "shuffles": [
+    {
+      "goal": {
+        "x": 5,
+        "y": 2
+      },
+      "collectibles": [
+        {
+          "x": 3,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "goal": {
+        "x": 5,
+        "y": 0
+      },
+      "collectibles": [
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 4,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "goal": {
+        "x": 5,
+        "y": 2
+      },
+      "collectibles": [
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 4,
+          "y": 1
+        }
+      ]
+    }
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 5,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 2
+        }
+      ],
+      "text": "The flag is up for 3 or 4 acorns and down for 1 or 2. Press Shuffle to see."
+    },
+    {
+      "kind": "card",
+      "command": "ifElse",
+      "text": "One check covers them all: is count more than 2?"
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 1,
+      "command": "ifElse",
+      "text": "After the walk, If count is more than 2 turn up, or else turn down."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "count",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "repeat": 5,
+      "do": [
+        "forward"
+      ]
+    },
+    {
+      "if": "slot:count>2",
+      "do": [
+        "rotateCCW"
+      ],
+      "else": [
+        "rotateCW"
+      ]
+    },
+    "forward",
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "change": "count",
+          "by": 1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 7
+  }
+}

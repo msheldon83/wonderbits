@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "id": "q03-two-points-each",
+  "title": "Two points each",
+  "intro": "Each acorn is worth 2 points. Walk until score is more than 5, then turn to the flag. Careful: score is never exactly 5.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      ".......",
+      "......."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 1
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 3,
+        "y": 0
+      },
+      {
+        "x": 4,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "comparison",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "until",
+      "change"
+    ],
+    "allowedConditions": [
+      "slot:score=5",
+      "slot:score>5",
+      "slot:score<5"
+    ],
+    "maxInstructions": 5,
+    "maxPerCommand": {
+      "change": 1
+    },
+    "starterProgram": [
+      {
+        "remember": "score",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "on": "acorn",
+        "do": [
+          {
+            "change": "score",
+            "by": 2
+          }
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "text": "Score goes 2, 4, 6. It jumps right over 5."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "Repeat until score is more than 5. \"Is 5\" would never come true."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "until",
+      "text": "Start with the loop: walk until score is more than 5."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "score",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "until": "slot:score>5",
+      "do": [
+        "forward"
+      ]
+    },
+    "rotateCW",
+    "forward",
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "change": "score",
+          "by": 2
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

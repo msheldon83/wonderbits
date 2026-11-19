@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "id": "q01-less-than-three",
+  "title": "Less than three",
+  "intro": "left starts at 10 and loses 3 on every go. The loop stops when left is less than 3. Where will the robot be?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "......"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 3,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "comparison",
+    "activity": "predict"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change",
+      "until"
+    ],
+    "allowedConditions": [
+      "slot:left<3"
+    ],
+    "maxInstructions": 3,
+    "starterProgram": [
+      {
+        "remember": "left",
+        "kind": "number",
+        "start": 10
+      },
+      {
+        "until": "slot:left<3",
+        "do": [
+          "forward",
+          {
+            "change": "left",
+            "by": -3
+          }
+        ]
+      }
+    ]
+  },
+  "prediction": {
+    "askTile": true
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "text": "Say the numbers: 10, then 7, then 4. One step for each go."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "The loop asks before every go: is left less than 3? 4 is not. What comes after 4?"
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "until",
+      "text": "The whole program is one loop. It stops at the first number below 3."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "left",
+      "kind": "number",
+      "start": 10
+    },
+    {
+      "until": "slot:left<3",
+      "do": [
+        "forward",
+        {
+          "change": "left",
+          "by": -3
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

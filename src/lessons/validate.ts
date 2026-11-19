@@ -708,6 +708,7 @@ export function validateIntroduction(intro: ConceptIntroduction, errors: string[
     objects: [world.team !== undefined && trace.some((e) => e.op === 'next'), 'never has a second robot run the blueprint'],
     persistence: [trace.some((e) => e.op === 'night') && splitSpec(program).memory.some((m) => m.keep), 'never keeps a slot in the backpack overnight'],
     records: [setSources(program).some((src) => parseField(src) !== null) || conditionsOfSpec(program).some((c) => splitSlotPath(parseSlotTest(c)?.slot ?? '').field !== undefined), 'never reads a field of a record'],
+    comparison: [conditionsOfSpec(program).some((c) => { const t = parseSlotTest(c); return !!t && (t.op !== '=' || t.other !== undefined); }), 'never asks whether a number is less or more'],
     derived: [setSources(program).some((src) => typeof src === 'string' && !parseRandom(src) && !['N', 'E', 'S', 'W'].includes(src)), 'never works a value out from what is there'],
   };
   const check = shows[intro.concept];
