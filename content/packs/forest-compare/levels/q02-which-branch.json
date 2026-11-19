@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "id": "q02-which-branch",
+  "title": "Which branch?",
+  "intro": "The If asks: is count less than 3? One branch adds 5, the other takes 1 away. What does count hold at the end?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 3,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "comparison",
+    "activity": "model"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change",
+      "ifElse"
+    ],
+    "allowedConditions": [
+      "slot:count<3"
+    ],
+    "maxInstructions": 7,
+    "starterProgram": [
+      {
+        "remember": "count",
+        "kind": "number",
+        "start": 0
+      },
+      "forward",
+      "forward",
+      "forward",
+      {
+        "if": "slot:count<3",
+        "do": [
+          {
+            "change": "count",
+            "by": 5
+          }
+        ],
+        "else": [
+          {
+            "change": "count",
+            "by": -1
+          }
+        ]
+      },
+      {
+        "on": "acorn",
+        "do": [
+          {
+            "change": "count",
+            "by": 1
+          }
+        ]
+      }
+    ]
+  },
+  "prediction": {
+    "askTile": false,
+    "askMemory": [
+      "slot:count"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "text": "Two acorns on the way, so count is 2 when the If asks."
+    },
+    {
+      "kind": "step",
+      "path": [],
+      "index": 3,
+      "text": "Is 2 less than 3? The answer picks the branch."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        3
+      ],
+      "slot": 0,
+      "command": "change",
+      "text": "Yes, 2 is less than 3, so the first branch runs: add 5."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "count",
+      "kind": "number",
+      "start": 0
+    },
+    "forward",
+    "forward",
+    "forward",
+    {
+      "if": "slot:count<3",
+      "do": [
+        {
+          "change": "count",
+          "by": 5
+        }
+      ],
+      "else": [
+        {
+          "change": "count",
+          "by": -1
+        }
+      ]
+    },
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "change": "count",
+          "by": 1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

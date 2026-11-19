@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "id": "q05-the-wrong-way-round",
+  "title": "The wrong way round",
+  "intro": "More than 2 acorns means the flag is up the hill. The robot found 3, and went down. One check is the wrong way round.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      ".....",
+      ".....",
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 1,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 1
+      },
+      {
+        "x": 2,
+        "y": 1
+      },
+      {
+        "x": 3,
+        "y": 1
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "comparison",
+    "activity": "debug"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "ifElse",
+      "change"
+    ],
+    "allowedConditions": [
+      "slot:count>2",
+      "slot:count<2"
+    ],
+    "maxInstructions": 9,
+    "starterProgram": [
+      {
+        "remember": "count",
+        "kind": "number",
+        "start": 0
+      },
+      "forward",
+      "forward",
+      "forward",
+      "forward",
+      {
+        "if": "slot:count<2",
+        "do": [
+          "rotateCCW"
+        ],
+        "else": [
+          "rotateCW"
+        ]
+      },
+      "forward",
+      {
+        "on": "acorn",
+        "do": [
+          {
+            "change": "count",
+            "by": 1
+          }
+        ]
+      }
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 3,
+          "y": 1
+        }
+      ],
+      "text": "Three acorns, so count is 3 at the corner."
+    },
+    {
+      "kind": "step",
+      "path": [],
+      "index": 4,
+      "text": "Read the check out loud with 3 in it. Is that true?"
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 4,
+      "command": "ifElse",
+      "text": "The check should ask: is count more than 2?"
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "count",
+      "kind": "number",
+      "start": 0
+    },
+    "forward",
+    "forward",
+    "forward",
+    "forward",
+    {
+      "if": "slot:count>2",
+      "do": [
+        "rotateCCW"
+      ],
+      "else": [
+        "rotateCW"
+      ]
+    },
+    "forward",
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "change": "count",
+          "by": 1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

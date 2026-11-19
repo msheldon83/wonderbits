@@ -34,13 +34,13 @@ starting new work.
 
 The first child test passed on 2026-11-08, and this repository has finished
 **build step 12 of the plan: data**, the last pack of the concept spine. It
-has 175 levels in eighteen packs (Forest, five levels that teach the game; Forest trails, ten
+has 185 levels in nineteen packs (Forest, five levels that teach the game; Forest trails, ten
 sequencing levels; Around and around, Repeat; Look before you leap, If,
 If / else and Repeat until; Same trick, new place, functions; Flip the
 switch, switches and gates; When it happens, When cards for plates and
 acorns; Remote control, key scripts; Tick tock, logs, beetles and the Every
 tick card; Two things to remember, typed memory slots under a budget; Keep
-count, variables that change; In a row, lists; Never the same twice, a
+count, variables that change; More or less, less than, more than and comparing two numbers; In a row, lists; Never the same twice, a
 random generator; Reading the map, coordinates and a finger on the map;
 Two scoreboards, values worked out instead of stored; Overnight, levels of
 several days with a backpack kept overnight; The notebook, records of named

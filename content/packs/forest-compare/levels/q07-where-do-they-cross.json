@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "id": "q07-where-do-they-cross",
+  "title": "Where do they cross?",
+  "intro": "near counts up and far counts down. The loop stops when near is more than far. Where?",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "........"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 0
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "comparison",
+    "activity": "predict"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "change",
+      "until"
+    ],
+    "allowedConditions": [
+      "slot:near>far"
+    ],
+    "maxInstructions": 4,
+    "starterProgram": [
+      {
+        "remember": "near",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "remember": "far",
+        "kind": "number",
+        "start": 7
+      },
+      {
+        "until": "slot:near>far",
+        "do": [
+          "forward",
+          {
+            "change": "near",
+            "by": 1
+          },
+          {
+            "change": "far",
+            "by": -1
+          }
+        ]
+      }
+    ]
+  },
+  "prediction": {
+    "askTile": true
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "text": "Write the pairs down: 0 and 7, then 1 and 6, then 2 and 5."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "The check compares two slots. 3 is not more than 4. What is the next pair?"
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "until",
+      "text": "The loop stops the first time near is the bigger one."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "near",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "far",
+      "kind": "number",
+      "start": 7
+    },
+    {
+      "until": "slot:near>far",
+      "do": [
+        "forward",
+        {
+          "change": "near",
+          "by": 1
+        },
+        {
+          "change": "far",
+          "by": -1
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true
+  }
+}
