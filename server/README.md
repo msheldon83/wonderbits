@@ -55,6 +55,7 @@ npm test
 | `SMTP_URL` | Where to send mail, such as `smtps://user:pass@smtp.example.com`. Unset, mail is printed to the log. |
 | `MAIL_FROM` | The sender on that mail. |
 | `INVITE_REQUIRED` | `false` lets any grown-up sign up. Default: an invite code is needed. |
+| `ADMIN_EMAILS` | The addresses of the people who run this copy, separated by commas. Signed in as a grown-up with one of them, you can open the owner's page (`#/admin`), and new feedback is mailed to you. Unset, nobody can. |
 
 ## Grown-up accounts
 
@@ -87,6 +88,23 @@ Then open http://localhost:8080.
   tells brothers and sisters apart: the server refuses it from any browser
   that has not been let in, and slows down after three wrong tries.
 
+## Feedback loops
+
+For families who leave "Help improve Wonderbits" on (it is on unless a
+grown-up turns it off), the server keeps each level visit and each run inside
+it, how hard the child said a level was, and anything they or their grown-up
+write. The design is in [docs/feedback-plan.md](../docs/feedback-plan.md).
+
+The owner's page, `#/admin`, shows it: per level, how many children finished
+or gave up, how many runs it took, how hard they found it, the wrong programs
+several children built, and an inbox of what was written. Children appear
+under made-up names such as `K-3fa9c1`. An answer typed there is mailed to
+the family's grown-up and shown on their page; it never goes to a child.
+Everything can be downloaded as CSV from the same page.
+
+To open it, put your address in `ADMIN_EMAILS` and sign in as a grown-up with
+it. Visits and runs are deleted after 12 months.
+
 ## End-to-end check
 
 `e2e/accounts.mjs` walks the whole of that in real browsers against a real
@@ -114,7 +132,8 @@ accounts never calls a server.
 2. Give it a database. To use a Postgres cluster you already have on Fly:
    `fly postgres attach <cluster> --app <name>`, which sets `DATABASE_URL`.
    Any other Postgres works too: `fly secrets set DATABASE_URL=...`.
-3. Give it somewhere to send mail: `fly secrets set SMTP_URL=... MAIL_FROM=...`.
+3. Give it somewhere to send mail, and say who runs it:
+   `fly secrets set SMTP_URL=... MAIL_FROM=... ADMIN_EMAILS=you@example.com`.
    Without this nobody can sign in, because the links only reach the log.
 4. Deploy: `fly deploy`.
 5. Make the first invite: `fly ssh console -C "sh -c 'cd /app/server && node --import tsx src/invite.ts'"`.

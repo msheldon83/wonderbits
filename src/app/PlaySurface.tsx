@@ -103,6 +103,8 @@ export interface PlaySurfaceProps {
   hintFor?(rung: 0 | 1 | 2, program: ProgramIR, newId: () => NodeId, full: boolean): HintEffect;
   /** Called once per solving run, before the celebration plays. */
   onSolved(solved: Solved): void;
+  /** Called when a run ends, however it ended. `check` marks a random level's program that worked on the board shown and then failed a roll, or never gave an outcome it should. */
+  onAttempt?(attempt: { program: ProgramIR; outcome: RunOutcome; check?: 'roll' | 'unseen' }): void;
   /** The dialog shown after the celebration. */
   completion?(actions: { restart(): void; close(): void; winner?: string }): ReactNode;
   /** Extra buttons at the end of the run controls. */
@@ -138,7 +140,7 @@ function outsideWords(covers: NonNullable<ObjectiveDefinition['covers']>, end: S
   return `${covers.of} ended as ${got === undefined ? 'nothing' : valueWords(got)}. It should be one of ${want}.`;
 }
 
-export function PlaySurface({ level, runtime, settings, initialProgram, onProgram, record, hintFor, onSolved, completion: renderCompletion, toolbarExtra, lockNames = false, saved, onLiveEnd, middle, belowControls, programLabel, programNote }: PlaySurfaceProps) {
+export function PlaySurface({ level, runtime, settings, initialProgram, onProgram, record, hintFor, onSolved, onAttempt, completion: renderCompletion, toolbarExtra, lockNames = false, saved, onLiveEnd, middle, belowControls, programLabel, programNote }: PlaySurfaceProps) {
   const theme = themeFor(level.themeId);
   const newId = useMemo(() => randomIdFactory(), []);
   const [history, setHistory] = useState<History>(() => {
@@ -375,6 +377,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
             const end = result.final ?? initialState(world);
             if (result.final) onLiveEnd?.(result.final, program);
             setOutcome(result.outcome);
+            onAttempt?.({ program, outcome: result.outcome });
             setPhase('done');
             setShortfall({ onGoal: teamOnFlags(world, end), missing: world.collectibles.length - end.collected.length, memory: memoryShortfall(level.objective, end) });
             if (result.outcome.status === 'blocked') record({ levelId: level.id, kind: 'trace-halted', nodeId: result.outcome.nodeId, reason: result.outcome.reason });
@@ -396,7 +399,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
         if (seq.state !== 'playing') liveRun.current?.send({ kind: 'tick' });
       }, 1000 / level.clock);
     }
-  }, [runtime, record, level, program, world, endLive, onSolved, hintsUsed, saved, onLiveEnd]);
+  }, [runtime, record, level, program, world, endLive, onSolved, onAttempt, hintsUsed, saved, onLiveEnd]);
 
   /** A key or an arrow under the board, while a live game is on. */
   const pressKey = useCallback((key: Key) => liveRun.current?.send({ kind: 'key', key }), []);
@@ -522,16 +525,19 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
         const missing = missingOutcomes(level.objective, finals);
         record({ levelId: level.id, kind: 'rolls-checked', passed: runs.filter((r) => r.outcome.status === 'success').length, total: runs.length, unseen: missing.length });
         if (failed >= 0) {
+          onAttempt?.({ program, outcome: runs[failed]!.outcome, check: 'roll' });
           const check = checks[failed]!;
           if (check.world !== shuffle) setFailedShuffle(check.world);
           else setFailedRoll(check.seed ?? null);
           return;
         }
         if (missing.length > 0) {
+          onAttempt?.({ program, outcome: result_.outcome, check: 'unseen' });
           setUnseen(missing);
           return;
         }
       }
+      onAttempt?.({ program, outcome: result_.outcome });
       if (result_.outcome.status === 'success') {
         setActiveNode(null);
         setActiveEvent(null);
@@ -543,7 +549,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
         setCompletion(true);
       }
     },
-    [liveMode, startLive, runtime, phase, ensureResult, level, record, onSolved, program, prediction, predicting, predictionOk, hintsUsed, asking, world, worlds, shuffle, random, failedRoll, settings.reducedMotion],
+    [liveMode, startLive, runtime, phase, ensureResult, level, record, onSolved, onAttempt, program, prediction, predicting, predictionOk, hintsUsed, asking, world, worlds, shuffle, random, failedRoll, settings.reducedMotion],
   );
 
   const run = useCallback(() => void start('play'), [start]);

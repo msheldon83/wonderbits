@@ -14,10 +14,17 @@ export function PrivacyNotice() {
         <li>What they make: their islands and puzzles, with the titles they type, and the place they left off in a level.</li>
         <li>What they send to a brother or sister, or show to you.</li>
       </ul>
+      <h3>What is kept to make Wonderbits better</h3>
+      <ul>
+        <li>Each program your child runs on a level and how it went, how long they spent, and which hints they opened. This shows us which levels are too hard and what trips children up.</li>
+        <li>How hard they say a level was, and anything they choose to write to us: a note about a level, an idea, or a question. They are asked not to write their name or where they live, and anything that looks like an email address or phone number is removed.</li>
+        <li>The person who runs this copy of Wonderbits reads these, with each child shown under a made-up name. You can read everything your child wrote, and delete it. An answer to a question is sent to you, never straight to your child.</li>
+        <li>Records of what was tried are deleted after 12 months. You can turn all of this off with "Help improve Wonderbits" on your page.</li>
+      </ul>
       <h3>What is not kept</h3>
       <ul>
         <li>No real name, email address, birthday, photo or location of a child. Please choose a nickname that is not their full name.</li>
-        <li>No record of every tap. The detailed log of what a child did stays on the device they played on.</li>
+        <li>No record of every tap. The detailed log of each card a child moved stays on the device they played on.</li>
         <li>No advertising and no tracking. Nothing is sold or passed to anyone else.</li>
       </ul>
       <h3>What is kept about you</h3>

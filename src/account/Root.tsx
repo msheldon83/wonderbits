@@ -9,8 +9,10 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type R
 import { App, type AccountProps, type Sharing } from '../app/App';
 import { creationToJson } from '../create/parse';
 import { defaultStore, profilePrefix, scopedStore, type KeyValueStore } from '../progress/storage';
-import { api, ApiError, type ChildInfo, type DeviceInfo, type InboxShare } from '../sync/api';
+import { Insight } from '../insight/recorder';
+import { api, ApiError, APP_VERSION, type ChildInfo, type DeviceInfo, type InboxShare } from '../sync/api';
 import { SyncEngine, type SyncApi } from '../sync/engine';
+import { AdminScreen } from './AdminScreen';
 import { Avatar } from './avatars';
 import { GrownupScreen } from './GrownupScreen';
 import { PairScreen } from './PairScreen';
@@ -18,7 +20,7 @@ import { PrivacyScreen } from './PrivacyScreen';
 import { AccountStore } from './session';
 import { WhoScreen } from './WhoScreen';
 
-export type AccountRoute = { screen: 'grownup'; token?: string } | { screen: 'pair' } | { screen: 'who' } | { screen: 'privacy' } | null;
+export type AccountRoute = { screen: 'grownup'; token?: string } | { screen: 'pair' } | { screen: 'who' } | { screen: 'privacy' } | { screen: 'admin' } | null;
 
 /** The account screens' addresses. Anything else belongs to the game. */
 export function parseAccountRoute(hash: string): AccountRoute {
@@ -26,7 +28,7 @@ export function parseAccountRoute(hash: string): AccountRoute {
   if (path === 'grownup') return { screen: 'grownup' };
   const link = /^grownup\/signin\/([^/]+)$/.exec(path);
   if (link) return { screen: 'grownup', token: decodeURIComponent(link[1]!) };
-  if (path === 'pair' || path === 'who' || path === 'privacy') return { screen: path };
+  if (path === 'pair' || path === 'who' || path === 'privacy' || path === 'admin') return { screen: path };
   return null;
 }
 
@@ -65,7 +67,26 @@ function Shell({ title, children }: { title: string; children: ReactNode }) {
 
 /** The game for a signed-in child. */
 function ChildGame({ deviceStore, account, child, device }: { deviceStore: KeyValueStore; account: AccountStore; child: ChildInfo; device: DeviceInfo }) {
-  const engine = useMemo(() => new SyncEngine(scopedStore(deviceStore, profilePrefix(child.id)), syncApi), [deviceStore, child.id]);
+  const local = useMemo(() => scopedStore(deviceStore, profilePrefix(child.id)), [deviceStore, child.id]);
+  const engine = useMemo(() => new SyncEngine(local, syncApi), [local]);
+  // Feedback loops: only while the grown-up leaves "Help improve Wonderbits" on.
+  const insight = useMemo(
+    () =>
+      device.improve
+        ? new Insight(
+            local,
+            {
+              batch: (batch) =>
+                api.insightBatch(batch).catch((e: unknown) => {
+                  throw e instanceof ApiError && e.code === 'off' ? Object.assign(e, { code: 'off' }) : e;
+                }),
+              feedback: (kind, text, context) => api.feedback(kind, text, context),
+            },
+            APP_VERSION,
+          )
+        : undefined,
+    [local, device.improve],
+  );
   const [saved, setSaved] = useState(true);
   const [inbox, setInbox] = useState<InboxShare[]>([]);
 
@@ -75,6 +96,7 @@ function ChildGame({ deviceStore, account, child, device }: { deviceStore: KeyVa
     const run = () =>
       void engine
         .sync()
+        .then(() => insight?.flush())
         .then(() => api.inbox())
         .then(({ shares }) => live && setInbox(shares.filter((s) => !s.seenAt)))
         .catch((e: unknown) => {
@@ -82,11 +104,15 @@ function ChildGame({ deviceStore, account, child, device }: { deviceStore: KeyVa
           if (e instanceof ApiError && e.status === 401) void account.refresh();
         })
         .finally(() => live && setSaved(!engine.pending));
-    engine.onDirty = () => {
-      setSaved(false);
+    const soon = () => {
       clearTimeout(timer);
       timer = setTimeout(run, SEND_DELAY_MS);
     };
+    engine.onDirty = () => {
+      setSaved(false);
+      soon();
+    };
+    if (insight) insight.onWaiting = soon;
     const onVisible = () => run();
     run();
     window.addEventListener('focus', onVisible);
@@ -99,11 +125,12 @@ function ChildGame({ deviceStore, account, child, device }: { deviceStore: KeyVa
       clearTimeout(timer);
       clearInterval(look);
       engine.onDirty = () => {};
+      if (insight) insight.onWaiting = () => {};
       window.removeEventListener('focus', onVisible);
       window.removeEventListener('online', onVisible);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [engine, account]);
+  }, [engine, insight, account]);
 
   const onReload = useCallback(
     (reload: () => void) => {
@@ -137,6 +164,7 @@ function ChildGame({ deviceStore, account, child, device }: { deviceStore: KeyVa
     synced: true,
     onReload,
     sharing,
+    insight,
     who: (
       <a className="who-chip" href="#/who" title="Switch player">
         <Avatar id={child.avatar} size={32} />
@@ -188,6 +216,12 @@ function AccountRoot() {
     return (
       <Shell title="Privacy">
         <PrivacyScreen />
+      </Shell>
+    );
+  if (route?.screen === 'admin')
+    return (
+      <Shell title="The owner's page">
+        <AdminScreen />
       </Shell>
     );
   if (route?.screen === 'grownup')

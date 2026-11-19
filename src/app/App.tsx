@@ -12,6 +12,8 @@ import { PlayScreen } from '../create/PlayScreen';
 import { remixOf } from '../create/remix';
 import { CreationStore } from '../create/store';
 import { defaultStore, type KeyValueStore } from '../progress/storage';
+import { FeedbackButton } from '../insight/FeedbackButton';
+import type { Insight } from '../insight/recorder';
 import type { ChildInfo, InboxShare } from '../sync/api';
 import type { Creation } from '../create/types';
 import { ProgressStore } from '../progress/store';
@@ -52,6 +54,8 @@ export interface AccountProps {
   /** A section for the settings screen. */
   panel?: ReactNode;
   sharing?: Sharing;
+  /** Feedback loops: present for a signed-in child whose grown-up left "Help improve Wonderbits" on. */
+  insight?: Insight | undefined;
   /** Hands over a function that re-reads storage; called when another device's changes arrive. Returns how to stop. */
   onReload?(reload: () => void): () => void;
 }
@@ -225,6 +229,7 @@ export function App({ storage: given, account }: { storage?: KeyValueStore; acco
             Card book
           </a>
         )}
+        {account?.insight && <FeedbackButton insight={account.insight} screen={route.screen} levelId={route.screen === 'level' ? route.id : undefined} />}
         {route.screen === 'map' ? (
           <a className="btn btn-quiet" href={hashFor({ screen: 'settings' })}>
             Settings
@@ -257,6 +262,7 @@ export function App({ storage: given, account }: { storage?: KeyValueStore; acco
           settings={snap.settings}
           nextLevelId={nextLevelId(choices, choice.level.id)}
           onGoTo={goTo}
+          insight={account?.insight}
           onRemix={() => {
             const remix = creationStore.add(remixOf(choice.level));
             store.log({ levelId: remix.id, kind: 'creation-started', basedOn: choice.level.id });

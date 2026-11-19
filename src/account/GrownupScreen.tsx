@@ -15,7 +15,7 @@ import type { Creation } from '../create/types';
 import { memoryStore, type KeyValueStore } from '../progress/storage';
 import { ProgressStore } from '../progress/store';
 import { BADGE_IDS, DEFAULT_SETTINGS, type Progress } from '../progress/types';
-import { api, ApiError, OfflineError, type ChildExport, type FamilyInfo, type FamilyShare, type ParentInfo } from '../sync/api';
+import { api, ApiError, OfflineError, type ChildExport, type FamilyInfo, type FamilyNote, type FamilyShare, type ParentInfo } from '../sync/api';
 import { Avatar, AVATARS } from './avatars';
 import { dismissGuestProgress, hasGuestProgress, importGuestProgress } from './guest';
 import { PrivacyNotice } from './PrivacyScreen';
@@ -417,6 +417,79 @@ function ChildCard({ child, summary, onPlay, onChanged, onProblem }: { child: Fa
   );
 }
 
+// ----- Helping improve Wonderbits -----
+
+const NOTE_KINDS: Record<string, string> = { 'level-note': 'About a level', confusing: 'Confusing', problem: 'Something broken', idea: 'An idea', question: 'A question', stuck: 'Stuck' };
+
+function Improve({ parent, family, notes, onParent, onChanged, onProblem }: { parent: ParentInfo; family: FamilyInfo | null; notes: FamilyNote[]; onParent(p: ParentInfo): void; onChanged(): void; onProblem(text: string): void }) {
+  const { choices } = useMemo(loadContent, []);
+  const [text, setText] = useState('');
+  const [sent, setSent] = useState(false);
+  const who = (n: FamilyNote) => (n.childId === null ? 'You' : (family?.children.find((c) => c.id === n.childId)?.nickname ?? 'A child'));
+  const level = (id: string | null) => (id ? choices.find((c) => c.level.id === id)?.level.title : undefined);
+  return (
+    <Section id="grownup-improve" title="Help improve Wonderbits">
+      <label className="setting">
+        <input type="checkbox" checked={parent.improve} onChange={(e) => void api.updateParent({ improve: e.target.checked }).then(onParent).catch((err: unknown) => onProblem(words(err)))} />
+        <span>Help improve Wonderbits</span>
+        <small>
+          Keeps what your children try on each level, how hard they say it was, and lets them write to the people who make Wonderbits. It shows us where children get stuck. Off, none of that is kept and they are not asked. <a href="#/privacy">What is kept</a>
+        </small>
+      </label>
+      <form
+        className="setting"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void api
+            .sendFamilyFeedback(text)
+            .then(() => {
+              setText('');
+              setSent(true);
+              onChanged();
+            })
+            .catch((err: unknown) => onProblem(words(err, { 'too-many-notes': 'That is a lot for one day. Try again tomorrow.' })));
+        }}
+      >
+        <label className="field">
+          <span>Tell us what you see</span>
+          <textarea rows={3} maxLength={500} placeholder="What does your child enjoy, or struggle with? Anything we should fix?" value={text} onChange={(e) => (setText(e.target.value), setSent(false))} />
+        </label>
+        <span className="choice-row">
+          <button type="submit" className="btn btn-quiet" disabled={text.trim().length === 0}>
+            Send
+          </button>
+          {sent && <span role="status">Sent. Thank you!</span>}
+        </span>
+      </form>
+      {notes.length > 0 && (
+        <details className="child-more" open={notes.some((n) => n.reply !== null)}>
+          <summary>What your family has written ({notes.length})</summary>
+          <ul className="note-list">
+            {notes.map((n) => (
+              <li key={n.id}>
+                <small>
+                  {who(n)} · {NOTE_KINDS[n.kind] ?? n.kind}
+                  {level(n.levelId) && ` · ${level(n.levelId)}`} · {ago(n.createdAt)}
+                </small>
+                <p>{n.text}</p>
+                {n.reply && (
+                  <p className="note-reply">
+                    <small>Answer from Wonderbits, {ago(n.repliedAt)}</small>
+                    {n.reply}
+                  </p>
+                )}
+                <button type="button" className="btn btn-quiet shelf-remove" onClick={() => void api.deleteFeedback(n.id).then(onChanged).catch((err: unknown) => onProblem(words(err)))}>
+                  Delete
+                </button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </Section>
+  );
+}
+
 // ----- The dashboard -----
 
 function Dashboard({ parent, account, deviceStore, onParent }: { parent: ParentInfo; account: AccountStore; deviceStore: KeyValueStore; onParent(p: ParentInfo | null): void }) {
@@ -428,12 +501,14 @@ function Dashboard({ parent, account, deviceStore, onParent }: { parent: ParentI
   const [code, setCode] = useState('');
   const [guest, setGuest] = useState(false);
   const [playing, setPlaying] = useState<Creation | null>(null);
+  const [notes, setNotes] = useState<FamilyNote[]>([]);
 
   const load = useCallback(async () => {
     try {
-      const [f, s] = await Promise.all([api.family(), api.familyShares()]);
+      const [f, s, n] = await Promise.all([api.family(), api.familyShares(), api.familyFeedback()]);
       setFamily(f);
       setShares(s.shares);
+      setNotes(n.feedback);
       const files = await Promise.all(f.children.map((c) => api.exportChild(c.id)));
       setSummaries(Object.fromEntries(files.map((file) => [file.child.id, summarise(file, choices)])));
       // What the device knows of the family may have changed too.
@@ -583,6 +658,8 @@ function Dashboard({ parent, account, deviceStore, onParent }: { parent: ParentI
         </form>
       </Section>
 
+      <Improve parent={parent} family={family} notes={notes} onParent={onParent} onChanged={() => void load()} onProblem={setProblem} />
+
       <Section id="grownup-account" title="Your account">
         <p className="account-note">Signed in as {parent.email}.</p>
         <label className="setting">
@@ -606,6 +683,11 @@ function Dashboard({ parent, account, deviceStore, onParent }: { parent: ParentI
             <a className="btn btn-quiet" href="#/">
               Back to the game
             </a>
+            {parent.admin && (
+              <a className="btn btn-quiet" href="#/admin">
+                The owner's page
+              </a>
+            )}
           </span>
         </div>
         <div className="setting">

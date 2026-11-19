@@ -1,5 +1,19 @@
 # Wonderbits feedback loops: attempts, ratings, notes and questions
 
+## Status
+
+Built, steps 1 to 7. What differs from the plan as first written:
+
+- **A run that is reset half way is not an attempt.** Only runs that play to their end are recorded.
+- **A visit where nothing was done is not kept**, as with the local log. A child who opens a level and leaves at once leaves no record.
+- **The stuck nudge needs at least one failed run.** Four minutes of thinking without pressing Run does not trigger it.
+- **A visit cut short by closing the tab has no ending.** It is stored without `ended`, and is not counted as "left".
+- **Notes are sent at once, not queued.** Offline, the child is told a note did not send. Visits, runs and ratings do wait and are sent later.
+- **Turning collection off** stops the server taking records at once; the prompts disappear from a device the next time it opens the game.
+- **`cards` on an attempt** counts the cards in the program, which is also what the budget star counts.
+
+How to run it and open the owner's page: [server/README.md](../server/README.md).
+
 ## Context
 
 Accounts and sync are merged. The server now knows who is playing, but it only stores each child's totals (stars, attempts count, best steps). The detailed record of what a child did stays on the device in the observation log, and that log never holds the program a child actually ran. So there is no way to see, across children, which levels trip them up or what mistake they make there, and no way for a child to say "this is confusing" or ask a question.
