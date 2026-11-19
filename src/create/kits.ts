@@ -28,6 +28,18 @@ export interface Kit {
 export const KITS: readonly Kit[] = [
   { id: 'trick', title: 'A trick with a name', blurb: 'A function: cards you build once, name, and use again and again.', packId: 'forest-functions', cards: ['call'], parts: [{ define: 'trick', do: [] }] },
   { id: 'when', title: 'When it happens', blurb: 'A card that runs each time the robot picks up an acorn, and cards that open and shut gates.', packId: 'forest-events', cards: ['openGate', 'closeGate'], parts: [{ on: 'acorn', do: [] }] },
+  {
+    id: 'keys',
+    title: 'Arrow keys',
+    blurb: 'Play it live: Up steps forward, Left and Right turn. Change what each key does, or add Down.',
+    packId: 'forest-input',
+    cards: [],
+    parts: [
+      { on: 'key:up', do: ['forward'] },
+      { on: 'key:left', do: ['rotateCCW'] },
+      { on: 'key:right', do: ['rotateCW'] },
+    ],
+  },
   { id: 'time', title: 'Tick tock', blurb: 'Wait a moment, and a card that runs on every tick of the clock.', packId: 'forest-time', cards: ['wait'], parts: [{ on: 'tick', do: [] }] },
   { id: 'way', title: 'A way to remember', blurb: 'The robot keeps a direction in its memory and can face it again later.', packId: 'forest-memory', cards: ['set', 'face'], parts: [{ remember: 'way', kind: 'direction', start: 'N' }] },
   { id: 'counter', title: 'A counter', blurb: 'A number the robot can set, add to, and check.', packId: 'forest-count', cards: ['set', 'change'], parts: [{ remember: 'count', kind: 'number', start: 0 }] },

@@ -63,7 +63,8 @@ see it). Solved puzzles
 appear on the map under Made here. Add cards brings the later packs'
 ideas as kits (a counter, a list, the bird, the backpack and more), and a
 child can add and name their own functions, memory and When cards. That
-is sub-steps 13a to 13c and the first part of 13d; the Workshop's games
+is sub-steps 13a to 13e: a puzzle can also be played live, with the arrow
+keys and a clock; the Workshop's games
 come after a child test. See [docs/design-notes.md](docs/design-notes.md) for what is built, what
 is deliberately not, and any deviations from the plan.
 

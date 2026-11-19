@@ -23,7 +23,7 @@ import { advance, drawSource, morning, nextRobot, faceTo, gridPlace, initialStat
 import type { Facing } from '../sim/types';
 import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 import type { IRNode, ProgramIR } from '../ir/types';
-import type { RunLimits, RunOutcome, TraceEvent } from './contract';
+import { LIVE_TOTAL_STEPS, type LiveInput, type LiveSettings, type RunLimits, type RunOutcome, type TraceEvent } from './contract';
 
 export interface InterpretInput {
   program: ProgramIR;
@@ -33,6 +33,7 @@ export interface InterpretInput {
   input?: readonly Key[];
   seed?: number;
   days?: number;
+  live?: LiveSettings;
 }
 
 export interface InterpretSummary {
@@ -48,8 +49,21 @@ type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K>
 const MAX_CALL_DEPTH = 16;
 
 
-export function* interpret(input: InterpretInput): Generator<TraceEvent, InterpretSummary, void> {
+/** What a live run yields when it has nothing left to do until the next input arrives. */
+export const AWAIT_INPUT = { op: 'await' } as const;
+export type LiveStep = TraceEvent | typeof AWAIT_INPUT;
+
+/**
+ * The interpreter itself. Not interactive, it runs to the end, reading a
+ * live run's inputs from its recording. Interactive, it yields AWAIT_INPUT
+ * and is resumed with the next input, or with null to end the run. Both
+ * walk the same code, so a recording replays to the same trace.
+ */
+function* execute(input: InterpretInput, interactive: boolean): Generator<LiveStep, InterpretSummary, LiveInput | null | undefined> {
   const { program, world, objective, limits } = input;
+  const live = input.live;
+  /** Where this turn's events began: a live run's step limit is for each turn, not for the whole game. */
+  let turnStart = 0;
   let state = initialState(world, program.memory, input.seed);
   const timed = isTimed(world, handlerBody(program, 'tick') !== undefined);
   const worldPeriod = period(world);
@@ -62,8 +76,8 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
   const calls: string[] = [];
 
   /** Emit one event, counting it against the limit. Returns false when the run must stop. */
-  function* emit(event: DistributiveOmit<TraceEvent, 'index'>): Generator<TraceEvent, boolean, void> {
-    if (executed >= limits.maxSteps) {
+  function* emit(event: DistributiveOmit<TraceEvent, 'index'>): Generator<TraceEvent, boolean, unknown> {
+    if (executed - turnStart >= limits.maxSteps || (live && executed >= LIVE_TOTAL_STEPS)) {
       stop = { status: 'halted', reason: 'step-limit' };
       return false;
     }
@@ -73,7 +87,7 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
     return true;
   }
 
-  function* run(nodes: readonly IRNode[]): Generator<TraceEvent, void, void> {
+  function* run(nodes: readonly IRNode[]): Generator<TraceEvent, void, unknown> {
     for (const node of nodes) {
       if (stop) return;
       switch (node.kind) {
@@ -94,6 +108,8 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
           });
           if (!ok) return;
           if (result.kind === 'blocked') {
+            // In a live game a bump is just a bump: the robot stays put and play goes on. Walking into a beetle still ends it.
+            if (live && result.reason !== 'beetle') break;
             stop = { status: 'blocked', nodeId: node.id, reason: result.reason };
             return;
           }
@@ -336,7 +352,7 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
   }
 
   /** Run the When card waiting for an event, if there is one. */
-  function* fire(event: string): Generator<TraceEvent, void, void> {
+  function* fire(event: string): Generator<TraceEvent, void, unknown> {
     const body = handlerBody(program, event);
     if (!body || stop) return;
     if (calls.length >= MAX_CALL_DEPTH) {
@@ -352,9 +368,16 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
   }
 
   /** After a robot action: the When cards it set off, then, on a timed board, one tick. */
-  function* afterAction(nodeId: string, events: readonly WorldEvent[]): Generator<TraceEvent, void, void> {
+  function* afterAction(nodeId: string, events: readonly WorldEvent[]): Generator<TraceEvent, void, unknown> {
     for (const event of events) yield* fire(event);
-    if (stop || !timed || ticking) return;
+    // On a real-time game the clock moves the world, not the robot.
+    if (live?.clock) return;
+    yield* tick(nodeId);
+  }
+
+  /** One tick of the world: movers move, and the Every tick card runs. */
+  function* tick(nodeId: string): Generator<TraceEvent, void, unknown> {
+    if (stop || !(timed || live?.clock) || ticking) return;
     const t = advance(world, state);
     const ok = yield* emit({
       nodeId,
@@ -374,20 +397,48 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
     ticking = false;
   }
 
+  /** A key is pressed: its When card runs, if the program has one. */
+  function* press(key: Key, index: number): Generator<TraceEvent, void, unknown> {
+    const event = `key:${key}`;
+    const body = handlerBody(program, event);
+    const container = body ? handlerContainerId(event) : 'input';
+    const ok = yield* emit({ nodeId: container, op: 'press', key, press: index, before: state, after: state, result: { kind: 'ok' } });
+    if (!ok || !body) return;
+    calls.push(container);
+    yield* run(body);
+    calls.pop();
+  }
+
   /** One day's run: main, then on input levels the key script. */
-  function* day(): Generator<TraceEvent, void, void> {
+  function* day(): Generator<TraceEvent, void, unknown> {
     yield* run(mainBody(program));
     for (const [index, key] of (input.input ?? []).entries()) {
       if (stop) break;
-      const event = `key:${key}`;
-      const body = handlerBody(program, event);
-      const container = body ? handlerContainerId(event) : 'input';
-      const ok = yield* emit({ nodeId: container, op: 'press', key, press: index, before: state, after: state, result: { kind: 'ok' } });
-      if (!ok || !body) continue;
-      calls.push(container);
-      yield* run(body);
-      calls.pop();
+      yield* press(key, index);
     }
+  }
+
+  // A live run: main sets the game up, then each input is a turn, until the goal is met, something ends it, or the inputs stop.
+  if (live) {
+    yield* run(mainBody(program));
+    const recorded = live.inputs;
+    let presses = 0;
+    for (let turn = 0; !stop && !objectiveMet(world, objective, state); turn++) {
+      let next: LiveInput | null;
+      if (recorded) {
+        if (turn >= recorded.length) break;
+        next = recorded[turn]!;
+      } else {
+        if (!interactive) break;
+        next = (yield AWAIT_INPUT) ?? null;
+        if (next === null) break;
+      }
+      turnStart = executed;
+      if (next.kind === 'key') yield* press(next.key, presses++);
+      else yield* tick('clock');
+    }
+    if (stop) return { outcome: stop, final: state, executedSteps: executed };
+    return { outcome: objectiveMet(world, objective, state) ? { status: 'success' } : { status: 'incomplete' }, final: state, executedSteps: executed };
   }
 
   // Levels of several days run the program once a day. Each night the robot
@@ -413,6 +464,21 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
   if (stop) return { outcome: stop, final: state, executedSteps: executed };
   const outcome: RunOutcome = objectiveMet(world, objective, state) ? { status: 'success' } : { status: 'incomplete' };
   return { outcome, final: state, executedSteps: executed };
+}
+
+/** Run a program to the end. A live run plays back its recording, or stops after main when it has none. */
+export function* interpret(input: InterpretInput): Generator<TraceEvent, InterpretSummary, void> {
+  const it = execute(input, false);
+  for (;;) {
+    const next = it.next();
+    if (next.done) return next.value;
+    if (next.value.op !== 'await') yield next.value;
+  }
+}
+
+/** A live run that waits: it yields AWAIT_INPUT when it needs the next input, and is resumed with it, or with null to stop. */
+export function interpretLive(input: InterpretInput): Generator<LiveStep, InterpretSummary, LiveInput | null | undefined> {
+  return execute(input, true);
 }
 
 /** Run to completion and collect the trace. Used by tests and validators. */

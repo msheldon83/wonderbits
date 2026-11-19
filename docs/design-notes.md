@@ -4,6 +4,68 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Build step 13e: the live run (2026-11-19)
+
+The engine change the Workshop depends on, built as the plan's spike and
+taken far enough to play: a child can make a puzzle that is played live,
+with the arrow keys and a clock.
+
+- **A run can stay alive.** After main, a live run takes inputs, one turn
+  each: a key press, which runs that key's When card, or a tick of the
+  clock, which moves the beetles and logs and runs the Every tick card. It
+  ends when the goal is met, when a beetle catches the robot, or when it
+  is stopped.
+- **One interpreter path, so a recording replays exactly.** The
+  interpreter's core either yields for each input (interactive) or reads
+  them from a list (a recording). `interpret` with `live.inputs` and
+  `interpretLive` fed the same inputs give the same trace, event for
+  event; a test holds them to it, with a seed and a random roll in play.
+- **Two kinds of time.** With a clock, the world moves only on ticks,
+  never because the robot acted: a real-time game. Without one, each
+  robot action is followed by a tick, as in a puzzle: turn-based.
+- **A bump is only a bump** in a live run: the robot stays where it is and
+  play goes on. Walking into a beetle, or being walked into, still ends it.
+- **The step limit is for each turn**, with a ceiling of 20,000 events for
+  a whole game, so one runaway When card cannot hang it and a long game
+  is not cut short.
+- **The contract** gains `live-start`, `live-input`, `live-stop` and a
+  `waiting` message. The client gives each live run an endpoint of its
+  own, sends inputs strictly in order however fast they arrive, keeps
+  them as the recording, drops any sent after Stop, and ends a turn that
+  does not come back in time.
+- **The board draws events as they come.** The sequencer's `extend` adds
+  to the end of a trace being played. The clock ticks only once the board
+  has caught up, so the game never runs ahead of what the player sees;
+  the recording holds the ticks that were sent, so this does not touch
+  replay.
+- **In creation mode:**
+  - When cards can wait for an arrow key. A ready-made set, Arrow keys,
+    adds Up (forward), Left and Right (turn).
+  - Limits has The clock: with the robot, or Slow, Steady or Fast (1, 2
+    or 4 ticks a second).
+  - A creation with a clock or an arrow-key When card is a live puzzle.
+    Run becomes Play, Step and Pause rest, and four arrows sit under the
+    board for fingers. Reset stops the game.
+  - Winning is the proof. The maker's winning play (its inputs and seed)
+    is kept on the creation and played back by the critic whenever the
+    puzzle changes: if it still wins, the puzzle is still proved.
+  - The critic speaks of winning and does not search for a shortest way.
+  - A player gets the key When cards empty, fills them in, then plays.
+
+### Deviations and choices
+
+- **Not yet: taps, and robots acting at once.** The plan's `tap` input
+  for turn-based games and a simultaneous team wait for the starter games
+  that need them (13f).
+- **The player programs the keys.** A live puzzle is still a puzzle: the
+  player writes what each key does, then plays. A game whose program is
+  its maker's and whose player only plays is the Workshop's kind.
+- **No pause in a live game**, only Reset.
+- **A win in Preview proves the puzzle but is not kept as the winning
+  play**, since it was won with another program than the maker's.
+- **Lessons are untouched.** Remote control's keys stay a written script;
+  only a creation is ever live.
+
 ## Build step 13d, the rest: not, functions using functions, records that are built (2026-11-12)
 
 The three parts of 13d left after names and kits. Each touched the IR and

@@ -6,7 +6,9 @@
  */
 import { ContentError, parseBoardRules } from '../lessons/parse';
 import type { TileKind, WorldDefinition } from '../sim/types';
-import { BOARD_MAX, BOARD_MIN, CREATION_SCHEMA_VERSION, TITLE_MAX, type Creation, type CreationKind, type CreationStatus, type Proof } from './types';
+import { KEYS, type Key } from '../ir/types';
+import type { LiveInput } from '../runtime/contract';
+import { BOARD_MAX, BOARD_MIN, CLOCKS, CREATION_SCHEMA_VERSION, REPLAY_MAX, TITLE_MAX, type Creation, type CreationKind, type CreationStatus, type Proof } from './types';
 
 const TILE_CHAR: Record<TileKind, string> = { floor: '.', wall: '#', gap: '_' };
 
@@ -74,6 +76,25 @@ export function parseCreation(json: unknown, source: string): Creation {
   }
   if (status === 'proved' && !proof) issues.push('status: a proved creation needs its proof');
 
+  let clock: number | undefined;
+  if (json.clock !== undefined) {
+    if ((CLOCKS as readonly unknown[]).includes(json.clock)) clock = json.clock as number;
+    else issues.push(`clock: expected one of ${CLOCKS.join(', ')} ticks a second`);
+  }
+  let replay: Creation['replay'];
+  if (json.replay !== undefined) {
+    const r = isObj(json.replay) ? json.replay : {};
+    const inputs = Array.isArray(r.inputs) && r.inputs.length <= REPLAY_MAX ? r.inputs : (issues.push(`replay.inputs: expected a list of at most ${REPLAY_MAX} inputs`), []);
+    const read = inputs.flatMap((v, i): LiveInput[] => {
+      if (isObj(v) && v.kind === 'tick') return [{ kind: 'tick' }];
+      if (isObj(v) && v.kind === 'key' && (KEYS as readonly unknown[]).includes(v.key)) return [{ kind: 'key', key: v.key as Key }];
+      issues.push(`replay.inputs[${i}]: expected a tick or a key press`);
+      return [];
+    });
+    const seed = Number.isInteger(r.seed) && (r.seed as number) >= 0 ? (r.seed as number) : (issues.push('replay.seed: expected a whole number'), 0);
+    replay = { inputs: read, seed };
+  }
+
   if (issues.length || !rules || !id || !title) throw new ContentError(source, issues);
   const { programs, ...board } = rules;
   return {
@@ -87,6 +108,8 @@ export function parseCreation(json: unknown, source: string): Creation {
     updatedAt,
     status,
     ...board,
+    ...(clock !== undefined && { clock }),
+    ...(replay && { replay }),
     program: programs.program,
     ...(proof && { proof }),
   };
