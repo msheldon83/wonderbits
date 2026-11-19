@@ -1,7 +1,7 @@
 /**
  * The level list in play order, across packs, plus hash routes. The level
  * map is the home screen; a level is #/level/<id>; settings is #/settings;
- * the card book is #/book, and one of its pages is #/book/<pack id>.
+ * the card book is #/book, and one of its pages is #/book/<page id>.
  * Creation mode is #/create, the shelf of the child's things, and one of
  * them is #/create/<id>. A puzzle its maker has solved is played at
  * #/play/<id>. The library of ready-made functions is #/library.
@@ -43,7 +43,7 @@ export function nextLevelId(choices: readonly LevelChoice[], id: string): string
 }
 
 /** The map shows one island at a time; with no island named it opens on the one being played. */
-export type Route = { screen: 'map'; packId?: string } | { screen: 'settings' } | { screen: 'level'; id: string } | { screen: 'book'; packId?: string } | { screen: 'create' } | { screen: 'make'; id: string } | { screen: 'play'; id: string } | { screen: 'library'; id?: string };
+export type Route = { screen: 'map'; packId?: string } | { screen: 'settings' } | { screen: 'level'; id: string } | { screen: 'book'; pageId?: string } | { screen: 'create' } | { screen: 'make'; id: string } | { screen: 'play'; id: string } | { screen: 'library'; id?: string };
 
 export function parseRoute(hash: string): Route {
   const path = hash.replace(/^#\/?/, '');
@@ -57,7 +57,7 @@ export function parseRoute(hash: string): Route {
     if (m[1] === 'create') return { screen: 'make', id };
     if (m[1] === 'play') return { screen: 'play', id };
     if (m[1] === 'library') return { screen: 'library', id };
-    return m[1] === 'level' ? { screen: 'level', id } : m[1] === 'map' ? { screen: 'map', packId: id } : { screen: 'book', packId: id };
+    return m[1] === 'level' ? { screen: 'level', id } : m[1] === 'map' ? { screen: 'map', packId: id } : { screen: 'book', pageId: id };
   }
   return { screen: 'map' };
 }
@@ -79,6 +79,6 @@ export function hashFor(route: Route): string {
     case 'library':
       return route.id === undefined ? '#/library' : `#/library/${encodeURIComponent(route.id)}`;
     case 'book':
-      return route.packId === undefined ? '#/book' : `#/book/${encodeURIComponent(route.packId)}`;
+      return route.pageId === undefined ? '#/book' : `#/book/${encodeURIComponent(route.pageId)}`;
   }
 }

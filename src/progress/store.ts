@@ -107,15 +107,16 @@ export class ProgressStore {
     this.setProgress({ ...progress, levels: { ...progress.levels, [levelId]: update(this.levelProgress(levelId)) } });
   }
 
-  hasSeenIntro(packId: string): boolean {
-    return this.snapshot.progress.introsSeen.includes(packId);
+  /** Takes a card book page's id: a pack id for a pack's introduction, pack and level for a later card. */
+  hasSeenIntro(pageId: string): boolean {
+    return this.snapshot.progress.introsSeen.includes(pageId);
   }
 
-  /** The child pressed "Let's go" on a pack's introduction; it is not shown again before that pack. */
-  markIntroSeen(packId: string): void {
-    if (this.hasSeenIntro(packId)) return;
+  /** The child pressed "Let's go" on a teaching card; it is not shown again before its level. */
+  markIntroSeen(pageId: string): void {
+    if (this.hasSeenIntro(pageId)) return;
     const progress = this.snapshot.progress;
-    this.setProgress({ ...progress, introsSeen: [...progress.introsSeen, packId] });
+    this.setProgress({ ...progress, introsSeen: [...progress.introsSeen, pageId] });
   }
 
   /** A level is open when the one before it is complete, or the adult opened them all. */

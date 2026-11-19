@@ -637,6 +637,16 @@ export function validatePack(pack: PackManifest, all: readonly PackManifest[]): 
     }
     validateIntroduction(pack.introduction, errors);
   }
+  const before = new Set<string>();
+  (pack.cards ?? []).forEach((card, i) => {
+    const at = `cards[${i}]`;
+    if (!pack.levels.includes(card.beforeLevel)) errors.push(`${at}.beforeLevel "${card.beforeLevel}" is not a level of this pack`);
+    else if (card.beforeLevel === pack.levels[0]) errors.push(`${at}.beforeLevel is the pack's first level; that is the introduction's place`);
+    if (before.has(card.beforeLevel)) errors.push(`${at}.beforeLevel "${card.beforeLevel}" already has a teaching card`);
+    before.add(card.beforeLevel);
+    if (!pack.concepts.includes(card.concept)) errors.push(`${at} is for "${card.concept}", which is not one of this pack's concepts`);
+    validateIntroduction(card, errors, at);
+  });
   return errors;
 }
 
@@ -649,25 +659,25 @@ function codeOfSpec(spec: readonly NodeSpec[], world: WorldDefinition): string {
 }
 
 /**
- * The real words of a pack's introduction name code the child will truly
- * see: each word's piece of code is printed by the demo or by one of the
- * pack's own reference solutions, and no two words, in this pack or any
- * other, claim the same piece of code.
+ * The real words of a pack's introduction and its later teaching cards name
+ * code the child will truly see: each word's piece of code is printed by a
+ * demo or by one of the pack's own reference solutions, and no two words,
+ * in this pack or any other, claim the same piece of code.
  */
 export function validateRealWords(pack: PackManifest, levels: readonly PuzzleDefinition[], all: readonly PackManifest[]): string[] {
   const errors: string[] = [];
-  const intro = pack.introduction;
-  if (!intro?.realWords) return errors;
-  const sources = [codeOfSpec(intro.demo.program, intro.demo.world), ...levels.map((l) => codeOfSpec(l.referenceSolution, l.world))];
+  const teaching: [string, ConceptIntroduction][] = [...(pack.introduction ? [['introduction', pack.introduction] as [string, ConceptIntroduction]] : []), ...(pack.cards ?? []).map((c, i): [string, ConceptIntroduction] => [`cards[${i}]`, c])];
+  if (!teaching.some(([, t]) => t.realWords)) return errors;
+  const sources = [...teaching.map(([, t]) => codeOfSpec(t.demo.program, t.demo.world)), ...levels.map((l) => codeOfSpec(l.referenceSolution, l.world))];
   const claimed = new Map<string, string>();
   for (const other of all) {
     if (other.id === pack.id) continue;
-    for (const w of other.introduction?.realWords ?? []) if (w.code !== undefined) claimed.set(w.code, other.id);
+    for (const t of [other.introduction, ...(other.cards ?? [])]) for (const w of t?.realWords ?? []) if (w.code !== undefined) claimed.set(w.code, other.id);
   }
   const mine = new Set<string>();
   const names = new Set<string>();
-  intro.realWords.forEach((w, i) => {
-    const at = `introduction.realWords[${i}]`;
+  for (const [where, t] of teaching) (t.realWords ?? []).forEach((w, i) => {
+    const at = `${where}.realWords[${i}]`;
     if (names.has(w.word)) errors.push(`${at}: the word "${w.word}" is listed twice`);
     names.add(w.word);
     if (w.text.length > REAL_WORD_TEXT_MAX) errors.push(`${at}: text is ${w.text.length} characters; keep it to ${REAL_WORD_TEXT_MAX}`);
@@ -682,18 +692,18 @@ export function validateRealWords(pack: PackManifest, levels: readonly PuzzleDef
 }
 
 /** The demo must reach the flag and must use a card that belongs to the concept it introduces. */
-export function validateIntroduction(intro: ConceptIntroduction, errors: string[]): void {
+export function validateIntroduction(intro: ConceptIntroduction, errors: string[], at = 'introduction'): void {
   const { world, program, before, input, days } = intro.demo;
   const objective: ObjectiveDefinition = { reachGoal: true, collectAll: world.collectibles.length > 0 };
   (intro.demo.shuffles ?? []).forEach((w, i) => {
-    if (!solvesOn(w, { reachGoal: true, collectAll: w.collectibles.length > 0 }, program, input)) errors.push(`introduction.demo.program must reach the flag on shuffles[${i}] too`);
+    if (!solvesOn(w, { reachGoal: true, collectAll: w.collectibles.length > 0 }, program, input)) errors.push(`${at}.demo.program must reach the flag on shuffles[${i}] too`);
   });
   validateWorld(world, objective, errors, cardsOfSpec(program).some(isGateActionId));
-  if (program.length === 0) errors.push('introduction.demo.program must not be empty');
-  if (!solvesOn(world, objective, program, input, days)) errors.push('introduction.demo.program must reach the flag (and collect every acorn) on its board');
+  if (program.length === 0) errors.push(`${at}.demo.program must not be empty`);
+  if (!solvesOn(world, objective, program, input, days)) errors.push(`${at}.demo.program must reach the flag (and collect every acorn) on its board`);
   if (before) {
-    if (!solvesOn(world, objective, before, input, days)) errors.push('introduction.demo.before must reach the flag on its board too, the old way');
-    if (countSpec(before) <= countSpec(program)) errors.push('introduction.demo.before should be the longer, old way; it has no more cards than the program');
+    if (!solvesOn(world, objective, before, input, days)) errors.push(`${at}.demo.before must reach the flag on its board too, the old way`);
+    if (countSpec(before) <= countSpec(program)) errors.push(`${at}.demo.before should be the longer, old way; it has no more cards than the program`);
   }
   // Concepts without a card of their own must show their idea in the run itself.
   const trace = runOn(world, objective, program, input, undefined, days).trace;
@@ -712,9 +722,9 @@ export function validateIntroduction(intro: ConceptIntroduction, errors: string[
     derived: [setSources(program).some((src) => typeof src === 'string' && !parseRandom(src) && !['N', 'E', 'S', 'W'].includes(src)), 'never works a value out from what is there'],
   };
   const check = shows[intro.concept];
-  if (check && !check[0]) errors.push(`introduction.demo.program ${check[1]}, so it does not show "${intro.concept}"`);
+  if (check && !check[0]) errors.push(`${at}.demo.program ${check[1]}, so it does not show "${intro.concept}"`);
   const teaching = cardsTeaching(intro.concept);
   if (teaching && !cardsOfSpec(program).some((c) => teaching.includes(c as CardId))) {
-    errors.push(`introduction.demo.program never uses a ${teaching.join(' or ')} card, so it does not show "${intro.concept}"`);
+    errors.push(`${at}.demo.program never uses a ${teaching.join(' or ')} card, so it does not show "${intro.concept}"`);
   }
 }

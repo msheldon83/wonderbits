@@ -53,8 +53,11 @@ describe('real words in the shipped packs', () => {
 
   it('an introduction shows its ideas and the words its demo prints', () => {
     const ifs = book.find((e) => e.packId === 'forest-ifs')!;
-    // The demo has an If and nothing else; else, while and not wait for their levels.
+    // The demo has an If and nothing else; while and not wait for their levels, and else for its own card.
     expect(wordsOfIntroduction(ifs.introduction).map((w) => w.word)).toEqual(['if statement']);
+    const ifElse = book.find((e) => e.id === 'forest-ifs:c04-otherwise')!;
+    expect(ifElse.introduction.title).toBe('If / else');
+    expect(wordsOfIntroduction(ifElse.introduction).map((w) => w.word)).toEqual(['else']);
     const switches = book.find((e) => e.packId === 'forest-switches')!;
     expect(wordsOfIntroduction(switches.introduction).map((w) => w.word)).toEqual(['state']);
   });

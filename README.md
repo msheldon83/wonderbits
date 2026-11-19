@@ -206,11 +206,15 @@ map and its `levels`. It also carries the concept graph:
   the robot plays on it. An optional `before` program shows the old way
   first; its cards fold into the new program. The code the child sees is
   printed from the demo program, so there is nothing to keep in sync.
+- `cards`, for a card that first appears part-way through a pack, such as
+  If / else: a list of teaching cards written like `introduction`, each with
+  a `beforeLevel`, the id of the level it shows before.
 
 The validator checks the graph and proves the demo: it reaches the flag, the
 old way is the longer one, and the program uses a card of the concept it
-introduces. The introduction shows once before the pack's first level and
-lives in the card book after that.
+introduces. The introduction shows once before the pack's first level, a
+later card once before its own level, and both live in the card book after
+that.
 
 ## Licensing
 
