@@ -8,7 +8,7 @@
  * count like any other card, and so does everything inside them.
  */
 import { cardCounts, countNodes, functionNames, memoryOf } from '../ir/program';
-import { BASIC_CONDITIONS, DEFAULT_CONDITION, type BlockId, type CardId, type ConditionId, type MemorySlot, type ProgramIR } from '../ir/types';
+import { BASIC_CONDITIONS, DEFAULT_CONDITION, negate, negationOf, type BlockId, type CardId, type ConditionId, type MemorySlot, type ProgramIR } from '../ir/types';
 import type { PuzzleDefinition } from '../lessons/types';
 
 export type Programming = PuzzleDefinition['programming'];
@@ -77,8 +77,10 @@ export function needsOf(command: CardId, memory: readonly MemorySlot[]): string 
   const has = (...kinds: string[]) => memory.some((m) => kinds.includes(m.kind));
   switch (command) {
     case 'set':
-      return has('number', 'yesNo', 'direction', 'position') ? null : 'something to remember';
+      return has('number', 'yesNo', 'direction', 'position', 'record') ? null : 'something to remember';
     case 'change':
+      // A number of its own, or a number inside a record.
+      return has('number') || memory.some((m) => m.kind === 'record' && Object.values(m.fields ?? {}).includes('number')) ? null : 'a number';
     case 'unlock':
       return has('number') ? null : 'a number';
     case 'face':
@@ -99,7 +101,7 @@ export function needsOf(command: CardId, memory: readonly MemorySlot[]): string 
       return null;
   }
 }
-const WORDS: Record<string, string> = { number: 'number', yesNo: 'yes/no', direction: 'direction' };
+const WORDS: Record<string, string> = { number: 'number', yesNo: 'yes/no', direction: 'direction', record: 'record' };
 
 /** Every test of what the program remembers: a number against 0 to 9, a yes/no, a direction, a place against here. */
 export function slotTests(memory: readonly MemorySlot[]): ConditionId[] {
@@ -108,15 +110,21 @@ export function slotTests(memory: readonly MemorySlot[]): ConditionId[] {
     if (m.kind === 'yesNo') return [`slot:${m.name}=yes`, `slot:${m.name}=no`];
     if (m.kind === 'direction') return (['N', 'E', 'S', 'W'] as const).map((d): ConditionId => `slot:${m.name}=${d}`);
     if (m.kind === 'position') return [`slot:${m.name}=here`];
+    // A record is tested field by field: crate's key is yes.
+    if (m.kind === 'record') return Object.entries(m.fields ?? {}).flatMap(([f, k]) => slotTests([{ name: `${m.name}.${f}`, kind: k, start: 0 }]));
     return [];
   });
 }
+
+/** Checks that already have their opposite on the list: path and blocked ahead, and a yes or no test. The rest gain a `not`. */
+const hasNoOpposite = (c: ConditionId): boolean => c !== 'pathAhead' && c !== 'blockedAhead' && !c.endsWith('=yes') && !c.endsWith('=no') && negationOf(c) === null;
 
 /** The conditions a level's If and Repeat until may choose from. Where the child names the memory, every test of it is offered too. */
 export function conditionsFor(programming: Programming, memory: readonly MemorySlot[] = []): readonly ConditionId[] {
   const listed = programming.allowedConditions ?? BASIC_CONDITIONS;
   if (!programming.ownNames) return listed;
-  return [...new Set([...listed, ...slotTests(memory)])];
+  const plain = [...new Set([...listed, ...slotTests(memory)])];
+  return [...plain, ...plain.filter(hasNoOpposite).map(negate)];
 }
 
 /** The condition a fresh block starts with: a loop waits for the flag, an If looks at the way ahead. */

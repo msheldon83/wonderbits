@@ -185,8 +185,8 @@ does making a puzzle send them back to a pack they skipped?
 
 **First part built 2026-11-11:** naming functions, memory and When cards,
 plates, beetles and logs on the board, and kits of ready-named parts.
-Records that are built, a function calling a function, and `not` remain
-(design-notes.md).
+The rest (records that are built, a function calling a function, and
+`not`) was built 2026-11-12. 13d is complete (design-notes.md).
 
 The design notes defer four things to creation mode. They are small, and
 both the free-play editor and the Workshop need them.

@@ -4352,3 +4352,14 @@ button.shelf-card {
   box-shadow: inset 0 0 0 2px var(--line);
   background: var(--paper);
 }
+
+/* Making a record: its parts, one row each. */
+.record-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.record-fields .part-field .own-name {
+  flex: 1 1 80px;
+}

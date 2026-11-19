@@ -3,7 +3,7 @@
  * contributors may write by hand, so errors name the exact path at fault.
  */
 import { slotOfSpec, type NodeSpec } from '../ir/spec';
-import { FUNCTION_NAME, isCardId, isCommandId, isConditionId, isEventId, isSenseId, KEYS, BOARD_MAPS, parseItem, parseLength, parseRandom, parseRead, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, VALUE_KINDS, type CardId, type ConditionId, type ItemKind, type Key, type ListOf, parseField, type Source, type Value, type ValueKind } from '../ir/types';
+import { FUNCTION_NAME, parseWhole, SLOT_PATH, isCardId, isCommandId, isConditionId, isEventId, isSenseId, KEYS, BOARD_MAPS, parseItem, parseLength, parseRandom, parseRead, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, VALUE_KINDS, type CardId, type ConditionId, type ItemKind, type Key, type ListOf, parseField, type Source, type Value, type ValueKind } from '../ir/types';
 import { FACINGS, type Cell, type Facing, type Gate, type Mover, type ObjectiveDefinition, type Plate, type Switch, type Teammate, type TileKind, type WorldDefinition } from '../sim/types';
 import { CONTENT_SCHEMA_VERSION, type MemoryField, type Activity, type ConceptIntroduction, type HintPath, type HintStep, type PackManifest, type PuzzleDefinition, type RealWord } from './types';
 
@@ -105,6 +105,12 @@ class Reader {
     this.fail(path, `unknown condition ${JSON.stringify(v)}`);
     return 'blockedAhead';
   }
+  /** Where a Set or Add card puts its value: a slot's name, or `record.field`. */
+  slotPath(v: unknown, path: string): string {
+    if (typeof v === 'string' && SLOT_PATH.test(v) && !RESERVED_NAMES.has(v.split('.')[0]!)) return v;
+    this.fail(path, `expected a slot name, or a record slot and a field like "crate.number", got ${JSON.stringify(v)}`);
+    return 'count';
+  }
   functionName(v: unknown, path: string): string {
     if (typeof v === 'string' && FUNCTION_NAME.test(v) && !RESERVED_NAMES.has(v)) return v;
     this.fail(path, `expected a function name: a short lower camel case word that is not a reserved word, got ${JSON.stringify(v)}`);
@@ -137,10 +143,10 @@ class Reader {
         if (!top) this.fail(at, 'a memory slot can only sit at the top of a program');
         return [this.remember(s, at)];
       }
-      if ('set' in s) return [{ set: this.functionName(s.set, `${at}.set`), to: this.source(s.to, `${at}.to`) }];
+      if ('set' in s) return [{ set: this.slotPath(s.set, `${at}.set`), to: this.source(s.to, `${at}.to`) }];
       if ('change' in s) {
         const by = Number.isInteger(s.by) && s.by !== 0 && Math.abs(s.by as number) <= 9 ? (s.by as number) : (this.fail(`${at}.by`, 'expected a whole number from -9 to 9, not 0'), 1);
-        return [{ change: this.functionName(s.change, `${at}.change`), by }];
+        return [{ change: this.slotPath(s.change, `${at}.change`), by }];
       }
       if ('face' in s) return [{ face: this.functionName(s.face, `${at}.face`) }];
       if ('unlock' in s) return [{ unlock: this.gateId(s.unlock, `${at}.unlock`), with: this.functionName(s.with, `${at}.with`) }];
@@ -315,7 +321,7 @@ class Reader {
   source(v: unknown, path: string): Source {
     if (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 999) return v;
     if (typeof v === 'boolean') return v;
-    if (typeof v === 'string' && (['N', 'E', 'S', 'W', 'facing', 'here', 'acorns', 'acornsLeft'].includes(v) || isSenseId(v) || parseRead(v) || parseLength(v) || parseRandom(v) || parseItem(v) || parseField(v))) return v;
+    if (typeof v === 'string' && (['N', 'E', 'S', 'W', 'facing', 'here', 'acorns', 'acornsLeft'].includes(v) || isSenseId(v) || parseRead(v) || parseLength(v) || parseRandom(v) || parseItem(v) || parseField(v) || parseWhole(v))) return v;
     this.fail(path, `expected a value to set: a number, true or false, N, E, S or W, "facing", "here", "acorns", "acornsLeft", a sense or a random source, got ${JSON.stringify(v)}`);
     return 0;
   }

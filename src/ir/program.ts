@@ -1,6 +1,6 @@
 import type { IdFactory } from './ids';
 import { buildNodes, specOf, splitSpec, type NodeSpec } from './spec';
-import { functionContainerId, functionOfContainer, handlerContainerId, handlerOfContainer, IR_VERSION, MAIN, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type Branch, type CommandId, type EventHandler, type IRNode, type MemorySlot, type NodeId, type Place, type Procedure, type ProgramIR } from './types';
+import { functionContainerId, functionOfContainer, handlerContainerId, handlerOfContainer, innerCondition, IR_VERSION, MAIN, parseField, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, parseWhole, type Branch, type CommandId, type EventHandler, type IRNode, type MemorySlot, type NodeId, type Place, type Procedure, type ProgramIR } from './types';
 
 export function emptyProgram(): ProgramIR {
   return { version: IR_VERSION, procedures: [{ name: MAIN, body: [] }], handlers: [] };
@@ -49,7 +49,8 @@ export function slotOf(program: ProgramIR, name: string): MemorySlot | undefined
 export function slotsInUse(program: ProgramIR): Set<string> {
   const used = new Set<string>();
   for (const { node } of walk(program)) {
-    if (node.kind === 'set' || node.kind === 'change' || node.kind === 'face' || node.kind === 'unlock' || node.kind === 'mark') used.add(node.slot);
+    // A Set or Add on a record's field uses the record.
+    if (node.kind === 'set' || node.kind === 'change' || node.kind === 'face' || node.kind === 'unlock' || node.kind === 'mark') used.add(node.slot.split('.')[0]!);
     if (node.kind === 'mark') {
       used.add(node.grid);
       if (node.at !== 'here' && node.at !== 'ahead') used.add(node.at);
@@ -64,6 +65,10 @@ export function slotsInUse(program: ProgramIR): Set<string> {
     if (node.kind === 'set' || node.kind === 'push') {
       const counted = parseLength(node.to);
       if (counted) used.add(counted);
+      const whole = parseWhole(node.to);
+      if (whole) used.add(whole);
+      const field = parseField(node.to);
+      if (field) used.add(field.record);
       const random = parseRandom(node.to);
       if (random?.kind === 'pick') used.add(random.list);
       const item = parseItem(node.to);
@@ -84,8 +89,9 @@ export function slotsInUse(program: ProgramIR): Set<string> {
       used.add(node.item);
     }
     if (node.kind === 'if' || node.kind === 'ifElse' || node.kind === 'until') {
-      const test = parseSlotTest(node.condition);
-      if (test) used.add(test.slot);
+      const test = parseSlotTest(innerCondition(node.condition));
+      // A test of a record's field uses the record.
+      if (test) used.add(test.slot.split('.')[0]!);
     }
   }
   return used;
@@ -255,4 +261,28 @@ export const samePlaceContainer = (a: Pick<Place, 'parent' | 'branch'>, b: Pick<
 export function usesRandom(program: ProgramIR): boolean {
   for (const { node } of walk(program)) if ((node.kind === 'set' || node.kind === 'push') && parseRandom(node.to) !== null) return true;
   return false;
+}
+
+/** The functions a list of cards calls, anywhere inside it. */
+export function callsIn(nodes: readonly IRNode[]): string[] {
+  return nodes.flatMap((n) => [...(n.kind === 'call' ? [n.name] : []), ...branchesOf(n).flatMap((b) => callsIn(branchBody(n, b) ?? []))]);
+}
+
+/** True when running one function can end up running another: it calls it, or calls something that does. */
+export function reaches(program: ProgramIR, from: string, target: string, seen: Set<string> = new Set()): boolean {
+  if (seen.has(from)) return false;
+  seen.add(from);
+  return callsIn(functionBody(program, from) ?? []).some((name) => name === target || reaches(program, name, target, seen));
+}
+
+/**
+ * Whether a call to a function may sit in a procedure. Main and When cards
+ * may call anything. A function may call another only where that is
+ * allowed (creation mode), and never itself, directly or round a loop of
+ * calls: a program that can run for ever is not one the robot can finish.
+ */
+export function canCall(program: ProgramIR, procedure: string | undefined, callee: string, nested: boolean): boolean {
+  if (procedure === undefined) return false;
+  if (procedure === MAIN || procedure.startsWith('on:')) return true;
+  return nested && callee !== procedure && !reaches(program, callee, procedure);
 }

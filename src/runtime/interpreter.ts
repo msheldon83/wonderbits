@@ -19,7 +19,7 @@
  */
 import { functionBody, handlerBody, mainBody } from '../ir/program';
 import { handlerContainerId, isBirdSource, isPosition, parseField, parseRead, type Key } from '../ir/types';
-import { advance, drawSource, morning, nextRobot, faceTo, gridPlace, initialState, markGrid, missingItem, shiftPlace, evaluate, isTimed, objectiveMet, period, remember, setGate, stateKey, step, unlockGate, type WorldEvent } from '../sim/world';
+import { advance, drawSource, morning, nextRobot, faceTo, gridPlace, initialState, markGrid, missingItem, shiftPlace, evaluate, isTimed, objectiveMet, period, recall, remember, setGate, stateKey, step, unlockGate, type WorldEvent } from '../sim/world';
 import type { Facing } from '../sim/types';
 import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 import type { IRNode, ProgramIR } from '../ir/types';
@@ -116,7 +116,7 @@ export function* interpret(input: InterpretInput): Generator<TraceEvent, Interpr
             stop = { status: 'error', message: missing, nodeId: node.id };
             return;
           }
-          const old = state.memory?.[node.slot];
+          const old = recall(state, node.slot);
           const drawn = node.kind === 'set' ? drawSource(world, state, node.to) : { value: (typeof old === 'number' ? old : 0) + node.by, state };
           const value = drawn.value;
           const after = remember(drawn.state, node.slot, value);

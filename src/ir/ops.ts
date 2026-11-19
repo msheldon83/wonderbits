@@ -7,11 +7,12 @@
  * after the last node. The top of a function is a container too, so the same
  * operations edit main and every function alike.
  *
- * A function cannot use a function yet: a call may sit anywhere in main or
- * in a When card but never inside a function, which also rules out a
- * function calling itself.
+ * In the lessons a function cannot use a function: a call may sit anywhere
+ * in main or in a When card but never inside a function. Creation mode
+ * lets a function use another, and still never itself, directly or by way
+ * of others.
  */
-import { branchBody, containerAt, functionNames, isWithin, locate, memoryOf, procedureOfPlace, samePlaceContainer, slotsInUse } from './program';
+import { branchBody, callsIn, canCall, containerAt, functionNames, isWithin, locate, memoryOf, procedureOfPlace, samePlaceContainer, slotsInUse } from './program';
 import { FUNCTION_NAME, isCardId, isEventId, RESERVED_NAMES, functionOfContainer, handlerOfContainer, MAIN, type MemorySlot, type Source, REPEAT_MAX, REPEAT_MIN, type Branch, type ConditionId, type IRNode, type NodeId, type Place, type ProgramIR } from './types';
 
 export type EditOp =
@@ -64,21 +65,23 @@ function updateIn(program: ProgramIR, parent: NodeId | null, branch: Branch, upd
   });
 }
 
-function hasCall(nodes: readonly IRNode[]): boolean {
-  return nodes.some((n) => n.kind === 'call' || (['body', 'else'] as const).some((b) => hasCall(branchBody(n, b) ?? [])));
+/** What an edit is allowed to do beyond the lessons' rules. */
+export interface EditOptions {
+  /** Creation mode: a function may use another function, though never itself. */
+  nestedCalls?: boolean;
 }
 
-/** Calls belong in main for now, and each must name one of the program's functions. */
-function checkCalls(program: ProgramIR, node: IRNode, at: Pick<Place, 'parent'>): void {
-  if (!hasCall([node])) return;
+/** Each call must name one of the program's functions, and sit where a call to it may. */
+function checkCalls(program: ProgramIR, node: IRNode, at: Pick<Place, 'parent'>, options: EditOptions): void {
+  const called = callsIn([node]);
+  if (called.length === 0) return;
   const procedure = procedureOfPlace(program, at);
-  if (procedure !== MAIN && !procedure?.startsWith('on:')) throw new Error('A function cannot use a function');
   const names = new Set(functionNames(program));
-  const check = (n: IRNode) => {
-    if (n.kind === 'call' && !names.has(n.name)) throw new Error(`No function named ${n.name}`);
-    for (const b of ['body', 'else'] as const) (branchBody(n, b) ?? []).forEach(check);
-  };
-  check(node);
+  for (const name of called) {
+    if (!names.has(name)) throw new Error(`No function named ${name}`);
+    if (canCall(program, procedure, name, options.nestedCalls === true)) continue;
+    throw new Error(options.nestedCalls ? 'A function cannot use itself, even by way of another function' : 'A function cannot use a function');
+  }
 }
 
 /** True when a call to the named function sits anywhere in these cards. */
@@ -144,7 +147,7 @@ function idsIn(nodes: readonly IRNode[], out: Set<NodeId> = new Set()): Set<Node
   return out;
 }
 
-export function applyOp(program: ProgramIR, edit: EditOp): ProgramIR {
+export function applyOp(program: ProgramIR, edit: EditOp, options: EditOptions = {}): ProgramIR {
   switch (edit.op) {
     case 'addSlot': {
       if (memoryOf(program).some((m) => m.name === edit.slot.name)) throw new Error(`The robot already remembers ${edit.slot.name}`);
@@ -185,7 +188,7 @@ export function applyOp(program: ProgramIR, edit: EditOp): ProgramIR {
       for (const id of idsIn([edit.node])) {
         if (existing.has(id)) throw new Error(`Node id ${id} already exists`);
       }
-      checkCalls(program, edit.node, edit.at);
+      checkCalls(program, edit.node, edit.at, options);
       return updateIn(program, edit.at.parent, edit.at.branch, (cards) => (cards.splice(edit.at.index, 0, edit.node), cards));
     }
     case 'move': {
@@ -197,7 +200,7 @@ export function applyOp(program: ProgramIR, edit: EditOp): ProgramIR {
       const target = containerAt(program, edit.to);
       if (!target) throw new Error(`No container at ${edit.to.parent}/${edit.to.branch}`);
       assertIndex(edit.to.index, target.length);
-      checkCalls(program, from.node, edit.to);
+      checkCalls(program, from.node, edit.to, options);
       // Removing the node shifts later gaps in the same container down by one.
       const index = samePlaceContainer(from, edit.to) && edit.to.index > from.index ? edit.to.index - 1 : edit.to.index;
       const without = mapBodies(program, (body) => removeNode(body, edit.id));
