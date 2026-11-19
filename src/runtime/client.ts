@@ -7,6 +7,10 @@ import {
   CONTRACT_VERSION,
   type Critique,
   type CritiqueRequest,
+  type LiveHandle,
+  type LiveInput,
+  type LiveRequest,
+  type LiveStartRequest,
   type RunRequest,
   type RunResult,
   type Runtime,
@@ -16,7 +20,7 @@ import {
 
 /** The minimal surface of a Worker (or iframe bridge) the client needs. */
 export interface Endpoint {
-  postMessage(message: RunRequest | CritiqueRequest): void;
+  postMessage(message: RunRequest | CritiqueRequest | LiveRequest): void;
   addEventListener(type: 'message', listener: (e: MessageEvent<RuntimeMessage>) => void): void;
   removeEventListener(type: 'message', listener: (e: MessageEvent<RuntimeMessage>) => void): void;
   terminate(): void;
@@ -33,6 +37,8 @@ export function createRuntimeClient(createEndpoint: () => Endpoint): Runtime {
   const ensure = () => (endpoint ??= createEndpoint());
   /** The critic's own endpoint, so a long search never holds up a run. */
   let critic: Endpoint | null = null;
+  /** The endpoints of live runs still going. */
+  const lives = new Set<Endpoint>();
 
   return {
     run(input) {
@@ -93,7 +99,75 @@ export function createRuntimeClient(createEndpoint: () => Endpoint): Runtime {
         ep.postMessage(request);
       });
     },
+    live(input, listener): LiveHandle {
+      const request: LiveStartRequest = { type: 'live-start', contract: CONTRACT_VERSION, requestId: nextRequestId(), ...input };
+      const { requestId } = request;
+      // A live run has an endpoint of its own for as long as it lasts, so a game never holds up a run or the critic.
+      const ep = createEndpoint();
+      lives.add(ep);
+      /** Inputs sent to the run, in order: its recording. */
+      const played: LiveInput[] = [];
+      /** Inputs waiting for the run to finish its turn. */
+      const queue: LiveInput[] = [];
+      let waiting = false;
+      let over = false;
+      let stopping = false;
+      let watchdog: ReturnType<typeof setTimeout> | undefined;
+      const finish = (result: Parameters<typeof listener.done>[0]) => {
+        if (over) return;
+        over = true;
+        clearTimeout(watchdog);
+        ep.removeEventListener('message', onMessage);
+        ep.terminate();
+        lives.delete(ep);
+        listener.done(result);
+      };
+      /** A turn that does not come back in time is a run gone wrong: end it. */
+      const watch = () => {
+        clearTimeout(watchdog);
+        watchdog = setTimeout(() => finish({ outcome: { status: 'halted', reason: 'time-limit' }, final: null, inputs: played }), input.limits.maxMillis);
+      };
+      const next = () => {
+        const input = queue.shift();
+        if (input === undefined) return;
+        waiting = false;
+        played.push(input);
+        watch();
+        ep.postMessage({ type: 'live-input', requestId, input });
+      };
+      const onMessage = (e: MessageEvent<RuntimeMessage>) => {
+        const m = e.data;
+        if (m.requestId !== requestId || over) return;
+        if (m.type === 'trace') listener.event(m.event);
+        else if (m.type === 'waiting') {
+          clearTimeout(watchdog);
+          waiting = true;
+          listener.waiting?.();
+          next();
+        } else if (m.type === 'done') finish({ outcome: m.outcome, final: m.final, inputs: played });
+      };
+      ep.addEventListener('message', onMessage);
+      watch();
+      ep.postMessage(request);
+      return {
+        send(input) {
+          // Once stopped, nothing more is played, even before the run has said it is done.
+          if (over || stopping) return;
+          queue.push(input);
+          if (waiting) next();
+        },
+        stop() {
+          if (over || stopping) return;
+          stopping = true;
+          queue.length = 0;
+          watch();
+          ep.postMessage({ type: 'live-stop', requestId });
+        },
+      };
+    },
     dispose() {
+      for (const ep of lives) ep.terminate();
+      lives.clear();
       critic?.terminate();
       critic = null;
       endpoint?.terminate();
