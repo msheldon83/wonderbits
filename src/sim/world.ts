@@ -1,5 +1,5 @@
 import { randomInt } from './random';
-import { isPosition, isSenseId, negationOf, parseWhole, parseField, splitSlotPath, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type GridPlace, type MemorySlot, type SenseId, type Source, type Value } from '../ir/types';
+import { isPosition, isSenseId, negationOf, parseLine, parseWhole, parseField, splitSlotPath, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type GridPlace, type MemorySlot, type SenseId, type Source, type Value } from '../ir/types';
 import type { Cell, Facing, Gate, Mover, ObjectiveDefinition, Plate, SimState, Switch, TileKind, WorldDefinition } from './types';
 
 export const cellKey = (c: Cell): string => `${c.x},${c.y}`;
@@ -361,6 +361,27 @@ export function shiftPlace(value: Value | undefined, dir: Facing): Value | undef
   return ahead(value, dir);
 }
 
+/**
+ * The piece with `count` in a row on a grid, across, down or slantwise, or
+ * 0 when no piece has. A piece is any number but 0, which is an empty tile.
+ */
+export function lineWinner(grid: Value | undefined, count: number): number {
+  if (!Array.isArray(grid)) return 0;
+  const at = (x: number, y: number): Value | undefined => (Array.isArray(grid[y]) ? (grid[y] as Value[])[x] : undefined);
+  for (let y = 0; y < grid.length; y++) {
+    for (let x = 0; x < (Array.isArray(grid[y]) ? (grid[y] as Value[]).length : 0); x++) {
+      const piece = at(x, y);
+      if (typeof piece !== 'number' || piece === 0) continue;
+      for (const [dx, dy] of [[1, 0], [0, 1], [1, 1], [1, -1]] as const) {
+        let run = 1;
+        while (run < count && at(x + dx * run, y + dy * run) === piece) run++;
+        if (run === count) return piece;
+      }
+    }
+  }
+  return 0;
+}
+
 /** One field of a record, or undefined when the value is not a record with that field. */
 export function recordField(record: Value | undefined, field: string): Value | undefined {
   if (typeof record !== 'object' || record === null || Array.isArray(record) || isPosition(record)) return undefined;
@@ -371,6 +392,8 @@ export function readSource(world: WorldDefinition, state: SimState, source: Sour
   if (typeof source !== 'string') return source;
   const field = parseField(source);
   if (field) return recordField(state.memory?.[field.record], field.field) ?? false;
+  const line = parseLine(source);
+  if (line) return lineWinner(state.memory?.[line.grid], line.count);
   // A whole record is copied, so the list it goes into keeps its own.
   const whole = parseWhole(source);
   if (whole) return structuredClone(state.memory?.[whole] ?? {});
@@ -472,6 +495,8 @@ export function teamOnFlags(world: WorldDefinition, state: SimState): boolean {
 }
 
 export function objectiveMet(world: WorldDefinition, objective: ObjectiveDefinition, state: SimState): boolean {
+  // A game's program wins it; the board alone never does.
+  if (objective.byProgram) return false;
   if (memoryShortfall(objective, state).length > 0) return false;
   if (!withinOutcomes(objective, state)) return false;
   if (objective.reachGoal && !teamOnFlags(world, state)) return false;

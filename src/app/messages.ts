@@ -36,6 +36,8 @@ export function outcomeMessage(outcome: RunOutcome, stepNumber: number | null, s
       }
       if (shortfall?.team) return { tone: 'problem', text: 'Every robot must end on its own flag. Watch each one: where does it stop?' };
       return { tone: 'problem', text: 'The robot stopped before the flag. Does it need more steps?' };
+    case 'lost':
+      return { tone: 'problem', text: 'Game over. Press Play to try again.' };
     case 'blocked':
       switch (outcome.reason) {
         case 'wall':

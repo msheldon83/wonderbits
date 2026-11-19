@@ -18,10 +18,11 @@
  * spec mints fresh ids; specOf throws the ids away again.
  */
 import type { IdFactory } from './ids';
-import { isBirdSource, type CommandId, type ConditionId, type IRNode, type ItemKind, type ListOf, type MemorySlot, type Source, type Value, type ValueKind } from './types';
+import { isBirdSource, type EndId, type GridShow, type CommandId, type ConditionId, type IRNode, type ItemKind, type ListOf, type MemorySlot, type Source, type Value, type ValueKind } from './types';
 
 export type NodeSpec =
   | CommandId
+  | EndId
   | { repeat: number; do: NodeSpec[] }
   | { if: ConditionId; do: NodeSpec[]; else?: NodeSpec[] }
   | { until: ConditionId; do: NodeSpec[] }
@@ -41,7 +42,7 @@ export type NodeSpec =
   | { fly: string; column?: number | string; row?: number | string }
   | { define: string; do: NodeSpec[] }
   | { on: string; do: NodeSpec[] }
-  | { remember: string; kind: ValueKind; of?: ListOf; shape?: string; fields?: Record<string, ItemKind>; at?: { x: number; y: number }; start?: Value; keep?: boolean };
+  | { remember: string; kind: ValueKind; of?: ListOf; shape?: string; fields?: Record<string, ItemKind>; at?: { x: number; y: number }; start?: Value; keep?: boolean; show?: GridShow };
 
 export type DefineSpec = Extract<NodeSpec, { define: string }>;
 export type OnSpec = Extract<NodeSpec, { on: string }>;
@@ -106,7 +107,7 @@ export function emptyRecord(fields: Record<string, ItemKind>): Value {
 
 export function slotOfSpec(s: RememberSpec): MemorySlot {
   const start = s.start ?? (s.kind === 'record' && s.fields ? emptyRecord(s.fields) : defaultStart(s.kind));
-  return { name: s.remember, kind: s.kind, ...(s.of && { of: s.of }), ...(s.shape && { shape: s.shape }), ...(s.fields && { fields: s.fields }), ...(s.at && { at: s.at }), start, ...(s.keep && { keep: true }) };
+  return { name: s.remember, kind: s.kind, ...(s.of && { of: s.of }), ...(s.shape && { shape: s.shape }), ...(s.fields && { fields: s.fields }), ...(s.at && { at: s.at }), start, ...(s.keep && { keep: true }), ...(s.show && { show: s.show }) };
 }
 
 /** A spec split into main's cards, its functions, its When cards and its memory slots, each in the order listed. */

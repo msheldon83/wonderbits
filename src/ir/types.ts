@@ -18,6 +18,17 @@ export function isCommandId(value: unknown): value is CommandId {
   return typeof value === 'string' && (COMMAND_IDS as readonly string[]).includes(value);
 }
 
+/**
+ * Cards that end a game: the program says it is won, or over. They are how
+ * a game decides its own ending, where a puzzle's goal is fixed.
+ */
+export const END_IDS = ['win', 'lose'] as const;
+export type EndId = (typeof END_IDS)[number];
+
+export function isEndId(value: unknown): value is EndId {
+  return typeof value === 'string' && (END_IDS as readonly string[]).includes(value);
+}
+
 /** What the robot can sense about the world, for If and Repeat until. */
 export const CONDITION_IDS = ['pathAhead', 'blockedAhead', 'acornAhead', 'atFlag', 'gateClosedAhead', 'onSwitch'] as const;
 /** A sense: something the robot can find out about the world right now. */
@@ -117,6 +128,11 @@ export interface Shape {
   fields: Record<string, ItemKind>;
 }
 
+export const GRID_SHOWS = ['pieces', 'numbers'] as const;
+export type GridShow = (typeof GRID_SHOWS)[number];
+/** In a grid shown as numbers, the value of a tile not uncovered yet. */
+export const COVERED = 9;
+
 /** A named, typed slot in the robot's memory: TypeScript's `let name: type = start`. */
 export interface MemorySlot {
   name: string;
@@ -131,6 +147,12 @@ export interface MemorySlot {
   start: Value;
   /** In the backpack: on a level of several days, the slot keeps its value overnight instead of starting again. */
   keep?: boolean;
+  /**
+   * A grid drawn on the board's own tiles, so the board can be the game.
+   * pieces: 1 is a cross and 2 a nought. numbers: 9 is a covered tile, 0 an
+   * uncovered empty one, and 1 to 8 show as the number.
+   */
+  show?: GridShow;
 }
 
 /**
@@ -189,6 +211,20 @@ export function splitSlotPath(path: string): { slot: string; field?: string } {
   const [slot, field] = path.split('.');
   return field ? { slot: slot!, field } : { slot: slot! };
 }
+
+const LINE = /^line:([a-z][A-Za-z0-9]{0,19})@([3-5])$/;
+
+/**
+ * Which piece has so many in a row on a grid, across, down or slantwise:
+ * `line:board@3` is 1 or 2 when that piece has three in a row, and 0 when
+ * nobody has. The win check of a board game, as one reading.
+ */
+export function parseLine(source: Source): { grid: string; count: number } | null {
+  const m = typeof source === 'string' ? LINE.exec(source) : null;
+  return m ? { grid: m[1]!, count: Number(m[2]) } : null;
+}
+
+export const lineOf = (grid: string, count: number): Source => `line:${grid}@${count}`;
 
 const WHOLE = /^whole:([a-z][A-Za-z0-9]{0,19})$/;
 
@@ -249,8 +285,8 @@ export function isGateActionId(value: unknown): value is GateActionId {
 }
 
 /** Everything the palette can hand out: a command, a block, a call or a gate action. */
-export const CARD_IDS = [...COMMAND_IDS, ...BLOCK_IDS, CALL, ...GATE_ACTION_IDS, ...MEMORY_CARD_IDS, ...GO_IDS] as const;
-export type CardId = CommandId | BlockId | typeof CALL | GateActionId | MemoryCardId | GoId;
+export const CARD_IDS = [...COMMAND_IDS, ...BLOCK_IDS, CALL, ...GATE_ACTION_IDS, ...MEMORY_CARD_IDS, ...GO_IDS, ...END_IDS] as const;
+export type CardId = CommandId | BlockId | typeof CALL | GateActionId | MemoryCardId | GoId | EndId;
 
 export function isCardId(value: unknown): value is CardId {
   return typeof value === 'string' && (CARD_IDS as readonly string[]).includes(value);
@@ -269,6 +305,12 @@ export const DEFAULT_CONDITION: ConditionId = 'blockedAhead';
 export interface CommandNode {
   id: NodeId;
   kind: CommandId;
+}
+
+/** The game is won, or over: the run ends here. */
+export interface EndNode {
+  id: NodeId;
+  kind: EndId;
 }
 
 export interface RepeatNode {
@@ -404,7 +446,7 @@ export interface ForEachNode {
 }
 
 export type BlockNode = RepeatNode | IfNode | IfElseNode | UntilNode | ForEachNode;
-export type IRNode = CommandNode | BlockNode | CallNode | GateActionNode | SetNode | ChangeNode | FaceNode | UnlockNode | MarkNode | PushNode | GoNode | ShiftNode | FlyNode;
+export type IRNode = CommandNode | EndNode | BlockNode | CallNode | GateActionNode | SetNode | ChangeNode | FaceNode | UnlockNode | MarkNode | PushNode | GoNode | ShiftNode | FlyNode;
 
 export function isBlockNode(node: IRNode): node is BlockNode {
   return isBlockId(node.kind);

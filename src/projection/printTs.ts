@@ -3,10 +3,12 @@
  * readable TypeScript. Read-only through Phase 3; Phase 4 adds a parser that
  * lifts hand-edited code back into the IR using the @node comments.
  */
-import { isBirdSource, isPosition, isSenseId, MAIN, negationOf, parseWhole, parseField, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type IRNode, type MemorySlot, type ProgramIR, type SenseId, type Source, type Value } from '../ir/types';
+import { isBirdSource, isPosition, isSenseId, MAIN, negationOf, parseLine, parseWhole, parseField, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type EndId, type ConditionId, type IRNode, type MemorySlot, type ProgramIR, type SenseId, type Source, type Value } from '../ir/types';
 import type { Teammate } from '../sim/types';
 
-const CALL: Record<CommandId, string> = {
+const CALL: Record<CommandId | EndId, string> = {
+  win: 'robot.win();',
+  lose: 'robot.gameOver();',
   forward: 'robot.forward();',
   rotateCW: 'robot.rotateClockwise();',
   rotateCCW: 'robot.rotateCounterClockwise();',
@@ -85,6 +87,8 @@ function sourceCode(source: Source): string {
   if (source === 'facing') return 'robot.facing()';
   const whole = parseWhole(source);
   if (whole) return `{ ...${whole} }`;
+  const line = parseLine(source);
+  if (line) return `lineOf(${line.grid}, ${line.count})`;
   if (source === 'here') return 'robot.position()';
   if (source === 'acorns') return 'robot.acorns()';
   if (source === 'acornsLeft') return 'bird.acornsLeft()';
@@ -227,7 +231,7 @@ function printNode(node: IRNode, depth: number, lines: string[]): void {
       lines.push(`${pad}robot.closeGate('${node.gate}'); ${tag}`);
       return;
     default:
-      lines.push(`${pad}${CALL[node.kind as CommandId]} ${tag}`);
+      lines.push(`${pad}${CALL[node.kind as CommandId | EndId]} ${tag}`);
   }
 }
 

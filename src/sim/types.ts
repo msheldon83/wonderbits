@@ -97,6 +97,8 @@ export interface ObjectiveDefinition {
    * name, or "column" for the robot's column counted from 0.
    */
   covers?: { of: string; values: Value[] };
+  /** A game: its program says when it is won, with a Win card. Nothing about the board wins it. */
+  byProgram?: boolean;
 }
 
 /** Full simulation state: the robot plus anything the run changes. */

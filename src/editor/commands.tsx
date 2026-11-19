@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { functionLabel, isPosition, isSenseId, negationOf, parseWhole, parseField, splitSlotPath, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CardId, type RandomSource, type ConditionId, type IRNode, type SenseId, type Source, type Value } from '../ir/types';
+import { functionLabel, isPosition, isSenseId, negationOf, parseLine, parseWhole, parseField, splitSlotPath, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CardId, type RandomSource, type ConditionId, type IRNode, type SenseId, type Source, type Value } from '../ir/types';
 import { TurnArrow } from '../render/art';
 
 export interface CommandInfo {
@@ -221,6 +221,25 @@ export const COMMANDS: Record<CardId, CommandInfo> = {
     description: 'Run the cards of a function',
     icon: <FunctionIcon />,
   },
+  win: {
+    label: 'Win',
+    description: 'The game is won: it ends here',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <path d="M10 6h12v6a6 6 0 0 1-12 0zM10 8H6c0 4 2 6 4 6M22 8h4c0 4-2 6-4 6M16 18v5M11 26h10" {...stroke} strokeWidth={2.6} />
+      </svg>
+    ),
+  },
+  lose: {
+    label: 'Game over',
+    description: 'The game is over: it ends here',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <circle cx="16" cy="16" r="10" {...stroke} strokeWidth={2.6} />
+        <path d="M12 12l8 8M20 12l-8 8" {...stroke} strokeWidth={2.6} />
+      </svg>
+    ),
+  },
 };
 
 /** Three cards folded into one: a function's icon, on its cards and its heading. */
@@ -275,6 +294,8 @@ export function sourceWords(source: Source): string {
   if (field) return `${field.record}'s ${field.field}`;
   const whole = parseWhole(source);
   if (whole) return `a copy of ${whole}`;
+  const line = parseLine(source);
+  if (line) return `the piece with ${line.count} in a row on ${line.grid}`;
   const read = parseRead(source);
   if (read) return `${read.grid} ${placeWords(read.at)}`;
   const counted = parseLength(source);

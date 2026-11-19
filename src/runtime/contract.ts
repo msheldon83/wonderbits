@@ -194,6 +194,8 @@ export type RunOutcome =
   | { status: 'success' }
   | { status: 'incomplete' }
   | { status: 'blocked'; nodeId: NodeId; reason: BlockReason }
+  /** A game's program said the game is over, with a Game over card. */
+  | { status: 'lost'; nodeId: NodeId }
   | { status: 'halted'; reason: 'step-limit' | 'time-limit' | 'forever' }
   /** The program asked for something impossible. A card's error carries its node and a message a child can read. */
   | { status: 'error'; message: string; nodeId?: NodeId };

@@ -117,6 +117,13 @@ function* execute(input: InterpretInput, interactive: boolean): Generator<LiveSt
           yield* afterAction(node.id, result.events ?? []);
           break;
         }
+        case 'win':
+          // The program says the game is won. A puzzle's goal is the board's; a game's is this card.
+          stop = { status: 'success' };
+          return;
+        case 'lose':
+          stop = { status: 'lost', nodeId: node.id };
+          return;
         case 'openGate':
         case 'closeGate': {
           const after = setGate(state, node.gate, node.kind === 'openGate');
