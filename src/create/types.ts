@@ -34,7 +34,7 @@ export interface Creation {
   id: string;
   kind: CreationKind;
   title: string;
-  /** A nickname. There are no accounts. */
+  /** A nickname: the signed-in child's, or a brother or sister's for something they sent. Never a real name or an account. */
   madeBy?: string;
   /** The level it was remixed from, if any. */
   basedOn?: string;

@@ -3,7 +3,7 @@
  * export is the data source for the child-test checks; nothing leaves the
  * device otherwise.
  */
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { ProgressStore } from '../progress/store';
 import type { Settings } from '../progress/types';
 
@@ -17,7 +17,7 @@ function download(name: string, text: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export function SettingsScreen({ store, settings, creations }: { store: ProgressStore; settings: Settings; creations?: () => unknown[] }) {
+export function SettingsScreen({ store, settings, creations, account, synced = false }: { store: ProgressStore; settings: Settings; creations?: () => unknown[]; account?: ReactNode; synced?: boolean }) {
   const [confirmReset, setConfirmReset] = useState(false);
   const stamp = () => new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
   return (
@@ -43,6 +43,8 @@ export function SettingsScreen({ store, settings, creations }: { store: Progress
         </div>
       </section>
 
+      {account}
+
       <section className="settings-group" aria-labelledby="settings-adult">
         <h2 id="settings-adult" className="panel-title">
           For the grown-up
@@ -56,8 +58,9 @@ export function SettingsScreen({ store, settings, creations }: { store: Progress
           <button type="button" className="btn btn-quiet" onClick={() => download(`wonderbits-${stamp()}.json`, JSON.stringify({ ...store.exportFile(), ...(creations && { creations: creations() }) }, null, 2))}>
             Export progress and log
           </button>
-          <small>Saves a JSON file with stars, badges, everything the child did and everything they made.</small>
+          <small>Saves a JSON file with stars, badges, everything the child did on this device and everything they made.</small>
         </div>
+        {!synced && (
         <div className="setting">
           {confirmReset ? (
             <span className="choice-row">
@@ -75,6 +78,7 @@ export function SettingsScreen({ store, settings, creations }: { store: Progress
           )}
           <small>Erases stars, badges and the log on this device. What the child made stays. Export first if you want to keep the rest.</small>
         </div>
+        )}
       </section>
     </div>
   );

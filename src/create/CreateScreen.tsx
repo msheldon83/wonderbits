@@ -4,9 +4,12 @@
  * island to play, and nothing here is locked.
  */
 import { useState } from 'react';
+import type { Sharing } from '../app/App';
+import { Avatar } from '../account/avatars';
 import { hashFor, type LevelChoice } from '../app/levels';
 import type { ProgressStore } from '../progress/store';
 import { blankCreation } from './blank';
+import { parseCreation } from './parse';
 import { remixOf } from './remix';
 import { BoardThumb } from './BoardThumb';
 import type { CreationStore } from './store';
@@ -28,8 +31,42 @@ export function nextTitle(creations: readonly Creation[], base = 'My island'): s
   for (let n = 2; ; n++) if (!taken.has(`${base} ${n}`)) return `${base} ${n}`;
 }
 
-export function CreateScreen({ creations, store, progress, choices, onGoTo }: { creations: readonly Creation[]; store: CreationStore; progress: ProgressStore; choices: readonly LevelChoice[]; onGoTo(hash: string): void }) {
+/** What a brother or sister sent, read into a creation; null if this build cannot read it. */
+function sharedCreation(value: unknown): Creation | null {
+  try {
+    return parseCreation(value, 'share');
+  } catch {
+    return null;
+  }
+}
+
+export function CreateScreen({ creations, store, progress, choices, onGoTo, sharing }: { creations: readonly Creation[]; store: CreationStore; progress: ProgressStore; choices: readonly LevelChoice[]; onGoTo(hash: string): void; sharing?: Sharing | undefined }) {
   const [removing, setRemoving] = useState<string | null>(null);
+  /** The creation being shared, and how the last send went. */
+  const [sharingId, setSharingId] = useState<string | null>(null);
+  const [sent, setSent] = useState<{ to: string; ok: boolean } | null>(null);
+  const [sending, setSending] = useState(false);
+  const shared = sharingId ? creations.find((c) => c.id === sharingId) : undefined;
+  const send = (creation: Creation, to: string, name: string) => {
+    if (!sharing) return;
+    setSending(true);
+    setSent(null);
+    void sharing
+      .send(to, creation)
+      .then(
+        () => setSent({ to: name, ok: true }),
+        () => setSent({ to: name, ok: false }),
+      )
+      .finally(() => setSending(false));
+  };
+  /** Keep something a brother or sister sent: it joins the shelf as a copy, with their name on it. */
+  const keep = (shareId: string, from: string, creation: Creation) => {
+    const { schemaVersion: _v, id: _id, createdAt: _c, updatedAt: _u, ...rest } = creation;
+    const made = store.add({ ...rest, madeBy: creation.madeBy ?? from });
+    progress.log({ levelId: made.id, kind: 'creation-started' });
+    sharing?.settle(shareId);
+  };
+  const inbox = (sharing?.inbox ?? []).map((s) => ({ share: s, creation: sharedCreation(s.creation) }));
   /** The nudge: the island of the first level not finished yet. */
   const next = choices.find((c) => !progress.levelProgress(c.level.id).stars.complete);
   const [picking, setPicking] = useState(false);
@@ -94,6 +131,37 @@ export function CreateScreen({ creations, store, progress, choices, onGoTo }: { 
           ))}
       </section>
 
+      {inbox.length > 0 && (
+        <section className="create-group" aria-labelledby="create-inbox">
+          <h2 id="create-inbox" className="panel-title">
+            From my family
+          </h2>
+          <ul className="shelf">
+            {inbox.map(({ share, creation }) => (
+              <li key={share.id} className="shelf-item">
+                <div className="shelf-card">
+                  {creation && <BoardThumb world={creation.world} />}
+                  <span className="shelf-title">{creation?.title ?? 'Something new'}</span>
+                  <span className="share-from">
+                    <Avatar id={share.fromAvatar} size={24} /> From {share.fromNickname}
+                  </span>
+                </div>
+                <span className="choice-row">
+                  {creation && (
+                    <button type="button" className="btn btn-run shelf-remove" onClick={() => keep(share.id, share.fromNickname, creation)}>
+                      Keep it
+                    </button>
+                  )}
+                  <button type="button" className="btn btn-quiet shelf-remove" onClick={() => sharing?.settle(share.id)}>
+                    No thanks
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="create-group" aria-labelledby="create-shelf">
         <h2 id="create-shelf" className="panel-title">
           My things
@@ -109,6 +177,20 @@ export function CreateScreen({ creations, store, progress, choices, onGoTo }: { 
                   <span className="shelf-title">{c.title}</span>
                   {c.status === 'proved' && <span className="ready-tag">Ready to play</span>}
                 </a>
+                {sharing && removing !== c.id && (
+                  <button
+                    type="button"
+                    className="btn btn-quiet shelf-remove"
+                    aria-haspopup="dialog"
+                    onClick={() => {
+                      setSent(null);
+                      setSharingId(c.id);
+                    }}
+                    aria-label={`Share ${c.title}`}
+                  >
+                    Share
+                  </button>
+                )}
                 {removing === c.id ? (
                   <span className="choice-row">
                     <button
@@ -136,6 +218,53 @@ export function CreateScreen({ creations, store, progress, choices, onGoTo }: { 
           </ul>
         )}
       </section>
+
+      {sharing && shared && (
+        <div className="dialog-backdrop" role="presentation" onClick={(e) => e.target === e.currentTarget && setSharingId(null)}>
+          <section className="dialog share-dialog" role="dialog" aria-modal="true" aria-labelledby="share-title">
+            <h2 id="share-title" className="dialog-title">
+              Share {shared.title}
+            </h2>
+            <div className="share-preview">
+              <BoardThumb world={shared.world} size={120} />
+            </div>
+            {sent?.ok ? (
+              <p className="share-result" role="status">
+                Sent to {sent.to}!
+              </p>
+            ) : (
+              <>
+                <div className="share-targets">
+                  <button type="button" className="share-target" disabled={sending} onClick={() => send(shared, 'grownup', 'your grown-up')}>
+                    <span className="avatar share-grownup" aria-hidden="true">
+                      ★
+                    </span>
+                    <span>Show my grown-up</span>
+                  </button>
+                  {shared.status === 'proved' &&
+                    sharing.siblings.map((sib) => (
+                      <button key={sib.id} type="button" className="share-target" disabled={sending} onClick={() => send(shared, sib.id, sib.nickname)}>
+                        <Avatar id={sib.avatar} size={56} />
+                        <span>Send to {sib.nickname}</span>
+                      </button>
+                    ))}
+                </div>
+                {shared.status !== 'proved' && sharing.siblings.length > 0 && <p className="tool-note">Solve it yourself first. Then you can send it to {sharing.siblings.map((sib) => sib.nickname).join(' or ')} to play.</p>}
+                {sent && !sent.ok && (
+                  <p className="account-problem" role="alert">
+                    That did not send. Check the internet and try again. If you have shared a lot today, try tomorrow.
+                  </p>
+                )}
+              </>
+            )}
+            <div className="dialog-actions">
+              <button type="button" className="btn btn-quiet" autoFocus onClick={() => setSharingId(null)}>
+                {sent?.ok ? 'Done' : 'Not now'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {sizing && (
         <div className="dialog-backdrop" role="presentation" onClick={(e) => e.target === e.currentTarget && setSizing(null)}>

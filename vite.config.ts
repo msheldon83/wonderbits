@@ -7,7 +7,8 @@ export default defineConfig({
   base: process.env.BASE_PATH ?? '/',
   plugins: [react()],
   worker: { format: 'es' },
-  server: { host: true },
+  // With accounts on, the server (see server/README.md) answers /api; in development it runs beside Vite.
+  server: { host: true, proxy: { '/api': process.env.API_URL ?? 'http://localhost:8080' } },
   test: {
     environment: 'node',
     include: ['src/**/*.test.{ts,tsx}'],

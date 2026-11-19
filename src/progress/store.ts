@@ -8,6 +8,7 @@ import type { PuzzleDefinition } from '../lessons/types';
 import { computeBadges } from './badges';
 import type { KeyValueStore } from './storage';
 import {
+  BADGE_IDS,
   DEFAULT_SETTINGS,
   emptyLevelProgress,
   emptyProgress,
@@ -82,7 +83,9 @@ export class ProgressStore {
   }
 
   private setProgress(progress: Progress): void {
-    const badges = computeBadges(this.levels, progress, this.snapshot.log);
+    // A badge once earned is kept: one earned on another device cannot be worked out from this device's log.
+    const computed = computeBadges(this.levels, progress, this.snapshot.log);
+    const badges = BADGE_IDS.filter((id) => computed.includes(id) || progress.badges.includes(id));
     this.snapshot = { ...this.snapshot, progress: { ...progress, badges } };
     this.emit();
     void this.storage.set('progress', this.snapshot.progress);

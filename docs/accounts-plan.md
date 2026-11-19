@@ -1,5 +1,28 @@
 # Wonderbits accounts, sync and family sharing: plan
 
+## Status
+
+Built, steps 1 to 10. What differs from the plan as first written:
+
+- **PINs are hashed with scrypt, not argon2.** scrypt ships with Node, so the
+  server has nothing to compile. The PIN is never the only lock either way.
+- **Device pairing uses one token.** The device keeps the token it was given
+  when it asked for a code; approving the code makes that token count. There
+  is no separate "finish" call.
+- **Progress from before sign-in** is offered to the grown-up on their page
+  ("Whose stars are these?"), on the device that holds it, not at a child's
+  first sign-in.
+- **"Reset progress" is hidden for a signed-in child.** Progress only ever
+  grows when it is merged, so a reset on one device would come straight back.
+- **The grown-up can play a child's solved puzzle** from the dashboard.
+  Nothing is recorded when they do.
+- **Deploying is a workflow run by hand**, so a push to `main` cannot fail
+  for want of a Fly token.
+- **Not done:** renaming a device, changing a child's nickname or picture
+  from the dashboard (the server can; no screen asks), and a service worker.
+
+How to run, test and deploy it: [server/README.md](../server/README.md).
+
 ## Context
 
 Wonderbits is local-first today: no server, no accounts, one implicit child per device, everything in IndexedDB (`src/progress/storage.ts`). The docs defer accounts on purpose ("later releases add accounts if the project goes public", `docs/plan.md:433`) and no design for them exists. To share the app beyond one nephew, it needs a server for accounts and progress, and because the players are 9 to 12, a grown-up must create and control every child profile.
@@ -22,7 +45,7 @@ Decisions made with the owner:
 ## Architecture
 
 - **One Fly app serves both the built frontend and `/api`.** Same origin means plain httpOnly cookies work (no CORS, no Safari third-party-cookie trouble), and self-hosters get a single container.
-- **Server:** Node 22 + TypeScript in a new `server/` npm workspace. Hono for HTTP, `postgres` (postgres.js) with plain SQL migration files, `@node-rs/argon2` for PIN hashing, `nodemailer` over SMTP for email (any provider).
+- **Server:** Node 22 + TypeScript in a new `server/` npm workspace. Hono for HTTP, `postgres` (postgres.js) with plain SQL migration files, Node's own scrypt for PIN hashing, `nodemailer` over SMTP for email (any provider).
 - **Database:** Postgres. On Fly, a new database on the existing cluster via `fly postgres attach`, or its own; only `DATABASE_URL` matters.
 - **Config (env):** `DATABASE_URL`, `SESSION_SECRET`, `SMTP_URL`, `MAIL_FROM`, `PUBLIC_URL`, `INVITE_REQUIRED` (default true).
 
@@ -30,12 +53,12 @@ Decisions made with the owner:
 
 | Table | Columns (main) |
 | --- | --- |
-| `invites` | `code`, `created_at`, `used_by`, `used_at`, `max_uses` |
-| `parents` | `id`, `email` (unique, lower-cased), `created_at`, `notify_by_email` |
-| `login_tokens` | `token_hash`, `parent_id` or pending `email` + `invite_code`, `expires_at`, `used_at` |
+| `invites` | `code`, `max_uses`, `uses`, `note`, `created_at` |
+| `parents` | `id`, `email` (unique, lower-cased), `created_at`, `notify_by_email`, `sibling_sharing` |
+| `login_tokens` | `token_hash`, `email`, `invite_code`, `expires_at`, `used_at` |
 | `children` | `id`, `parent_id`, `nickname` (unique within the family), `pin_hash`, `avatar` (from a fixed set), `created_at`, `last_active_at`, `consent_version`, `consented_at` |
 | `devices` | `id`, `parent_id`, `name`, `token_hash`, `created_at`, `last_seen_at`, `revoked_at` |
-| `device_pairings` | `code`, `pending_token_hash`, `expires_at`, `approved_by`, `device_id` |
+| `device_pairings` | `code`, `pending_token_hash`, `name`, `expires_at` |
 | `sessions` | `token_hash`, `kind` (`parent` / `child`), `parent_id` / `child_id`, `device_id`, `expires_at` |
 | `pin_attempts` | `device_id`, `child_id`, `at` (for throttling) |
 | `documents` | `child_id`, `key`, `value jsonb`, `rev bigint`, `deleted bool`, `updated_at`; primary key `(child_id, key)` |
@@ -53,7 +76,7 @@ Deleting a child or parent cascades to everything under it.
   
   Either way the device receives a long-lived device token in an httpOnly cookie, tied to that one family.
 - **Child sign-in:** an authorized device lists that family's profiles. The child taps theirs and enters the PIN. The server requires a valid device token **and** the PIN, so the PIN only separates siblings; a stranger with a nickname and PIN but no authorized device gets nothing, and nicknames are never looked up globally.
-- **PIN protection:** 4 to 6 digits, argon2 hashed, throttled per device and child with growing delays. The parent can reset it.
+- **PIN protection:** 4 to 6 digits, hashed, throttled per device and child with growing delays. The parent can reset it.
 - **Child session limits:** read and write that child's documents, send and receive family shares. It cannot see the parent's email, change PINs, manage devices or delete anything on the account.
 - **Revoking:** the parent can remove a device (ends its sessions at once) or sign a child out everywhere.
 
