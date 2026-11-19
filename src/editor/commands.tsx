@@ -366,6 +366,7 @@ export function eventLabel(event: string): string {
   if (kind === 'key') return `When ${KEY_WORDS[arg ?? ''] ?? arg} is pressed`;
   if (kind === 'acorn') return 'When an acorn is picked up';
   if (kind === 'tick') return 'Every tick';
+  if (kind === 'tap') return 'When a tile is tapped';
   return `When ${event}`;
 }
 
@@ -375,5 +376,6 @@ export function eventShort(event: string): string {
   if (kind === 'stepOn') return `plate ${arg}!`;
   if (kind === 'key') return KEY_WORDS[arg ?? ''] ?? String(arg);
   if (kind === 'acorn') return 'acorn!';
+  if (kind === 'tap') return 'tap!';
   return 'tick';
 }

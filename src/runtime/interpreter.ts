@@ -18,8 +18,8 @@
  * each followed by that key's When card.
  */
 import { functionBody, handlerBody, mainBody } from '../ir/program';
-import { handlerContainerId, isBirdSource, isPosition, parseField, parseRead, type Key } from '../ir/types';
-import { advance, drawSource, morning, nextRobot, faceTo, gridPlace, initialState, markGrid, missingItem, shiftPlace, evaluate, isTimed, objectiveMet, period, recall, remember, setGate, stateKey, step, unlockGate, type WorldEvent } from '../sim/world';
+import { handlerContainerId, isBirdSource, isPosition, parseField, parseRead, TAP, type Key } from '../ir/types';
+import { advance, drawSource, morning, nextRobot, faceTo, gridPlace, initialState, markGrid, missingItem, shiftPlace, evaluate, isTimed, objectiveMet, period, recall, remember, setGate, tileAt, stateKey, step, unlockGate, type WorldEvent } from '../sim/world';
 import type { Facing } from '../sim/types';
 import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 import type { IRNode, ProgramIR } from '../ir/types';
@@ -225,7 +225,9 @@ function* execute(input: InterpretInput, interactive: boolean): Generator<LiveSt
         case 'goRow':
         case 'goColumn': {
           // Walk straight to a row or a column, counted from 0: turn to face the way, then step by step.
-          const raw = typeof node.to === 'number' ? node.to : state.memory?.[node.to];
+          // A row or column by number, by a number slot, or by a place slot: its row, or its column.
+          const held = typeof node.to === 'number' ? node.to : state.memory?.[node.to];
+          const raw = isPosition(held) ? (node.kind === 'goRow' ? held.y : held.x) : held;
           const size = node.kind === 'goRow' ? world.height : world.width;
           if (typeof raw !== 'number' || !Number.isInteger(raw) || raw < 0 || raw >= size) {
             stop = { status: 'error', message: `There is no ${node.kind === 'goRow' ? 'row' : 'column'} ${String(raw)}`, nodeId: node.id };
@@ -255,6 +257,8 @@ function* execute(input: InterpretInput, interactive: boolean): Generator<LiveSt
             });
             if (!ok) return;
             if (result.kind === 'blocked') {
+              // In a live game the walk just ends where it was stopped; a beetle still ends the game.
+              if (live && result.reason !== 'beetle') break;
               stop = { status: 'blocked', nodeId: node.id, reason: result.reason };
               return;
             }
@@ -435,7 +439,12 @@ function* execute(input: InterpretInput, interactive: boolean): Generator<LiveSt
       }
       turnStart = executed;
       if (next.kind === 'key') yield* press(next.key, presses++);
-      else yield* tick('clock');
+      else if (next.kind === 'tap') {
+        // A tap off the board is nothing. On it, the tile goes in the place slot named tap, if the program has one, and the When card runs.
+        if (tileAt(world, next) === 'outside') continue;
+        if (program.memory?.some((m) => m.name === TAP && m.kind === 'position')) state = remember(state, TAP, { x: next.x, y: next.y });
+        yield* fire(TAP);
+      } else yield* tick('clock');
     }
     if (stop) return { outcome: stop, final: state, executedSteps: executed };
     return { outcome: objectiveMet(world, objective, state) ? { status: 'success' } : { status: 'incomplete' }, final: state, executedSteps: executed };

@@ -26,7 +26,7 @@ import { useCritic } from './useCritic';
 import { fitsRules } from './critic';
 import { KitPicker, type PackInfo } from './KitPicker';
 import { goalWords } from './goal';
-import { KEY_EVENTS } from './live';
+import { PLAYER_EVENTS } from './live';
 import type { CreationStore } from './store';
 import { TITLE_MAX, type Creation } from './types';
 
@@ -207,7 +207,7 @@ export function CreationScreen({ creation, store, progress, runtime, settings, s
           programNote="Solve your own puzzle here, with the cards the player gets. It proves the puzzle can be solved. The player never sees it."
           lockNames
           middle={({ program, edit, locked }) => (
-            <RulesColumn creation={creation} universe={universe} store={store} progress={progress} program={program} edit={edit} locked={locked} events={[...eventsOf(creation.world), ...KEY_EVENTS]} critique={critic.critique} onAddSets={() => setPicking(true)} />
+            <RulesColumn creation={creation} universe={universe} store={store} progress={progress} program={program} edit={edit} locked={locked} events={[...eventsOf(creation.world), ...PLAYER_EVENTS]} critique={critic.critique} onAddSets={() => setPicking(true)} />
           )}
           belowControls={
             <section className={`critic-strip ${critic.thinking ? 'is-thinking' : ''}`} aria-label="What the critic says" aria-busy={critic.thinking}>

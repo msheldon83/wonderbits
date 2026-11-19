@@ -40,6 +40,17 @@ export const KITS: readonly Kit[] = [
       { on: 'key:right', do: ['rotateCW'] },
     ],
   },
+  {
+    id: 'tap',
+    title: 'Tap to move',
+    blurb: 'Play it live: tap a tile and the robot walks to its column, then to its row. The tapped tile is kept in a place called tap.',
+    packId: 'forest-grids',
+    cards: ['goColumn', 'goRow'],
+    parts: [
+      { remember: 'tap', kind: 'position', start: { x: 0, y: 0 } },
+      { on: 'tap', do: [{ goColumn: 'tap' }, { goRow: 'tap' }] },
+    ],
+  },
   { id: 'time', title: 'Tick tock', blurb: 'Wait a moment, and a card that runs on every tick of the clock.', packId: 'forest-time', cards: ['wait'], parts: [{ on: 'tick', do: [] }] },
   { id: 'way', title: 'A way to remember', blurb: 'The robot keeps a direction in its memory and can face it again later.', packId: 'forest-memory', cards: ['set', 'face'], parts: [{ remember: 'way', kind: 'direction', start: 'N' }] },
   { id: 'counter', title: 'A counter', blurb: 'A number the robot can set, add to, and check.', packId: 'forest-count', cards: ['set', 'change'], parts: [{ remember: 'count', kind: 'number', start: 0 }] },
