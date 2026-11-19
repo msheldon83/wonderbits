@@ -93,14 +93,14 @@ export function App({ storage: given, account }: { storage?: KeyValueStore; acco
   useEffect(() => {
     if (route.screen === 'level' && snap.loaded && !allowed) location.hash = hashFor({ screen: 'map' });
   }, [route, snap.loaded, allowed]);
-  /** A pack's first level opens with its introduction, once. */
+  /** A pack's first level opens with its introduction, and a level that brings a later card opens with that, once each. */
   const intro = choice ? introductionBefore(book, choice.level.id) : undefined;
-  const showIntro = intro !== undefined && !store.hasSeenIntro(intro.packId);
-  /** A card book page the child asked for; a page for an island not reached yet goes back to the book. */
-  const page = route.screen === 'book' && route.packId !== undefined ? book.find((e) => e.packId === route.packId) : undefined;
-  const pageOpen = page !== undefined && snap.loaded && store.isUnlocked(page.firstLevelId);
+  const showIntro = intro !== undefined && !store.hasSeenIntro(intro.id);
+  /** A card book page the child asked for; a page for a level not reached yet goes back to the book. */
+  const page = route.screen === 'book' && route.pageId !== undefined ? book.find((e) => e.id === route.pageId) : undefined;
+  const pageOpen = page !== undefined && snap.loaded && store.isUnlocked(page.levelId);
   useEffect(() => {
-    if (route.screen === 'book' && route.packId !== undefined && snap.loaded && !pageOpen) location.hash = hashFor({ screen: 'book' });
+    if (route.screen === 'book' && route.pageId !== undefined && snap.loaded && !pageOpen) location.hash = hashFor({ screen: 'book' });
   }, [route, snap.loaded, pageOpen]);
   /** A creation that is not on the shelf (thrown away, or a mistyped address) goes back to the shelf. */
   const creation = route.screen === 'make' || route.screen === 'play' ? creationStore.get(route.id) : undefined;
@@ -127,9 +127,9 @@ export function App({ storage: given, account }: { storage?: KeyValueStore; acco
     else if (route.screen === 'map') cameFrom.current = 'map';
   }, [route]);
 
-  /** The real words the code panel may offer: those of every concept whose island is open, the newest concept first. */
+  /** The real words the code panel may offer: those of every teaching card the child has reached, the newest first. */
   const metWords = useMemo(
-    () => realWordsOf(book.filter((e) => store.isUnlocked(e.firstLevelId)).reverse()),
+    () => realWordsOf(book.filter((e) => store.isUnlocked(e.levelId)).reverse()),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [book, store, snap],
   );
@@ -243,10 +243,10 @@ export function App({ storage: given, account }: { storage?: KeyValueStore; acco
       {route.screen === 'play' && creation && playable && <PlayScreen key={`${creation.id}:${creation.proof?.provedAt}`} creation={creation} store={creationStore} progress={store} runtime={runtime} settings={snap.settings} />}
       {route.screen === 'book' && !page && <CardBookScreen book={book} store={store} from={cameFrom.current} />}
       {route.screen === 'book' && page && pageOpen && (
-        <ConceptIntro key={`book-${page.packId}`} entry={page} runtime={runtime} store={store} settings={snap.settings} replay onDone={() => goTo(hashFor({ screen: 'book' }))} />
+        <ConceptIntro key={`book-${page.id}`} entry={page} runtime={runtime} store={store} settings={snap.settings} replay onDone={() => goTo(hashFor({ screen: 'book' }))} />
       )}
       {route.screen === 'level' && choice && allowed && showIntro && intro && (
-        <ConceptIntro key={`intro-${intro.packId}`} entry={intro} runtime={runtime} store={store} settings={snap.settings} replay={false} onDone={() => store.markIntroSeen(intro.packId)} />
+        <ConceptIntro key={`intro-${intro.id}`} entry={intro} runtime={runtime} store={store} settings={snap.settings} replay={false} onDone={() => store.markIntroSeen(intro.id)} />
       )}
       {route.screen === 'level' && choice && allowed && !showIntro && (
         <Lesson

@@ -60,7 +60,8 @@ export function MapScreen({ choices, book, store, badges, packId, extra }: { cho
   const height = list.length * STEP_Y + 40;
   const points = list.map((_, i) => stoneAt(i));
   const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-  const entry = book.find((e) => e.packId === island.packId);
+  /** The island's teaching cards the child has reached. */
+  const entries = book.filter((e) => e.packId === island.packId && store.isUnlocked(e.levelId));
   const Landmark = theme.landmark;
 
   return (
@@ -101,11 +102,11 @@ export function MapScreen({ choices, book, store, badges, packId, extra }: { cho
           </div>
           <p className="island-kicker">Island {index + 1}</p>
           <h2 className="island-title">{island.title}</h2>
-          {entry && store.isUnlocked(entry.firstLevelId) && (
-            <a className="map-card-link" href={hashFor({ screen: 'book', packId: entry.packId })} title={`Watch the ${entry.introduction.title} card again`}>
+          {entries.map((entry) => (
+            <a key={entry.id} className="map-card-link" href={hashFor({ screen: 'book', pageId: entry.id })} title={`Watch the ${entry.introduction.title} card again`}>
               {entry.introduction.title} card
             </a>
-          )}
+          ))}
         </div>
 
         <div className="map-trail" style={{ height }}>

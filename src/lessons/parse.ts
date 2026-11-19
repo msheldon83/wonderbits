@@ -5,7 +5,7 @@
 import { slotOfSpec, type NodeSpec } from '../ir/spec';
 import { FUNCTION_NAME, GRID_SHOWS, isEndId, parseCount, STEER_EVERY, STEER_HOWS, STEER_SKILLS, type SteerHow, type SteerSkill, parseLine, parseWhole, SLOT_PATH, type GridShow, isCardId, isCommandId, isConditionId, isEventId, isSenseId, KEYS, BOARD_MAPS, parseItem, parseLength, parseRandom, parseRead, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, VALUE_KINDS, type CardId, type ConditionId, type ItemKind, type Key, type ListOf, parseField, type Source, type Value, type ValueKind } from '../ir/types';
 import { FACINGS, type Cell, type Facing, type Gate, type Mover, type ObjectiveDefinition, type Plate, type Switch, type Teammate, type TileKind, type WorldDefinition } from '../sim/types';
-import { CONTENT_SCHEMA_VERSION, type MemoryField, type Activity, type ConceptIntroduction, type HintPath, type HintStep, type PackManifest, type PuzzleDefinition, type RealWord } from './types';
+import { CONTENT_SCHEMA_VERSION, type MemoryField, type Activity, type ConceptIntroduction, type LaterCard, type HintPath, type HintStep, type PackManifest, type PuzzleDefinition, type RealWord } from './types';
 
 /** True when a value is of a slot's kind: a list's items of its item kind, a record's fields of its shape. */
 export function valueFits(v: unknown, kind: ValueKind, of?: ListOf, fields?: Record<string, ItemKind>): boolean {
@@ -438,6 +438,16 @@ class Reader {
       },
     };
   }
+  laterCards(v: unknown, path: string): LaterCard[] {
+    if (!Array.isArray(v)) {
+      this.fail(path, 'expected a list of teaching cards');
+      return [];
+    }
+    return v.map((x, i) => {
+      const at = `${path}[${i}]`;
+      return { ...this.introduction(x, at), beforeLevel: this.str(this.obj(x, at).beforeLevel, `${at}.beforeLevel`) };
+    });
+  }
   version(v: unknown, path: string): typeof CONTENT_SCHEMA_VERSION {
     if (v !== CONTENT_SCHEMA_VERSION) this.fail(path, `expected schema version ${CONTENT_SCHEMA_VERSION}`);
     return CONTENT_SCHEMA_VERSION;
@@ -628,6 +638,7 @@ export function parsePack(json: unknown, source: string): PackManifest {
     concepts: r.ids(root.concepts, 'concepts'),
     prerequisites: r.ids(root.prerequisites, 'prerequisites'),
     ...(root.introduction !== undefined && { introduction: r.introduction(root.introduction, 'introduction') }),
+    ...(root.cards !== undefined && { cards: r.laterCards(root.cards, 'cards') }),
   };
   if (pack.concepts.length === 0) r.fail('concepts', 'expected at least one concept id');
   if (r.issues.length) throw new ContentError(source, r.issues);

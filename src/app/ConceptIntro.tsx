@@ -2,8 +2,8 @@
  * A pack's introduction: show before tell. The robot plays the demo program
  * on a tiny board, over and over, while its cards light up and the same
  * program is printed as code beside them. One sentence in kid terms sits
- * underneath. Shown before a pack's first level, and again from the card
- * book whenever the child wants.
+ * underneath. Shown before a pack's first level, or before the later level
+ * that brings the card, and again from the card book whenever the child wants.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CodePanel } from '../editor/CodePanel';
@@ -66,7 +66,7 @@ export interface ConceptIntroProps {
 }
 
 export function ConceptIntro({ entry, runtime, store, settings, replay, onDone }: ConceptIntroProps) {
-  const { introduction, packId, packTitle, firstLevelId } = entry;
+  const { introduction, packId, packTitle, levelId: firstLevelId } = entry;
   const { demo } = introduction;
   const theme = themeFor('forest');
   const pace = PACE[settings.demoSpeed];
