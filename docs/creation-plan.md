@@ -342,7 +342,8 @@ here so it can be overruled.
    for profiles and a server. The grown-up's export in Settings still
    includes what the child made, as a backup.
 4. **Names are typed** on the on-screen keyboard, with the rule in 13d.
-5. **One maker per device for now.** Profiles are later work.
+5. **One maker per device for now.** Profiles are later work, planned in
+   [accounts-plan.md](accounts-plan.md).
 
 Still open: non-grid games (solitaire's cards, Q\*bert's pyramid), which
 stay out of step 13 until a child asks for one.

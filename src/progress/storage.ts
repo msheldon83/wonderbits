@@ -84,3 +84,25 @@ export function indexedDbStore(): KeyValueStore {
 export function defaultStore(): KeyValueStore {
   return typeof indexedDB === 'undefined' ? memoryStore() : indexedDbStore();
 }
+
+/**
+ * One profile's corner of a store: every key gains the prefix on the way in
+ * and loses it on the way out, so two children on one device never see each
+ * other's documents. Clearing it clears only that corner.
+ */
+export function scopedStore(store: KeyValueStore, prefix: string): KeyValueStore {
+  return {
+    get: (key) => store.get(prefix + key),
+    set: (key, value) => store.set(prefix + key, value),
+    delete: (key) => store.delete(prefix + key),
+    async keys(inner) {
+      return (await store.keys(prefix + inner)).map((k) => k.slice(prefix.length));
+    },
+    async clear() {
+      await Promise.all((await store.keys(prefix)).map((k) => store.delete(k)));
+    },
+  };
+}
+
+/** The prefix a signed-in child's documents live under. */
+export const profilePrefix = (childId: string): string => `p:${childId}:`;

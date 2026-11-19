@@ -2,7 +2,7 @@
   "name": "wonderbits",
   "private": true,
   "version": "0.1.0",
-  "description": "A visual-first programming game for kids aged 8 to 12.",
+  "description": "A visual-first programming game for children aged 9 and up.",
   "license": "MIT",
   "type": "module",
   "engines": {

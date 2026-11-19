@@ -84,8 +84,8 @@ Documents are stored per child under the same keys the client already uses:
 | Key | Synced | Merge rule |
 | --- | --- | --- |
 | `progress` | yes | Field-wise, never loses work: stars OR-ed, `bestSteps` min, `attempts` max, predictions max, `badges` and `introsSeen` unioned, then `computeBadges` re-run |
-| `creation:<id>` | yes | Newest `updatedAt` wins; deletes are tombstones |
-| `drafts` | yes | Per-level, last write wins |
+| `creation:<id>` | yes | The newer copy wins (`updatedAt`, or the proof's date if later); deletes are tombstones |
+| `drafts` | yes | Per level; the device in the child's hands wins (saved places carry no dates) |
 | `settings` | no | Device preference |
 | `log` | no | Stays on the device |
 
