@@ -80,4 +80,4 @@ export const CLOCKS = [1, 2, 4] as const;
 export const REPLAY_MAX = 5000;
 /** As many things to try as a game lists, and how long each may be. */
 export const TRIES_MAX = 6;
-export const TRY_LENGTH = 160;
+export const TRY_LENGTH = 220;

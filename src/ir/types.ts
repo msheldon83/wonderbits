@@ -36,7 +36,8 @@ export type SenseId = (typeof CONDITION_IDS)[number];
 /**
  * What an If or Repeat until checks: a sense, or a memory test written
  * `slot:<name>=<value>`, such as `slot:count=3`, `slot:found=yes`,
- * `slot:way=E` or `slot:spot=here`.
+ * `slot:way=E` or `slot:spot=here`. A number can also be compared:
+ * `slot:count<3`, `slot:count>3`, and with another slot, `slot:score>best`.
  */
 export type SlotTest = `slot:${string}`;
 /** A check turned round: `not:atFlag`, `not:slot:count=3`. One `not` deep; a child builds these in creation mode. */
@@ -50,12 +51,25 @@ export function isSenseId(value: unknown): value is SenseId {
 }
 
 /** A memory test may look inside a record: `slot:crate.key=yes`. */
-const SLOT_TEST = /^slot:([a-z][A-Za-z0-9]{0,19}(?:\.[a-z][A-Za-z0-9]{0,19})?)=(\d{1,3}|yes|no|[NESW]|here)$/;
+const SLOT_TEST = /^slot:([a-z][A-Za-z0-9]{0,19}(?:\.[a-z][A-Za-z0-9]{0,19})?)(=|<|>)(\d{1,3}|yes|no|[NESW]|here|[a-z][A-Za-z0-9]{0,19})$/;
 
-/** The parts of a memory test, or null when the string is not one. */
-export function parseSlotTest(value: string): { slot: string; value: string } | null {
+/** How a memory test compares: is, is less than, is more than. Less and more are for numbers. */
+export type Comparison = '=' | '<' | '>';
+
+/**
+ * The parts of a memory test, or null when the string is not one. What is
+ * compared with is a written value (3, yes, E, here) or, as `other`, the
+ * name of another slot: `slot:score>best` asks whether score is more than
+ * what best holds.
+ */
+export function parseSlotTest(value: string): { slot: string; value: string; op: Comparison; other?: string } | null {
   const m = SLOT_TEST.exec(value);
-  return m ? { slot: m[1]!, value: m[2]! } : null;
+  if (!m) return null;
+  const written = m[3]!;
+  const isName = /^[a-z]/.test(written) && written !== 'yes' && written !== 'no' && written !== 'here';
+  // Only numbers have an order: less and more need a number, or a slot, to compare with.
+  if (m[2] !== '=' && !isName && !/^\d+$/.test(written)) return null;
+  return { slot: m[1]!, value: written, op: m[2] as Comparison, ...(isName && { other: written }) };
 }
 
 const NOT = 'not:';
@@ -212,6 +226,16 @@ export function splitSlotPath(path: string): { slot: string; field?: string } {
   return field ? { slot: slot!, field } : { slot: slot! };
 }
 
+const COUNT = /^count:([a-z][A-Za-z0-9]{0,19})=(\d)$/;
+
+/** How many tiles of a grid hold a number: `count:shown=9` is how many are still covered. */
+export function parseCount(source: Source): { grid: string; value: number } | null {
+  const m = typeof source === 'string' ? COUNT.exec(source) : null;
+  return m ? { grid: m[1]!, value: Number(m[2]) } : null;
+}
+
+export const countOf = (grid: string, value: number): Source => `count:${grid}=${value}`;
+
 const LINE = /^line:([a-z][A-Za-z0-9]{0,19})@([3-5])$/;
 
 /**
@@ -284,9 +308,25 @@ export function isGateActionId(value: unknown): value is GateActionId {
   return typeof value === 'string' && (GATE_ACTION_IDS as readonly string[]).includes(value);
 }
 
+/**
+ * Cards that call a ready-made function of the library: move a beetle the
+ * game controls, and uncover tiles of a grid as in Minesweeper.
+ */
+export const LIBRARY_CARD_IDS = ['steer', 'uncover'] as const;
+export type LibraryCardId = (typeof LIBRARY_CARD_IDS)[number];
+
+/** How a steered beetle moves: toward the robot, away from it, or anywhere. */
+export const STEER_HOWS = ['chase', 'flee', 'wander'] as const;
+export type SteerHow = (typeof STEER_HOWS)[number];
+/** How often it makes its best move: once in three, twice in three, or always. */
+export const STEER_SKILLS = ['easy', 'medium', 'hard'] as const;
+export type SteerSkill = (typeof STEER_SKILLS)[number];
+/** How often it moves at all: every tick, every other, or every third. */
+export const STEER_EVERY = [1, 2, 3] as const;
+
 /** Everything the palette can hand out: a command, a block, a call or a gate action. */
-export const CARD_IDS = [...COMMAND_IDS, ...BLOCK_IDS, CALL, ...GATE_ACTION_IDS, ...MEMORY_CARD_IDS, ...GO_IDS, ...END_IDS] as const;
-export type CardId = CommandId | BlockId | typeof CALL | GateActionId | MemoryCardId | GoId | EndId;
+export const CARD_IDS = [...COMMAND_IDS, ...BLOCK_IDS, CALL, ...GATE_ACTION_IDS, ...MEMORY_CARD_IDS, ...GO_IDS, ...END_IDS, ...LIBRARY_CARD_IDS] as const;
+export type CardId = CommandId | BlockId | typeof CALL | GateActionId | MemoryCardId | GoId | EndId | LibraryCardId;
 
 export function isCardId(value: unknown): value is CardId {
   return typeof value === 'string' && (CARD_IDS as readonly string[]).includes(value);
@@ -307,10 +347,31 @@ export interface CommandNode {
   kind: CommandId;
 }
 
-/** The game is won, or over: the run ends here. */
+/** The game is won, or over: the run ends here. A Win card may say who won, by a number slot: player 1, player 2. */
 export interface EndNode {
   id: NodeId;
   kind: EndId;
+  player?: string;
+}
+
+/** One move of a beetle the game controls, by a ready-made way of moving. It moves only every so many ticks. */
+export interface SteerNode {
+  id: NodeId;
+  kind: 'steer';
+  /** The beetle's id on the board. */
+  mover: string;
+  how: SteerHow;
+  skill: SteerSkill;
+  every: number;
+}
+
+/** Uncover a tile of a grid of numbers, and the empty area round it, counting the mines of a yes/no grid. */
+export interface UncoverNode {
+  id: NodeId;
+  kind: 'uncover';
+  grid: string;
+  mines: string;
+  at: GridPlace;
 }
 
 export interface RepeatNode {
@@ -446,7 +507,7 @@ export interface ForEachNode {
 }
 
 export type BlockNode = RepeatNode | IfNode | IfElseNode | UntilNode | ForEachNode;
-export type IRNode = CommandNode | EndNode | BlockNode | CallNode | GateActionNode | SetNode | ChangeNode | FaceNode | UnlockNode | MarkNode | PushNode | GoNode | ShiftNode | FlyNode;
+export type IRNode = CommandNode | EndNode | SteerNode | UncoverNode | BlockNode | CallNode | GateActionNode | SetNode | ChangeNode | FaceNode | UnlockNode | MarkNode | PushNode | GoNode | ShiftNode | FlyNode;
 
 export function isBlockNode(node: IRNode): node is BlockNode {
   return isBlockId(node.kind);

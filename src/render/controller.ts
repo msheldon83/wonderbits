@@ -128,11 +128,11 @@ export class BoardController implements Player {
     for (const m of moversOf(this.world)) {
       const el = this.worldEls.movers?.get(m.id);
       if (el) el.style.transform = this.moverTransform(moverPlace(m, state));
-      // A faint ghost on the tile it moves to on the next tick; none when it stays put, and none for a chaser, whose next step is the robot's doing.
+      // A faint ghost on the tile it moves to on the next tick; none when it stays put, and none for a beetle the program moves, whose next step is the program's.
       const ghost = this.worldEls.ghosts?.get(m.id);
       if (ghost) {
         const now = moverPlace(m, state);
-        const next = m.chase ? now : moverCell(m, state.tick + 1);
+        const next = m.steered ? now : moverCell(m, state.tick + 1);
         const moves = now.x !== next.x || now.y !== next.y;
         ghost.style.transform = this.moverTransform(next);
         ghost.style.opacity = moves ? '1' : '0';
@@ -391,7 +391,8 @@ export class BoardController implements Player {
       await this.showBubble(before.robot, '…', 'loop', ms(THINK_MS), signal);
       return;
     }
-    if (event.op === 'tick') {
+    // A tick, or a beetle the program moved: whatever changed place glides there.
+    if (event.op === 'tick' || event.op === 'steer') {
       if (this.motion.reducedMotion) {
         this.placeMovers(after);
         this.place(after.robot, this.angle);

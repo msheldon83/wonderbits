@@ -71,7 +71,7 @@ export function App() {
     if (!creation) return [];
     const base = creation.basedOn ? choices.find((c) => c.level.id === creation.basedOn)?.level.programming : undefined;
     // A game is built with every card there is, the grid cards and the two that end a game among them. A puzzle's player never gets a Win card.
-    const extra: CardId[] = creation.kind === 'game' ? ['mark', 'shift', 'win', 'lose'] : [];
+    const extra: CardId[] = creation.kind === 'game' ? ['mark', 'shift', 'uncover', 'steer', 'win', 'lose'] : [];
     return [...new Set([...CREATION_CARDS, ...extra, ...(base?.allowedCommands ?? []), ...(base?.suppliedCards ?? []), ...creation.programming.allowedCommands])];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [creation?.id, creation?.basedOn, creation?.kind, choices]);

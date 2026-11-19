@@ -13,14 +13,14 @@
  * of others.
  */
 import { branchBody, callsIn, canCall, containerAt, functionNames, isWithin, locate, memoryOf, procedureOfPlace, samePlaceContainer, slotsInUse } from './program';
-import { FUNCTION_NAME, isCardId, isEventId, RESERVED_NAMES, functionOfContainer, handlerOfContainer, MAIN, type MemorySlot, type Source, REPEAT_MAX, REPEAT_MIN, type Branch, type ConditionId, type IRNode, type NodeId, type Place, type ProgramIR } from './types';
+import { FUNCTION_NAME, isCardId, isEventId, RESERVED_NAMES, functionOfContainer, handlerOfContainer, MAIN, type MemorySlot, type Source, type SteerHow, type SteerSkill, REPEAT_MAX, REPEAT_MIN, type Branch, type ConditionId, type IRNode, type NodeId, type Place, type ProgramIR } from './types';
 
 export type EditOp =
   | { op: 'insert'; at: Place; node: IRNode }
   | { op: 'move'; id: NodeId; to: Place }
   | { op: 'delete'; id: NodeId }
   /** Change a block's parameter: a Repeat's count or an If's or Until's condition. */
-  | { op: 'set'; id: NodeId; count?: number; condition?: ConditionId; gate?: string; slot?: string; to?: Source; by?: number; list?: string; item?: string; grid?: string; at?: string; target?: number | string; dir?: 'N' | 'E' | 'S' | 'W'; column?: number | string | null; row?: number | string | null }
+  | { op: 'set'; id: NodeId; count?: number; condition?: ConditionId; gate?: string; slot?: string; to?: Source; by?: number; list?: string; item?: string; grid?: string; at?: string; target?: number | string; dir?: 'N' | 'E' | 'S' | 'W'; column?: number | string | null; row?: number | string | null; mover?: string; how?: SteerHow; skill?: SteerSkill; every?: number; mines?: string; player?: string | null }
   /** Give the robot a memory slot, or forget one no card uses. */
   | { op: 'addSlot'; slot: MemorySlot }
   | { op: 'removeSlot'; name: string }
@@ -229,12 +229,19 @@ export function applyOp(program: ProgramIR, edit: EditOp, options: EditOptions =
       if (edit.by !== undefined && node.kind !== 'change') throw new Error(`Node ${edit.id} has no amount`);
       if (edit.list !== undefined && node.kind !== 'forEach' && node.kind !== 'push') throw new Error(`Node ${edit.id} has no list`);
       if (edit.item !== undefined && node.kind !== 'forEach') throw new Error(`Node ${edit.id} has no item`);
-      if ((edit.grid !== undefined || edit.at !== undefined) && node.kind !== 'mark') throw new Error(`Node ${edit.id} has no grid`);
+      if ((edit.grid !== undefined || edit.at !== undefined) && node.kind !== 'mark' && node.kind !== 'uncover') throw new Error(`Node ${edit.id} has no grid`);
       if (edit.target !== undefined && node.kind !== 'goRow' && node.kind !== 'goColumn') throw new Error(`Node ${edit.id} has no row or column`);
       if (edit.dir !== undefined && node.kind !== 'shift') throw new Error(`Node ${edit.id} has no direction`);
       if ((edit.column !== undefined || edit.row !== undefined) && node.kind !== 'fly') throw new Error(`Node ${edit.id} has no column or row to fly to`);
       const patch = (n: IRNode): IRNode => {
         if (n.id !== edit.id) return n;
+        if (n.kind === 'steer') return { ...n, ...(edit.mover !== undefined && { mover: edit.mover }), ...(edit.how !== undefined && { how: edit.how }), ...(edit.skill !== undefined && { skill: edit.skill }), ...(edit.every !== undefined && { every: edit.every }) };
+        if (n.kind === 'uncover') return { ...n, ...(edit.grid !== undefined && { grid: edit.grid }), ...(edit.mines !== undefined && { mines: edit.mines }), ...(edit.at !== undefined && { at: edit.at }) };
+        if (n.kind === 'win' && edit.player !== undefined) {
+          // null clears the winner: the card just says the game is won.
+          const { player: _was, ...rest } = n;
+          return edit.player === null ? rest : { ...rest, player: edit.player };
+        }
         if (n.kind === 'goRow' || n.kind === 'goColumn') return { ...n, ...(edit.target !== undefined && { to: edit.target }) };
         if (n.kind === 'fly') {
           // null clears a coordinate, so it stays where it is; at least one must remain.

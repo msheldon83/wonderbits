@@ -29,10 +29,11 @@ import type { IdFactory } from '../ir/ids';
 import { isNoOpMove, type EditOp } from '../ir/ops';
 import { ancestorsOf, branchesOf, branchBody, callsIn, canCall, containerAt, endOfMain, functionsOf, isWithin, locate, mainBody, memoryOf, procedureOfPlace, samePlaceContainer, slotsInUse, walk } from '../ir/program';
 import { buildNodes } from '../ir/spec';
-import { functionContainerId, functionLabel, functionOfContainer, handlerContainerId, handlerOfContainer, isSenseId, itemOf, fieldOf, lengthOf, wholeOf, MAIN as MAIN_PROCEDURE, parseRandom, readFrom, REPEAT_DEFAULT, REPEAT_MAX, REPEAT_MIN, type Branch, type CardId, type CommandId, type IRNode, type MemorySlot, type NodeId, type Place, type ProgramIR, type Source } from '../ir/types';
+import { functionContainerId, functionLabel, functionOfContainer, handlerContainerId, handlerOfContainer, isSenseId, itemOf, fieldOf, lengthOf, wholeOf, MAIN as MAIN_PROCEDURE, parseRandom, readFrom, REPEAT_DEFAULT, REPEAT_MAX, REPEAT_MIN, type Branch, type CardId, type CommandId, type IRNode, type MemorySlot, type NodeId, type Place, type ProgramIR, type Source, type SteerHow, type SteerSkill } from '../ir/types';
 import type { TraceEvent } from '../runtime/contract';
 import { cardLabel, COMMANDS, conditionLabel, describeNode, eventLabel, FunctionIcon, nodeLabel, placeWords, sourceWords, valueWords } from './commands';
 import { gapCentres, slotForY, type RowBox } from './geometry';
+import { ConditionPicker } from './ConditionPicker';
 import { OwnNames } from './OwnNames';
 import { conditionsFor, defaultCondition, paletteFor, type Programming } from './palette';
 
@@ -75,6 +76,8 @@ export interface EditorProps {
   boardSize?: { width: number; height: number };
   /** Creation mode: events a new When card may wait for. */
   events?: readonly string[];
+  /** The beetles the game's program moves, by id and name, for a Move a beetle card to choose from. */
+  actors?: readonly { id: string; label: string }[];
   /** The level runs over several days: a new slot may go in the backpack. */
   backpack?: boolean;
   /** What the program panel is called, when not "Program": a maker's "Your solution". */
@@ -130,6 +133,7 @@ export function Editor({
   boardSize,
   gateCodes = {},
   events = [],
+  actors = [],
   backpack = false,
   lockNames = false,
   programLabel = 'Program',
@@ -307,6 +311,16 @@ export function Editor({
       case 'openGate':
       case 'closeGate':
         return { id: newId(), kind: command, gate: gates[0] ?? 'a' };
+      case 'steer':
+        return { id: newId(), kind: 'steer', mover: actors[0]?.id ?? 'beetle1', how: 'chase', skill: 'medium', every: 2 };
+      case 'uncover': {
+        const numbers = memory.find((m) => m.kind === 'grid' && m.of === 'number');
+        const mines = memory.find((m) => m.kind === 'grid' && m.of === 'yesNo');
+        return { id: newId(), kind: 'uncover', grid: numbers?.name ?? 'shown', mines: mines?.name ?? 'mines', at: memory.find((m) => m.kind === 'position')?.name ?? 'here' };
+      }
+      case 'win':
+      case 'lose':
+        return { id: newId(), kind: command };
       case 'goRow':
       case 'goColumn':
         return { id: newId(), kind: command, to: 0 };
@@ -865,6 +879,63 @@ export function Editor({
               })}
             </span>
           )}
+          {node.kind === 'steer' && (
+            <span className="block-param block-condition">
+              <select className="param-select" aria-label={`Which beetle, step ${number}`} value={node.mover} disabled={locked} onChange={(e) => setParam(node.id, { mover: e.target.value })}>
+                {(actors.some((a) => a.id === node.mover) ? actors : [{ id: node.mover, label: node.mover }, ...actors]).map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.label}
+                  </option>
+                ))}
+              </select>
+              <select className="param-select" aria-label={`How it moves, step ${number}`} value={node.how} disabled={locked} onChange={(e) => setParam(node.id, { how: e.target.value as SteerHow })}>
+                <option value="chase">chases the robot</option>
+                <option value="flee">runs from the robot</option>
+                <option value="wander">wanders</option>
+              </select>
+              {node.how !== 'wander' && (
+                <select className="param-select" aria-label={`How clever it is, step ${number}`} value={node.skill} disabled={locked} onChange={(e) => setParam(node.id, { skill: e.target.value as SteerSkill })}>
+                  <option value="easy">easy: often goes the wrong way</option>
+                  <option value="medium">medium: sometimes goes the wrong way</option>
+                  <option value="hard">hard: always the best way</option>
+                </select>
+              )}
+              <select className="param-select" aria-label={`How often it moves, step ${number}`} value={node.every} disabled={locked} onChange={(e) => setParam(node.id, { every: Number(e.target.value) })}>
+                <option value={1}>every tick</option>
+                <option value={2}>every other tick</option>
+                <option value={3}>every third tick</option>
+              </select>
+            </span>
+          )}
+          {node.kind === 'uncover' && (
+            <span className="block-param block-condition">
+              {slotSelect(`Which grid to uncover, step ${number}`, node.grid, ['grid'], (grid) => setParam(node.id, { grid }))}
+              <span className="param-word">from</span>
+              <select className="param-select" aria-label={`From where, step ${number}`} value={node.at} disabled={locked} onChange={(e) => setParam(node.id, { at: e.target.value })}>
+                {['here', 'ahead', ...memory.filter((m) => m.kind === 'position').map((m) => m.name)].map((at) => (
+                  <option key={at} value={at}>
+                    {placeWords(at)}
+                  </option>
+                ))}
+              </select>
+              <span className="param-word">mines in</span>
+              {slotSelect(`Which grid holds the mines, step ${number}`, node.mines, ['grid'], (mines) => setParam(node.id, { mines }))}
+            </span>
+          )}
+          {node.kind === 'win' && programming.ownNames && (
+            <span className="block-param block-condition">
+              <select className="param-select" aria-label={`Who wins, step ${number}`} value={node.player ?? ''} disabled={locked} onChange={(e) => setParam(node.id, { player: e.target.value === '' ? null : e.target.value })}>
+                <option value="">the player</option>
+                {memory
+                  .filter((m) => m.kind === 'number')
+                  .map((m) => (
+                    <option key={m.name} value={m.name}>
+                      the player whose number is in {m.name}
+                    </option>
+                  ))}
+              </select>
+            </span>
+          )}
           {node.kind === 'mark' && (
             <span className="block-param block-condition">
               {slotSelect(`Which value, step ${number}`, node.slot, [memory.find((m) => m.name === node.grid)?.of ?? 'number'], (slot) => setParam(node.id, { slot }))}
@@ -989,19 +1060,31 @@ export function Editor({
           )}
           {(node.kind === 'if' || node.kind === 'ifElse' || node.kind === 'until') && (
             <span className="block-param block-condition">
+              {programming.ownNames ? (
+                // Where the child names the memory, a test is built from its parts: what, how, and with what.
+                <ConditionPicker
+                  condition={node.condition}
+                  memory={memory}
+                  senses={conditionsFor(programming).filter((c) => !c.includes('slot:'))}
+                  disabled={locked}
+                  step={number}
+                  onChange={(condition) => setParam(node.id, { condition })}
+                />
+              ) : (
               <select
-                className="param-select"
-                aria-label={`What to check, step ${number}`}
-                value={node.condition}
-                disabled={locked}
-                onChange={(e) => setParam(node.id, { condition: e.target.value as IRNode extends { condition: infer C } ? C : never })}
-              >
-                {[...new Set([...conditionsFor(programming, memory), node.condition])].map((c) => (
-                  <option key={c} value={c}>
-                    {conditionLabel(c)}
-                  </option>
-                ))}
-              </select>
+                  className="param-select"
+                  aria-label={`What to check, step ${number}`}
+                  value={node.condition}
+                  disabled={locked}
+                  onChange={(e) => setParam(node.id, { condition: e.target.value as IRNode extends { condition: infer C } ? C : never })}
+                >
+                  {[...new Set([...conditionsFor(programming, memory), node.condition])].map((c) => (
+                    <option key={c} value={c}>
+                      {conditionLabel(c)}
+                    </option>
+                  ))}
+                </select>
+              )}
             </span>
           )}
           {!readOnly && (

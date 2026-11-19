@@ -30,7 +30,7 @@ import { Sequencer } from '../render/sequencer';
 import { themeFor } from '../render/themes';
 import { DEFAULT_LIMITS, type LiveHandle, type LiveInput, type RunOutcome, type RunResult, type Runtime, type TraceEvent } from '../runtime/contract';
 import type { Cell, Facing, SimState, WorldDefinition } from '../sim/types';
-import { gatesOf, initialState, memoryShortfall, moversOf } from '../sim/world';
+import { gatesOf, initialState, memoryShortfall, moverLabel, moversOf } from '../sim/world';
 import { worldsOf } from '../lessons/shuffles';
 import { checksOf, isRandomLevel, missingOutcomes } from '../lessons/checks';
 import { withSaved } from '../create/live';
@@ -39,7 +39,7 @@ import { KeyScript } from './KeyScript';
 import { MemoryCard } from './MemoryCard';
 import { TickRules } from './TickRules';
 import { Inventory, signsOf } from './Inventory';
-import { outcomeMessage, type Shortfall, type Tone } from './messages';
+import { outcomeMessage, winnerWords, type Shortfall, type Tone } from './messages';
 
 /**
  * editing: the child is building the program (or predicting).
@@ -104,7 +104,7 @@ export interface PlaySurfaceProps {
   /** Called once per solving run, before the celebration plays. */
   onSolved(solved: Solved): void;
   /** The dialog shown after the celebration. */
-  completion?(actions: { restart(): void; close(): void }): ReactNode;
+  completion?(actions: { restart(): void; close(): void; winner?: string }): ReactNode;
   /** Extra buttons at the end of the run controls. */
   toolbarExtra?: ReactNode;
   /** A puzzle someone else made: the player uses its named parts and adds none. */
@@ -665,8 +665,10 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
         : outcome.status === 'success' && !level.objective.reachGoal
           ? { tone: 'success' as const, text: 'You did it!' }
           : outcomeMessage(outcome, errorNode ? stepNumber(program, errorNode) : null, shortfall);
+    // A Win card that names the winner: say who.
+    const announced = outcome.status === 'success' && outcome.player !== undefined ? { tone: 'success' as const, text: winnerWords(outcome.player, (program.memory ?? []).some((m) => m.show === 'pieces')) } : null;
     // In a game a beetle is not a step to fix: it caught the robot, and the game is over.
-    const base = liveMode && outcome.status === 'blocked' && outcome.reason === 'beetle' ? { tone: 'problem' as const, text: 'The beetle caught the robot. Press Play to try again.' } : lesson;
+    const base = liveMode && outcome.status === 'blocked' && outcome.reason === 'beetle' ? { tone: 'problem' as const, text: 'The beetle caught the robot. Press Play to try again.' } : announced ?? lesson;
     const guess = !guessedRight ? '' : asksTile && askedFields.length > 0 ? 'Your flag and your memory card were right! ' : asksTile ? 'Your flag was in the right spot! ' : 'Your memory card was right! ';
     message = { tone: base.tone, text: guess + base.text };
     if (worlds.length > 1 && !random) {
@@ -859,6 +861,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
           gateCodes={Object.fromEntries(gatesOf(world).flatMap((g) => (g.code !== undefined ? [[g.id, g.code]] : [])))}
           boardSize={{ width: world.width, height: world.height }}
           events={eventsOf(world)}
+          actors={moversOf(world).filter((m) => m.steered).map((m) => ({ id: m.id, label: moverLabel(world, m) }))}
           backpack={level.days !== undefined}
           lockNames={lockNames}
           {...(programLabel && { programLabel })}
@@ -868,7 +871,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
         />
       </div>
 
-      {completion && renderCompletion?.({ restart, close: () => setCompletion(false) })}
+      {completion && renderCompletion?.({ restart, close: () => setCompletion(false), ...(outcome?.status === 'success' && outcome.player !== undefined && { winner: winnerWords(outcome.player, (program.memory ?? []).some((m) => m.show === 'pieces')) }) })}
     </main>
   );
 }

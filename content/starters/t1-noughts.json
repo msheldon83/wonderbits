@@ -124,7 +124,9 @@
             {
               "if": "not:slot:winner=0",
               "do": [
-                "win"
+                {
+                  "win": "winner"
+                }
               ]
             },
             {
@@ -154,8 +156,8 @@
     }
   ],
   "tries": [
-    "Let noughts go first: change what turn starts as. In the code view, turn is 1 for crosses and 2 for noughts.",
-    "Make the board 4 by 4 on the Board step. The memory called board has to grow too, so this one is a puzzle of its own.",
+    "Let noughts go first: change what turn starts as. turn is 1 for crosses and 2 for noughts.",
+    "Read how the win is found: open the Library and look at A line of pieces. Then change the 3 in the code view's lineOf to see what 2 in a row plays like.",
     "Change the last If so that the same player goes again after a good move.",
     "Change the game so that three in a row loses: swap the Win card for a Game over card."
   ],

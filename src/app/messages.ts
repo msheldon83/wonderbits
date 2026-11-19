@@ -64,3 +64,13 @@ export function outcomeMessage(outcome: RunOutcome, stepNumber: number | null, s
       return { tone: 'problem', text: 'Something went wrong. Press Reset and try again.' };
   }
 }
+
+/**
+ * Who won, when a game's Win card names the winner: "Player 1 (crosses)
+ * wins!". On a board of crosses and noughts the players are named by their
+ * pieces.
+ */
+export function winnerWords(player: number, pieces: boolean): string {
+  const piece = pieces ? (player === 1 ? ' (crosses)' : player === 2 ? ' (noughts)' : '') : '';
+  return `Player ${player}${piece} wins!`;
+}

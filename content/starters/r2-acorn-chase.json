@@ -3,7 +3,7 @@
   "id": "acorn-chase",
   "title": "Acorn chase",
   "family": "real-time",
-  "blurb": "Collect every acorn while a beetle chases you round the rocks.",
+  "blurb": "Collect every acorn while a beetle chases you round the rocks. How fast can you do it?",
   "how": "Use the arrow keys to pick up every acorn. The beetle is after you: keep the rocks between you and it.",
   "world": {
     "rows": [
@@ -58,13 +58,14 @@
             "y": 0
           }
         ],
-        "chase": 2
+        "steered": true
       }
     ]
   },
   "objective": {
     "reachGoal": false,
-    "collectAll": true
+    "collectAll": false,
+    "byProgram": true
   },
   "clock": 2,
   "programming": {
@@ -80,6 +81,7 @@
       "set",
       "change",
       "face",
+      "steer",
       "win",
       "lose"
     ],
@@ -90,6 +92,17 @@
       "remember": "score",
       "kind": "number",
       "start": 0
+    },
+    {
+      "remember": "time",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "best",
+      "kind": "number",
+      "start": 999,
+      "keep": true
     },
     {
       "remember": "plays",
@@ -159,6 +172,36 @@
         {
           "change": "score",
           "by": 1
+        },
+        {
+          "if": "slot:score=6",
+          "do": [
+            {
+              "if": "slot:time<best",
+              "do": [
+                {
+                  "set": "best",
+                  "to": "whole:time"
+                }
+              ]
+            },
+            "win"
+          ]
+        }
+      ]
+    },
+    {
+      "on": "tick",
+      "do": [
+        {
+          "steer": "beetle1",
+          "how": "chase",
+          "skill": "medium",
+          "every": 2
+        },
+        {
+          "change": "time",
+          "by": 1
         }
       ]
     },
@@ -168,15 +211,16 @@
     }
   ],
   "tries": [
-    "Make each acorn worth 2: change the Add card in When an acorn is picked up.",
-    "On the Board step, add more acorns, or move the rocks to make better hiding places.",
-    "Add a second beetle on the Board step, and tick Chases the robot.",
-    "Make it a race: set the clock to Fast, under Time and the robot.",
-    "End the game early: in When an acorn is picked up, add an If that wins when score reaches a number you choose. Then set the goal to The program decides."
+    "Make the beetle easier or harder: open the Every tick card and change the Move a beetle card. Try easy, then hard.",
+    "Read how the beetle finds its way: open the Library and look at Moving an enemy.",
+    "On the Board step, add a second beetle and tick The game's program moves it. Then give it a Move a beetle card of its own. Could one chase while the other wanders?",
+    "Look at the memory card: best is your fastest win, kept in the backpack. Find the If that compares time with best.",
+    "Add more acorns on the Board step. The If that wins at 6 has to change too."
   ],
   "replay": {
     "inputs": [
       "right",
+      ".",
       "right",
       ".",
       "right",

@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { functionLabel, isPosition, isSenseId, negationOf, parseLine, parseWhole, parseField, splitSlotPath, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CardId, type RandomSource, type ConditionId, type IRNode, type SenseId, type Source, type Value } from '../ir/types';
+import { functionLabel, isPosition, isSenseId, negationOf, parseCount, parseLine, parseWhole, parseField, splitSlotPath, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CardId, type RandomSource, type ConditionId, type IRNode, type SenseId, type Source, type Value } from '../ir/types';
 import { TurnArrow } from '../render/art';
 
 export interface CommandInfo {
@@ -221,6 +221,27 @@ export const COMMANDS: Record<CardId, CommandInfo> = {
     description: 'Run the cards of a function',
     icon: <FunctionIcon />,
   },
+  steer: {
+    label: 'Move a beetle',
+    description: 'Move a beetle the game controls: chase the robot, run from it, or wander',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <ellipse cx="13" cy="17" rx="7" ry="8" {...stroke} strokeWidth={2.6} />
+        <path d="M13 9v16M22 16h7M26 12l4 4-4 4" {...stroke} strokeWidth={2.6} />
+      </svg>
+    ),
+  },
+  uncover: {
+    label: 'Uncover',
+    description: 'Uncover a tile, and the empty area round it, as in Minesweeper',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <rect x="5" y="5" width="22" height="22" rx="4" {...stroke} strokeWidth={2.6} />
+        <path d="M5 16h22M16 5v22" {...stroke} strokeWidth={2} />
+        <circle cx="10.5" cy="10.5" r="2" fill="currentColor" />
+      </svg>
+    ),
+  },
   win: {
     label: 'Win',
     description: 'The game is won: it ends here',
@@ -296,6 +317,8 @@ export function sourceWords(source: Source): string {
   if (whole) return `a copy of ${whole}`;
   const line = parseLine(source);
   if (line) return `the piece with ${line.count} in a row on ${line.grid}`;
+  const tally = parseCount(source);
+  if (tally) return tally.value === 9 ? `how many tiles of ${tally.grid} are covered` : `how many tiles of ${tally.grid} hold ${tally.value}`;
   const read = parseRead(source);
   if (read) return `${read.grid} ${placeWords(read.at)}`;
   const counted = parseLength(source);
@@ -325,11 +348,13 @@ export function conditionLabel(c: ConditionId): string {
   // A check turned round: "not at the flag", "count is not 3".
   const inner = negationOf(c);
   if (inner) return isSenseId(inner) ? `not ${CONDITIONS[inner].label}` : conditionLabel(inner).replace(' is ', ' is not ');
+  // "is not less than" reads as it should; so does "is not more than".
   if (isSenseId(c)) return CONDITIONS[c].label;
   const t = parseSlotTest(c);
   if (!t) return c;
   const { slot, field } = splitSlotPath(t.slot);
-  return `${field ? `${slot}'s ${field}` : slot} is ${t.value === 'here' ? 'here' : (DIRECTION_WORDS[t.value] ?? t.value)}`;
+  const how = t.op === '<' ? 'is less than' : t.op === '>' ? 'is more than' : 'is';
+  return `${field ? `${slot}'s ${field}` : slot} ${how} ${t.value === 'here' ? 'here' : (DIRECTION_WORDS[t.value] ?? t.value)}`;
 }
 
 /** A block's own words, with its count or condition filled in. */

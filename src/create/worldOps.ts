@@ -172,8 +172,8 @@ const suits = (world: WorldDefinition, kind: Mover['kind'], cell: Cell) => insid
 
 /** Whether a mover's way out can go on to this tile: the next tile along, of the right ground, not one it already crosses. */
 export function canExtend(world: WorldDefinition, mover: Mover, cell: Cell): boolean {
-  // A chaser has no round to lengthen: it goes where the robot is.
-  if (mover.chase) return false;
+  // A beetle the program moves has no round to lengthen.
+  if (mover.steered) return false;
   const route = routeOf(mover.path);
   const end = route.at(-1)!;
   return suits(world, mover.kind, cell) && Math.abs(end.x - cell.x) + Math.abs(end.y - cell.y) === 1 && !route.some((c) => same(c, cell));
@@ -219,15 +219,12 @@ export function unstepMover(world: WorldDefinition, id: string): WorldDefinition
   return { ...world, movers: world.movers!.map((m) => (m === mover ? { ...m, path: pathOf(route.slice(0, -1)) } : m)) };
 }
 
-/** How often a chasing beetle steps, in ticks: every other tick, so a quick player can keep ahead of it. */
-export const CHASE_EVERY = 2;
-
-/** Make a beetle chase the robot, from where its round starts, or give it back a round of one tile. */
-export function setChase(world: WorldDefinition, id: string, chase: boolean): WorldDefinition {
+/** Hand a beetle to the game's program to move, from where its round starts, or give it back a round of one tile. */
+export function setSteered(world: WorldDefinition, id: string, steered: boolean): WorldDefinition {
   const mover = (world.movers ?? []).find((m) => m.id === id);
-  if (!mover || mover.kind !== 'beetle' || Boolean(mover.chase) === chase) return world;
-  const { chase: _was, ...plain } = mover;
-  const next: Mover = { ...plain, path: [mover.path[0]!], ...(chase && { chase: CHASE_EVERY }) };
+  if (!mover || mover.kind !== 'beetle' || Boolean(mover.steered) === steered) return world;
+  const { steered: _was, ...plain } = mover;
+  const next: Mover = { ...plain, path: [mover.path[0]!], ...(steered && { steered: true }) };
   return { ...world, movers: world.movers!.map((m) => (m === mover ? next : m)) };
 }
 

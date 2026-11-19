@@ -41,7 +41,8 @@ export const CARD_GROUPS: { title: string; cards: CardId[] }[] = [
   { title: 'Lists', cards: ['push', 'forEach'] },
   { title: 'Map and bird', cards: ['goRow', 'goColumn', 'fly'] },
   { title: 'Gates', cards: ['openGate', 'closeGate'] },
-  { title: 'Grids', cards: ['mark', 'shift'] },
+  { title: 'Grids', cards: ['mark', 'shift', 'uncover'] },
+  { title: 'Enemies', cards: ['steer'] },
   { title: 'Ending the game', cards: ['win', 'lose'] },
 ];
 

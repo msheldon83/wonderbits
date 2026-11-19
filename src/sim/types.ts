@@ -50,11 +50,11 @@ export interface Mover {
   /** Where it is on tick 0, 1, 2 and so on, then round again. A chaser's path is only where it starts. */
   path: Cell[];
   /**
-   * A beetle that chases: every so many ticks it takes one step along the
-   * shortest way to the robot, round rocks and water. It has no round of
-   * its own; where it is depends on where the robot has been.
+   * A beetle the game's program moves, with a Move a beetle card: it has no
+   * round of its own. Its path is only where it starts; where it is depends
+   * on the game.
    */
-  chase?: number;
+  steered?: boolean;
 }
 
 /**
@@ -114,7 +114,7 @@ export interface SimState {
   collected: string[];
   /** Ids of the gates open right now, sorted. */
   open: string[];
-  /** Where each chasing beetle is now, by id. Absent on boards without one. */
+  /** Where each beetle the program moves is now, by id. Absent on boards without one. */
   chasers?: Record<string, Cell>;
   /** Ticks gone by. Only boards with movers or an every-tick card count them. */
   tick: number;

@@ -3,8 +3,8 @@
   "id": "minesweeper",
   "title": "Minesweeper",
   "family": "turn-based",
-  "blurb": "Four mines are hidden under the tiles. Uncover every other tile without touching one.",
-  "how": "Tap a tile to uncover it. A number says how many mines touch that tile. Tap a mine and the game is over.",
+  "blurb": "Mines are hidden under the tiles. Uncover every other tile without touching one.",
+  "how": "Tap a tile to uncover it. A number says how many mines touch that tile. An empty tile opens the tiles round it. Tap a mine and the game is over.",
   "hideRobot": true,
   "world": {
     "rows": [
@@ -40,12 +40,11 @@
       "if",
       "ifElse",
       "until",
-      "call",
       "set",
       "change",
       "mark",
-      "shift",
       "fly",
+      "uncover",
       "win",
       "lose"
     ],
@@ -177,12 +176,12 @@
       "start": false
     },
     {
-      "remember": "count",
+      "remember": "seen",
       "kind": "number",
       "start": 0
     },
     {
-      "remember": "seen",
+      "remember": "hidden",
       "kind": "number",
       "start": 0
     },
@@ -220,97 +219,10 @@
               "with": "yes"
             },
             {
-              "change": "left",
-              "by": -1
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "define": "look",
-      "do": [
-        {
-          "set": "mine",
-          "to": "read:mines@spot"
-        },
-        {
-          "if": "slot:mine=yes",
-          "do": [
-            {
-              "change": "count",
+              "change": "hidden",
               "by": 1
             }
           ]
-        }
-      ]
-    },
-    {
-      "define": "countAround",
-      "do": [
-        {
-          "set": "count",
-          "to": 0
-        },
-        {
-          "set": "spot",
-          "to": "whole:tap"
-        },
-        {
-          "shift": "spot",
-          "dir": "N"
-        },
-        {
-          "call": "look"
-        },
-        {
-          "shift": "spot",
-          "dir": "E"
-        },
-        {
-          "call": "look"
-        },
-        {
-          "shift": "spot",
-          "dir": "S"
-        },
-        {
-          "call": "look"
-        },
-        {
-          "shift": "spot",
-          "dir": "S"
-        },
-        {
-          "call": "look"
-        },
-        {
-          "shift": "spot",
-          "dir": "W"
-        },
-        {
-          "call": "look"
-        },
-        {
-          "shift": "spot",
-          "dir": "W"
-        },
-        {
-          "call": "look"
-        },
-        {
-          "shift": "spot",
-          "dir": "N"
-        },
-        {
-          "call": "look"
-        },
-        {
-          "shift": "spot",
-          "dir": "N"
-        },
-        {
-          "call": "look"
         }
       ]
     },
@@ -335,19 +247,16 @@
               ],
               "else": [
                 {
-                  "call": "countAround"
+                  "uncover": "shown",
+                  "mines": "mines",
+                  "at": "tap"
                 },
                 {
-                  "mark": "shown",
-                  "at": "tap",
-                  "with": "count"
+                  "set": "left",
+                  "to": "count:shown=9"
                 },
                 {
-                  "change": "left",
-                  "by": -1
-                },
-                {
-                  "if": "slot:left=0",
+                  "if": "slot:left=hidden",
                   "do": [
                     "win"
                   ]
@@ -361,9 +270,9 @@
   ],
   "tries": [
     "Hide more mines: change the Repeat at the top from 4 times to 6.",
-    "Make the island bigger on the Board step. The two grids, and what left starts as, have to grow with it.",
-    "Find the function called countAround. It walks a place called spot round the tapped tile. Could it look only up, down, left and right?",
-    "Give the player a second chance: add a number called lives, and take one away instead of ending the game."
+    "Read how one tap opens a whole patch: open the Library and look at Uncovering tiles.",
+    "Look at the last If: the game is won when the tiles still covered are as many as the mines hidden. Why does that work?",
+    "Make the island bigger on the Board step. The two grids have to grow with it, and so does the random column and row."
   ],
   "replay": {
     "inputs": [
@@ -373,20 +282,7 @@
       "4,0",
       "0,1",
       "1,1",
-      "3,1",
-      "4,1",
       "0,2",
-      "1,2",
-      "3,2",
-      "4,2",
-      "0,3",
-      "1,3",
-      "2,3",
-      "3,3",
-      "0,4",
-      "1,4",
-      "2,4",
-      "3,4",
       "4,4"
     ],
     "seed": 7

@@ -53,17 +53,17 @@ export function PlayScreen({ creation, store, progress, runtime, settings }: { c
       onSolved={onSolved}
       lockNames
       {...(game && { initialProgram: creation.proof?.solution ?? creation.program, saved: creation.saved ?? {}, onLiveEnd })}
-      completion={({ restart }) =>
+      completion={({ restart, winner }) =>
         stars && (
           <div className="dialog-backdrop" role="presentation">
             <section className="dialog" role="dialog" aria-modal="true" aria-labelledby="done-title">
               <h2 id="done-title" className="dialog-title">
-                {game ? `You won ${creation.title}!` : `You solved ${creation.title}!`}
+                {winner ?? (game ? `You won ${creation.title}!` : `You solved ${creation.title}!`)}
               </h2>
               <ul className="star-row" aria-label="Stars">
                 <li className="star-slot is-earned">
                   <Star earned size={44} />
-                  <span>{game ? 'Won it' : 'Solved it'}</span>
+                  <span>{winner ? 'Played to a win' : game ? 'Won it' : 'Solved it'}</span>
                 </li>
                 {makerSteps !== undefined && !game && (
                   <li className={`star-slot ${stars.budget ? 'is-earned' : ''}`}>

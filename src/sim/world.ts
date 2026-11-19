@@ -1,5 +1,7 @@
-import { randomInt } from './random';
-import { isPosition, isSenseId, negationOf, parseLine, parseWhole, parseField, splitSlotPath, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type GridPlace, type MemorySlot, type SenseId, type Source, type Value } from '../ir/types';
+import { nextRandom, randomInt } from './random';
+import { lineOf } from '../library/lineOf';
+import { steer } from '../library/steer';
+import { isPosition, isSenseId, negationOf, parseCount, parseLine, parseWhole, type Comparison, type SteerHow, type SteerSkill, parseField, splitSlotPath, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type GridPlace, type MemorySlot, type SenseId, type Source, type Value } from '../ir/types';
 import type { Cell, Facing, Gate, Mover, ObjectiveDefinition, Plate, SimState, Switch, TileKind, WorldDefinition } from './types';
 
 export const cellKey = (c: Cell): string => `${c.x},${c.y}`;
@@ -49,38 +51,29 @@ export function moverCell(mover: Mover, tick: number): Cell {
 }
 
 /** The mover of a kind on a cell right now, if any. */
-/** Where a mover is now: on its round by the tick, or, for a chaser, wherever the chase has taken it. */
+/** Where a mover is now: on its round by the tick, or, for a beetle the program moves, wherever it has been moved to. */
 export function moverPlace(mover: Mover, state: Pick<SimState, 'tick' | 'chasers'>): Cell {
-  return mover.chase ? (state.chasers?.[mover.id] ?? mover.path[0]!) : moverCell(mover, state.tick);
+  return mover.steered ? (state.chasers?.[mover.id] ?? mover.path[0]!) : moverCell(mover, state.tick);
 }
 
 export function moverAt(world: WorldDefinition, state: SimState, cell: Cell, kind: Mover['kind']): Mover | undefined {
   return moversOf(world).find((m) => m.kind === kind && sameCell(moverPlace(m, state), cell));
 }
 
-/** A chaser's next tile: the first step of the shortest way to the robot over floor and through open gates, or where it stands when there is no way. */
-function chaseStep(world: WorldDefinition, state: SimState, from: Cell, to: Cell): Cell {
-  if (sameCell(from, to)) return from;
-  const key = (c: Cell) => `${c.x},${c.y}`;
-  const walkable = (c: Cell) => tileAt(world, c) === 'floor' && !closedGateAt(world, state, c);
-  // Search back from the robot, so the first tile found beside the chaser is its best step.
-  const dist = new Map<string, number>([[key(to), 0]]);
-  const queue: Cell[] = [to];
-  for (let c = queue.shift(); c; c = queue.shift()) {
-    for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]] as const) {
-      const n = { x: c.x + dx, y: c.y + dy };
-      if (dist.has(key(n)) || !walkable(n)) continue;
-      dist.set(key(n), dist.get(key(c))! + 1);
-      queue.push(n);
-    }
-  }
-  const here = dist.get(key(from));
-  if (here === undefined) return from;
-  for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]] as const) {
-    const n = { x: from.x + dx, y: from.y + dy };
-    if (dist.get(key(n)) === here - 1) return n;
-  }
-  return from;
+/**
+ * One move of a beetle the program moves, by a ready-made way of moving
+ * from the library. Its luck and its wander are drawn from the run's
+ * random generator, so the same seed moves it the same way. Returns the
+ * state unchanged when there is no such beetle. Pure.
+ */
+export function steerMover(world: WorldDefinition, state: SimState, id: string, how: SteerHow, skill: SteerSkill): SimState {
+  const mover = moversOf(world).find((m) => m.id === id && m.steered);
+  if (!mover) return state;
+  const canWalk = (c: Cell) => tileAt(world, c) === 'floor' && !closedGateAt(world, state, c) && !moversOf(world).some((m) => m !== mover && m.kind === 'beetle' && sameCell(moverPlace(m, state), c));
+  const luck = nextRandom(state.rng ?? 0);
+  const roll = nextRandom(luck.state);
+  const to = steer(how, skill, moverPlace(mover, state), state.robot, canWalk, luck.value, roll.value);
+  return { ...state, rng: roll.state, chasers: { ...state.chasers, [id]: { x: to.x, y: to.y } } };
 }
 
 export type MoverStep = 'up' | 'down' | 'left' | 'right' | 'stay';
@@ -189,7 +182,7 @@ function initialWorld(world: WorldDefinition): SimState {
   return {
     ...(world.team && { team: world.team.map((t) => ({ ...t.robot })), active: 0 }),
     robot: { ...(world.team?.[0]?.robot ?? world.robot) },
-    ...(moversOf(world).some((m) => m.chase) && { chasers: Object.fromEntries(moversOf(world).filter((m) => m.chase).map((m) => [m.id, { ...m.path[0]! }])) }),
+    ...(moversOf(world).some((m) => m.steered) && { chasers: Object.fromEntries(moversOf(world).filter((m) => m.steered).map((m) => [m.id, { ...m.path[0]! }])) }),
     collected: [],
     open: gatesOf(world)
       .filter((g) => g.open)
@@ -245,10 +238,7 @@ export function advance(world: WorldDefinition, state: SimState): TickResult {
     const to = moverCell(ride, next.tick);
     robot = { ...robot, x: to.x, y: to.y };
   }
-  // Chasers step after the logs have carried the robot, toward where it now is.
-  const chasing = moversOf(world).filter((m) => m.chase && next.tick % m.chase === 0);
-  const chasers = chasing.length > 0 ? { ...state.chasers, ...Object.fromEntries(chasing.map((m) => [m.id, chaseStep(world, state, moverPlace(m, state), robot)])) } : state.chasers;
-  const after: SimState = { ...next, robot, ...(chasers && { chasers }) };
+  const after: SimState = { ...next, robot };
   if (tileAt(world, robot) === 'gap' && !moverAt(world, after, robot, 'log')) return { kind: 'hazard', state: after, reason: 'gap', at: { x: robot.x, y: robot.y } };
   if (moverAt(world, after, robot, 'beetle')) return { kind: 'hazard', state: after, reason: 'beetle', at: { x: robot.x, y: robot.y } };
   return { kind: 'ok', state: after, ...(ride && { rode: true }) };
@@ -304,7 +294,7 @@ export function evaluate(world: WorldDefinition, state: SimState, condition: Con
   const { robot } = state;
   const target = ahead(robot, robot.facing);
   const test = parseSlotTest(condition);
-  if (test) return slotMatches(state, test.slot, test.value);
+  if (test) return slotMatches(state, test.slot, test.value, test.op, test.other);
   switch (condition as SenseId) {
     case 'pathAhead':
       return passable(world, state, target);
@@ -326,10 +316,17 @@ export function evaluate(world: WorldDefinition, state: SimState, condition: Con
 }
 
 /** The value a memory test compares with: 3, yes, E, or the robot's tile for "here". */
-function slotMatches(state: SimState, path: string, written: string): boolean {
+function slotMatches(state: SimState, path: string, written: string, op: Comparison = '=', other?: string): boolean {
   const { slot, field } = splitSlotPath(path);
   const whole = state.memory?.[slot];
   const value = field === undefined ? whole : recordField(whole, field);
+  // Compared with what another slot holds, or with a written number: is, is less than, is more than.
+  if (other !== undefined || op !== '=') {
+    const against = other !== undefined ? state.memory?.[other] : Number(written);
+    if (op === '=') return JSON.stringify(value) === JSON.stringify(against);
+    if (typeof value !== 'number' || typeof against !== 'number') return false;
+    return op === '<' ? value < against : value > against;
+  }
   if (written === 'here') return isPosition(value) && value.x === state.robot.x && value.y === state.robot.y;
   if (written === 'yes' || written === 'no') return value === (written === 'yes');
   if (/^\d+$/.test(written)) return value === Number(written);
@@ -400,20 +397,9 @@ export function shiftPlace(value: Value | undefined, dir: Facing): Value | undef
  * 0 when no piece has. A piece is any number but 0, which is an empty tile.
  */
 export function lineWinner(grid: Value | undefined, count: number): number {
+  // The library's lineOf does the looking; this only makes sure it is handed a grid of numbers.
   if (!Array.isArray(grid)) return 0;
-  const at = (x: number, y: number): Value | undefined => (Array.isArray(grid[y]) ? (grid[y] as Value[])[x] : undefined);
-  for (let y = 0; y < grid.length; y++) {
-    for (let x = 0; x < (Array.isArray(grid[y]) ? (grid[y] as Value[]).length : 0); x++) {
-      const piece = at(x, y);
-      if (typeof piece !== 'number' || piece === 0) continue;
-      for (const [dx, dy] of [[1, 0], [0, 1], [1, 1], [1, -1]] as const) {
-        let run = 1;
-        while (run < count && at(x + dx * run, y + dy * run) === piece) run++;
-        if (run === count) return piece;
-      }
-    }
-  }
-  return 0;
+  return lineOf(grid.map((row) => (Array.isArray(row) ? row.map((v) => (typeof v === 'number' ? v : 0)) : [])), count);
 }
 
 /** One field of a record, or undefined when the value is not a record with that field. */
@@ -428,6 +414,11 @@ export function readSource(world: WorldDefinition, state: SimState, source: Sour
   if (field) return recordField(state.memory?.[field.record], field.field) ?? false;
   const line = parseLine(source);
   if (line) return lineWinner(state.memory?.[line.grid], line.count);
+  const tally = parseCount(source);
+  if (tally) {
+    const grid = state.memory?.[tally.grid];
+    return Array.isArray(grid) ? grid.flat().filter((v) => v === tally.value).length : 0;
+  }
   // A whole record is copied, so the list it goes into keeps its own.
   const whole = parseWhole(source);
   if (whole) return structuredClone(state.memory?.[whole] ?? {});
