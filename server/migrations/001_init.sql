@@ -57,7 +57,8 @@ create index devices_parent on devices (parent_id);
 create table device_pairings (
   code text primary key,
   pending_token_hash text not null unique,
-  device_id uuid references devices (id) on delete cascade,
+  -- What the device calls itself, offered to the grown-up as its name.
+  name text,
   expires_at timestamptz not null,
   created_at timestamptz not null default now()
 );

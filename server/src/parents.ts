@@ -5,8 +5,9 @@
  * code, which is spent when their account is made.
  */
 import { Hono, type Context as Request } from 'hono';
-import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
+import { deleteCookie, getCookie } from 'hono/cookie';
 import { Refusal, type Context } from './context';
+import { readJson, setSecret } from './http';
 import { cleanCode, hashToken, randomToken } from './tokens';
 
 export const PARENT_COOKIE = 'wb_parent';
@@ -31,12 +32,6 @@ function cleanEmail(value: unknown): string {
   return email;
 }
 
-export async function readJson(c: Request): Promise<Record<string, unknown>> {
-  const body: unknown = await c.req.json().catch(() => undefined);
-  if (typeof body !== 'object' || body === null || Array.isArray(body)) throw new Refusal(400, 'body');
-  return body as Record<string, unknown>;
-}
-
 /** The signed-in parent, or a 401. */
 export async function requireParent(ctx: Context, c: Request): Promise<Parent> {
   const token = getCookie(c, PARENT_COOKIE);
@@ -52,7 +47,6 @@ export async function requireParent(ctx: Context, c: Request): Promise<Parent> {
 export function parentRoutes(ctx: Context): Hono {
   const { sql } = ctx;
   const app = new Hono();
-  const secure = ctx.publicUrl.startsWith('https://');
 
   /**
    * Ask for a sign-in link. With an invite code this is a sign-up, and a bad
@@ -125,13 +119,31 @@ export function parentRoutes(ctx: Context): Hono {
       return link.email;
     });
 
-    setCookie(c, PARENT_COOKIE, session, { httpOnly: true, secure, sameSite: 'Lax', path: '/', maxAge: SESSION_DAYS * 24 * 60 * 60 });
+    setSecret(ctx, c, PARENT_COOKIE, session, SESSION_DAYS);
     return c.json({ email });
   });
 
   app.get('/me', async (c) => {
     const parent = await requireParent(ctx, c);
     return c.json({ email: parent.email, notifyByEmail: parent.notifyByEmail, siblingSharing: parent.siblingSharing });
+  });
+
+  app.patch('/me', async (c) => {
+    const parent = await requireParent(ctx, c);
+    const body = await readJson(c);
+    const notify = typeof body.notifyByEmail === 'boolean' ? body.notifyByEmail : parent.notifyByEmail;
+    const sharing = typeof body.siblingSharing === 'boolean' ? body.siblingSharing : parent.siblingSharing;
+    await sql`update parents set notify_by_email = ${notify}, sibling_sharing = ${sharing} where id = ${parent.id}`;
+    return c.json({ email: parent.email, notifyByEmail: notify, siblingSharing: sharing });
+  });
+
+  /** The whole account: the parent, every child, everything they made, every device. Gone at once. */
+  app.delete('/me', async (c) => {
+    const parent = await requireParent(ctx, c);
+    await sql`delete from login_tokens where email = ${parent.email}`;
+    await sql`delete from parents where id = ${parent.id}`;
+    deleteCookie(c, PARENT_COOKIE, { path: '/' });
+    return c.json({ ok: true });
   });
 
   app.post('/signout', async (c) => {

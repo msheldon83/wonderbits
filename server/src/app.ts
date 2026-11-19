@@ -10,7 +10,10 @@ import { HTTPException } from 'hono/http-exception';
 import { Refusal, type Context } from './context';
 import type { Sql } from './db';
 import { consoleMailer, type Mailer } from './mail';
+import { familyRoutes } from './family';
 import { parentRoutes } from './parents';
+import { shareRoutes } from './shares';
+import { syncRoutes } from './sync';
 
 export interface AppOptions {
   sql: Sql;
@@ -25,7 +28,9 @@ export function createApp({ sql, staticDir, mailer = consoleMailer, publicUrl = 
   const app = new Hono();
 
   // A form on another site cannot post here with a parent's cookie.
-  app.use('/api/*', csrf());
+  // Behind a proxy the server sees http while the browser says https, so the public address counts as home too.
+  const home = new URL(publicUrl).origin;
+  app.use('/api/*', csrf({ origin: (origin, c) => origin === home || origin === new URL(c.req.url).origin }));
   // Nothing under /api is the same for two people, so nothing may be kept by a cache.
   app.use('/api/*', async (c, next) => {
     await next();
@@ -42,6 +47,9 @@ export function createApp({ sql, staticDir, mailer = consoleMailer, publicUrl = 
   });
 
   app.route('/api/parent', parentRoutes(ctx));
+  app.route('/api/sync', syncRoutes(ctx));
+  app.route('/api', familyRoutes(ctx));
+  app.route('/api', shareRoutes(ctx));
 
   // An address under /api that nothing answers is a mistake, never a page of the game.
   app.all('/api/*', (c) => c.json({ error: 'not-found' }, 404));
