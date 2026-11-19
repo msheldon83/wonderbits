@@ -49,8 +49,38 @@ export function moverCell(mover: Mover, tick: number): Cell {
 }
 
 /** The mover of a kind on a cell right now, if any. */
+/** Where a mover is now: on its round by the tick, or, for a chaser, wherever the chase has taken it. */
+export function moverPlace(mover: Mover, state: Pick<SimState, 'tick' | 'chasers'>): Cell {
+  return mover.chase ? (state.chasers?.[mover.id] ?? mover.path[0]!) : moverCell(mover, state.tick);
+}
+
 export function moverAt(world: WorldDefinition, state: SimState, cell: Cell, kind: Mover['kind']): Mover | undefined {
-  return moversOf(world).find((m) => m.kind === kind && sameCell(moverCell(m, state.tick), cell));
+  return moversOf(world).find((m) => m.kind === kind && sameCell(moverPlace(m, state), cell));
+}
+
+/** A chaser's next tile: the first step of the shortest way to the robot over floor and through open gates, or where it stands when there is no way. */
+function chaseStep(world: WorldDefinition, state: SimState, from: Cell, to: Cell): Cell {
+  if (sameCell(from, to)) return from;
+  const key = (c: Cell) => `${c.x},${c.y}`;
+  const walkable = (c: Cell) => tileAt(world, c) === 'floor' && !closedGateAt(world, state, c);
+  // Search back from the robot, so the first tile found beside the chaser is its best step.
+  const dist = new Map<string, number>([[key(to), 0]]);
+  const queue: Cell[] = [to];
+  for (let c = queue.shift(); c; c = queue.shift()) {
+    for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]] as const) {
+      const n = { x: c.x + dx, y: c.y + dy };
+      if (dist.has(key(n)) || !walkable(n)) continue;
+      dist.set(key(n), dist.get(key(c))! + 1);
+      queue.push(n);
+    }
+  }
+  const here = dist.get(key(from));
+  if (here === undefined) return from;
+  for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]] as const) {
+    const n = { x: from.x + dx, y: from.y + dy };
+    if (dist.get(key(n)) === here - 1) return n;
+  }
+  return from;
 }
 
 export type MoverStep = 'up' | 'down' | 'left' | 'right' | 'stay';
@@ -159,6 +189,7 @@ function initialWorld(world: WorldDefinition): SimState {
   return {
     ...(world.team && { team: world.team.map((t) => ({ ...t.robot })), active: 0 }),
     robot: { ...(world.team?.[0]?.robot ?? world.robot) },
+    ...(moversOf(world).some((m) => m.chase) && { chasers: Object.fromEntries(moversOf(world).filter((m) => m.chase).map((m) => [m.id, { ...m.path[0]! }])) }),
     collected: [],
     open: gatesOf(world)
       .filter((g) => g.open)
@@ -174,7 +205,7 @@ function initialWorld(world: WorldDefinition): SimState {
  * they were.
  */
 export function stateKey(s: SimState, worldPeriod = 1): string {
-  return `${s.robot.x},${s.robot.y},${s.robot.facing}|${[...s.collected].sort().join(';')}|${s.open.join(';')}|${s.tick % worldPeriod}|${s.memory ? JSON.stringify(s.memory) : ''}|${s.rng ?? ''}|${s.day ?? ''}|${s.active ?? ''}:${(s.team ?? []).map((r) => `${r.x},${r.y}`).join(';')}`;
+  return `${s.robot.x},${s.robot.y},${s.robot.facing}|${[...s.collected].sort().join(';')}|${s.open.join(';')}|${s.tick % worldPeriod}|${s.memory ? JSON.stringify(s.memory) : ''}|${s.rng ?? ''}|${s.day ?? ''}|${s.active ?? ''}:${(s.team ?? []).map((r) => `${r.x},${r.y}`).join(';')}|${s.chasers ? JSON.stringify(s.chasers) : ''}`;
 }
 
 /** A board where time passes: something moves, or the program has an every-tick card. */
@@ -214,7 +245,10 @@ export function advance(world: WorldDefinition, state: SimState): TickResult {
     const to = moverCell(ride, next.tick);
     robot = { ...robot, x: to.x, y: to.y };
   }
-  const after: SimState = { ...next, robot };
+  // Chasers step after the logs have carried the robot, toward where it now is.
+  const chasing = moversOf(world).filter((m) => m.chase && next.tick % m.chase === 0);
+  const chasers = chasing.length > 0 ? { ...state.chasers, ...Object.fromEntries(chasing.map((m) => [m.id, chaseStep(world, state, moverPlace(m, state), robot)])) } : state.chasers;
+  const after: SimState = { ...next, robot, ...(chasers && { chasers }) };
   if (tileAt(world, robot) === 'gap' && !moverAt(world, after, robot, 'log')) return { kind: 'hazard', state: after, reason: 'gap', at: { x: robot.x, y: robot.y } };
   if (moverAt(world, after, robot, 'beetle')) return { kind: 'hazard', state: after, reason: 'beetle', at: { x: robot.x, y: robot.y } };
   return { kind: 'ok', state: after, ...(ride && { rode: true }) };

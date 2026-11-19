@@ -47,8 +47,14 @@ export interface Plate extends Cell {
 export interface Mover {
   id: string;
   kind: 'log' | 'beetle';
-  /** Where it is on tick 0, 1, 2 and so on, then round again. */
+  /** Where it is on tick 0, 1, 2 and so on, then round again. A chaser's path is only where it starts. */
   path: Cell[];
+  /**
+   * A beetle that chases: every so many ticks it takes one step along the
+   * shortest way to the robot, round rocks and water. It has no round of
+   * its own; where it is depends on where the robot has been.
+   */
+  chase?: number;
 }
 
 /**
@@ -108,6 +114,8 @@ export interface SimState {
   collected: string[];
   /** Ids of the gates open right now, sorted. */
   open: string[];
+  /** Where each chasing beetle is now, by id. Absent on boards without one. */
+  chasers?: Record<string, Cell>;
   /** Ticks gone by. Only boards with movers or an every-tick card count them. */
   tick: number;
   /** The robot's memory, slot by slot. Absent when the program remembers nothing. */

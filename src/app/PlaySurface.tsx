@@ -195,7 +195,8 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
   const [hintsUsed, setHintsUsed] = useState(0);
   const [hint, setHint] = useState<HintEffect | null>(null);
   const [completion, setCompletion] = useState(false);
-  const motion = useMotion(1, settings.reducedMotion);
+  // A lesson plays at a pace to be followed card by card. A game is played, not studied: its cards run quickly, and a board game's at once.
+  const motion = useMotion(liveMode ? (level.hideRobot ? 40 : 2.5) : 1, settings.reducedMotion);
 
   const controller = useRef<BoardController | null>(null);
   const sequencer = useRef<Sequencer | null>(null);
@@ -246,6 +247,8 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
   const shufflesLeft = useRef<number[]>([]);
 
   const onControllers = useCallback((cs: BoardController[] | null) => {
+    // The board is going, or being replaced: whatever was still playing on it stops with it.
+    sequencer.current?.stop();
     controller.current = cs?.[0] ?? null;
     sequencer.current = controller.current
       ? new Sequencer(controller.current, {
@@ -272,8 +275,14 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
     liveRun.current = null;
     setPlayingLive(false);
   }, []);
-  // Leaving the surface ends a game in play.
-  useEffect(() => endLive, [endLive]);
+  // Leaving the surface ends a game in play, and nothing it still sends is drawn.
+  useEffect(
+    () => () => {
+      runToken.current++;
+      endLive();
+    },
+    [endLive],
+  );
 
   const reset = useCallback(() => {
     runToken.current++;
@@ -346,7 +355,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
     /** Events are drawn one after another, in the order they came. */
     let drawn: Promise<void> = Promise.resolve();
     const draw = () => {
-      drawn = drawn.then(() => seq.play()).then(() => {
+      drawn = drawn.then(() => (token === runToken.current ? seq.play() : undefined)).then(() => {
         if (token === runToken.current) setPosition(seq.position);
       });
     };
@@ -650,12 +659,14 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
   else if (phase === 'running') message = { tone: 'info', text: worlds.length > 1 && !random ? `Running shuffle ${shuffle + 1} of ${worlds.length}…` : level.days ? `Running day ${shownState?.day ?? 1} of ${level.days}…` : world.team ? `Running robot ${(shownState?.active ?? 0) + 1} of ${world.team.length}…` : 'Running…' };
   else if (phase === 'paused') message = { tone: 'info', text: `Paused after step ${position}. Step plays one more. Run keeps going.` };
   else if (outcome) {
-    const base =
+    const lesson =
       outcome.status === 'incomplete' && countNodes(program) === 0
         ? { tone: 'problem' as const, text: 'Your program is empty. Tap an instruction to add a step.' }
         : outcome.status === 'success' && !level.objective.reachGoal
           ? { tone: 'success' as const, text: 'You did it!' }
           : outcomeMessage(outcome, errorNode ? stepNumber(program, errorNode) : null, shortfall);
+    // In a game a beetle is not a step to fix: it caught the robot, and the game is over.
+    const base = liveMode && outcome.status === 'blocked' && outcome.reason === 'beetle' ? { tone: 'problem' as const, text: 'The beetle caught the robot. Press Play to try again.' } : lesson;
     const guess = !guessedRight ? '' : asksTile && askedFields.length > 0 ? 'Your flag and your memory card were right! ' : asksTile ? 'Your flag was in the right spot! ' : 'Your memory card was right! ';
     message = { tone: base.tone, text: guess + base.text };
     if (worlds.length > 1 && !random) {
@@ -721,7 +732,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
       <div className="stage-col">
         <Board
           world={world}
-          coordinates={coordinates}
+          coordinates={coordinates && !level.playOnly}
           theme={theme}
           motion={motion}
           label={describeBoard(world)}
@@ -803,7 +814,8 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
           )}
           {toolbarExtra}
         </div>
-        <TickRules world={world} state={shownState ?? initialState(world, program.memory)} event={activeEvent} />
+        {/* A game is played, not studied: the table of what each mover does next is for the one building it. */}
+        {!level.playOnly && <TickRules world={world} state={shownState ?? initialState(world, program.memory)} event={activeEvent} />}
         {liveMode && keyed && (
           <div className={`dpad ${playingLive ? 'is-live' : ''}`} role="group" aria-label="Arrow keys">
             {(['up', 'left', 'down', 'right'] as const).map((k) => (

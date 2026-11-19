@@ -4456,3 +4456,8 @@ button.shelf-card {
   font-weight: 800;
   color: var(--purple-deep) !important;
 }
+
+/* A game being played gets the board big. */
+.app-main.is-play-only .board-viewport {
+  min-height: min(52dvh, 560px);
+}

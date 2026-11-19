@@ -362,7 +362,13 @@ class Reader {
     const kind = o.kind === 'log' || o.kind === 'beetle' ? o.kind : (this.fail(`${path}.kind`, 'expected "log" or "beetle"'), 'log');
     const cells = this.list(o.path, `${path}.path`, (c, at) => this.cell(c, at));
     if (cells.length === 0) this.fail(`${path}.path`, 'expected at least one cell');
-    return { id: this.str(o.id, `${path}.id`), kind, path: cells };
+    // A beetle may chase the robot instead of walking a round: one step every so many ticks.
+    let chase: number | undefined;
+    if (o.chase !== undefined) {
+      if (kind !== 'beetle') this.fail(`${path}.chase`, 'only a beetle can chase');
+      chase = this.int(o.chase, `${path}.chase`, 1);
+    }
+    return { id: this.str(o.id, `${path}.id`), kind, path: cells, ...(chase !== undefined && { chase }) };
   }
   /**
    * Shuffled versions of a board. Each lists only what changes (rows, the

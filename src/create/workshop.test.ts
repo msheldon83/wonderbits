@@ -169,3 +169,58 @@ describe('the starter games', async () => {
     expect(() => parseStarter({ ...good, clock: 3 }, 'x')).toThrow(/clock/);
   });
 });
+
+describe('a beetle that chases', async () => {
+  const { advance, initialState, moverPlace } = await import('../sim/world');
+  const { setChase, canExtend } = await import('./worldOps');
+  const { applyStroke, applyTool } = await import('./worldOps');
+  const { parseBoardRules: parse } = await import('../lessons/parse');
+  const { worldToJson } = await import('./parse');
+  const at = (x: number, y: number) => ({ x, y });
+  /** A 5 by 5 island, the robot at the left of the middle row, a beetle in the far corner that chases. */
+  const world = setChase(applyStroke(blankWorld(), 'beetle', at(4, 0), true), 'beetle1', true);
+  const beetle = world.movers![0]!;
+
+  it('is a beetle with no round, that starts where it stood', () => {
+    expect(beetle).toEqual({ id: 'beetle1', kind: 'beetle', path: [at(4, 0)], chase: 2 });
+    expect(initialState(world).chasers).toEqual({ beetle1: at(4, 0) });
+    expect(canExtend(world, beetle, at(3, 0))).toBe(false);
+    expect(setChase(world, 'beetle1', false).movers![0]).toEqual({ id: 'beetle1', kind: 'beetle', path: [at(4, 0)] });
+    expect(setChase(world, 'nobody', true)).toBe(world);
+    expect(initialState(blankWorld())).not.toHaveProperty('chasers');
+  });
+
+  it('steps toward the robot every other tick, and catches it', () => {
+    let state = initialState(world);
+    const seen: string[] = [];
+    let caught = false;
+    for (let i = 0; i < 20 && !caught; i++) {
+      const t = advance(world, state);
+      state = t.state;
+      seen.push(`${moverPlace(beetle, state).x},${moverPlace(beetle, state).y}`);
+      caught = t.kind === 'hazard';
+    }
+    // It stands on odd ticks and steps on even ones: six steps from (4,0) to the robot at (0,2).
+    expect(seen.slice(0, 4)).toEqual(['4,0', '4,1', '4,1', '4,2']);
+    expect(caught).toBe(true);
+    expect(state.tick).toBe(12);
+  });
+
+  it('goes round a rock, and stands when there is no way', () => {
+    const walled = [at(3, 0), at(3, 1), at(4, 1)].reduce((w, c) => applyTool(w, 'wall', c), world);
+    let state = initialState(walled);
+    for (let i = 0; i < 6; i++) state = advance(walled, state).state;
+    expect(state.chasers).toEqual({ beetle1: at(4, 0) });
+    const gap = applyTool(walled, 'floor', at(3, 0));
+    state = initialState(gap);
+    for (let i = 0; i < 2; i++) state = advance(gap, state).state;
+    expect(state.chasers).toEqual({ beetle1: at(3, 0) });
+  });
+
+  it('is read from a file, and only a beetle can chase', () => {
+    const json = { world: worldToJson(world), objective: { reachGoal: true, collectAll: false }, programming: { allowedCommands: ['forward'] } };
+    expect(parse(JSON.parse(JSON.stringify(json)), 'chase').world.movers![0]!.chase).toBe(2);
+    const log = { ...json, world: { ...json.world, movers: [{ id: 'log1', kind: 'log', path: [at(0, 0)], chase: 2 }] } };
+    expect(() => parse(log, 'bad')).toThrow(/only a beetle can chase/);
+  });
+});

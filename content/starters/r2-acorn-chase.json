@@ -1,0 +1,216 @@
+{
+  "schemaVersion": 1,
+  "id": "acorn-chase",
+  "title": "Acorn chase",
+  "family": "real-time",
+  "blurb": "Collect every acorn while a beetle chases you round the rocks.",
+  "how": "Use the arrow keys to pick up every acorn. The beetle is after you: keep the rocks between you and it.",
+  "world": {
+    "rows": [
+      ".......",
+      ".#.#.#.",
+      ".......",
+      ".#.#.#.",
+      "......."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 4,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 3,
+      "y": 2
+    },
+    "collectibles": [
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 3,
+        "y": 0
+      },
+      {
+        "x": 6,
+        "y": 4
+      },
+      {
+        "x": 2,
+        "y": 2
+      },
+      {
+        "x": 4,
+        "y": 2
+      },
+      {
+        "x": 3,
+        "y": 4
+      }
+    ],
+    "movers": [
+      {
+        "id": "beetle1",
+        "kind": "beetle",
+        "path": [
+          {
+            "x": 6,
+            "y": 0
+          }
+        ],
+        "chase": 2
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": false,
+    "collectAll": true
+  },
+  "clock": 2,
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "wait",
+      "repeat",
+      "if",
+      "ifElse",
+      "until",
+      "set",
+      "change",
+      "face",
+      "win",
+      "lose"
+    ],
+    "starterProgram": []
+  },
+  "program": [
+    {
+      "remember": "score",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "plays",
+      "kind": "number",
+      "start": 0,
+      "keep": true
+    },
+    {
+      "remember": "north",
+      "kind": "direction",
+      "start": "N"
+    },
+    {
+      "remember": "east",
+      "kind": "direction",
+      "start": "E"
+    },
+    {
+      "remember": "south",
+      "kind": "direction",
+      "start": "S"
+    },
+    {
+      "remember": "west",
+      "kind": "direction",
+      "start": "W"
+    },
+    {
+      "on": "key:up",
+      "do": [
+        {
+          "face": "north"
+        },
+        "forward"
+      ]
+    },
+    {
+      "on": "key:right",
+      "do": [
+        {
+          "face": "east"
+        },
+        "forward"
+      ]
+    },
+    {
+      "on": "key:down",
+      "do": [
+        {
+          "face": "south"
+        },
+        "forward"
+      ]
+    },
+    {
+      "on": "key:left",
+      "do": [
+        {
+          "face": "west"
+        },
+        "forward"
+      ]
+    },
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "change": "score",
+          "by": 1
+        }
+      ]
+    },
+    {
+      "change": "plays",
+      "by": 1
+    }
+  ],
+  "tries": [
+    "Make each acorn worth 2: change the Add card in When an acorn is picked up.",
+    "On the Board step, add more acorns, or move the rocks to make better hiding places.",
+    "Add a second beetle on the Board step, and tick Chases the robot.",
+    "Make it a race: set the clock to Fast, under Time and the robot.",
+    "End the game early: in When an acorn is picked up, add an If that wins when score reaches a number you choose. Then set the goal to The program decides."
+  ],
+  "replay": {
+    "inputs": [
+      "right",
+      "right",
+      ".",
+      "right",
+      ".",
+      "right",
+      ".",
+      "right",
+      ".",
+      "right",
+      ".",
+      "left",
+      ".",
+      "left",
+      ".",
+      "up",
+      ".",
+      "up",
+      ".",
+      "left",
+      ".",
+      "left",
+      ".",
+      "up",
+      ".",
+      "up",
+      ".",
+      "right",
+      ".",
+      "left",
+      ".",
+      "left",
+      ".",
+      "left"
+    ],
+    "seed": 1
+  }
+}

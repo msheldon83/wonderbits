@@ -4,6 +4,75 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Build step 13f: the Workshop and its starter games (2026-11-19)
+
+A child can open a small whole game, play it, and change how it works.
+
+- **A game is a kind of creation.** Its program is its maker's, and its
+  player only plays. Preview and Made here show a game with the board, its
+  controls and the memory card, and no program beside it.
+- **Four starter games**, content under `content/starters`:
+  - **Crossing** (real-time): cross a road of beetles and a river of
+    logs with the arrow keys.
+  - **Acorn chase** (real-time): collect every acorn while a beetle
+    chases the robot round the rocks, with a score.
+  - **Noughts and crosses** (turn-based): two players tap in turn; three
+    in a row wins; a full board ends it.
+  - **Minesweeper** (turn-based): four mines hidden at random; a number
+    says how many touch a tile; uncover the rest to win.
+- **Every starter carries a recorded play that wins it**, and CI plays it
+  back. The same recording makes a new game "Ready to play" the moment it
+  is opened: the critic plays it back.
+- **The Create screen has the Workshop's shelf.** A starter becomes the
+  child's own game, opens on Preview so it is played first, and lists
+  Things to try in Mechanics: changes of rising size, as suggestions.
+- **What the engine gained for games:**
+  - **Win and Game over cards.** A run can end lost. An objective may be
+    `byProgram`: nothing on the board wins it, only a Win card.
+  - **A grid drawn on the board's tiles**, as pieces (a cross, a nought)
+    or as numbers (a covered tile, an uncovered one, a count).
+  - **A reading for a line**: `line:<grid>@<n>` is the piece with n in a
+    row on a grid, any way, or 0. It is the whole win check of a board
+    game, as one Set card.
+  - **A beetle that chases.** Every other tick it takes one step along
+    the shortest way to the robot, round rocks and through open gates.
+    "Chases the robot" is a tick box on a beetle in the Board step.
+  - **No robot.** A board game leaves the robot out of the picture.
+  - **A real backpack.** A game's kept memory is saved when a play ends,
+    won or lost, and is there for the next one, on the creation itself.
+    Crossing and Acorn chase count their plays this way.
+- **In Mechanics a game's middle column is The game**: the goal may be
+  "The program decides"; the cards are "Cards you build with", with the
+  grid cards and the two ending cards among them; there are no limits on
+  a player's hand, because a game's player has none.
+- **A game is drawn quickly.** A lesson plays at a pace to be followed
+  card by card; a live game's cards run two and a half times as fast, and
+  a board game's at once, so a tap shows straight away.
+- **Leaving a game in play stops it cleanly**: its run, its clock and
+  whatever the board was still drawing.
+
+### Deviations and choices
+
+- **The chaser's chase is built in, not built from cards.** The plan's
+  "other actors with a program" would need a second program running
+  beside the robot's. A beetle that chases gives Acorn chase its game;
+  how it chases cannot be changed, only whether and how many.
+- **Three in a row is a reading, not a function of cards.** The plan
+  proposed a `lineOfThree` function a child could open. Written in cards
+  it came to some 150 of them, which nobody would read. The plan's
+  fallback, a single sense, is what was built.
+- **Minesweeper does not open the empty tiles around an empty tile.**
+  Each tap uncovers one. Doing more is a loop over a list of places,
+  which the cards cannot yet say.
+- **The backpack cannot hold a best score.** There is no card that
+  compares two numbers, so a game cannot keep the larger. It can count:
+  plays, wins.
+- **Noughts and crosses says "You did it!" whoever wins.** The memory
+  card's `winner` says which: 1 for crosses, 2 for noughts.
+- **A child cannot make a grid from nothing yet.** A starter's grids can
+  be changed, marked and read; "+ New memory" does not offer one.
+- **Robots acting at once is still not built.** No starter needed it.
+
 ## Build step 13e, completed: tap input (2026-11-19)
 
 - **A tap on a tile is an input to a live run**, beside a key press and a
