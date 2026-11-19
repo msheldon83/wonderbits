@@ -226,3 +226,73 @@ describe('a live run behind the contract', () => {
     expect(out).toHaveLength(1);
   });
 });
+
+describe('a live puzzle in creation mode', async () => {
+  const { blankCreation } = await import('../create/blank');
+  const { critique, criticWords } = await import('../create/critic');
+  const { applyKit, KITS } = await import('../create/kits');
+  const { isLivePuzzle } = await import('../create/live');
+  const { creationToJson, parseCreation } = await import('../create/parse');
+  const { CreationStore } = await import('../create/store');
+  const { memoryStore } = await import('../progress/storage');
+  const { Sequencer } = await import('../render/sequencer');
+  const keys = KITS.find((k) => k.id === 'keys')!;
+  const base = blankCreation('Mine');
+  const made = { ...base, ...applyKit(base, keys) };
+  /** Up, up, up, up wins the empty island: the robot faces the flag. */
+  const win: LiveInput[] = [key('up'), key('up'), key('up'), key('up')];
+  const ask = (program: NodeSpec[], live: { clock: boolean; inputs?: LiveInput[]; seed?: number }) =>
+    critique({ world: made.world, objective: made.objective, rules: { allowedCommands: made.programming.allowedCommands, random: false }, program: ir(program), live, searchMillis: 100 });
+
+  it('is one with a clock or an arrow-key When card', () => {
+    expect(isLivePuzzle(base)).toBe(false);
+    expect(isLivePuzzle(made)).toBe(true);
+    expect(isLivePuzzle({ ...base, clock: 2 })).toBe(true);
+    expect(isLivePuzzle({ ...base, program: [{ on: 'tick', do: [] }] })).toBe(false);
+  });
+
+  it('is proved by playing back its maker\'s winning play', () => {
+    expect(ask(made.program, { clock: false, inputs: win, seed: 1 })).toEqual({ own: { fits: true, solves: true, steps: 3 }, flat: { kind: 'unknown' } });
+    // No play yet, or a play that no longer wins once the program changes: not solved.
+    expect(ask(made.program, { clock: false }).own.solves).toBe(false);
+    expect(ask([{ on: 'key:up', do: ['rotateCW'] }], { clock: false, inputs: win, seed: 1 }).own.solves).toBe(false);
+  });
+
+  it('has the critic speak of winning, not of the shortest way', () => {
+    const won = criticWords(ask(made.program, { clock: false, inputs: win, seed: 1 }), made.programming, undefined, true).map((l) => `${l.tone}: ${l.text}`);
+    expect(won[0]).toBe('good: You played it and won. Others can play it now.');
+    expect(won).toHaveLength(2);
+    expect(criticWords(ask(made.program, { clock: false }), made.programming, undefined, true)[0]!.text).toMatch(/^You have not won it yet/);
+  });
+
+  it('keeps its clock and its winning play through storage, and a new clock makes it a new puzzle', async () => {
+    const whole = { schemaVersion: 1 as const, id: 'c-1', createdAt: 1, updatedAt: 1, ...made, clock: 2, replay: { inputs: [...win, TICK], seed: 7 } };
+    expect(parseCreation(JSON.parse(JSON.stringify(creationToJson(whole))), 'live')).toEqual(whole);
+    expect(() => parseCreation({ ...creationToJson(whole), clock: 3 }, 'bad')).toThrow(/clock/);
+    expect(() => parseCreation({ ...creationToJson(whole), replay: { inputs: [{ kind: 'jump' }], seed: 1 } }, 'bad')).toThrow(/replay\.inputs\[0\]/);
+    const store = new CreationStore(memoryStore());
+    await store.load();
+    const c = store.add(made);
+    store.prove(c.id, made.program, 3);
+    expect(store.update(c.id, { replay: { inputs: win, seed: 1 } })?.status).toBe('proved');
+    expect(store.update(c.id, { clock: 4 })?.status).toBe('draft');
+  });
+
+  it('draws events as they come: the sequencer plays on into what is added', async () => {
+    const played: string[] = [];
+    const seq = new Sequencer({ playEvent: async (e) => void played.push(e.op), showState: () => {} });
+    const lived = play(made.program, made.world, win);
+    seq.load([], lived.trace[0]!.before);
+    await seq.play();
+    expect(seq.state).toBe('finished');
+    seq.extend(lived.trace.slice(0, 2));
+    expect(seq.state).toBe('paused');
+    await seq.play();
+    seq.extend([]);
+    expect(seq.state).toBe('finished');
+    seq.extend(lived.trace.slice(2));
+    await seq.play();
+    expect(played).toEqual(lived.trace.map((e) => e.op));
+    expect(seq.position).toBe(lived.trace.length);
+  });
+});

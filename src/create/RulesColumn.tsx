@@ -16,7 +16,9 @@ import { FUNCTION_NAME, RESERVED_NAMES, type CardId, type ItemKind, type MemoryS
 import type { ProgressStore } from '../progress/store';
 import type { Critique } from '../runtime/contract';
 import type { CreationStore } from './store';
-import type { Creation } from './types';
+import { CLOCKS, type Creation } from './types';
+
+const CLOCK_WORDS: Record<number, string> = { 1: 'Slow', 2: 'Steady', 4: 'Fast' };
 
 export const LIMIT_MAX = 40;
 export const DAYS_MAX = 5;
@@ -127,6 +129,9 @@ export function RulesColumn({ creation, universe, store, progress, program, edit
   const days = creation.days ?? 1;
   /** One day is the plain puzzle; more makes the backpack matter. */
   const setDays = (n: number) => void store.update(creation.id, { days: n <= 1 ? undefined : n } as Partial<Creation>);
+
+  /** No clock is the puzzle's own time; a clock makes it a live one. */
+  const setClock = (clock: number | undefined) => void store.update(creation.id, { clock } as Partial<Creation>);
 
   const toggleCard = (card: CardId) => {
     const on = programming.allowedCommands.includes(card);
@@ -403,7 +408,7 @@ export function RulesColumn({ creation, universe, store, progress, program, edit
 
         <div className="part">
           <span className="card-group-title">When cards</span>
-          <p className="rule-note">Cards that run by themselves when something happens: an acorn picked up, a tick, a plate stepped on.</p>
+          <p className="rule-note">Cards that run by themselves when something happens: an arrow key pressed, an acorn picked up, a tick, a plate stepped on. With a When card for an arrow key, the puzzle is played live with the keys.</p>
           {program.handlers.length > 0 && (
             <ul className="part-chips">
               {program.handlers.map((h) => (
@@ -501,6 +506,21 @@ export function RulesColumn({ creation, universe, store, progress, program, edit
           {stepper('Days', days, { off: days <= 1, say: 'One day fewer', go: () => setDays(days - 1) }, { off: days >= DAYS_MAX, say: 'One day more', go: () => setDays(days + 1) })}
         </div>
         {days > 1 && <p className="rule-note">The program runs once a day. Only memory kept in the backpack lasts overnight, and the last day must reach the goal.</p>}
+        <div className="card-limits">
+          <span className="card-group-title">The clock</span>
+          <p className="rule-note">Beetles and logs move, and Every tick cards run, either each time the robot does something, or by themselves while the player plays.</p>
+          <div className="choice-row" role="group" aria-label="The clock">
+            <button type="button" className={`btn btn-choice ${creation.clock === undefined ? 'is-on' : ''}`} aria-pressed={creation.clock === undefined} onClick={() => setClock(undefined)}>
+              With the robot
+            </button>
+            {CLOCKS.map((c) => (
+              <button key={c} type="button" className={`btn btn-choice ${creation.clock === c ? 'is-on' : ''}`} aria-pressed={creation.clock === c} onClick={() => setClock(c)}>
+                {CLOCK_WORDS[c]}
+              </button>
+            ))}
+          </div>
+          {creation.clock !== undefined && <p className="rule-note">The puzzle is played live: press Play, and the world keeps moving. Give the player When cards for the arrow keys, under Parts.</p>}
+        </div>
       </div>
     </section>
   );

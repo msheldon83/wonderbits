@@ -214,6 +214,8 @@ export interface CritiqueRequest {
   program: ProgramIR;
   input?: Key[];
   days?: number;
+  /** A live puzzle: whether it has a clock, and the maker's last winning play with its seed, if there is one. Played back, it is the maker's solution. */
+  live?: { clock: boolean; inputs?: LiveInput[]; seed?: number };
   /** How long the search for the shortest way may take; past it the critic says only what it knows. */
   searchMillis: number;
 }

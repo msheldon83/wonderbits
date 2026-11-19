@@ -26,6 +26,7 @@ import { useCritic } from './useCritic';
 import { fitsRules } from './critic';
 import { KitPicker, type PackInfo } from './KitPicker';
 import { goalWords } from './goal';
+import { KEY_EVENTS } from './live';
 import type { CreationStore } from './store';
 import { TITLE_MAX, type Creation } from './types';
 
@@ -41,6 +42,7 @@ export function playableOf(creation: Creation, intro: string): Playable {
     intro,
     ...(creation.inputScript && { inputScript: creation.inputScript }),
     ...(creation.days && { days: creation.days }),
+    ...(creation.clock !== undefined && { clock: creation.clock }),
   };
 }
 
@@ -75,14 +77,14 @@ export function CreationScreen({ creation, store, progress, runtime, settings, s
     () => playableOf(creation, 'Set the rules, then solve it yourself and press Run.'),
     // The board and rules, not the program or the name: saving those must not restart the surface.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [creation.id, creation.world, creation.objective, creation.programming],
+    [creation.id, creation.world, creation.objective, creation.programming, creation.clock],
   );
   // Preview: the puzzle as a player meets it. The maker's names, empty; the maker's cards and limit; the goal in words.
   const preview = useMemo(
     () => ({ ...playableOf(creation, `${goalWords(creation)} Tap an instruction to add it to your program.`), programming: { ...creation.programming, starterProgram: skeletonOf(creation.program) } }),
     // Taken when the step opens (the surface is keyed by it), so the maker's later edits do not restart a preview in play.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [creation.id, creation.world, creation.objective, creation.programming, creation.days, step],
+    [creation.id, creation.world, creation.objective, creation.programming, creation.days, creation.clock, step],
   );
   const critic = useCritic(creation, step === 'mechanics' ? runtime : null, store, progress);
   const record = useCallback((event: EventInput) => progress.log(event), [progress]);
@@ -128,14 +130,16 @@ export function CreationScreen({ creation, store, progress, runtime, settings, s
   useEffect(() => logBoard, [logBoard]);
   /** A run that solves it within the puzzle's own cards and limit is the maker's proof. */
   const onSolved = useCallback(
-    ({ program, steps }: Solved) => {
+    ({ program, steps, live }: Solved) => {
       progress.log({ levelId: creation.id, kind: 'creation-solved' });
       const now = store.get(creation.id);
       if (!now || !fitsRules(now.programming, program)) return;
+      // A live puzzle won with the maker's own program: the winning play is kept, to be played back when the puzzle changes.
+      if (live && step === 'mechanics') store.update(creation.id, { replay: live });
       store.prove(creation.id, programSpec(program), steps);
       progress.log({ levelId: creation.id, kind: 'puzzle-proved', steps });
     },
-    [progress, store, creation.id],
+    [progress, store, creation.id, step],
   );
 
   return (
@@ -203,7 +207,7 @@ export function CreationScreen({ creation, store, progress, runtime, settings, s
           programNote="Solve your own puzzle here, with the cards the player gets. It proves the puzzle can be solved. The player never sees it."
           lockNames
           middle={({ program, edit, locked }) => (
-            <RulesColumn creation={creation} universe={universe} store={store} progress={progress} program={program} edit={edit} locked={locked} events={eventsOf(creation.world)} critique={critic.critique} onAddSets={() => setPicking(true)} />
+            <RulesColumn creation={creation} universe={universe} store={store} progress={progress} program={program} edit={edit} locked={locked} events={[...eventsOf(creation.world), ...KEY_EVENTS]} critique={critic.critique} onAddSets={() => setPicking(true)} />
           )}
           belowControls={
             <section className={`critic-strip ${critic.thinking ? 'is-thinking' : ''}`} aria-label="What the critic says" aria-busy={critic.thinking}>

@@ -51,6 +51,17 @@ export class Sequencer {
     this.setStatus('idle');
   }
 
+  /**
+   * More events for the end of the trace, as a live run makes them. If
+   * playback had reached the end it is paused there, so Play goes on; if it
+   * is playing, it plays on into them.
+   */
+  extend(events: readonly TraceEvent[]): void {
+    if (events.length === 0) return;
+    this.trace = [...this.trace, ...events];
+    if (this.status === 'finished') this.setStatus('paused');
+  }
+
   /** Play from the cursor to the end. Resolves when playback stops for any reason. */
   async play(): Promise<void> {
     if (this.status === 'playing' || this.status === 'finished') return;

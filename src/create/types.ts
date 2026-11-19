@@ -6,6 +6,7 @@
  */
 import type { NodeSpec } from '../ir/spec';
 import type { Key } from '../ir/types';
+import type { LiveInput } from '../runtime/contract';
 import type { PuzzleDefinition } from '../lessons/types';
 import type { ObjectiveDefinition, WorldDefinition } from '../sim/types';
 
@@ -47,6 +48,10 @@ export interface Creation {
   programming: PuzzleDefinition['programming'];
   inputScript?: Key[];
   days?: number;
+  /** A clock, in ticks a second: the world moves by itself while the puzzle is played. Without it, the world moves when the robot does. */
+  clock?: number;
+  /** The maker's last winning play of a live puzzle: its keys and ticks, and its seed. Played back against the puzzle as it now is, it shows whether the puzzle is still won. */
+  replay?: { inputs: LiveInput[]; seed: number };
   /** The maker's own program, saved as they go. */
   program: NodeSpec[];
   proof?: Proof;
@@ -61,3 +66,7 @@ export const SIZE_MIN = 3;
 export const SIZE_MAX = 12;
 /** A new island's size until its maker says otherwise. */
 export const SIZE_DEFAULT = { width: 5, height: 5 } as const;
+/** How fast a creation's clock may tick, a second. */
+export const CLOCKS = [1, 2, 4] as const;
+/** As many inputs as a kept winning play may hold. */
+export const REPLAY_MAX = 5000;

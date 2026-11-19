@@ -209,6 +209,9 @@ and the parser, with tests in each, exactly as a concept pack did.
 
 ### 13e. The live run
 
+**Built 2026-11-19**, as far as live puzzles played with the arrow keys and
+a clock. Taps and robots acting at once wait for 13f (design-notes.md).
+
 The engine change the Workshop depends on. It is worth a spike before the
 rest of 13e to 13g is committed to.
 

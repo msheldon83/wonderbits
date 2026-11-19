@@ -14,7 +14,7 @@ import { randomIdFactory } from '../ir/ids';
 import { applyOp, type EditOp } from '../ir/ops';
 import { countNodes, programFromSpec, programSpec, stepNumber, usesRandom } from '../ir/program';
 import { skeletonOf, specAsksBird, type NodeSpec } from '../ir/spec';
-import { isBirdSource, isPosition, type NodeId, type ProgramIR, type Value } from '../ir/types';
+import { isBirdSource, isPosition, type Key, type NodeId, type ProgramIR, type Value } from '../ir/types';
 import { valueWords } from '../editor/commands';
 import { coveredValue, teamOnFlags, withinOutcomes } from '../sim/world';
 import type { ObjectiveDefinition } from '../sim/types';
@@ -27,7 +27,7 @@ import { Board } from '../render/Board';
 import type { BoardController } from '../render/controller';
 import { Sequencer } from '../render/sequencer';
 import { themeFor } from '../render/themes';
-import { DEFAULT_LIMITS, type RunOutcome, type RunResult, type Runtime, type TraceEvent } from '../runtime/contract';
+import { DEFAULT_LIMITS, type LiveHandle, type LiveInput, type RunOutcome, type RunResult, type Runtime, type TraceEvent } from '../runtime/contract';
 import type { Cell, Facing, SimState, WorldDefinition } from '../sim/types';
 import { gatesOf, initialState, memoryShortfall, moversOf } from '../sim/world';
 import { worldsOf } from '../lessons/shuffles';
@@ -60,12 +60,18 @@ function describeBoard(world: WorldDefinition): string {
 /** What can happen on a board that a When card may wait for: an acorn picked up, a tick, a plate stepped on. */
 export const eventsOf = (world: WorldDefinition): string[] => [...(world.collectibles.length > 0 ? ['acorn'] : []), 'tick', ...(world.plates ?? []).map((p) => `stepOn:${p.id}`)];
 
+const ARROW_KEYS: Record<string, Key> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+
 const isTypingTarget = (t: EventTarget | null) =>
   t instanceof HTMLElement && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
 
 /** What the surface plays: a level without the parts only a lesson has. */
 export type Playable = Pick<PuzzleDefinition, 'id' | 'themeId' | 'world' | 'objective' | 'programming'> &
-  Partial<Pick<PuzzleDefinition, 'intro' | 'prediction' | 'inputScript' | 'shuffles' | 'days'>> & { curriculum: { activity: PuzzleDefinition['curriculum']['activity'] } };
+  Partial<Pick<PuzzleDefinition, 'intro' | 'prediction' | 'inputScript' | 'shuffles' | 'days'>> & {
+    curriculum: { activity: PuzzleDefinition['curriculum']['activity'] };
+    /** A creation's clock, in ticks a second: the world moves by itself while the player plays. */
+    clock?: number;
+  };
 
 /** A run that met the objective, on every board and roll it had to. */
 export interface Solved {
@@ -73,6 +79,8 @@ export interface Solved {
   /** Cards in the program that solved it. */
   steps: number;
   program: ProgramIR;
+  /** A live run: the keys and ticks that won it, and its seed. Played back, they win it again. */
+  live?: { inputs: LiveInput[]; seed: number };
 }
 
 export interface PlaySurfaceProps {
@@ -144,6 +152,16 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
   // A creation offers random values on every Set card; it is a random level only once a card takes one.
   const random = useMemo(() => isRandomLevel(level) && (!level.programming.ownNames || level.objective.covers !== undefined || usesRandom(program)), [level, program]);
   const seedRef = useRef(newSeed());
+  /**
+   * A live puzzle: a creation with a clock, or with When cards for the arrow
+   * keys. Run starts a game the player drives, instead of a run that plays
+   * itself. A lesson's key script is not this: its keys are written down.
+   */
+  const liveMode = level.programming.ownNames === true && level.inputScript === undefined && (level.clock !== undefined || program.handlers.some((h) => h.event.startsWith('key:')));
+  const liveRun = useRef<LiveHandle | null>(null);
+  const clockTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  /** True while a live game is being played, for the arrows under the board. */
+  const [playingLive, setPlayingLive] = useState(false);
   const [failedRoll, setFailedRoll] = useState<number | null>(null);
   const [unseen, setUnseen] = useState<Value[] | null>(null);
   const [activeNode, setActiveNode] = useState<NodeId | null>(null);
@@ -232,8 +250,20 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
     }
   }, []);
 
+  /** End a live game where it stands: stop its clock and its run. */
+  const endLive = useCallback(() => {
+    if (clockTimer.current) clearInterval(clockTimer.current);
+    clockTimer.current = null;
+    liveRun.current?.stop();
+    liveRun.current = null;
+    setPlayingLive(false);
+  }, []);
+  // Leaving the surface ends a game in play.
+  useEffect(() => endLive, [endLive]);
+
   const reset = useCallback(() => {
     runToken.current++;
+    endLive();
     shufflesLeft.current = [];
     boardWaiter.current = null;
     celebration.current?.abort();
@@ -252,7 +282,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
     setShownState(null);
     setFailedShuffle(null);
     setUnseen(null);
-  }, []);
+  }, [endLive]);
 
   /** Another version of the board: the one the program failed on, if any, otherwise a different one at random. */
   const reshuffle = useCallback(() => {
@@ -286,9 +316,71 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
     return result;
   }, [runtime, program, level, world, random]);
 
+  /** Start a live game: main plays, then the arrow keys and the clock drive it until the goal is met or something ends it. */
+  const startLive = useCallback(() => {
+    const seq = sequencer.current;
+    if (!seq || !runtime || phaseRef.current === 'running') return;
+    const token = ++runToken.current;
+    celebration.current?.abort();
+    setPhase('running');
+    setOutcome(null);
+    setHint(null);
+    setCompletion(false);
+    record({ levelId: level.id, kind: 'run-started', steps: countNodes(program) });
+    const seed = newSeed();
+    seq.load([], initialState(world));
+    /** Events are drawn one after another, in the order they came. */
+    let drawn: Promise<void> = Promise.resolve();
+    const draw = () => {
+      drawn = drawn.then(() => seq.play()).then(() => {
+        if (token === runToken.current) setPosition(seq.position);
+      });
+    };
+    setPlayingLive(true);
+    liveRun.current = runtime.live(
+      { program, world, objective: level.objective, limits: DEFAULT_LIMITS, seed, clock: level.clock !== undefined },
+      {
+        event(e) {
+          if (token !== runToken.current) return;
+          seq.extend([e]);
+          draw();
+        },
+        done(result) {
+          void drawn.then(async () => {
+            if (token !== runToken.current) return;
+            endLive();
+            const end = result.final ?? initialState(world);
+            setOutcome(result.outcome);
+            setPhase('done');
+            setShortfall({ onGoal: teamOnFlags(world, end), missing: world.collectibles.length - end.collected.length, memory: memoryShortfall(level.objective, end) });
+            if (result.outcome.status === 'blocked') record({ levelId: level.id, kind: 'trace-halted', nodeId: result.outcome.nodeId, reason: result.outcome.reason });
+            if (result.outcome.status !== 'success') return;
+            setActiveNode(null);
+            setActiveEvent(null);
+            onSolved({ usedHints: hintsUsed > 0, steps: countNodes(program), program, live: { inputs: result.inputs, seed } });
+            const ac = new AbortController();
+            celebration.current = ac;
+            await controller.current?.celebrate(ac.signal);
+            if (token === runToken.current) setCompletion(true);
+          });
+        },
+      },
+    );
+    // The clock ticks only once the board has caught up, so the game never runs ahead of what the player sees.
+    if (level.clock !== undefined) {
+      clockTimer.current = setInterval(() => {
+        if (seq.state !== 'playing') liveRun.current?.send({ kind: 'tick' });
+      }, 1000 / level.clock);
+    }
+  }, [runtime, record, level, program, world, endLive, onSolved, hintsUsed]);
+
+  /** A key or an arrow under the board, while a live game is on. */
+  const pressKey = useCallback((key: Key) => liveRun.current?.send({ kind: 'key', key }), []);
+
   /** Run plays to the end; Step plays one event. Both continue from a pause. */
   const start = useCallback(
     async (mode: 'play' | 'step') => {
+      if (liveMode) return startLive();
       const seq = sequencer.current;
       if (!seq || !runtime || phase === 'running' || !predictionOk) return;
       const token = ++runToken.current;
@@ -427,7 +519,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
         setCompletion(true);
       }
     },
-    [runtime, phase, ensureResult, level, record, onSolved, program, prediction, predicting, predictionOk, hintsUsed, asking, world, worlds, shuffle, random, failedRoll, settings.reducedMotion],
+    [liveMode, startLive, runtime, phase, ensureResult, level, record, onSolved, program, prediction, predicting, predictionOk, hintsUsed, asking, world, worlds, shuffle, random, failedRoll, settings.reducedMotion],
   );
 
   const run = useCallback(() => void start('play'), [start]);
@@ -492,6 +584,13 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
     const onKey = (e: KeyboardEvent) => {
       if (e.defaultPrevented || isTypingTarget(e.target)) return;
       const mod = e.metaKey || e.ctrlKey;
+      // In a live game the arrow keys are the player's.
+      const arrow = ARROW_KEYS[e.key];
+      if (arrow && liveRun.current && !mod && !e.altKey) {
+        e.preventDefault();
+        pressKey(arrow);
+        return;
+      }
       if (mod && e.key === 'Enter') {
         e.preventDefault();
         run();
@@ -514,7 +613,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [run, reset, stepOnce, pause, onUndo, onRedo, openHint, completion]);
+  }, [run, reset, stepOnce, pause, onUndo, onRedo, openHint, completion, pressKey]);
 
   // ----- Message line -----
 
@@ -532,6 +631,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
   };
   let message: { tone: Tone | 'hint'; text: string };
   if (hint) message = { tone: 'hint', text: hint.text };
+  else if (phase === 'running' && liveMode) message = { tone: 'info', text: 'Playing. Use the arrow keys, or the arrows under the board. Reset stops the game.' };
   else if (phase === 'running') message = { tone: 'info', text: worlds.length > 1 && !random ? `Running shuffle ${shuffle + 1} of ${worlds.length}…` : level.days ? `Running day ${shownState?.day ?? 1} of ${level.days}…` : world.team ? `Running robot ${(shownState?.active ?? 0) + 1} of ${world.team.length}…` : 'Running…' };
   else if (phase === 'paused') message = { tone: 'info', text: `Paused after step ${position}. Step plays one more. Run keeps going.` };
   else if (outcome) {
@@ -615,16 +715,16 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
             <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
               <path d="M7 4.5v15l12-7.5z" fill="currentColor" />
             </svg>
-            {phase === 'paused' ? 'Continue' : !predictionOk ? (asksTile && !prediction?.cell ? 'Place the flag' : 'Fill in the card') : 'Run'}
+            {phase === 'paused' ? 'Continue' : !predictionOk ? (asksTile && !prediction?.cell ? 'Place the flag' : 'Fill in the card') : liveMode ? 'Play' : 'Run'}
           </button>
-          <button type="button" className="btn btn-step" onClick={stepOnce} disabled={busy || !predictionOk} aria-keyshortcuts="S" title="Play one step">
+          <button type="button" className="btn btn-step" onClick={stepOnce} disabled={busy || !predictionOk || liveMode} aria-keyshortcuts="S" title="Play one step">
             <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
               <path d="M6 5v14l9-7z" fill="currentColor" />
               <rect x="17" y="5" width="3" height="14" rx="1.2" fill="currentColor" />
             </svg>
             Step
           </button>
-          <button type="button" className="btn btn-pause" onClick={pause} disabled={phase !== 'running'} aria-keyshortcuts="P">
+          <button type="button" className="btn btn-pause" onClick={pause} disabled={phase !== 'running' || liveMode} aria-keyshortcuts="P">
             <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
               <rect x="6" y="5" width="4.5" height="14" rx="1.4" fill="currentColor" />
               <rect x="13.5" y="5" width="4.5" height="14" rx="1.4" fill="currentColor" />
@@ -667,6 +767,15 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
           {toolbarExtra}
         </div>
         <TickRules world={world} state={shownState ?? initialState(world, program.memory)} event={activeEvent} />
+        {liveMode && (
+          <div className={`dpad ${playingLive ? 'is-live' : ''}`} role="group" aria-label="Arrow keys">
+            {(['up', 'left', 'down', 'right'] as const).map((k) => (
+              <button key={k} type="button" className={`btn btn-icon dpad-key dpad-${k}`} disabled={!playingLive} aria-label={`${k.charAt(0).toUpperCase()}${k.slice(1)} arrow`} onClick={() => pressKey(k)}>
+                {{ up: '↑', left: '←', down: '↓', right: '→' }[k]}
+              </button>
+            ))}
+          </div>
+        )}
         {belowControls}
       </div>
       {middle && <div className="mid-col">{middle({ program, edit: onEdit, locked: phase === 'running' })}</div>}
