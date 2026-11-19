@@ -20,3 +20,35 @@ jobs:
         run: npm test
       - name: Build
         run: npx vite build
+
+  server:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: wonderbits
+          POSTGRES_PASSWORD: wonderbits
+          POSTGRES_DB: wonderbits_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U wonderbits"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 15
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Tests, against a real Postgres
+        run: npm test

@@ -102,6 +102,13 @@ Open the app with `?perf` on the end of the URL, for example
 10 by 10 board while a meter reports frame times. The target is about 60
 frames per second with few frames over 33 ms.
 
+### Accounts (optional)
+
+The game needs no server. With one, a grown-up can make profiles for their
+children, their progress and creations are kept safe and follow them between
+devices, and they can send what they make to each other. See
+[server/README.md](server/README.md) and [docs/accounts-plan.md](docs/accounts-plan.md).
+
 ## Controls
 
 | Action | Touch or mouse | Keyboard |

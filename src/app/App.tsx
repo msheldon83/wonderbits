@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useSyncExternalStore, type ReactNode } from 'react';
 import { introductionBefore, realWordsOf } from '../lessons/concepts';
 import { RealWordsContext } from '../editor/CodePanel';
 import { CreateScreen } from '../create/CreateScreen';
@@ -11,7 +11,9 @@ import { creationToJson } from '../create/parse';
 import { PlayScreen } from '../create/PlayScreen';
 import { remixOf } from '../create/remix';
 import { CreationStore } from '../create/store';
-import { defaultStore } from '../progress/storage';
+import { defaultStore, type KeyValueStore } from '../progress/storage';
+import type { ChildInfo, InboxShare } from '../sync/api';
+import type { Creation } from '../create/types';
 import { ProgressStore } from '../progress/store';
 import { CardBookScreen } from './CardBookScreen';
 import { ConceptIntro } from './ConceptIntro';
@@ -27,10 +29,42 @@ const BookIcon = () => (
   </svg>
 );
 
-export function App() {
+/** Sending creations inside the family. Present only for a signed-in child. */
+export interface Sharing {
+  /** Brothers and sisters who can be sent a creation. Empty when the grown-up turned that off. */
+  siblings: readonly ChildInfo[];
+  /** What brothers and sisters have sent that this child has not yet kept or passed on. */
+  inbox: readonly InboxShare[];
+  /** `to` is a brother or sister's id, or "grownup". Rejects if it could not be sent. */
+  send(to: string, creation: Creation): Promise<void>;
+  /** The child kept or passed on something from the inbox. */
+  settle(shareId: string): void;
+}
+
+/** What the account layer gives the game. All of it is absent in a build without accounts. */
+export interface AccountProps {
+  /** The signed-in child's nickname, put on what they make. */
+  nickname?: string;
+  /** True when this profile is kept on the server too. */
+  synced?: boolean;
+  /** Shown in the header on the map: who is playing. */
+  who?: ReactNode;
+  /** A section for the settings screen. */
+  panel?: ReactNode;
+  sharing?: Sharing;
+  /** Hands over a function that re-reads storage; called when another device's changes arrive. Returns how to stop. */
+  onReload?(reload: () => void): () => void;
+}
+
+export function App({ storage: given, account }: { storage?: KeyValueStore; account?: AccountProps } = {}) {
   const { choices, book } = useMemo(loadContent, []);
-  const storage = useMemo(defaultStore, []);
-  const creationStore = useMemo(() => new CreationStore(storage), [storage]);
+  const storage = useMemo(() => given ?? defaultStore(), [given]);
+  const creationStore = useMemo(() => {
+    const s = new CreationStore(storage);
+    s.madeBy = account?.nickname;
+    return s;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storage]);
   const made = useSyncExternalStore(creationStore.subscribe, creationStore.getSnapshot);
   useEffect(() => void creationStore.load(), [creationStore]);
   const store = useMemo(() => {
@@ -40,6 +74,16 @@ export function App() {
   }, [choices, storage]);
   const snap = useSyncExternalStore(store.subscribe, store.getSnapshot);
   useEffect(() => void store.load(), [store]);
+  // Another device changed something: read it in, so the map and the shelf show it.
+  const onReload = account?.onReload;
+  useEffect(
+    () =>
+      onReload?.(() => {
+        void store.load();
+        void creationStore.load();
+      }),
+    [onReload, store, creationStore],
+  );
   const route = useRoute();
   const runtime = useRuntime();
 
@@ -161,12 +205,18 @@ export function App() {
             <span className="level-name">{creation.title}</span>
           </p>
         )}
+        {route.screen === 'map' && account?.who}
         {(route.screen === 'map' || route.screen === 'level') && (
           <a className="btn btn-quiet btn-create" href={hashFor({ screen: 'create' })} title="Make an island of your own">
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
               <path d="M4 20l4-1L19 8l-3-3L5 16zM14 7l3 3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             Create
+            {account?.sharing && account.sharing.inbox.length > 0 && (
+              <span className="count-dot" aria-label={`${account.sharing.inbox.length} new from your family`}>
+                {account.sharing.inbox.length}
+              </span>
+            )}
           </a>
         )}
         {(route.screen === 'map' || route.screen === 'level') && (
@@ -186,9 +236,9 @@ export function App() {
         )}
       </header>
       {route.screen === 'map' && <MapScreen choices={choices} book={book} store={store} badges={snap.progress.badges} packId={route.packId} extra={<MadeHere creations={made.creations} progress={store} />} />}
-      {route.screen === 'settings' && <SettingsScreen store={store} settings={snap.settings} creations={() => made.creations.map(creationToJson)} />}
+      {route.screen === 'settings' && <SettingsScreen store={store} settings={snap.settings} creations={() => made.creations.map(creationToJson)} account={account?.panel} synced={account?.synced} />}
       {route.screen === 'library' && <LibraryScreen {...(route.id !== undefined && { entryId: route.id })} />}
-      {route.screen === 'create' && <CreateScreen creations={made.creations} store={creationStore} progress={store} choices={choices} onGoTo={goTo} />}
+      {route.screen === 'create' && <CreateScreen creations={made.creations} store={creationStore} progress={store} choices={choices} onGoTo={goTo} sharing={account?.sharing} />}
       {route.screen === 'make' && creation && <CreationScreen key={creation.id} creation={creation} store={creationStore} progress={store} runtime={runtime} settings={snap.settings} signposts={signposts} universe={universe} packs={packs} />}
       {route.screen === 'play' && creation && playable && <PlayScreen key={`${creation.id}:${creation.proof?.provedAt}`} creation={creation} store={creationStore} progress={store} runtime={runtime} settings={snap.settings} />}
       {route.screen === 'book' && !page && <CardBookScreen book={book} store={store} from={cameFrom.current} />}

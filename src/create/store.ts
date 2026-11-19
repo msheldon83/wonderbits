@@ -33,6 +33,8 @@ export class CreationStore {
   private listeners = new Set<() => void>();
   /** Stored documents that would not parse, by key. They are left alone, never overwritten. */
   readonly unreadable: string[] = [];
+  /** The signed-in child's nickname, put on what they make. Unset when nobody is signed in. */
+  madeBy: string | undefined;
 
   constructor(
     private storage: KeyValueStore,
@@ -75,7 +77,7 @@ export class CreationStore {
   /** A new creation, saved at once. */
   add(input: Omit<Creation, 'schemaVersion' | 'id' | 'createdAt' | 'updatedAt'>): Creation {
     const t = this.now();
-    const creation: Creation = { ...input, title: cleanTitle(input.title), schemaVersion: CREATION_SCHEMA_VERSION, id: this.newId(), createdAt: t, updatedAt: t };
+    const creation: Creation = { ...input, ...((input.madeBy ?? this.madeBy) !== undefined && { madeBy: input.madeBy ?? this.madeBy }), title: cleanTitle(input.title), schemaVersion: CREATION_SCHEMA_VERSION, id: this.newId(), createdAt: t, updatedAt: t };
     this.set([...this.snapshot.creations, creation]);
     void this.storage.set(PREFIX + creation.id, creationToJson(creation));
     return creation;

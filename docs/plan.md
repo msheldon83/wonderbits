@@ -50,7 +50,7 @@ The longer aim, set on 2026-11-08: Wonderbits teaches the full set of ideas a me
 | Execution | A deterministic interpreter over the IR produces a bounded trace. No TypeScript compilation or execution in Phase 1. |
 | Runtime contract | Runtimes receive a program and world and emit trace events over message passing. Phase 1 runs in a Worker; later untrusted code runs in a cross-origin sandboxed iframe behind the same contract. |
 | Rendering | DOM and SVG top-down grid board with CSS animation. No game engine in Phase 1. |
-| Cross-platform | Browser-based responsive PWA for iPad, Android tablets, Mac, Windows and Chromebook. Local-first, no accounts. |
+| Cross-platform | Browser-based responsive PWA for iPad, Android tablets, Mac, Windows and Chromebook. Local-first. Accounts are an optional layer added later ([accounts-plan.md](accounts-plan.md)). |
 | Content model | Logical tiles, actors, themes and lesson constraints defined by data, not hardcoded per level. |
 | Editor interaction | Tap a card, tap a slot. Every essential action works with tap and keyboard. Drag is never required. |
 | Meta-loop | Level map, stars per level and badges for mastery behaviours. No leaderboard. |
@@ -434,7 +434,7 @@ React, TypeScript and Vite for the responsive PWA. Board rendered with DOM and S
 
 - Only the IR vocabulary executes in puzzles. Per-run limits on instructions and time; runaway work is terminated.
 - Frame-rate and memory checks on a real iPad, not only desktop emulation.
-- Safari evicts storage for a PWA that is not installed to the home screen after seven days of disuse. Alpha accepts this risk and offers a one-tap progress export; later releases add accounts if the project goes public.
+- Safari evicts storage for a PWA that is not installed to the home screen after seven days of disuse. Alpha accepts this risk and offers a one-tap progress export; accounts and sync are planned in [accounts-plan.md](accounts-plan.md).
 
 ## 8. Meta-loop and observation
 
@@ -518,7 +518,7 @@ The robot is the platform for puzzles, and creation is not limited to it. Kids c
 | Turn-based | Tic-tac-toe, Connect 4, minesweeper, solitaire | Boards as data, turns, win checks, hidden information, shuffling |
 | Real-time | Pac-Man, Q*bert, Frogger | Player input, a game loop over time, moving actors, collisions |
 
-Sharing beyond the device comes later, with accounts. A grown-up reviews anything before it is shared.
+Sharing beyond the device comes with accounts, and only inside one family at first: see [accounts-plan.md](accounts-plan.md). The grown-up sees everything that is shared.
 
 **The AI design guide**
 
@@ -629,7 +629,7 @@ Repeat and If were built before this gate because the first testers asked for mo
 - Are detours required or suggested? Suggested keeps agency, but some kids will skip and get stuck.
 - Resolved 2026-11-08: the memory card appears on every board with gates, from the switch pack's first level, and on any level that asks the child to predict it.
 - Resolved 2026-11-08: the trace interleaves. A When card runs right after the step that set it off, before the next card; on a timed board each robot action is followed by one tick, then the Every tick card.
-- When accounts arrive, how does the grown-up review work: on the child's device, or from the grown-up's own account?
+- Answered in [accounts-plan.md](accounts-plan.md): the grown-up reviews from their own account, in a dashboard.
 
 **Next steps (2026-11-08)**
 
