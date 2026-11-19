@@ -25,6 +25,7 @@ import type { MemoryField, MemoryValue, Prediction, PuzzleDefinition } from '../
 import type { EventInput, Settings } from '../progress/types';
 import { Board } from '../render/Board';
 import type { BoardController } from '../render/controller';
+import { gridOverlays } from '../render/overlays';
 import { Sequencer } from '../render/sequencer';
 import { themeFor } from '../render/themes';
 import { DEFAULT_LIMITS, type LiveHandle, type LiveInput, type RunOutcome, type RunResult, type Runtime, type TraceEvent } from '../runtime/contract';
@@ -32,6 +33,7 @@ import type { Cell, Facing, SimState, WorldDefinition } from '../sim/types';
 import { gatesOf, initialState, memoryShortfall, moversOf } from '../sim/world';
 import { worldsOf } from '../lessons/shuffles';
 import { checksOf, isRandomLevel, missingOutcomes } from '../lessons/checks';
+import { withSaved } from '../create/live';
 import { useMotion } from './hooks';
 import { KeyScript } from './KeyScript';
 import { MemoryCard } from './MemoryCard';
@@ -71,6 +73,10 @@ export type Playable = Pick<PuzzleDefinition, 'id' | 'themeId' | 'world' | 'obje
     curriculum: { activity: PuzzleDefinition['curriculum']['activity'] };
     /** A creation's clock, in ticks a second: the world moves by itself while the player plays. */
     clock?: number;
+    /** A game with no robot in it, such as a board game: the robot is not drawn. */
+    hideRobot?: boolean;
+    /** A game: the program is its maker's, and the player only plays. There is no editor, only the board and its controls. */
+    playOnly?: boolean;
   };
 
 /** A run that met the objective, on every board and roll it had to. */
@@ -80,7 +86,7 @@ export interface Solved {
   steps: number;
   program: ProgramIR;
   /** A live run: the keys and ticks that won it, and its seed. Played back, they win it again. */
-  live?: { inputs: LiveInput[]; seed: number };
+  live?: { inputs: LiveInput[]; seed: number; saved?: Record<string, Value> };
 }
 
 export interface PlaySurfaceProps {
@@ -103,6 +109,10 @@ export interface PlaySurfaceProps {
   toolbarExtra?: ReactNode;
   /** A puzzle someone else made: the player uses its named parts and adds none. */
   lockNames?: boolean;
+  /** A game's backpack: what its kept memory held when the last play ended. A live run starts from it. */
+  saved?: Readonly<Record<string, Value>>;
+  /** A live run ended, however it ended: its last state, for the backpack. */
+  onLiveEnd?(final: SimState, program: ProgramIR): void;
   /**
    * A column between the board and the program: a maker's rules. It is
    * given the program as it is now and a way to edit it, so parts added
@@ -128,7 +138,7 @@ function outsideWords(covers: NonNullable<ObjectiveDefinition['covers']>, end: S
   return `${covers.of} ended as ${got === undefined ? 'nothing' : valueWords(got)}. It should be one of ${want}.`;
 }
 
-export function PlaySurface({ level, runtime, settings, initialProgram, onProgram, record, hintFor, onSolved, completion: renderCompletion, toolbarExtra, lockNames = false, middle, belowControls, programLabel, programNote }: PlaySurfaceProps) {
+export function PlaySurface({ level, runtime, settings, initialProgram, onProgram, record, hintFor, onSolved, completion: renderCompletion, toolbarExtra, lockNames = false, saved, onLiveEnd, middle, belowControls, programLabel, programNote }: PlaySurfaceProps) {
   const theme = themeFor(level.themeId);
   const newId = useMemo(() => randomIdFactory(), []);
   const [history, setHistory] = useState<History>(() => {
@@ -157,7 +167,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
    * keys or for a tap. Run starts a game the player drives, instead of a run that plays
    * itself. A lesson's key script is not this: its keys are written down.
    */
-  const liveMode = level.programming.ownNames === true && level.inputScript === undefined && (level.clock !== undefined || program.handlers.some((h) => isPlayerEvent(h.event)));
+  const liveMode = level.programming.ownNames === true && level.inputScript === undefined && (level.clock !== undefined || level.playOnly === true || program.handlers.some((h) => isPlayerEvent(h.event)));
   /** The player uses the arrow keys in this game. */
   const keyed = program.handlers.some((h) => h.event.startsWith('key:'));
   /** The player taps tiles in this game: the program has a When card for a tap. */
@@ -342,7 +352,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
     };
     setPlayingLive(true);
     liveRun.current = runtime.live(
-      { program, world, objective: level.objective, limits: DEFAULT_LIMITS, seed, clock: level.clock !== undefined },
+      { program: withSaved(program, saved), world, objective: level.objective, limits: DEFAULT_LIMITS, seed, clock: level.clock !== undefined },
       {
         event(e) {
           if (token !== runToken.current) return;
@@ -354,6 +364,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
             if (token !== runToken.current) return;
             endLive();
             const end = result.final ?? initialState(world);
+            if (result.final) onLiveEnd?.(result.final, program);
             setOutcome(result.outcome);
             setPhase('done');
             setShortfall({ onGoal: teamOnFlags(world, end), missing: world.collectibles.length - end.collected.length, memory: memoryShortfall(level.objective, end) });
@@ -361,7 +372,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
             if (result.outcome.status !== 'success') return;
             setActiveNode(null);
             setActiveEvent(null);
-            onSolved({ usedHints: hintsUsed > 0, steps: countNodes(program), program, live: { inputs: result.inputs, seed } });
+            onSolved({ usedHints: hintsUsed > 0, steps: countNodes(program), program, live: { inputs: result.inputs, seed, ...(saved && { saved: { ...saved } }) } });
             const ac = new AbortController();
             celebration.current = ac;
             await controller.current?.celebrate(ac.signal);
@@ -376,7 +387,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
         if (seq.state !== 'playing') liveRun.current?.send({ kind: 'tick' });
       }, 1000 / level.clock);
     }
-  }, [runtime, record, level, program, world, endLive, onSolved, hintsUsed]);
+  }, [runtime, record, level, program, world, endLive, onSolved, hintsUsed, saved, onLiveEnd]);
 
   /** A key or an arrow under the board, while a live game is on. */
   const pressKey = useCallback((key: Key) => liveRun.current?.send({ kind: 'key', key }), []);
@@ -680,8 +691,27 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
         return m.kind === 'position' && isPosition(v) ? [{ name: m.name, cell: v }] : [];
       })
     : [];
+  /** The memory card: beside the program, or under the board in a game with no program to show. */
+  const memoryCard = showMemory ? (
+          <MemoryCard
+            world={world}
+            state={shownState ?? initialState(world, program.memory)}
+            slots={program.memory}
+            {...(level.days && { days: level.days })}
+            {...(world.team && { team: world.team.length })}
+            asking={predicting ? askedFields : []}
+            answers={prediction?.memory}
+            wrong={wrongFields}
+            disabled={phase !== 'editing'}
+            onAnswer={(field: MemoryField, value: MemoryValue) => {
+              setPrediction((p) => ({ ...p, memory: { ...p?.memory, [field]: value } }));
+              setWrongFields((w) => w.filter((f) => f !== field));
+            }}
+          />
+  ) : null;
+
   return (
-    <main className={`app-main ${showCode ? 'is-showing-code' : ''} ${middle ? 'has-mid' : ''}`}>
+    <main className={`app-main ${showCode ? 'is-showing-code' : ''} ${middle ? 'has-mid' : ''} ${level.playOnly ? 'is-play-only' : ''}`}>
       {/* What to do on this level, and after a run what happened: at the top, where it is read first. */}
       <div className="lesson-banner">
         <p className={`message tone-${message.tone}`} role="status" aria-live="polite">
@@ -698,10 +728,12 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
           onControllers={onControllers}
           onTileTap={predicting && asksTile && phase === 'editing' ? (cell) => setPrediction((p) => ({ ...p, cell })) : tappable && playingLive ? (cell) => liveRun.current?.send({ kind: 'tap', x: cell.x, y: cell.y }) : undefined}
           plainTiles={tappable && playingLive}
+          overlays={gridOverlays(program.memory, shownState ?? initialState(world, program.memory))}
+          {...(level.hideRobot && { hideRobot: true })}
           marks={marks}
           pointers={pointers}
           highlightCells={hint?.cells}
-          hideIndicator={predicting}
+          hideIndicator={predicting || level.hideRobot === true}
           hideGoal={(predicting && asksTile) || !level.objective.reachGoal}
           signs={signsOf(program.memory, shownState ?? initialState(world, program.memory), activeEvent)}
           bird={(level.programming.allowedSources ?? []).some(isBirdSource) || specAsksBird(level.programming.starterProgram) || (program.memory ?? []).some((m) => m.kind === 'position' && m.name === 'bird')}
@@ -781,10 +813,11 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
             ))}
           </div>
         )}
+        {level.playOnly && memoryCard}
         {belowControls}
       </div>
       {middle && <div className="mid-col">{middle({ program, edit: onEdit, locked: phase === 'running' })}</div>}
-      <div className="side-col">
+      <div className="side-col" hidden={level.playOnly === true}>
         <Editor
           program={program}
           programming={level.programming}
@@ -807,23 +840,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
             // Keys and memory sit at the top of the Program panel, next to the cards that use and change them.
             <>
               {level.inputScript && <KeyScript keys={level.inputScript} event={activeEvent} played={phase === 'done'} />}
-              {showMemory && (
-          <MemoryCard
-            world={world}
-            state={shownState ?? initialState(world, program.memory)}
-            slots={program.memory}
-            {...(level.days && { days: level.days })}
-            {...(world.team && { team: world.team.length })}
-            asking={predicting ? askedFields : []}
-            answers={prediction?.memory}
-            wrong={wrongFields}
-            disabled={phase !== 'editing'}
-            onAnswer={(field: MemoryField, value: MemoryValue) => {
-              setPrediction((p) => ({ ...p, memory: { ...p?.memory, [field]: value } }));
-              setWrongFields((w) => w.filter((f) => f !== field));
-            }}
-          />
-              )}
+              {memoryCard}
             </>
           }
           gates={gatesOf(world).map((g) => g.id)}

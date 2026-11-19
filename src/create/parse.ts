@@ -6,9 +6,9 @@
  */
 import { ContentError, parseBoardRules } from '../lessons/parse';
 import type { TileKind, WorldDefinition } from '../sim/types';
-import { KEYS, type Key } from '../ir/types';
+import { KEYS, type Key, type Value } from '../ir/types';
 import type { LiveInput } from '../runtime/contract';
-import { BOARD_MAX, BOARD_MIN, CLOCKS, CREATION_SCHEMA_VERSION, REPLAY_MAX, TITLE_MAX, type Creation, type CreationKind, type CreationStatus, type Proof } from './types';
+import { BOARD_MAX, BOARD_MIN, CLOCKS, CREATION_SCHEMA_VERSION, REPLAY_MAX, TITLE_MAX, TRIES_MAX, TRY_LENGTH, type Creation, type CreationKind, type CreationStatus, type Proof } from './types';
 
 const TILE_CHAR: Record<TileKind, string> = { floor: '.', wall: '#', gap: '_' };
 
@@ -93,8 +93,16 @@ export function parseCreation(json: unknown, source: string): Creation {
       return [];
     });
     const seed = Number.isInteger(r.seed) && (r.seed as number) >= 0 ? (r.seed as number) : (issues.push('replay.seed: expected a whole number'), 0);
-    replay = { inputs: read, seed };
+    replay = { inputs: read, seed, ...(isObj(r.saved) && { saved: r.saved as Record<string, Value> }) };
   }
+  const hideRobot = json.hideRobot === true;
+  const how = str('how', 240, false);
+  let tries: string[] | undefined;
+  if (json.tries !== undefined) {
+    if (Array.isArray(json.tries) && json.tries.length <= TRIES_MAX && json.tries.every((t) => typeof t === 'string' && t.length > 0 && t.length <= TRY_LENGTH)) tries = json.tries as string[];
+    else issues.push(`tries: expected at most ${TRIES_MAX} sentences of at most ${TRY_LENGTH} characters`);
+  }
+  const saved = json.saved === undefined ? undefined : isObj(json.saved) ? (json.saved as Record<string, Value>) : (issues.push('saved: expected memory values by name'), undefined);
 
   if (issues.length || !rules || !id || !title) throw new ContentError(source, issues);
   const { programs, ...board } = rules;
@@ -111,6 +119,10 @@ export function parseCreation(json: unknown, source: string): Creation {
     ...board,
     ...(clock !== undefined && { clock }),
     ...(replay && { replay }),
+    ...(hideRobot && { hideRobot }),
+    ...(how && { how }),
+    ...(tries && { tries }),
+    ...(saved && { saved }),
     program: programs.program,
     ...(proof && { proof }),
   };

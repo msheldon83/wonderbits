@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "id": "noughts",
+  "title": "Noughts and crosses",
+  "family": "turn-based",
+  "blurb": "Two players take turns on one board. Three in a row wins.",
+  "how": "Take turns tapping an empty tile. Crosses go first. Three in a row, any way, wins.",
+  "hideRobot": true,
+  "world": {
+    "rows": [
+      "...",
+      "...",
+      "..."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 2,
+      "y": 2
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": false,
+    "collectAll": false,
+    "byProgram": true
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "wait",
+      "repeat",
+      "if",
+      "ifElse",
+      "until",
+      "set",
+      "change",
+      "mark",
+      "win",
+      "lose"
+    ],
+    "starterProgram": []
+  },
+  "program": [
+    {
+      "remember": "board",
+      "kind": "grid",
+      "of": "number",
+      "start": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "show": "pieces"
+    },
+    {
+      "remember": "tap",
+      "kind": "position",
+      "start": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "remember": "turn",
+      "kind": "number",
+      "start": 1
+    },
+    {
+      "remember": "tile",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "winner",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "moves",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "on": "tap",
+      "do": [
+        {
+          "set": "tile",
+          "to": "read:board@tap"
+        },
+        {
+          "if": "slot:tile=0",
+          "do": [
+            {
+              "mark": "board",
+              "at": "tap",
+              "with": "turn"
+            },
+            {
+              "change": "moves",
+              "by": 1
+            },
+            {
+              "set": "winner",
+              "to": "line:board@3"
+            },
+            {
+              "if": "not:slot:winner=0",
+              "do": [
+                "win"
+              ]
+            },
+            {
+              "if": "slot:moves=9",
+              "do": [
+                "lose"
+              ]
+            },
+            {
+              "if": "slot:turn=1",
+              "do": [
+                {
+                  "set": "turn",
+                  "to": 2
+                }
+              ],
+              "else": [
+                {
+                  "set": "turn",
+                  "to": 1
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tries": [
+    "Let noughts go first: change what turn starts as. In the code view, turn is 1 for crosses and 2 for noughts.",
+    "Make the board 4 by 4 on the Board step. The memory called board has to grow too, so this one is a puzzle of its own.",
+    "Change the last If so that the same player goes again after a good move.",
+    "Change the game so that three in a row loses: swap the Win card for a Game over card."
+  ],
+  "replay": {
+    "inputs": [
+      "0,0",
+      "0,1",
+      "1,0",
+      "1,1",
+      "2,0"
+    ],
+    "seed": 1
+  }
+}

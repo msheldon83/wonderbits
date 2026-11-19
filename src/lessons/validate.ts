@@ -114,7 +114,7 @@ export function validateWorld(world: WorldDefinition, objective: ObjectiveDefini
   world.collectibles.forEach((c) => {
     if (tileAt(world, c) !== 'floor') errors.push(`collectible at ${cellKey(c)} must be on a floor tile`);
   });
-  if (!objective.reachGoal && !objective.collectAll && !objective.memory && !objective.covers) errors.push('objective must ask for something');
+  if (!objective.reachGoal && !objective.collectAll && !objective.memory && !objective.covers && !objective.byProgram) errors.push('objective must ask for something');
 
   // World state: gates on floor, switches that flip real gates, and one thing per tile.
   const gates = gatesOf(world);

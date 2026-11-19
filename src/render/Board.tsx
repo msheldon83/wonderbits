@@ -4,6 +4,7 @@ import { cellKey, gatesOf, initialState, moverCell, moverLabel, moversOf, plates
 import { Anchored, ARROW_POINTS, BeetleArt, Collectible, CUE_BOX, FloorTile, GateArt, GhostRobot, GoalFlag, Lip, LogArt, PlateArt, Robot, ROBOT_BOX, Rock, SwitchArt, Tree, TurnCue, Water } from './art';
 import { BoardController, type MotionSettings, type RobotElements } from './controller';
 import { LAYER, LIP, layoutFor, TILE, toScreen } from './grid';
+import type { Overlay } from './overlays';
 import { gateColor, pick, type Theme } from './themes';
 
 export interface BoardProps {
@@ -35,6 +36,10 @@ export interface BoardProps {
   signs?: { name: string; cell: Cell; lines: { field: string; text: string }[]; focus?: string }[];
   /** The bird: it flies over the board, sees all of it, and answers when the robot asks. */
   bird?: boolean;
+  /** Grids drawn on the tiles: crosses and noughts, numbers, and covers. */
+  overlays?: readonly Overlay[];
+  /** A game with no robot in it: the robot is not drawn. */
+  hideRobot?: boolean;
   /** Tile buttons without the dashed outline that says "pick one": for the board editor, where every tile takes a tool. */
   plainTiles?: boolean;
 }
@@ -57,7 +62,7 @@ function BirdArt() {
   );
 }
 
-export function Board({ world, theme, motion, label, onControllers, robotCount = 1, maxScale = 1.6, onTileTap, marks = [], pointers = [], highlightCells, hideIndicator = false, hideGoal = false, coordinates = false, bird = false, signs = [], plainTiles = false }: BoardProps) {
+export function Board({ world, theme, motion, label, onControllers, robotCount = 1, maxScale = 1.6, onTileTap, marks = [], pointers = [], highlightCells, hideIndicator = false, hideGoal = false, coordinates = false, bird = false, signs = [], plainTiles = false, overlays = [], hideRobot = false }: BoardProps) {
   const layout = useMemo(() => layoutFor(world, coordinates), [world, coordinates]);
   const viewport = useRef<HTMLDivElement>(null);
   const robotEls = useRef<Partial<RobotElements>[]>([]);
@@ -309,6 +314,28 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
     );
   });
 
+  // A grid in memory, drawn on its tiles: a cover, a number, a cross or a nought.
+  const overlayEls = overlays.map((o) => {
+    const q = toScreen(layout, o.cell);
+    const where = `column ${o.cell.x}, row ${o.cell.y}`;
+    const label = o.kind === 'cross' ? `A cross at ${where}` : o.kind === 'nought' ? `A nought at ${where}` : o.kind === 'number' ? `${o.text} at ${where}` : `Covered at ${where}`;
+    return (
+      <Anchored key={`o${cellKey(o.cell)}-${o.kind}`} x={q.x} y={q.y} size={TILE} z={LAYER.indicator} className={`grid-overlay is-${o.kind}`} label={label}>
+        {o.kind === 'cover' && <rect x={-TILE / 2 + 4} y={-TILE / 2 + 4} width={TILE - 8} height={TILE - 8} rx={12} fill="#8a97a6" stroke="#6d7a89" strokeWidth={3} />}
+        {o.kind === 'cross' && <path d="M-24 -24 L24 24 M24 -24 L-24 24" fill="none" stroke="#d6503c" strokeWidth={12} strokeLinecap="round" />}
+        {o.kind === 'nought' && <circle cx={0} cy={0} r={26} fill="none" stroke="#3291d6" strokeWidth={12} />}
+        {o.kind === 'number' && (
+          <>
+            <rect x={-TILE / 2 + 4} y={-TILE / 2 + 4} width={TILE - 8} height={TILE - 8} rx={12} fill="rgba(255, 255, 255, 0.82)" />
+            <text x={0} y={16} textAnchor="middle" fontSize={46} fontWeight={800} fill="#1d3047">
+              {o.text}
+            </text>
+          </>
+        )}
+      </Anchored>
+    );
+  });
+
   // The child's flags: the pending one carries the goal art inside a blue
   // ring; a right one is a green ring around the real flag; a wrong one is
   // a red ring with a cross, left on the board until the next fresh start.
@@ -383,7 +410,7 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
     <div className="board-viewport" ref={viewport} style={{ background: theme.sky }}>
       <div className="board-scaler" style={{ width: layout.stageW * scale, height: layout.stageH * scale }}>
         <div
-          className="board-stage"
+          className={`board-stage ${hideRobot ? 'no-robot' : ''}`}
           role={onTileTap ? 'group' : 'img'}
           aria-label={label}
           style={{ width: layout.stageW, height: layout.stageH, transform: `scale(${scale})` }}
@@ -423,6 +450,7 @@ export function Board({ world, theme, motion, label, onControllers, robotCount =
               </svg>
             </div>
           ))}
+          {overlayEls}
           {highlights}
           {objects}
           {Array.from({ length: robotCount }, (_, i) => (
