@@ -4,6 +4,31 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Build step 13e, completed: tap input (2026-11-19)
+
+- **A tap on a tile is an input to a live run**, beside a key press and a
+  tick: `{ kind: 'tap', x, y }`. It is recorded and played back like the
+  others.
+- **`tap` is an event** a When card can wait for: "When a tile is tapped".
+  It is also the name of the place slot the tapped tile goes into, when
+  the program remembers one. Adding the When card in the rules adds that
+  slot. A tap off the board is ignored; with no slot the card still runs.
+- **Go to row and Go to column take a remembered place**: its row, or its
+  column. That is what a tapped tile is for until grids arrive: "When a
+  tile is tapped: go to its column, go to its row".
+- **In a live run a Go to card stops at what is in its way** and play
+  goes on, as a plain step does.
+- **On the board**, tiles take taps while a tappable game is being
+  played; the arrows under the board show only when a key card exists.
+- **A ready-made set, Tap to move**, adds the place, the When card filled
+  in, and the two Go to cards.
+
+### Deviations and choices
+
+- **The code prints `robot.goToColumn(tap)`**, passing the place itself;
+  the library is taken to accept a place or a number.
+- **Still not built from 13e's list: robots acting at once.**
+
 ## Build step 13e: the live run (2026-11-19)
 
 The engine change the Workshop depends on, built as the plan's spike and

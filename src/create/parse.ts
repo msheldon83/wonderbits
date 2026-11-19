@@ -88,7 +88,8 @@ export function parseCreation(json: unknown, source: string): Creation {
     const read = inputs.flatMap((v, i): LiveInput[] => {
       if (isObj(v) && v.kind === 'tick') return [{ kind: 'tick' }];
       if (isObj(v) && v.kind === 'key' && (KEYS as readonly unknown[]).includes(v.key)) return [{ kind: 'key', key: v.key as Key }];
-      issues.push(`replay.inputs[${i}]: expected a tick or a key press`);
+      if (isObj(v) && v.kind === 'tap' && Number.isInteger(v.x) && Number.isInteger(v.y)) return [{ kind: 'tap', x: v.x as number, y: v.y as number }];
+      issues.push(`replay.inputs[${i}]: expected a tick, a key press or a tap`);
       return [];
     });
     const seed = Number.isInteger(r.seed) && (r.seed as number) >= 0 ? (r.seed as number) : (issues.push('replay.seed: expected a whole number'), 0);

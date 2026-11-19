@@ -296,3 +296,62 @@ describe('a live puzzle in creation mode', async () => {
     expect(seq.position).toBe(lived.trace.length);
   });
 });
+
+describe('a tap on a tile', async () => {
+  const { blankCreation } = await import('../create/blank');
+  const { applyKit, KITS } = await import('../create/kits');
+  const { isLivePuzzle } = await import('../create/live');
+  const { creationToJson, parseCreation } = await import('../create/parse');
+  const { isEventId, isPlayerEvent } = await import('../ir/types');
+  const { eventLabel } = await import('../editor/commands');
+  const tap = (x: number, y: number): LiveInput => ({ kind: 'tap', x, y });
+  const kit = KITS.find((k) => k.id === 'tap')!;
+  const made = { ...blankCreation('Mine'), ...applyKit(blankCreation('Mine'), kit) };
+
+  it('is an event a When card can wait for, and the player\'s', () => {
+    expect(isEventId('tap')).toBe(true);
+    expect(isPlayerEvent('tap')).toBe(true);
+    expect(isPlayerEvent('key:up')).toBe(true);
+    expect(isPlayerEvent('tick')).toBe(false);
+    expect(eventLabel('tap')).toBe('When a tile is tapped');
+    expect(isLivePuzzle(made)).toBe(true);
+  });
+
+  it('puts the tapped tile in the place called tap and runs the When card', () => {
+    const r = play(made.program, made.world, [tap(2, 0)]);
+    expect(r.final.memory).toEqual({ tap: { x: 2, y: 0 } });
+    expect(r.final.robot).toMatchObject({ x: 2, y: 0 });
+    expect(r.trace[0]).toMatchObject({ op: 'when', event: 'tap' });
+  });
+
+  it('wins a tap-to-move puzzle, and its recording plays back the same', () => {
+    const inputs = [tap(1, 4), tap(4, 2)];
+    const lived = play(made.program, made.world, inputs);
+    expect(lived.outcome).toEqual({ status: 'success' });
+    expect(replay(made.program, made.world, lived.fed).trace).toEqual(lived.trace);
+  });
+
+  it('ignores a tap off the board, and needs no place to remember it in', () => {
+    const off = play(made.program, made.world, [tap(9, 9), tap(-1, 0)]);
+    expect(off.trace).toEqual([]);
+    expect(off.final.memory).toEqual({ tap: { x: 0, y: 0 } });
+    // A When card with no tap slot still runs; there is just nowhere the tile is kept.
+    const r = play([{ on: 'tap', do: ['forward'] }], blankWorld(), [tap(3, 3), tap(0, 0)]);
+    expect(r.final.robot.x).toBe(2);
+    expect(r.final.memory).toBeUndefined();
+  });
+
+  it('walks to a remembered place by its column and its row, stopping at what is in the way', () => {
+    const walled = applyTool(blankWorld(), 'wall', at(2, 2));
+    const r = play(made.program, walled, [tap(4, 2)]);
+    // The rock is in the row: the robot bumps and stays, and the game goes on.
+    expect(r.final.robot.x).toBe(1);
+    expect(r.outcome).toEqual({ status: 'incomplete' });
+  });
+
+  it('is kept in a winning play through storage', () => {
+    const whole = { schemaVersion: 1 as const, id: 'c-1', createdAt: 1, updatedAt: 1, ...made, replay: { inputs: [tap(1, 4), TICK, key('up')], seed: 3 } };
+    expect(parseCreation(JSON.parse(JSON.stringify(creationToJson(whole))), 'tap')).toEqual(whole);
+    expect(() => parseCreation({ ...creationToJson(whole), replay: { inputs: [{ kind: 'tap', x: 'a', y: 1 }], seed: 1 } }, 'bad')).toThrow(/replay\.inputs\[0\]/);
+  });
+});

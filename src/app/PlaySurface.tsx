@@ -14,7 +14,7 @@ import { randomIdFactory } from '../ir/ids';
 import { applyOp, type EditOp } from '../ir/ops';
 import { countNodes, programFromSpec, programSpec, stepNumber, usesRandom } from '../ir/program';
 import { skeletonOf, specAsksBird, type NodeSpec } from '../ir/spec';
-import { isBirdSource, isPosition, type Key, type NodeId, type ProgramIR, type Value } from '../ir/types';
+import { isBirdSource, isPlayerEvent, isPosition, TAP, type Key, type NodeId, type ProgramIR, type Value } from '../ir/types';
 import { valueWords } from '../editor/commands';
 import { coveredValue, teamOnFlags, withinOutcomes } from '../sim/world';
 import type { ObjectiveDefinition } from '../sim/types';
@@ -154,10 +154,14 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
   const seedRef = useRef(newSeed());
   /**
    * A live puzzle: a creation with a clock, or with When cards for the arrow
-   * keys. Run starts a game the player drives, instead of a run that plays
+   * keys or for a tap. Run starts a game the player drives, instead of a run that plays
    * itself. A lesson's key script is not this: its keys are written down.
    */
-  const liveMode = level.programming.ownNames === true && level.inputScript === undefined && (level.clock !== undefined || program.handlers.some((h) => h.event.startsWith('key:')));
+  const liveMode = level.programming.ownNames === true && level.inputScript === undefined && (level.clock !== undefined || program.handlers.some((h) => isPlayerEvent(h.event)));
+  /** The player uses the arrow keys in this game. */
+  const keyed = program.handlers.some((h) => h.event.startsWith('key:'));
+  /** The player taps tiles in this game: the program has a When card for a tap. */
+  const tappable = liveMode && program.handlers.some((h) => h.event === TAP);
   const liveRun = useRef<LiveHandle | null>(null);
   const clockTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   /** True while a live game is being played, for the arrows under the board. */
@@ -631,7 +635,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
   };
   let message: { tone: Tone | 'hint'; text: string };
   if (hint) message = { tone: 'hint', text: hint.text };
-  else if (phase === 'running' && liveMode) message = { tone: 'info', text: 'Playing. Use the arrow keys, or the arrows under the board. Reset stops the game.' };
+  else if (phase === 'running' && liveMode) message = { tone: 'info', text: `Playing. ${tappable ? (keyed ? 'Tap a tile, or use the arrow keys.' : 'Tap a tile on the board.') : 'Use the arrow keys, or the arrows under the board.'} Reset stops the game.` };
   else if (phase === 'running') message = { tone: 'info', text: worlds.length > 1 && !random ? `Running shuffle ${shuffle + 1} of ${worlds.length}…` : level.days ? `Running day ${shownState?.day ?? 1} of ${level.days}…` : world.team ? `Running robot ${(shownState?.active ?? 0) + 1} of ${world.team.length}…` : 'Running…' };
   else if (phase === 'paused') message = { tone: 'info', text: `Paused after step ${position}. Step plays one more. Run keeps going.` };
   else if (outcome) {
@@ -692,7 +696,8 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
           motion={motion}
           label={describeBoard(world)}
           onControllers={onControllers}
-          onTileTap={predicting && asksTile && phase === 'editing' ? (cell) => setPrediction((p) => ({ ...p, cell })) : undefined}
+          onTileTap={predicting && asksTile && phase === 'editing' ? (cell) => setPrediction((p) => ({ ...p, cell })) : tappable && playingLive ? (cell) => liveRun.current?.send({ kind: 'tap', x: cell.x, y: cell.y }) : undefined}
+          plainTiles={tappable && playingLive}
           marks={marks}
           pointers={pointers}
           highlightCells={hint?.cells}
@@ -767,7 +772,7 @@ export function PlaySurface({ level, runtime, settings, initialProgram, onProgra
           {toolbarExtra}
         </div>
         <TickRules world={world} state={shownState ?? initialState(world, program.memory)} event={activeEvent} />
-        {liveMode && (
+        {liveMode && keyed && (
           <div className={`dpad ${playingLive ? 'is-live' : ''}`} role="group" aria-label="Arrow keys">
             {(['up', 'left', 'down', 'right'] as const).map((k) => (
               <button key={k} type="button" className={`btn btn-icon dpad-key dpad-${k}`} disabled={!playingLive} aria-label={`${k.charAt(0).toUpperCase()}${k.slice(1)} arrow`} onClick={() => pressKey(k)}>

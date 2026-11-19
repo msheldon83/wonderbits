@@ -433,7 +433,8 @@ export interface Procedure {
 /**
  * A When card: cards that run each time an event happens. Events are
  * stepping onto a plate (`stepOn:1`), picking up an acorn (`acorn`), a key
- * press from the level's script (`key:up`), and every tick (`tick`).
+ * press from the level's script (`key:up`), every tick (`tick`), and, in
+ * a live run, a tap on a tile (`tap`).
  */
 export interface EventHandler {
   event: string;
@@ -443,9 +444,18 @@ export interface EventHandler {
 export const KEYS = ['up', 'down', 'left', 'right'] as const;
 export type Key = (typeof KEYS)[number];
 
+/**
+ * A tile is tapped, in a live run. The event's name is also the name of the
+ * place slot that holds the tapped tile, when the program remembers one.
+ */
+export const TAP = 'tap';
+
+/** An event the player causes: an arrow key, or a tap. A program with a When card for one is played live. */
+export const isPlayerEvent = (event: string): boolean => event === TAP || event.startsWith('key:');
+
 /** True for an event a When card can wait for. */
 export function isEventId(value: unknown): value is string {
-  return typeof value === 'string' && (/^stepOn:[1-9]$/.test(value) || value === 'acorn' || value === 'tick' || KEYS.some((k) => value === `key:${k}`));
+  return typeof value === 'string' && (/^stepOn:[1-9]$/.test(value) || value === 'acorn' || value === 'tick' || value === TAP || KEYS.some((k) => value === `key:${k}`));
 }
 
 export interface ProgramIR {

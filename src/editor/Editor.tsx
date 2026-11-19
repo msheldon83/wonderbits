@@ -890,10 +890,11 @@ export function Editor({
               >
                 {(() => {
                   const size = node.kind === 'goRow' ? (boardSize?.height ?? 8) : (boardSize?.width ?? 8);
-                  const options: (number | string)[] = [...Array.from({ length: size }, (_, i) => i), ...memory.filter((m) => m.kind === 'number').map((m) => m.name)];
+                  // A number, a number the robot remembers, or a place it remembers: that place's row or column.
+                  const options: (number | string)[] = [...Array.from({ length: size }, (_, i) => i), ...memory.filter((m) => m.kind === 'number' || (programming.ownNames && m.kind === 'position')).map((m) => m.name)];
                   return (options.includes(node.to) ? options : [node.to, ...options]).map((o) => (
                     <option key={String(o)} value={JSON.stringify(o)}>
-                      {o}
+                      {typeof o === 'string' && memory.find((m) => m.name === o)?.kind === 'position' ? `where ${o} is` : o}
                     </option>
                   ));
                 })()}
@@ -905,7 +906,8 @@ export function Editor({
               {(['column', 'row'] as const).map((axis) => {
                 const value = node[axis];
                 const size = axis === 'row' ? (boardSize?.height ?? 8) : (boardSize?.width ?? 8);
-                const options: (number | string)[] = [...Array.from({ length: size }, (_, i) => i), ...memory.filter((m) => m.kind === 'number').map((m) => m.name)];
+                // A number, a number the robot remembers, or a place it remembers: that place's row or column.
+                  const options: (number | string)[] = [...Array.from({ length: size }, (_, i) => i), ...memory.filter((m) => m.kind === 'number' || (programming.ownNames && m.kind === 'position')).map((m) => m.name)];
                 const other = axis === 'row' ? node.column : node.row;
                 return (
                   <span key={axis} className="block-param">

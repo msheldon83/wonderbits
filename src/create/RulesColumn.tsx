@@ -12,7 +12,7 @@ import { needsOf } from '../editor/palette';
 import { nameProblem, type EditOp } from '../ir/ops';
 import { cardCounts, countNodes, functionNames, memoryOf, slotsInUse, walk } from '../ir/program';
 import { emptyRecord } from '../ir/spec';
-import { FUNCTION_NAME, RESERVED_NAMES, type CardId, type ItemKind, type MemorySlot, type ProgramIR } from '../ir/types';
+import { FUNCTION_NAME, RESERVED_NAMES, TAP, type CardId, type ItemKind, type MemorySlot, type ProgramIR } from '../ir/types';
 import type { ProgressStore } from '../progress/store';
 import type { Critique } from '../runtime/contract';
 import type { CreationStore } from './store';
@@ -408,7 +408,7 @@ export function RulesColumn({ creation, universe, store, progress, program, edit
 
         <div className="part">
           <span className="card-group-title">When cards</span>
-          <p className="rule-note">Cards that run by themselves when something happens: an arrow key pressed, an acorn picked up, a tick, a plate stepped on. With a When card for an arrow key, the puzzle is played live with the keys.</p>
+          <p className="rule-note">Cards that run by themselves when something happens: an arrow key pressed, a tile tapped, an acorn picked up, a tick, a plate stepped on. With a When card for a key or a tap, the puzzle is played live.</p>
           {program.handlers.length > 0 && (
             <ul className="part-chips">
               {program.handlers.map((h) => (
@@ -428,7 +428,10 @@ export function RulesColumn({ creation, universe, store, progress, program, edit
               value=""
               disabled={locked}
               onChange={(e) => {
-                if (e.target.value) edit({ op: 'addHandler', event: e.target.value });
+                if (!e.target.value) return;
+                // A tap means nothing without knowing where: the tapped tile goes in a place called tap.
+                if (e.target.value === TAP && nameProblem(program, TAP) === null) edit({ op: 'addSlot', slot: newSlot(TAP, 'position', false) });
+                edit({ op: 'addHandler', event: e.target.value });
               }}
             >
               <option value="">+ New When card…</option>

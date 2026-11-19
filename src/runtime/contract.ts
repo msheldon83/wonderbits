@@ -21,10 +21,10 @@ export interface RunLimits {
 
 /**
  * One thing that happens to a live run from outside: the player presses a
- * key, or the clock ticks. A live run is its program, its board, its seed
+ * key or taps a tile, or the clock ticks. A live run is its program, its board, its seed
  * and the list of these in order: the same list always plays the same game.
  */
-export type LiveInput = { kind: 'key'; key: Key } | { kind: 'tick' };
+export type LiveInput = { kind: 'key'; key: Key } | { kind: 'tick' } | { kind: 'tap'; x: number; y: number };
 
 /** How a run stays alive after its program's own cards have run. */
 export interface LiveSettings {
