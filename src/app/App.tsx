@@ -5,6 +5,7 @@ import { CreateScreen } from '../create/CreateScreen';
 import { CreationScreen } from '../create/CreationScreen';
 import { CREATION_CARDS } from '../create/cards';
 import type { CardId } from '../ir/types';
+import { LibraryScreen } from '../create/LibraryScreen';
 import { MadeHere } from '../create/MadeHere';
 import { creationToJson } from '../create/parse';
 import { PlayScreen } from '../create/PlayScreen';
@@ -142,6 +143,17 @@ export function App() {
         {route.screen === 'settings' && <p className="level-title">Settings</p>}
         {route.screen === 'book' && <p className="level-title">Card book</p>}
         {route.screen === 'create' && <p className="level-title">Create</p>}
+        {route.screen === 'library' && <p className="level-title">Library</p>}
+        {(route.screen === 'create' || route.screen === 'make') && (
+          <a className="btn btn-quiet" href={hashFor({ screen: 'library' })} title="The ready-made functions a game's cards call, to read">
+            Library
+          </a>
+        )}
+        {route.screen === 'library' && (
+          <a className="btn btn-quiet btn-create" href={hashFor({ screen: 'create' })}>
+            Create
+          </a>
+        )}
         {route.screen === 'make' && <p className="level-title">Create</p>}
         {route.screen === 'play' && creation && (
           <p className="level-title">
@@ -175,6 +187,7 @@ export function App() {
       </header>
       {route.screen === 'map' && <MapScreen choices={choices} book={book} store={store} badges={snap.progress.badges} packId={route.packId} extra={<MadeHere creations={made.creations} progress={store} />} />}
       {route.screen === 'settings' && <SettingsScreen store={store} settings={snap.settings} creations={() => made.creations.map(creationToJson)} />}
+      {route.screen === 'library' && <LibraryScreen {...(route.id !== undefined && { entryId: route.id })} />}
       {route.screen === 'create' && <CreateScreen creations={made.creations} store={creationStore} progress={store} choices={choices} onGoTo={goTo} />}
       {route.screen === 'make' && creation && <CreationScreen key={creation.id} creation={creation} store={creationStore} progress={store} runtime={runtime} settings={snap.settings} signposts={signposts} universe={universe} packs={packs} />}
       {route.screen === 'play' && creation && playable && <PlayScreen key={`${creation.id}:${creation.proof?.provedAt}`} creation={creation} store={creationStore} progress={store} runtime={runtime} settings={snap.settings} />}

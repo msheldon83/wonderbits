@@ -4,6 +4,64 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Change: ready-made functions, comparison, and a winner that is named (2026-11-19)
+
+Feedback on the starter games: the chasing beetle may be too hard and
+should be a strategy with parameters, used in the game loop, not a whole
+program; the line check is fine ready-made, but its code should be there
+to read, with the algorithm explained; Minesweeper should open the empty
+area as the classic does; comparison was missed in the lessons and is
+needed for a high score; and Noughts and crosses should say who won.
+
+- **The Library** (`src/library/`, `#/library`). Three ready-made
+  functions, each with what it is for, how it works a step at a time, and
+  its code. They are written to be read, and each file is imported twice,
+  once as code and once as text: what the screen shows is what runs. A
+  link to it is in a game's rules and in the header of creation mode.
+  - `lineOf(grid, count)`: the piece with so many in a row.
+  - `steer(...)`, with `chase`, `flee` and `wander`: one move of an enemy.
+  - `uncover(shown, mines, at)`: open a tile and the empty area round it.
+- **An enemy is moved by a card in the game loop.** The built-in chase is
+  gone. A beetle may be "the game's program's to move" (a tick box on the
+  Board step), and a **Move a beetle** card moves it, usually from the
+  Every tick card. Its settings are the strategy and its parameters:
+  - how it moves: chases the robot, runs from it, or wanders;
+  - how clever: hard always makes its best move, medium two times in
+    three, easy once in three; the rest of the time it wanders;
+  - how often: every tick, every other, or every third.
+  Its luck comes from the run's random generator, so a recording still
+  plays back the same. Because it is a card, a game can put an If round
+  it, or give two beetles two different cards.
+- **Uncover** is a card. Minesweeper's tap now opens a whole empty patch
+  up to its numbered edge. A new reading, `count:<grid>=<n>`, counts the
+  tiles of a grid that hold a number; the game is won when the tiles
+  still covered are as many as the mines hidden.
+- **Comparison.** A memory test may be less than or more than a number,
+  and may compare with another slot: `slot:count<3`, `slot:score>best`,
+  `slot:left=hidden`. It prints as `count < 3`, and turned round as
+  `count >= 3`. In creation mode a check on memory is now built from
+  three parts (what, how it is compared, with what) instead of chosen
+  from one long list. The plan gains concept 10b and a pack, More or
+  less, to teach it after Keep count (plan.md section 4).
+- **A best time.** Acorn chase counts ticks in `time`, and on a win keeps
+  it in the backpack as `best` when it is less than the best so far.
+- **A Win card can name the winner**, by a number slot. Noughts and
+  crosses ends with "Player 1 (crosses) wins!" or "Player 2 (noughts)
+  wins!", in the message strip and in the dialog of a played game.
+
+### Deviations and choices
+
+- **The More or less pack is planned, not written.** The cards are in
+  creation mode now; the lessons that teach them are the next piece of
+  curriculum work.
+- **A full board with no line still says "Game over"**, not "a draw".
+  The Game over card has no words of its own.
+- **Flee and wander have no starter game yet.** They are there for a
+  child to try on a second beetle.
+- **Turned round, less and more are not offered by the picker.** "Is not
+  less than 3" is built as "is more than 2"; a program that holds one
+  still reads and runs.
+
 ## Build step 13f: the Workshop and its starter games (2026-11-19)
 
 A child can open a small whole game, play it, and change how it works.
@@ -64,9 +122,8 @@ A child can open a small whole game, play it, and change how it works.
 - **Minesweeper does not open the empty tiles around an empty tile.**
   Each tap uncovers one. Doing more is a loop over a list of places,
   which the cards cannot yet say.
-- **The backpack cannot hold a best score.** There is no card that
-  compares two numbers, so a game cannot keep the larger. It can count:
-  plays, wins.
+- **The backpack could not hold a best score** when this was built; the
+  entry above adds comparison, and Acorn chase now keeps a best time.
 - **Noughts and crosses says "You did it!" whoever wins.** The memory
   card's `winner` says which: 1 for crosses, 2 for noughts.
 - **A child cannot make a grid from nothing yet.** A starter's grids can

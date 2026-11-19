@@ -360,6 +360,11 @@ export function RulesColumn({ game = false, creation, universe, store, progress,
           {game ? 'Cards you build with' : 'Cards the player gets'}
         </h3>
         <p className="rule-note">{game ? 'Tap a card to put it in your palette, or take it out. The player of a game has no cards: they play what you build.' : "Tap a card to give it or take it away. The blue ones are in the player's hand, and in yours."}</p>
+        {game && (
+          <p className="rule-note">
+            Some cards call a ready-made function: Move a beetle, Uncover, and the line check. Their code, with how each works, is in the <a href="#/library">Library</a>.
+          </p>
+        )}
         {groups.map((g) => {
           const lacking = g.cards.flatMap((c) => (lacks(c) ? [`${cardName(c)} needs ${lacks(c)}`] : []));
           return (

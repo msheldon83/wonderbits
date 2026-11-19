@@ -4461,3 +4461,66 @@ button.shelf-card {
 .app-main.is-play-only .board-viewport {
   min-height: min(52dvh, 560px);
 }
+
+/* The Library: ready-made functions to read. */
+.library {
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.library a.btn-choice {
+  text-decoration: none;
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+}
+
+.library a.btn-choice.is-on {
+  color: #fff;
+}
+
+.library-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.library-call {
+  margin: 0;
+  font-size: 17px;
+}
+
+.library-about {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.library-steps {
+  margin: 0;
+  padding-left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 17px;
+  line-height: 1.4;
+}
+
+.library-code {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #1d3047;
+  color: #e8f1f8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre;
+}
