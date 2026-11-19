@@ -63,9 +63,10 @@ see it). Solved puzzles
 appear on the map under Made here. Add cards brings the later packs'
 ideas as kits (a counter, a list, the bird, the backpack and more), and a
 child can add and name their own functions, memory and When cards. That
-is sub-steps 13a to 13e: a puzzle can also be played live, with the arrow
-keys and a clock; the Workshop's games
-come after a child test. See [docs/design-notes.md](docs/design-notes.md) for what is built, what
+is sub-steps 13a to 13f: a puzzle can also be played live, with the arrow
+keys and a clock, or by tapping; and the Workshop has four starter games
+(Crossing, Acorn chase, Noughts and crosses, Minesweeper) to play and then
+change. See [docs/design-notes.md](docs/design-notes.md) for what is built, what
 is deliberately not, and any deviations from the plan.
 
 ## Run it
@@ -141,6 +142,7 @@ src/
   perf/        Performance check page
 content/
   packs/       Level packs as JSON, validated in CI
+  starters/    Starter games as JSON, each with a recorded play that CI plays back to a win
 ```
 
 The editor writes the IR. The IR is printed to TypeScript for the "see the

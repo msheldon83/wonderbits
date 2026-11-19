@@ -18,10 +18,14 @@
  * spec mints fresh ids; specOf throws the ids away again.
  */
 import type { IdFactory } from './ids';
-import { isBirdSource, type CommandId, type ConditionId, type IRNode, type ItemKind, type ListOf, type MemorySlot, type Source, type Value, type ValueKind } from './types';
+import { isBirdSource, type SteerHow, type SteerSkill, type EndId, type GridShow, type CommandId, type ConditionId, type IRNode, type ItemKind, type ListOf, type MemorySlot, type Source, type Value, type ValueKind } from './types';
 
 export type NodeSpec =
   | CommandId
+  | EndId
+  | { win: string }
+  | { steer: string; how: SteerHow; skill: SteerSkill; every: number }
+  | { uncover: string; mines: string; at: string }
   | { repeat: number; do: NodeSpec[] }
   | { if: ConditionId; do: NodeSpec[]; else?: NodeSpec[] }
   | { until: ConditionId; do: NodeSpec[] }
@@ -41,7 +45,7 @@ export type NodeSpec =
   | { fly: string; column?: number | string; row?: number | string }
   | { define: string; do: NodeSpec[] }
   | { on: string; do: NodeSpec[] }
-  | { remember: string; kind: ValueKind; of?: ListOf; shape?: string; fields?: Record<string, ItemKind>; at?: { x: number; y: number }; start?: Value; keep?: boolean };
+  | { remember: string; kind: ValueKind; of?: ListOf; shape?: string; fields?: Record<string, ItemKind>; at?: { x: number; y: number }; start?: Value; keep?: boolean; show?: GridShow };
 
 export type DefineSpec = Extract<NodeSpec, { define: string }>;
 export type OnSpec = Extract<NodeSpec, { on: string }>;
@@ -64,6 +68,9 @@ export function kindOfSpec(s: NodeSpec): SpecKind {
   if ('face' in s) return 'face';
   if ('unlock' in s) return 'unlock';
   if ('mark' in s) return 'mark';
+  if ('win' in s) return 'win';
+  if ('steer' in s) return 'steer';
+  if ('uncover' in s) return 'uncover';
   if ('push' in s) return 'push';
   if ('goRow' in s) return 'goRow';
   if ('goColumn' in s) return 'goColumn';
@@ -106,7 +113,7 @@ export function emptyRecord(fields: Record<string, ItemKind>): Value {
 
 export function slotOfSpec(s: RememberSpec): MemorySlot {
   const start = s.start ?? (s.kind === 'record' && s.fields ? emptyRecord(s.fields) : defaultStart(s.kind));
-  return { name: s.remember, kind: s.kind, ...(s.of && { of: s.of }), ...(s.shape && { shape: s.shape }), ...(s.fields && { fields: s.fields }), ...(s.at && { at: s.at }), start, ...(s.keep && { keep: true }) };
+  return { name: s.remember, kind: s.kind, ...(s.of && { of: s.of }), ...(s.shape && { shape: s.shape }), ...(s.fields && { fields: s.fields }), ...(s.at && { at: s.at }), start, ...(s.keep && { keep: true }), ...(s.show && { show: s.show }) };
 }
 
 /** A spec split into main's cards, its functions, its When cards and its memory slots, each in the order listed. */
@@ -143,6 +150,9 @@ export function buildNodes(spec: readonly NodeSpec[], newId: IdFactory): IRNode[
     if ('face' in s) return { id, kind: 'face', slot: s.face };
     if ('unlock' in s) return { id, kind: 'unlock', gate: s.unlock, slot: s.with };
     if ('mark' in s) return { id, kind: 'mark', grid: s.mark, at: s.at, slot: s.with };
+    if ('win' in s) return { id, kind: 'win', player: s.win };
+    if ('steer' in s) return { id, kind: 'steer', mover: s.steer, how: s.how, skill: s.skill, every: s.every };
+    if ('uncover' in s) return { id, kind: 'uncover', grid: s.uncover, mines: s.mines, at: s.at };
     if ('push' in s) return { id, kind: 'push', list: s.push, to: s.to };
     if ('goRow' in s) return { id, kind: 'goRow', to: s.goRow };
     if ('goColumn' in s) return { id, kind: 'goColumn', to: s.goColumn };
@@ -186,6 +196,14 @@ export function specOf(nodes: readonly IRNode[]): NodeSpec[] {
         return { unlock: n.gate, with: n.slot };
       case 'mark':
         return { mark: n.grid, at: n.at, with: n.slot };
+      case 'win':
+        return n.player ? { win: n.player } : 'win';
+      case 'lose':
+        return 'lose';
+      case 'steer':
+        return { steer: n.mover, how: n.how, skill: n.skill, every: n.every };
+      case 'uncover':
+        return { uncover: n.grid, mines: n.mines, at: n.at };
       case 'push':
         return { push: n.list, to: n.to };
       case 'goRow':

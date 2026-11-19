@@ -1,0 +1,260 @@
+{
+  "schemaVersion": 1,
+  "id": "acorn-chase",
+  "title": "Acorn chase",
+  "family": "real-time",
+  "blurb": "Collect every acorn while a beetle chases you round the rocks. How fast can you do it?",
+  "how": "Use the arrow keys to pick up every acorn. The beetle is after you: keep the rocks between you and it.",
+  "world": {
+    "rows": [
+      ".......",
+      ".#.#.#.",
+      ".......",
+      ".#.#.#.",
+      "......."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 4,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 3,
+      "y": 2
+    },
+    "collectibles": [
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 3,
+        "y": 0
+      },
+      {
+        "x": 6,
+        "y": 4
+      },
+      {
+        "x": 2,
+        "y": 2
+      },
+      {
+        "x": 4,
+        "y": 2
+      },
+      {
+        "x": 3,
+        "y": 4
+      }
+    ],
+    "movers": [
+      {
+        "id": "beetle1",
+        "kind": "beetle",
+        "path": [
+          {
+            "x": 6,
+            "y": 0
+          }
+        ],
+        "steered": true
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": false,
+    "collectAll": false,
+    "byProgram": true
+  },
+  "clock": 2,
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "wait",
+      "repeat",
+      "if",
+      "ifElse",
+      "until",
+      "set",
+      "change",
+      "face",
+      "steer",
+      "win",
+      "lose"
+    ],
+    "starterProgram": []
+  },
+  "program": [
+    {
+      "remember": "score",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "time",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "best",
+      "kind": "number",
+      "start": 999,
+      "keep": true
+    },
+    {
+      "remember": "plays",
+      "kind": "number",
+      "start": 0,
+      "keep": true
+    },
+    {
+      "remember": "north",
+      "kind": "direction",
+      "start": "N"
+    },
+    {
+      "remember": "east",
+      "kind": "direction",
+      "start": "E"
+    },
+    {
+      "remember": "south",
+      "kind": "direction",
+      "start": "S"
+    },
+    {
+      "remember": "west",
+      "kind": "direction",
+      "start": "W"
+    },
+    {
+      "on": "key:up",
+      "do": [
+        {
+          "face": "north"
+        },
+        "forward"
+      ]
+    },
+    {
+      "on": "key:right",
+      "do": [
+        {
+          "face": "east"
+        },
+        "forward"
+      ]
+    },
+    {
+      "on": "key:down",
+      "do": [
+        {
+          "face": "south"
+        },
+        "forward"
+      ]
+    },
+    {
+      "on": "key:left",
+      "do": [
+        {
+          "face": "west"
+        },
+        "forward"
+      ]
+    },
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "change": "score",
+          "by": 1
+        },
+        {
+          "if": "slot:score=6",
+          "do": [
+            {
+              "if": "slot:time<best",
+              "do": [
+                {
+                  "set": "best",
+                  "to": "whole:time"
+                }
+              ]
+            },
+            "win"
+          ]
+        }
+      ]
+    },
+    {
+      "on": "tick",
+      "do": [
+        {
+          "steer": "beetle1",
+          "how": "chase",
+          "skill": "medium",
+          "every": 2
+        },
+        {
+          "change": "time",
+          "by": 1
+        }
+      ]
+    },
+    {
+      "change": "plays",
+      "by": 1
+    }
+  ],
+  "tries": [
+    "Make the beetle easier or harder: open the Every tick card and change the Move a beetle card. Try easy, then hard.",
+    "Read how the beetle finds its way: open the Library and look at Moving an enemy.",
+    "On the Board step, add a second beetle and tick The game's program moves it. Then give it a Move a beetle card of its own. Could one chase while the other wanders?",
+    "Look at the memory card: best is your fastest win, kept in the backpack. Find the If that compares time with best.",
+    "Add more acorns on the Board step. The If that wins at 6 has to change too."
+  ],
+  "replay": {
+    "inputs": [
+      "right",
+      ".",
+      "right",
+      ".",
+      "right",
+      ".",
+      "right",
+      ".",
+      "right",
+      ".",
+      "right",
+      ".",
+      "left",
+      ".",
+      "left",
+      ".",
+      "up",
+      ".",
+      "up",
+      ".",
+      "left",
+      ".",
+      "left",
+      ".",
+      "up",
+      ".",
+      "up",
+      ".",
+      "right",
+      ".",
+      "left",
+      ".",
+      "left",
+      ".",
+      "left"
+    ],
+    "seed": 1
+  }
+}

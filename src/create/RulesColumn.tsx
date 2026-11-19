@@ -41,6 +41,9 @@ export const CARD_GROUPS: { title: string; cards: CardId[] }[] = [
   { title: 'Lists', cards: ['push', 'forEach'] },
   { title: 'Map and bird', cards: ['goRow', 'goColumn', 'fly'] },
   { title: 'Gates', cards: ['openGate', 'closeGate'] },
+  { title: 'Grids', cards: ['mark', 'shift', 'uncover'] },
+  { title: 'Enemies', cards: ['steer'] },
+  { title: 'Ending the game', cards: ['win', 'lose'] },
 ];
 
 /** A card's name in the rules, where there is no icon to tell the two Rotates apart. */
@@ -86,6 +89,8 @@ export function newRecordList(name: string, like: MemorySlot, keep: boolean): Me
 }
 
 export interface RulesColumnProps {
+  /** A game: the cards are its maker's to build with, and there is no player's hand to limit. */
+  game?: boolean;
   creation: Creation;
   /** Every card this creation may offer: creation mode's, and the cards of the level it came from. */
   universe: readonly CardId[];
@@ -102,7 +107,7 @@ export interface RulesColumnProps {
   onAddSets(): void;
 }
 
-export function RulesColumn({ creation, universe, store, progress, program, edit, locked, events, critique, onAddSets }: RulesColumnProps) {
+export function RulesColumn({ game = false, creation, universe, store, progress, program, edit, locked, events, critique, onAddSets }: RulesColumnProps) {
   const { objective, programming } = creation;
   /** Which "new part" form is open, the name typed so far, and why the last name did not fit. */
   const [adding, setAdding] = useState<'memory' | 'function' | null>(null);
@@ -117,11 +122,14 @@ export function RulesColumn({ creation, universe, store, progress, program, edit
     const next = { ...programming, ...patch };
     if (patch.maxInstructions === undefined && 'maxInstructions' in patch) delete next.maxInstructions;
     if (next.maxPerCommand && Object.keys(next.maxPerCommand).length === 0) delete next.maxPerCommand;
-    const nextObjective = goal ? { ...objective, reachGoal: goal.reachGoal, collectAll: goal.collectAll } : objective;
+    const { byProgram: _was, ...plain } = objective;
+    const nextObjective = goal ? { ...plain, reachGoal: goal.reachGoal, collectAll: goal.collectAll } : objective;
     store.update(creation.id, { programming: next, objective: nextObjective });
     progress.log({ levelId: creation.id, kind: 'puzzle-set', goal: nextObjective.reachGoal ? (nextObjective.collectAll ? 'both' : 'flag') : 'acorns', cards: next.allowedCommands.length, limit: next.maxInstructions ?? null });
   };
-  const goal = GOALS.find((g) => g.reachGoal === objective.reachGoal && g.collectAll === objective.collectAll);
+  const goal = objective.byProgram ? undefined : GOALS.find((g) => g.reachGoal === objective.reachGoal && g.collectAll === objective.collectAll);
+  /** The program decides: only a Win card wins the game. */
+  const setByProgram = () => void store.update(creation.id, { objective: { reachGoal: false, collectAll: false, byProgram: true } });
   const limit = programming.maxInstructions;
   const used = countNodes(program);
   /** Where a limit starts when first set: the size of the maker's solution, or the shortest plain way, or ten. */
@@ -312,8 +320,21 @@ export function RulesColumn({ creation, universe, store, progress, program, edit
   return (
     <section className="rules-column" aria-labelledby="rules-title">
       <h2 id="rules-title" className="panel-title">
-        Rules for the player
+        {game ? 'The game' : 'Rules for the player'}
       </h2>
+      {(creation.tries?.length ?? 0) > 0 && (
+        <div className="rule tries" role="group" aria-labelledby="tries-title">
+          <h3 id="tries-title" className="rule-title">
+            Things to try
+          </h3>
+          <p className="rule-note">Ideas for changing this game, smallest first. They are only ideas: every part of the game is yours to change.</p>
+          <ol className="tries-list">
+            {creation.tries!.map((t) => (
+              <li key={t}>{t}</li>
+            ))}
+          </ol>
+        </div>
+      )}
 
       <div className="rule" role="group" aria-labelledby="goal-title">
         <h3 id="goal-title" className="rule-title">
@@ -325,14 +346,25 @@ export function RulesColumn({ creation, universe, store, progress, program, edit
               {g.label}
             </button>
           ))}
+          {(game || objective.byProgram) && (
+            <button type="button" className={`btn btn-choice ${objective.byProgram ? 'is-on' : ''}`} aria-pressed={objective.byProgram === true} onClick={setByProgram}>
+              The program decides
+            </button>
+          )}
         </div>
+        {objective.byProgram && <p className="rule-note">Nothing on the board wins this game. A Win card in the program does, and a Game over card ends it.</p>}
       </div>
 
       <div className="rule" role="group" aria-labelledby="cards-title">
         <h3 id="cards-title" className="rule-title">
-          Cards the player gets
+          {game ? 'Cards you build with' : 'Cards the player gets'}
         </h3>
-        <p className="rule-note">Tap a card to give it or take it away. The blue ones are in the player's hand, and in yours.</p>
+        <p className="rule-note">{game ? 'Tap a card to put it in your palette, or take it out. The player of a game has no cards: they play what you build.' : "Tap a card to give it or take it away. The blue ones are in the player's hand, and in yours."}</p>
+        {game && (
+          <p className="rule-note">
+            Some cards call a ready-made function: Move a beetle, Uncover, and the line check. Their code, with how each works, is in the <a href="#/library">Library</a>.
+          </p>
+        )}
         {groups.map((g) => {
           const lacking = g.cards.flatMap((c) => (lacks(c) ? [`${cardName(c)} needs ${lacks(c)}`] : []));
           return (
@@ -356,9 +388,9 @@ export function RulesColumn({ creation, universe, store, progress, program, edit
 
       <div className="rule" role="group" aria-labelledby="parts-title">
         <h3 id="parts-title" className="rule-title">
-          Parts the player starts with
+          {game ? 'Parts of the game' : 'Parts the player starts with'}
         </h3>
-        <p className="rule-note">Named things some cards work on. The player gets them empty, and so does your solution.</p>
+        <p className="rule-note">{game ? 'Named things the cards work on: what the game remembers, its functions, and its When cards.' : 'Named things some cards work on. The player gets them empty, and so does your solution.'}</p>
 
         <div className="part">
           <span className="card-group-title">Memory</span>
@@ -451,8 +483,10 @@ export function RulesColumn({ creation, universe, store, progress, program, edit
 
       <div className="rule" role="group" aria-labelledby="limits-title">
         <h3 id="limits-title" className="rule-title">
-          Limits
+          {game ? 'Time and the robot' : 'Limits'}
         </h3>
+        {!game && (
+          <>
         <div className="choice-row">
           {stepper(
             'Most cards',
@@ -509,6 +543,8 @@ export function RulesColumn({ creation, universe, store, progress, program, edit
           {stepper('Days', days, { off: days <= 1, say: 'One day fewer', go: () => setDays(days - 1) }, { off: days >= DAYS_MAX, say: 'One day more', go: () => setDays(days + 1) })}
         </div>
         {days > 1 && <p className="rule-note">The program runs once a day. Only memory kept in the backpack lasts overnight, and the last day must reach the goal.</p>}
+          </>
+        )}
         <div className="card-limits">
           <span className="card-group-title">The clock</span>
           <p className="rule-note">Beetles and logs move, and Every tick cards run, either each time the robot does something, or by themselves while the player plays.</p>
@@ -524,6 +560,12 @@ export function RulesColumn({ creation, universe, store, progress, program, edit
           </div>
           {creation.clock !== undefined && <p className="rule-note">The puzzle is played live: press Play, and the world keeps moving. Give the player When cards for the arrow keys, under Parts.</p>}
         </div>
+        {game && (
+          <label className="own-keep">
+            <input type="checkbox" checked={!creation.hideRobot} onChange={(e) => void store.update(creation.id, { hideRobot: e.target.checked ? undefined : true } as Partial<Creation>)} />
+            The robot is in the game
+          </label>
+        )}
       </div>
     </section>
   );

@@ -47,8 +47,14 @@ export interface Plate extends Cell {
 export interface Mover {
   id: string;
   kind: 'log' | 'beetle';
-  /** Where it is on tick 0, 1, 2 and so on, then round again. */
+  /** Where it is on tick 0, 1, 2 and so on, then round again. A chaser's path is only where it starts. */
   path: Cell[];
+  /**
+   * A beetle the game's program moves, with a Move a beetle card: it has no
+   * round of its own. Its path is only where it starts; where it is depends
+   * on the game.
+   */
+  steered?: boolean;
 }
 
 /**
@@ -97,6 +103,8 @@ export interface ObjectiveDefinition {
    * name, or "column" for the robot's column counted from 0.
    */
   covers?: { of: string; values: Value[] };
+  /** A game: its program says when it is won, with a Win card. Nothing about the board wins it. */
+  byProgram?: boolean;
 }
 
 /** Full simulation state: the robot plus anything the run changes. */
@@ -106,6 +114,8 @@ export interface SimState {
   collected: string[];
   /** Ids of the gates open right now, sorted. */
   open: string[];
+  /** Where each beetle the program moves is now, by id. Absent on boards without one. */
+  chasers?: Record<string, Cell>;
   /** Ticks gone by. Only boards with movers or an every-tick card count them. */
   tick: number;
   /** The robot's memory, slot by slot. Absent when the program remembers nothing. */

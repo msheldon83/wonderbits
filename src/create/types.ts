@@ -5,7 +5,7 @@
  * level: it has no hints, no stars and no curriculum.
  */
 import type { NodeSpec } from '../ir/spec';
-import type { Key } from '../ir/types';
+import type { Key, Value } from '../ir/types';
 import type { LiveInput } from '../runtime/contract';
 import type { PuzzleDefinition } from '../lessons/types';
 import type { ObjectiveDefinition, WorldDefinition } from '../sim/types';
@@ -50,8 +50,16 @@ export interface Creation {
   days?: number;
   /** A clock, in ticks a second: the world moves by itself while the puzzle is played. Without it, the world moves when the robot does. */
   clock?: number;
+  /** A game with no robot in it, such as a board game: the robot is not drawn. */
+  hideRobot?: boolean;
+  /** How to play, said to the player before the first go. */
+  how?: string;
+  /** Things to try changing, smallest first: a starter game's ladder. They are suggestions and nothing more. */
+  tries?: string[];
+  /** A game's backpack, for real: what its kept memory held when the last game ended, there again next time. */
+  saved?: Record<string, Value>;
   /** The maker's last winning play of a live puzzle: its keys and ticks, and its seed. Played back against the puzzle as it now is, it shows whether the puzzle is still won. */
-  replay?: { inputs: LiveInput[]; seed: number };
+  replay?: { inputs: LiveInput[]; seed: number; saved?: Record<string, Value> };
   /** The maker's own program, saved as they go. */
   program: NodeSpec[];
   proof?: Proof;
@@ -70,3 +78,6 @@ export const SIZE_DEFAULT = { width: 5, height: 5 } as const;
 export const CLOCKS = [1, 2, 4] as const;
 /** As many inputs as a kept winning play may hold. */
 export const REPLAY_MAX = 5000;
+/** As many things to try as a game lists, and how long each may be. */
+export const TRIES_MAX = 6;
+export const TRY_LENGTH = 220;

@@ -12,7 +12,7 @@ import type { Critique, Runtime } from '../runtime/contract';
 import { criticWords, type CriticLine } from './critic';
 import { cardName } from './RulesColumn';
 import type { CreationStore } from './store';
-import { isLivePuzzle } from './live';
+import { isLivePuzzle, withSaved } from './live';
 import type { Creation } from './types';
 
 /** How long the critic may search for the shortest way before it says only what it knows. */
@@ -45,6 +45,8 @@ export function useCritic(creation: Creation, runtime: Runtime | null, store: Cr
         ir = programFromSpec([], randomIdFactory());
       }
       const live = isLivePuzzle(creation);
+      // The winning play is played back from the backpack it was won with.
+      if (live) ir = withSaved(ir, creation.replay?.saved);
       // Every creation offers random values; the puzzle is random only when the maker's program takes one.
       void runtime.critique({ world, objective, rules: { ...rules, random: rules.random && usesRandom(ir) }, program: ir, ...(creation.inputScript && { input: creation.inputScript }), ...(creation.days !== undefined && { days: creation.days }), ...(live && { live: { clock: creation.clock !== undefined, ...(creation.replay && { inputs: creation.replay.inputs, seed: creation.replay.seed }) } }), searchMillis: SEARCH_MILLIS }).then((c) => {
         if (stale) return;

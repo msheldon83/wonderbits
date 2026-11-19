@@ -19,8 +19,9 @@
  */
 import { functionBody, handlerBody, mainBody } from '../ir/program';
 import { handlerContainerId, isBirdSource, isPosition, parseField, parseRead, TAP, type Key } from '../ir/types';
-import { advance, drawSource, morning, nextRobot, faceTo, gridPlace, initialState, markGrid, missingItem, shiftPlace, evaluate, isTimed, objectiveMet, period, recall, remember, setGate, tileAt, stateKey, step, unlockGate, type WorldEvent } from '../sim/world';
+import { advance, drawSource, morning, nextRobot, faceTo, gridPlace, initialState, markGrid, missingItem, shiftPlace, evaluate, isTimed, objectiveMet, period, recall, remember, setGate, steerMover, moverAt, tileAt, stateKey, step, unlockGate, type WorldEvent } from '../sim/world';
 import type { Facing } from '../sim/types';
+import { uncover } from '../library/uncover';
 import type { ObjectiveDefinition, SimState, WorldDefinition } from '../sim/types';
 import type { IRNode, ProgramIR } from '../ir/types';
 import { LIVE_TOTAL_STEPS, type LiveInput, type LiveSettings, type RunLimits, type RunOutcome, type TraceEvent } from './contract';
@@ -117,6 +118,48 @@ function* execute(input: InterpretInput, interactive: boolean): Generator<LiveSt
           yield* afterAction(node.id, result.events ?? []);
           break;
         }
+        case 'win': {
+          // The program says the game is won. A puzzle's goal is the board's; a game's is this card. It may name the winner.
+          const who = node.player ? state.memory?.[node.player] : undefined;
+          stop = { status: 'success', ...(typeof who === 'number' && { player: who }) };
+          return;
+        }
+        case 'steer': {
+          // A beetle moves only every so many ticks, so a slow one can be outrun.
+          if (state.tick % node.every !== 0) break;
+          const after = steerMover(world, state, node.mover, node.how, node.skill);
+          if (after === state) {
+            stop = { status: 'error', message: `There is no beetle called ${node.mover} for the program to move. On the Board step, tick "The game's program moves it" on a beetle`, nodeId: node.id };
+            return;
+          }
+          const caught = moverAt(world, after, after.robot, 'beetle') !== undefined;
+          const ok = yield* emit({ nodeId: node.id, op: 'steer', mover: node.mover, before: state, after, result: caught ? { kind: 'blocked', reason: 'beetle', at: { x: after.robot.x, y: after.robot.y } } : { kind: 'ok' } });
+          if (!ok) return;
+          state = after;
+          if (caught) {
+            stop = { status: 'blocked', nodeId: node.id, reason: 'beetle' };
+            return;
+          }
+          break;
+        }
+        case 'uncover': {
+          const shown = state.memory?.[node.grid];
+          const mines = state.memory?.[node.mines];
+          const at = gridPlace(state, node.at);
+          if (!Array.isArray(shown) || !Array.isArray(mines) || !at) {
+            stop = { status: 'error', message: `Uncover needs a grid of numbers, a grid of mines and a place`, nodeId: node.id };
+            return;
+          }
+          const opened = uncover(shown as number[][], mines as boolean[][], at);
+          const after = remember(state, node.grid, opened);
+          const ok = yield* emit({ nodeId: node.id, op: 'set', slot: node.grid, value: opened, before: state, after, result: { kind: 'ok' } });
+          if (!ok) return;
+          state = after;
+          break;
+        }
+        case 'lose':
+          stop = { status: 'lost', nodeId: node.id };
+          return;
         case 'openGate':
         case 'closeGate': {
           const after = setGate(state, node.gate, node.kind === 'openGate');

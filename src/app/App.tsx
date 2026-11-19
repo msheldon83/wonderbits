@@ -4,6 +4,8 @@ import { RealWordsContext } from '../editor/CodePanel';
 import { CreateScreen } from '../create/CreateScreen';
 import { CreationScreen } from '../create/CreationScreen';
 import { CREATION_CARDS } from '../create/cards';
+import type { CardId } from '../ir/types';
+import { LibraryScreen } from '../create/LibraryScreen';
 import { MadeHere } from '../create/MadeHere';
 import { creationToJson } from '../create/parse';
 import { PlayScreen } from '../create/PlayScreen';
@@ -69,9 +71,11 @@ export function App() {
   const universe = useMemo(() => {
     if (!creation) return [];
     const base = creation.basedOn ? choices.find((c) => c.level.id === creation.basedOn)?.level.programming : undefined;
-    return [...new Set([...CREATION_CARDS, ...(base?.allowedCommands ?? []), ...(base?.suppliedCards ?? []), ...creation.programming.allowedCommands])];
+    // A game is built with every card there is, the grid cards and the two that end a game among them. A puzzle's player never gets a Win card.
+    const extra: CardId[] = creation.kind === 'game' ? ['mark', 'shift', 'uncover', 'steer', 'win', 'lose'] : [];
+    return [...new Set([...CREATION_CARDS, ...extra, ...(base?.allowedCommands ?? []), ...(base?.suppliedCards ?? []), ...creation.programming.allowedCommands])];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [creation?.id, creation?.basedOn, choices]);
+  }, [creation?.id, creation?.basedOn, creation?.kind, choices]);
   /** Where the card book was opened from, for the log: a level id or "map". */
   const cameFrom = useRef('map');
   useEffect(() => {
@@ -139,6 +143,17 @@ export function App() {
         {route.screen === 'settings' && <p className="level-title">Settings</p>}
         {route.screen === 'book' && <p className="level-title">Card book</p>}
         {route.screen === 'create' && <p className="level-title">Create</p>}
+        {route.screen === 'library' && <p className="level-title">Library</p>}
+        {(route.screen === 'create' || route.screen === 'make') && (
+          <a className="btn btn-quiet" href={hashFor({ screen: 'library' })} title="The ready-made functions a game's cards call, to read">
+            Library
+          </a>
+        )}
+        {route.screen === 'library' && (
+          <a className="btn btn-quiet btn-create" href={hashFor({ screen: 'create' })}>
+            Create
+          </a>
+        )}
         {route.screen === 'make' && <p className="level-title">Create</p>}
         {route.screen === 'play' && creation && (
           <p className="level-title">
@@ -172,9 +187,10 @@ export function App() {
       </header>
       {route.screen === 'map' && <MapScreen choices={choices} book={book} store={store} badges={snap.progress.badges} packId={route.packId} extra={<MadeHere creations={made.creations} progress={store} />} />}
       {route.screen === 'settings' && <SettingsScreen store={store} settings={snap.settings} creations={() => made.creations.map(creationToJson)} />}
+      {route.screen === 'library' && <LibraryScreen {...(route.id !== undefined && { entryId: route.id })} />}
       {route.screen === 'create' && <CreateScreen creations={made.creations} store={creationStore} progress={store} choices={choices} onGoTo={goTo} />}
       {route.screen === 'make' && creation && <CreationScreen key={creation.id} creation={creation} store={creationStore} progress={store} runtime={runtime} settings={snap.settings} signposts={signposts} universe={universe} packs={packs} />}
-      {route.screen === 'play' && creation && playable && <PlayScreen key={`${creation.id}:${creation.proof?.provedAt}`} creation={creation} progress={store} runtime={runtime} settings={snap.settings} />}
+      {route.screen === 'play' && creation && playable && <PlayScreen key={`${creation.id}:${creation.proof?.provedAt}`} creation={creation} store={creationStore} progress={store} runtime={runtime} settings={snap.settings} />}
       {route.screen === 'book' && !page && <CardBookScreen book={book} store={store} from={cameFrom.current} />}
       {route.screen === 'book' && page && pageOpen && (
         <ConceptIntro key={`book-${page.packId}`} entry={page} runtime={runtime} store={store} settings={snap.settings} replay onDone={() => goTo(hashFor({ screen: 'book' }))} />

@@ -4405,3 +4405,122 @@ button.shelf-card {
   grid-column: 3;
   grid-row: 2;
 }
+
+/* A game with no robot in it: a board game. */
+.board-stage.no-robot .robot {
+  display: none;
+}
+
+.grid-overlay {
+  pointer-events: none;
+}
+
+/* A game being played: the board and its controls, and no program beside it. */
+.app-main.is-play-only {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.app-main.is-play-only > .side-col {
+  display: none;
+}
+
+.app-main.is-play-only > .stage-col {
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* A starter game's ladder: things to try changing. */
+.tries-list {
+  margin: 0;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+/* The Workshop's starter games on the Create screen. */
+.starter-thumb {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 14px;
+  background: var(--paper);
+}
+
+.starter-family {
+  font-weight: 800;
+  color: var(--purple-deep) !important;
+}
+
+/* A game being played gets the board big. */
+.app-main.is-play-only .board-viewport {
+  min-height: min(52dvh, 560px);
+}
+
+/* The Library: ready-made functions to read. */
+.library {
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.library a.btn-choice {
+  text-decoration: none;
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+}
+
+.library a.btn-choice.is-on {
+  color: #fff;
+}
+
+.library-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.library-call {
+  margin: 0;
+  font-size: 17px;
+}
+
+.library-about {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.library-steps {
+  margin: 0;
+  padding-left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 17px;
+  line-height: 1.4;
+}
+
+.library-code {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #1d3047;
+  color: #e8f1f8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre;
+}

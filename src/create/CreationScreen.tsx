@@ -17,7 +17,7 @@ import type { ProgramIR } from '../ir/types';
 import type { ProgressStore } from '../progress/store';
 import type { EventInput, Settings } from '../progress/types';
 import type { Runtime } from '../runtime/contract';
-import type { WorldDefinition } from '../sim/types';
+import type { SimState, WorldDefinition } from '../sim/types';
 import type { CardId } from '../ir/types';
 import { BoardEditor, type BoardEditorProps } from './BoardEditor';
 import { cardsGained, inPaletteOrder } from './cards';
@@ -26,7 +26,7 @@ import { useCritic } from './useCritic';
 import { fitsRules } from './critic';
 import { KitPicker, type PackInfo } from './KitPicker';
 import { goalWords } from './goal';
-import { PLAYER_EVENTS } from './live';
+import { keptOf, PLAYER_EVENTS } from './live';
 import type { CreationStore } from './store';
 import { TITLE_MAX, type Creation } from './types';
 
@@ -43,6 +43,7 @@ export function playableOf(creation: Creation, intro: string): Playable {
     ...(creation.inputScript && { inputScript: creation.inputScript }),
     ...(creation.days && { days: creation.days }),
     ...(creation.clock !== undefined && { clock: creation.clock }),
+    ...(creation.hideRobot && { hideRobot: true }),
   };
 }
 
@@ -52,6 +53,11 @@ const STEPS: { id: Step; label: string; about: string }[] = [
   { id: 'mechanics', label: 'Mechanics', about: 'How the puzzle works: the rules for players, and your own solution' },
   { id: 'preview', label: 'Preview', about: 'The puzzle as a player will see it' },
 ];
+
+/** A game as its player meets it: the board and its controls, with its maker's program running and out of sight. */
+export function playerGame(creation: Creation): Playable {
+  return { ...playableOf(creation, creation.how ?? 'Press Play to start.'), playOnly: true };
+}
 
 export interface CreationScreenProps {
   creation: Creation;
@@ -70,23 +76,26 @@ export function CreationScreen({ creation, store, progress, runtime, settings, s
   const [picking, setPicking] = useState(false);
   /** Bumped when a kit changes the program from outside the play surface, so the surface opens afresh on it. */
   const [surface, setSurface] = useState(0);
-  /** A new thing opens on its board; one being worked on opens on its mechanics. */
-  const [step, setStep] = useState<Step>(() => (creation.program.length === 0 || creation.updatedAt === creation.createdAt ? 'board' : 'mechanics'));
+  /** A new game opens ready to play; a new island opens on its board; one being worked on opens on its mechanics. */
+  const [step, setStep] = useState<Step>(() => (creation.kind === 'game' && creation.updatedAt === creation.createdAt ? 'preview' : creation.program.length === 0 || creation.updatedAt === creation.createdAt ? 'board' : 'mechanics'));
+  /** A game: its program is its maker's, and a player only plays. */
+  const game = creation.kind === 'game';
   const [title, setTitle] = useState(creation.title);
   const level = useMemo(
-    () => playableOf(creation, 'Set the rules, then solve it yourself and press Run.'),
+    () => playableOf(creation, creation.kind === 'game' ? 'This game is yours to change. Press Play to try it.' : 'Set the rules, then solve it yourself and press Run.'),
     // The board and rules, not the program or the name: saving those must not restart the surface.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [creation.id, creation.world, creation.objective, creation.programming, creation.clock],
   );
   // Preview: the puzzle as a player meets it. The maker's names, empty; the maker's cards and limit; the goal in words.
   const preview = useMemo(
-    () => ({ ...playableOf(creation, `${goalWords(creation)} Tap an instruction to add it to your program.`), programming: { ...creation.programming, starterProgram: skeletonOf(creation.program) } }),
+    () => (game ? playerGame(creation) : { ...playableOf(creation, `${goalWords(creation)} Tap an instruction to add it to your program.`), programming: { ...creation.programming, starterProgram: skeletonOf(creation.program) } }),
     // Taken when the step opens (the surface is keyed by it), so the maker's later edits do not restart a preview in play.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [creation.id, creation.world, creation.objective, creation.programming, creation.days, creation.clock, step],
   );
-  const critic = useCritic(creation, step === 'mechanics' ? runtime : null, store, progress);
+  // A game is checked wherever its maker is: it starts with a winning play, and is ready as soon as that is played back.
+  const critic = useCritic(creation, step === 'mechanics' || creation.kind === 'game' ? runtime : null, store, progress);
   const record = useCallback((event: EventInput) => progress.log(event), [progress]);
   /** The program as it was at the last save, to see which named parts are new. */
   const lastProgram = useRef<ProgramIR | null>(null);
@@ -128,14 +137,25 @@ export function CreationScreen({ creation, store, progress, runtime, settings, s
     if (world) progress.log({ levelId: creation.id, kind: 'board-changed', width: world.width, height: world.height });
   }, [store, progress, creation.id]);
   useEffect(() => logBoard, [logBoard]);
+  /** A game's backpack: what its kept memory held when a play ended is there for the next one. */
+  const onLiveEnd = useCallback(
+    (final: SimState, program: ProgramIR) => {
+      const now = store.get(creation.id);
+      if (!now || now.kind !== 'game') return;
+      const kept = keptOf(program, final.memory);
+      if (Object.keys(kept).length > 0) store.update(creation.id, { saved: { ...now.saved, ...kept } });
+    },
+    [store, creation.id],
+  );
   /** A run that solves it within the puzzle's own cards and limit is the maker's proof. */
   const onSolved = useCallback(
     ({ program, steps, live }: Solved) => {
       progress.log({ levelId: creation.id, kind: 'creation-solved' });
       const now = store.get(creation.id);
-      if (!now || !fitsRules(now.programming, program)) return;
+      // A puzzle's solution must stay within the cards and limits it gives the player. A game has no such limits: its program is its maker's.
+      if (!now || (now.kind !== 'game' && !fitsRules(now.programming, program))) return;
       // A live puzzle won with the maker's own program: the winning play is kept, to be played back when the puzzle changes.
-      if (live && step === 'mechanics') store.update(creation.id, { replay: live });
+      if (live && (step === 'mechanics' || now.kind === 'game')) store.update(creation.id, { replay: live });
       store.prove(creation.id, programSpec(program), steps);
       progress.log({ levelId: creation.id, kind: 'puzzle-proved', steps });
     },
@@ -187,8 +207,8 @@ export function CreationScreen({ creation, store, progress, runtime, settings, s
             Ready to play
           </span>
         ) : (
-          <span className="ready-tag is-draft" title="Solve it yourself in Mechanics, within its own rules, and others can play it.">
-            Not solved yet
+          <span className="ready-tag is-draft" title={game ? 'Win it yourself, and others can play it.' : 'Solve it yourself in Mechanics, within its own rules, and others can play it.'}>
+            {game ? 'Not won yet' : 'Not solved yet'}
           </span>
         )}
       </div>
@@ -203,11 +223,12 @@ export function CreationScreen({ creation, store, progress, runtime, settings, s
           onProgram={onProgram}
           record={record}
           onSolved={onSolved}
-          programLabel="Your solution"
-          programNote="Solve your own puzzle here, with the cards the player gets. It proves the puzzle can be solved. The player never sees it."
+          {...(game && { saved: creation.saved ?? {}, onLiveEnd })}
+          programLabel={game ? "The game's program" : 'Your solution'}
+          programNote={game ? 'This is how the game works. Change a card, press Play, and see what it does. The player plays the game and does not see this.' : 'Solve your own puzzle here, with the cards the player gets. It proves the puzzle can be solved. The player never sees it.'}
           lockNames
           middle={({ program, edit, locked }) => (
-            <RulesColumn creation={creation} universe={universe} store={store} progress={progress} program={program} edit={edit} locked={locked} events={[...eventsOf(creation.world), ...PLAYER_EVENTS]} critique={critic.critique} onAddSets={() => setPicking(true)} />
+            <RulesColumn game={game} creation={creation} universe={universe} store={store} progress={progress} program={program} edit={edit} locked={locked} events={[...eventsOf(creation.world), ...PLAYER_EVENTS]} critique={critic.critique} onAddSets={() => setPicking(true)} />
           )}
           belowControls={
             <section className={`critic-strip ${critic.thinking ? 'is-thinking' : ''}`} aria-label="What the critic says" aria-busy={critic.thinking}>
@@ -230,9 +251,9 @@ export function CreationScreen({ creation, store, progress, runtime, settings, s
       {step === 'preview' && (
         <>
           <p className="preview-note" role="note">
-            This is what a player sees: your island, your cards, an empty program. {creation.status === 'proved' ? 'It is on the map, under Made here.' : 'It goes on the map once you have solved it in Mechanics, or here.'}
+            {game ? 'This is what a player sees: your game, ready to play.' : 'This is what a player sees: your island, your cards, an empty program.'} {creation.status === 'proved' ? 'It is on the map, under Made here.' : game ? 'It goes on the map once you have won it yourself.' : 'It goes on the map once you have solved it in Mechanics, or here.'}
           </p>
-          <PlaySurface key="preview" level={preview} runtime={runtime} settings={settings} record={record} onSolved={onSolved} lockNames />
+          <PlaySurface key="preview" level={preview} runtime={runtime} settings={settings} record={record} onSolved={onSolved} lockNames {...(game && { initialProgram: creation.program, saved: creation.saved ?? {}, onLiveEnd })} />
         </>
       )}
       {picking && (

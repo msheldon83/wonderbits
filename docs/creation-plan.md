@@ -238,6 +238,10 @@ rest of 13e to 13g is committed to.
 
 ### 13f. The Workshop: starter games
 
+**Built 2026-11-19**: four starter games, each proved by a recorded play.
+The chaser's chase and the line check are built in where the plan hoped
+for cards (design-notes.md).
+
 A starter game is a creation of kind `game`: a world, a program made of When
 cards and functions, memory, and rules. It is content, in
 `content/starters/`, validated in CI by replaying a recorded play to a win.

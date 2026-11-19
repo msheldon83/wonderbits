@@ -10,7 +10,7 @@ import { eventShort, valueWords } from '../editor/commands';
 import { functionLabel } from '../ir/types';
 import type { TraceEvent } from '../runtime/contract';
 import type { Cell, RobotState, SimState, WorldDefinition } from '../sim/types';
-import { ahead, cellKey, moverCell, moversOf, passable, tileAt } from '../sim/world';
+import { ahead, cellKey, moverCell, moverPlace, moversOf, passable, tileAt } from '../sim/world';
 import { CUE_BOX, ROBOT_BOX } from './art';
 import { angleFor, toScreen, TILE, turnAngle, type BoardLayout } from './grid';
 import type { Player } from './sequencer';
@@ -122,17 +122,17 @@ export class BoardController implements Player {
     return `translate(${p.x - TILE / 2}px, ${p.y - TILE / 2}px)`;
   }
 
-  /** Put every mover where it is on a tick, without animation. */
-  private placeMovers(tick: number): void {
-    this.shown = { ...this.shown, tick };
+  /** Put every mover where it is now, without animation. */
+  private placeMovers(state: Pick<SimState, 'tick' | 'chasers'>): void {
+    this.shown = { ...this.shown, tick: state.tick };
     for (const m of moversOf(this.world)) {
       const el = this.worldEls.movers?.get(m.id);
-      if (el) el.style.transform = this.moverTransform(moverCell(m, tick));
-      // A faint ghost on the tile it moves to on the next tick; none when it stays put.
+      if (el) el.style.transform = this.moverTransform(moverPlace(m, state));
+      // A faint ghost on the tile it moves to on the next tick; none when it stays put, and none for a beetle the program moves, whose next step is the program's.
       const ghost = this.worldEls.ghosts?.get(m.id);
       if (ghost) {
-        const now = moverCell(m, tick);
-        const next = moverCell(m, tick + 1);
+        const now = moverPlace(m, state);
+        const next = m.steered ? now : moverCell(m, state.tick + 1);
         const moves = now.x !== next.x || now.y !== next.y;
         ghost.style.transform = this.moverTransform(next);
         ghost.style.opacity = moves ? '1' : '0';
@@ -149,13 +149,13 @@ export class BoardController implements Player {
     for (const m of moversOf(this.world)) {
       const el = this.worldEls.movers?.get(m.id);
       if (!el) continue;
-      anims.push(el.animate([{ transform: this.moverTransform(moverCell(m, before.tick)) }, { transform: this.moverTransform(moverCell(m, after.tick)) }], { duration: durationMs, easing: 'ease-in-out', fill: 'forwards' }));
+      anims.push(el.animate([{ transform: this.moverTransform(moverPlace(m, before)) }, { transform: this.moverTransform(moverPlace(m, after)) }], { duration: durationMs, easing: 'ease-in-out', fill: 'forwards' }));
     }
     const moved = before.robot.x !== after.robot.x || before.robot.y !== after.robot.y;
     if (moved) anims.push(this.robot.root.animate([{ transform: this.transformFor(before.robot, this.angle) }, { transform: this.transformFor(after.robot, this.angle) }], { duration: durationMs, easing: 'ease-in-out', fill: 'forwards' }));
     await Promise.all(anims.map((a) => settle(a, signal)));
     if (signal.aborted) return;
-    this.placeMovers(after.tick);
+    this.placeMovers(after);
     anims.forEach((a) => a.cancel());
     if (moved) this.place(after.robot, this.angle);
   }
@@ -304,7 +304,7 @@ export class BoardController implements Player {
     this.place(state.robot);
     this.placeTeam(state);
     this.showGates(state.open);
-    this.placeMovers(state.tick);
+    this.placeMovers(state);
     for (const [key, el] of this.collectibles) {
       el.getAnimations().forEach((a) => a.cancel());
       el.style.opacity = state.collected.includes(key) ? '0' : '1';
@@ -391,9 +391,10 @@ export class BoardController implements Player {
       await this.showBubble(before.robot, '…', 'loop', ms(THINK_MS), signal);
       return;
     }
-    if (event.op === 'tick') {
+    // A tick, or a beetle the program moved: whatever changed place glides there.
+    if (event.op === 'tick' || event.op === 'steer') {
       if (this.motion.reducedMotion) {
-        this.placeMovers(after.tick);
+        this.placeMovers(after);
         this.place(after.robot, this.angle);
         await wait(ms(REDUCED_PAUSE_MS), signal);
       } else {

@@ -4,6 +4,132 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Change: ready-made functions, comparison, and a winner that is named (2026-11-19)
+
+Feedback on the starter games: the chasing beetle may be too hard and
+should be a strategy with parameters, used in the game loop, not a whole
+program; the line check is fine ready-made, but its code should be there
+to read, with the algorithm explained; Minesweeper should open the empty
+area as the classic does; comparison was missed in the lessons and is
+needed for a high score; and Noughts and crosses should say who won.
+
+- **The Library** (`src/library/`, `#/library`). Three ready-made
+  functions, each with what it is for, how it works a step at a time, and
+  its code. They are written to be read, and each file is imported twice,
+  once as code and once as text: what the screen shows is what runs. A
+  link to it is in a game's rules and in the header of creation mode.
+  - `lineOf(grid, count)`: the piece with so many in a row.
+  - `steer(...)`, with `chase`, `flee` and `wander`: one move of an enemy.
+  - `uncover(shown, mines, at)`: open a tile and the empty area round it.
+- **An enemy is moved by a card in the game loop.** The built-in chase is
+  gone. A beetle may be "the game's program's to move" (a tick box on the
+  Board step), and a **Move a beetle** card moves it, usually from the
+  Every tick card. Its settings are the strategy and its parameters:
+  - how it moves: chases the robot, runs from it, or wanders;
+  - how clever: hard always makes its best move, medium two times in
+    three, easy once in three; the rest of the time it wanders;
+  - how often: every tick, every other, or every third.
+  Its luck comes from the run's random generator, so a recording still
+  plays back the same. Because it is a card, a game can put an If round
+  it, or give two beetles two different cards.
+- **Uncover** is a card. Minesweeper's tap now opens a whole empty patch
+  up to its numbered edge. A new reading, `count:<grid>=<n>`, counts the
+  tiles of a grid that hold a number; the game is won when the tiles
+  still covered are as many as the mines hidden.
+- **Comparison.** A memory test may be less than or more than a number,
+  and may compare with another slot: `slot:count<3`, `slot:score>best`,
+  `slot:left=hidden`. It prints as `count < 3`, and turned round as
+  `count >= 3`. In creation mode a check on memory is now built from
+  three parts (what, how it is compared, with what) instead of chosen
+  from one long list. The plan gains concept 10b and a pack, More or
+  less, to teach it after Keep count (plan.md section 4).
+- **A best time.** Acorn chase counts ticks in `time`, and on a win keeps
+  it in the backpack as `best` when it is less than the best so far.
+- **A Win card can name the winner**, by a number slot. Noughts and
+  crosses ends with "Player 1 (crosses) wins!" or "Player 2 (noughts)
+  wins!", in the message strip and in the dialog of a played game.
+
+### Deviations and choices
+
+- **The More or less pack is planned, not written.** The cards are in
+  creation mode now; the lessons that teach them are the next piece of
+  curriculum work.
+- **A full board with no line still says "Game over"**, not "a draw".
+  The Game over card has no words of its own.
+- **Flee and wander have no starter game yet.** They are there for a
+  child to try on a second beetle.
+- **Turned round, less and more are not offered by the picker.** "Is not
+  less than 3" is built as "is more than 2"; a program that holds one
+  still reads and runs.
+
+## Build step 13f: the Workshop and its starter games (2026-11-19)
+
+A child can open a small whole game, play it, and change how it works.
+
+- **A game is a kind of creation.** Its program is its maker's, and its
+  player only plays. Preview and Made here show a game with the board, its
+  controls and the memory card, and no program beside it.
+- **Four starter games**, content under `content/starters`:
+  - **Crossing** (real-time): cross a road of beetles and a river of
+    logs with the arrow keys.
+  - **Acorn chase** (real-time): collect every acorn while a beetle
+    chases the robot round the rocks, with a score.
+  - **Noughts and crosses** (turn-based): two players tap in turn; three
+    in a row wins; a full board ends it.
+  - **Minesweeper** (turn-based): four mines hidden at random; a number
+    says how many touch a tile; uncover the rest to win.
+- **Every starter carries a recorded play that wins it**, and CI plays it
+  back. The same recording makes a new game "Ready to play" the moment it
+  is opened: the critic plays it back.
+- **The Create screen has the Workshop's shelf.** A starter becomes the
+  child's own game, opens on Preview so it is played first, and lists
+  Things to try in Mechanics: changes of rising size, as suggestions.
+- **What the engine gained for games:**
+  - **Win and Game over cards.** A run can end lost. An objective may be
+    `byProgram`: nothing on the board wins it, only a Win card.
+  - **A grid drawn on the board's tiles**, as pieces (a cross, a nought)
+    or as numbers (a covered tile, an uncovered one, a count).
+  - **A reading for a line**: `line:<grid>@<n>` is the piece with n in a
+    row on a grid, any way, or 0. It is the whole win check of a board
+    game, as one Set card.
+  - **A beetle that chases.** Every other tick it takes one step along
+    the shortest way to the robot, round rocks and through open gates.
+    "Chases the robot" is a tick box on a beetle in the Board step.
+  - **No robot.** A board game leaves the robot out of the picture.
+  - **A real backpack.** A game's kept memory is saved when a play ends,
+    won or lost, and is there for the next one, on the creation itself.
+    Crossing and Acorn chase count their plays this way.
+- **In Mechanics a game's middle column is The game**: the goal may be
+  "The program decides"; the cards are "Cards you build with", with the
+  grid cards and the two ending cards among them; there are no limits on
+  a player's hand, because a game's player has none.
+- **A game is drawn quickly.** A lesson plays at a pace to be followed
+  card by card; a live game's cards run two and a half times as fast, and
+  a board game's at once, so a tap shows straight away.
+- **Leaving a game in play stops it cleanly**: its run, its clock and
+  whatever the board was still drawing.
+
+### Deviations and choices
+
+- **The chaser's chase is built in, not built from cards.** The plan's
+  "other actors with a program" would need a second program running
+  beside the robot's. A beetle that chases gives Acorn chase its game;
+  how it chases cannot be changed, only whether and how many.
+- **Three in a row is a reading, not a function of cards.** The plan
+  proposed a `lineOfThree` function a child could open. Written in cards
+  it came to some 150 of them, which nobody would read. The plan's
+  fallback, a single sense, is what was built.
+- **Minesweeper does not open the empty tiles around an empty tile.**
+  Each tap uncovers one. Doing more is a loop over a list of places,
+  which the cards cannot yet say.
+- **The backpack could not hold a best score** when this was built; the
+  entry above adds comparison, and Acorn chase now keeps a best time.
+- **Noughts and crosses says "You did it!" whoever wins.** The memory
+  card's `winner` says which: 1 for crosses, 2 for noughts.
+- **A child cannot make a grid from nothing yet.** A starter's grids can
+  be changed, marked and read; "+ New memory" does not offer one.
+- **Robots acting at once is still not built.** No starter needed it.
+
 ## Build step 13e, completed: tap input (2026-11-19)
 
 - **A tap on a tile is an input to a live run**, beside a key press and a

@@ -188,12 +188,21 @@ export interface UnlockEvent extends TraceBase {
   opened: boolean;
 }
 
-export type TraceEvent = ActionEvent | CheckEvent | LoopEvent | CallEvent | GateEvent | WhenEvent | PressEvent | TickEvent | SetEvent | FaceEvent | UnlockEvent | NightEvent | NextRobotEvent;
+/** A Move a beetle card moved a beetle the program controls. Its after state holds where the beetle now is. */
+export interface SteerEvent extends TraceBase {
+  op: 'steer';
+  mover: string;
+}
+
+export type TraceEvent = SteerEvent | ActionEvent | CheckEvent | LoopEvent | CallEvent | GateEvent | WhenEvent | PressEvent | TickEvent | SetEvent | FaceEvent | UnlockEvent | NightEvent | NextRobotEvent;
 
 export type RunOutcome =
-  | { status: 'success' }
+  /** The goal was met, or a Win card ran. A Win card may say which player won. */
+  | { status: 'success'; player?: number }
   | { status: 'incomplete' }
   | { status: 'blocked'; nodeId: NodeId; reason: BlockReason }
+  /** A game's program said the game is over, with a Game over card. */
+  | { status: 'lost'; nodeId: NodeId }
   | { status: 'halted'; reason: 'step-limit' | 'time-limit' | 'forever' }
   /** The program asked for something impossible. A card's error carries its node and a message a child can read. */
   | { status: 'error'; message: string; nodeId?: NodeId };

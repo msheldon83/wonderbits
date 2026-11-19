@@ -13,7 +13,7 @@ import type { Cell, ObjectiveDefinition, WorldDefinition } from '../sim/types';
 import { boardProblems } from './problems';
 import { SIZE_MAX } from './types';
 import { moverLabel } from '../sim/world';
-import { amendWorld, applyStroke, canExtend, isPaintTool, minSize, nextCell, pushWorld, redoWorld, removeMover, resize, stepMover, stepsOf, TOOLS, undoWorld, unstepMover, worldHistory, type Tool, type Way } from './worldOps';
+import { amendWorld, applyStroke, canExtend, isPaintTool, minSize, nextCell, pushWorld, redoWorld, removeMover, resize, setSteered, stepMover, stepsOf, TOOLS, undoWorld, unstepMover, worldHistory, type Tool, type Way } from './worldOps';
 
 const TOOL_INFO: Record<Tool, { name: string; tip: string }> = {
   floor: { name: 'Grass', tip: 'Tap or drag to lay ground the robot can walk on.' },
@@ -301,10 +301,16 @@ export function BoardEditor({ world, objective, cards, settings, onChange, signp
                   <li key={m.id} className={`mover-row mover-${m.kind}`}>
                     <div className="mover-head">
                       <strong>{label}</strong>
-                      <span className="mover-steps" aria-label={steps.length === 0 ? `${label} stands still` : `${label}'s steps: ${steps.map((w) => WAY_WORDS[w]).join(', ')}`}>
-                        {steps.length === 0 ? 'stands still' : steps.map((w, i) => <span key={i}>{WAY_ARROWS[w]}</span>)}
+                      <span className="mover-steps" aria-label={m.steered ? `${label} is moved by the game's program` : steps.length === 0 ? `${label} stands still` : `${label}'s steps: ${steps.map((w) => WAY_WORDS[w]).join(', ')}`}>
+                        {m.steered ? 'moved by a Move a beetle card, in the Every tick card' : steps.length === 0 ? 'stands still' : steps.map((w, i) => <span key={i}>{WAY_ARROWS[w]}</span>)}
                       </span>
                     </div>
+                    {m.kind === 'beetle' && (
+                      <label className="own-keep">
+                        <input type="checkbox" checked={Boolean(m.steered)} onChange={(e) => edit((w) => setSteered(w, m.id, e.target.checked))} />
+                        The game's program moves it
+                      </label>
+                    )}
                     <div className="mover-keys">
                       {(['N', 'E', 'S', 'W'] as const).map((way) => (
                         <button key={way} type="button" className="btn btn-icon" disabled={!canExtend(present, m, nextCell(m, way))} aria-label={`${label}: add a step ${WAY_WORDS[way]}`} onClick={() => edit((w) => stepMover(w, m.id, way))}>

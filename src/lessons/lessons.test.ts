@@ -455,7 +455,9 @@ describe('validate: memory', () => {
     expect(() => mem((j) => (j.referenceSolution[0] = { remember: 'steps', kind: 'number', start: 'lots' }))).toThrow(/\.start: expected a number value/);
     expect(() => mem((j) => (j.referenceSolution[2] = { change: 'steps', by: 0 }))).toThrow(/\.by: expected a whole number/);
     expect(() => mem((j) => (j.referenceSolution[2] = { set: 'steps', to: 'lots' }))).toThrow(/\.to: expected a value to set/);
-    expect(() => mem((j) => (j.referenceSolution = [{ if: 'slot:steps=many', do: [] }]))).toThrow(/unknown condition/);
+    expect(() => mem((j) => (j.referenceSolution = [{ if: 'slot:steps=Many', do: [] }]))).toThrow(/unknown condition/);
+    // A lower-case word after the sign is another slot to compare with, which the validator then looks for.
+    expect(() => mem((j) => (j.referenceSolution = [{ if: 'slot:steps<yes', do: [] }]))).toThrow(/unknown condition/);
   });
 
   it('asks a model level only for slots it can answer', () => {

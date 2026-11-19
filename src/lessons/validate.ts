@@ -114,7 +114,7 @@ export function validateWorld(world: WorldDefinition, objective: ObjectiveDefini
   world.collectibles.forEach((c) => {
     if (tileAt(world, c) !== 'floor') errors.push(`collectible at ${cellKey(c)} must be on a floor tile`);
   });
-  if (!objective.reachGoal && !objective.collectAll && !objective.memory && !objective.covers) errors.push('objective must ask for something');
+  if (!objective.reachGoal && !objective.collectAll && !objective.memory && !objective.covers && !objective.byProgram) errors.push('objective must ask for something');
 
   // World state: gates on floor, switches that flip real gates, and one thing per tile.
   const gates = gatesOf(world);
@@ -440,6 +440,12 @@ function slotUses(spec: readonly NodeSpec[]): SlotUse[] {
     for (const c of 'if' in s ? [s.if] : 'until' in s ? [s.until] : []) {
       const t = parseSlotTest(c);
       if (!t) continue;
+      // Compared with another slot, or as less or more: both sides are numbers the program remembers.
+      if (t.other !== undefined || t.op !== '=') {
+        own.push({ slot: t.slot.split('.')[0]!, kind: t.slot.includes('.') ? 'record' : 'number', card: 'a check' });
+        if (t.other !== undefined) own.push({ slot: t.other, kind: 'number', card: 'a check' });
+        continue;
+      }
       const path = splitSlotPath(t.slot);
       if (path.field === undefined) own.push({ slot: t.slot, kind: testKind(t.value), card: 'a check' });
       else own.push({ slot: path.slot, kind: 'record', card: 'a check' }, { slot: `${path.slot}.${path.field}`, kind: 'field', card: 'a check', list: path.slot, field: path.field, of: testKind(t.value) });
