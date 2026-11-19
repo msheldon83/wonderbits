@@ -10,6 +10,7 @@ import { loadContent, type LevelChoice } from '../app/levels';
 import { BoardThumb } from '../create/BoardThumb';
 import { parseCreation } from '../create/parse';
 import { PlayScreen } from '../create/PlayScreen';
+import { CreationStore } from '../create/store';
 import type { Creation } from '../create/types';
 import { memoryStore, type KeyValueStore } from '../progress/storage';
 import { ProgressStore } from '../progress/store';
@@ -631,6 +632,8 @@ function Playing({ creation, onBack }: { creation: Creation; onBack(): void }) {
   const runtime = useRuntime();
   const progress = useMemo(() => new ProgressStore(memoryStore()), []);
   useEffect(() => void progress.load(), [progress]);
+  // An empty shelf of the grown-up's own: what a game would keep between plays has nowhere to go.
+  const shelf = useMemo(() => new CreationStore(memoryStore()), []);
   return (
     <div className="grownup-play">
       <p className="grownup-play-bar">
@@ -640,7 +643,7 @@ function Playing({ creation, onBack }: { creation: Creation; onBack(): void }) {
         <strong>{creation.title}</strong>
         {creation.madeBy && <span>by {creation.madeBy}</span>}
       </p>
-      <PlayScreen creation={creation} progress={progress} runtime={runtime} settings={DEFAULT_SETTINGS} />
+      <PlayScreen creation={creation} store={shelf} progress={progress} runtime={runtime} settings={DEFAULT_SETTINGS} />
     </div>
   );
 }

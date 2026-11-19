@@ -1,0 +1,302 @@
+{
+  "schemaVersion": 1,
+  "id": "crossing",
+  "title": "Crossing",
+  "family": "real-time",
+  "blurb": "Get the robot across the road and the river. Beetles walk the road, and logs float on the river.",
+  "how": "Use the arrow keys. Keep away from the beetles, and ride a log across the water to the flag.",
+  "world": {
+    "rows": [
+      ".......",
+      "_______",
+      ".......",
+      ".......",
+      ".......",
+      "......."
+    ],
+    "robot": {
+      "x": 3,
+      "y": 5,
+      "facing": "N"
+    },
+    "goal": {
+      "x": 3,
+      "y": 0
+    },
+    "collectibles": [],
+    "movers": [
+      {
+        "id": "log1",
+        "kind": "log",
+        "path": [
+          {
+            "x": 0,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 1
+          },
+          {
+            "x": 2,
+            "y": 1
+          },
+          {
+            "x": 3,
+            "y": 1
+          },
+          {
+            "x": 2,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "log2",
+        "kind": "log",
+        "path": [
+          {
+            "x": 6,
+            "y": 1
+          },
+          {
+            "x": 5,
+            "y": 1
+          },
+          {
+            "x": 4,
+            "y": 1
+          },
+          {
+            "x": 5,
+            "y": 1
+          }
+        ]
+      },
+      {
+        "id": "beetle1",
+        "kind": "beetle",
+        "path": [
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 2
+          },
+          {
+            "x": 2,
+            "y": 2
+          },
+          {
+            "x": 3,
+            "y": 2
+          },
+          {
+            "x": 4,
+            "y": 2
+          },
+          {
+            "x": 5,
+            "y": 2
+          },
+          {
+            "x": 6,
+            "y": 2
+          },
+          {
+            "x": 5,
+            "y": 2
+          },
+          {
+            "x": 4,
+            "y": 2
+          },
+          {
+            "x": 3,
+            "y": 2
+          },
+          {
+            "x": 2,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 2
+          }
+        ]
+      },
+      {
+        "id": "beetle2",
+        "kind": "beetle",
+        "path": [
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 5,
+            "y": 4
+          },
+          {
+            "x": 4,
+            "y": 4
+          },
+          {
+            "x": 3,
+            "y": 4
+          },
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 1,
+            "y": 4
+          },
+          {
+            "x": 0,
+            "y": 4
+          },
+          {
+            "x": 1,
+            "y": 4
+          },
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 3,
+            "y": 4
+          },
+          {
+            "x": 4,
+            "y": 4
+          },
+          {
+            "x": 5,
+            "y": 4
+          }
+        ]
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "clock": 2,
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "wait",
+      "repeat",
+      "if",
+      "ifElse",
+      "until",
+      "set",
+      "change",
+      "face",
+      "win",
+      "lose"
+    ],
+    "starterProgram": []
+  },
+  "program": [
+    {
+      "remember": "plays",
+      "kind": "number",
+      "start": 0,
+      "keep": true
+    },
+    {
+      "remember": "north",
+      "kind": "direction",
+      "start": "N"
+    },
+    {
+      "remember": "east",
+      "kind": "direction",
+      "start": "E"
+    },
+    {
+      "remember": "south",
+      "kind": "direction",
+      "start": "S"
+    },
+    {
+      "remember": "west",
+      "kind": "direction",
+      "start": "W"
+    },
+    {
+      "on": "key:up",
+      "do": [
+        {
+          "face": "north"
+        },
+        "forward"
+      ]
+    },
+    {
+      "on": "key:right",
+      "do": [
+        {
+          "face": "east"
+        },
+        "forward"
+      ]
+    },
+    {
+      "on": "key:down",
+      "do": [
+        {
+          "face": "south"
+        },
+        "forward"
+      ]
+    },
+    {
+      "on": "key:left",
+      "do": [
+        {
+          "face": "west"
+        },
+        "forward"
+      ]
+    },
+    {
+      "change": "plays",
+      "by": 1
+    }
+  ],
+  "tries": [
+    "Make it harder: set the clock to Fast, under Limits.",
+    "Look at the memory card: plays is in the backpack. It counts every game you start, and it is still there tomorrow.",
+    "On the Board step, add another beetle to the road, or take a log away.",
+    "Put acorns on the island. Add a number called score, and a When an acorn is picked up card that adds 1 to it.",
+    "Change the goal to Both, so the player must collect every acorn before the flag."
+  ],
+  "replay": {
+    "inputs": [
+      ".",
+      ".",
+      "up",
+      "up",
+      "up",
+      "right",
+      "up",
+      "up",
+      "left"
+    ],
+    "seed": 1
+  }
+}

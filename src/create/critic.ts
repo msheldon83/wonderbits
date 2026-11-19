@@ -38,7 +38,13 @@ export function fitsRules(rules: Pick<Rules, 'allowedCommands' | 'allowedConditi
 }
 
 /** Whether a program solves the puzzle: on every roll when it is random, and with every outcome turning up. */
-function solves(req: Pick<CritiqueRequest, 'world' | 'objective' | 'rules' | 'program' | 'input' | 'days'>): boolean {
+function solves(req: Pick<CritiqueRequest, 'world' | 'objective' | 'rules' | 'program' | 'input' | 'days' | 'live'>): boolean {
+  // A live puzzle is solved by a play, not by its program alone: the maker's winning play is played back.
+  if (req.live) {
+    if (!req.live.inputs) return false;
+    const { inputs, seed, clock } = req.live;
+    return interpretAll({ program: req.program, world: req.world, objective: req.objective, limits: { maxSteps: 600 }, live: { clock, inputs }, ...(seed !== undefined && { seed }) }).outcome.status === 'success';
+  }
   const seeds: (number | undefined)[] = req.rules.random ? [...CHECK_SEEDS] : [undefined];
   const runs = seeds.map((seed) => interpretAll({ program: req.program, world: req.world, objective: req.objective, limits: { maxSteps: 1000 }, ...(req.input && { input: req.input }), ...(req.days !== undefined && { days: req.days }), ...(seed !== undefined && { seed }) }));
   return runs.every((r) => r.outcome.status === 'success') && missingOutcomes(req.objective, runs.map((r) => r.final)).length === 0;
@@ -70,6 +76,8 @@ export function critique(req: Omit<CritiqueRequest, 'type' | 'contract' | 'reque
     // A program the interpreter cannot run does not solve anything.
     own = { fits, solves: false, steps: countNodes(req.program), ...(overOwn.length > 0 && { over: overOwn }) };
   }
+  // A live puzzle is played with keys: a search over the program's plain steps says nothing about it.
+  if (req.live) return { own, flat: { kind: 'unknown' } };
   const found = searchFlat({ world: req.world, objective: req.objective, programming: req.rules }, 64, now() + req.searchMillis);
   // A plain way that needs more of one card than the puzzle allows is no way for a player.
   const tally = new Map<string, number>();
@@ -88,7 +96,7 @@ export interface CriticLine {
 const cards = (n: number) => `${n} ${n === 1 ? 'card' : 'cards'}`;
 
 /** The critic's report in a child's words. It says what is so, and leaves what to do about it to the maker. */
-export function criticWords(c: Critique, rules: Pick<Rules, 'allowedCommands' | 'maxInstructions' | 'maxPerCommand'>, label: (card: CardId) => string = (card) => card): CriticLine[] {
+export function criticWords(c: Critique, rules: Pick<Rules, 'allowedCommands' | 'maxInstructions' | 'maxPerCommand'>, label: (card: CardId) => string = (card) => card, live = false): CriticLine[] {
   const lines: CriticLine[] = [];
   const limit = rules.maxInstructions;
   const blocks = rules.allowedCommands.filter((card) => isBlockId(card) || card === 'call');
@@ -105,7 +113,12 @@ export function criticWords(c: Critique, rules: Pick<Rules, 'allowedCommands' | 
             ? `Your own solution uses ${over.used} ${label(over.card)} cards. Your puzzle allows ${over.most}.`
             : 'Your own solution uses a card your puzzle does not give the player.',
     });
-  else if (c.own.solves) lines.push({ tone: 'good', text: `You solved it yourself in ${cards(c.own.steps)}. Others can play it now.` });
+  else if (live) {
+    // A live puzzle is won by playing it; there is no shortest way for the critic to find.
+    lines.push(c.own.solves ? { tone: 'good', text: 'You played it and won. Others can play it now.' } : { tone: 'note', text: 'You have not won it yet. Press Play and reach the goal with the arrow keys. Once you win, others can play it.' });
+    lines.push({ tone: 'note', text: 'A puzzle played with keys has too many ways through for me to try. Your own win is the proof that it works.' });
+    return lines;
+  } else if (c.own.solves) lines.push({ tone: 'good', text: `You solved it yourself in ${cards(c.own.steps)}. Others can play it now.` });
   else lines.push({ tone: 'note', text: 'You have not solved it yourself yet. Build your solution and press Run. Once it works, others can play it.' });
 
   if (c.flat.kind === 'impossible') lines.push({ tone: 'problem', text: 'Nobody can solve this with these cards. I tried every way the robot can go.' });

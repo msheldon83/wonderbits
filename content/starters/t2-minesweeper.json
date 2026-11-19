@@ -1,0 +1,290 @@
+{
+  "schemaVersion": 1,
+  "id": "minesweeper",
+  "title": "Minesweeper",
+  "family": "turn-based",
+  "blurb": "Mines are hidden under the tiles. Uncover every other tile without touching one.",
+  "how": "Tap a tile to uncover it. A number says how many mines touch that tile. An empty tile opens the tiles round it. Tap a mine and the game is over.",
+  "hideRobot": true,
+  "world": {
+    "rows": [
+      ".....",
+      ".....",
+      ".....",
+      ".....",
+      "....."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 4,
+      "y": 4
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": false,
+    "collectAll": false,
+    "byProgram": true
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "rotateCCW",
+      "wait",
+      "repeat",
+      "if",
+      "ifElse",
+      "until",
+      "set",
+      "change",
+      "mark",
+      "fly",
+      "uncover",
+      "win",
+      "lose"
+    ],
+    "allowedSources": [
+      "random:0-4"
+    ],
+    "starterProgram": []
+  },
+  "program": [
+    {
+      "remember": "mines",
+      "kind": "grid",
+      "of": "yesNo",
+      "start": [
+        [
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false
+        ]
+      ]
+    },
+    {
+      "remember": "shown",
+      "kind": "grid",
+      "of": "number",
+      "start": [
+        [
+          9,
+          9,
+          9,
+          9,
+          9
+        ],
+        [
+          9,
+          9,
+          9,
+          9,
+          9
+        ],
+        [
+          9,
+          9,
+          9,
+          9,
+          9
+        ],
+        [
+          9,
+          9,
+          9,
+          9,
+          9
+        ],
+        [
+          9,
+          9,
+          9,
+          9,
+          9
+        ]
+      ],
+      "show": "numbers"
+    },
+    {
+      "remember": "tap",
+      "kind": "position",
+      "start": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "remember": "spot",
+      "kind": "position",
+      "start": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "remember": "column",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "row",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "yes",
+      "kind": "yesNo",
+      "start": true
+    },
+    {
+      "remember": "mine",
+      "kind": "yesNo",
+      "start": false
+    },
+    {
+      "remember": "seen",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "hidden",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "left",
+      "kind": "number",
+      "start": 25
+    },
+    {
+      "repeat": 4,
+      "do": [
+        {
+          "set": "column",
+          "to": "random:0-4"
+        },
+        {
+          "set": "row",
+          "to": "random:0-4"
+        },
+        {
+          "fly": "spot",
+          "column": "column",
+          "row": "row"
+        },
+        {
+          "set": "mine",
+          "to": "read:mines@spot"
+        },
+        {
+          "if": "slot:mine=no",
+          "do": [
+            {
+              "mark": "mines",
+              "at": "spot",
+              "with": "yes"
+            },
+            {
+              "change": "hidden",
+              "by": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "on": "tap",
+      "do": [
+        {
+          "set": "seen",
+          "to": "read:shown@tap"
+        },
+        {
+          "if": "slot:seen=9",
+          "do": [
+            {
+              "set": "mine",
+              "to": "read:mines@tap"
+            },
+            {
+              "if": "slot:mine=yes",
+              "do": [
+                "lose"
+              ],
+              "else": [
+                {
+                  "uncover": "shown",
+                  "mines": "mines",
+                  "at": "tap"
+                },
+                {
+                  "set": "left",
+                  "to": "count:shown=9"
+                },
+                {
+                  "if": "slot:left=hidden",
+                  "do": [
+                    "win"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tries": [
+    "Hide more mines: change the Repeat at the top from 4 times to 6.",
+    "Read how one tap opens a whole patch: open the Library and look at Uncovering tiles.",
+    "Look at the last If: the game is won when the tiles still covered are as many as the mines hidden. Why does that work?",
+    "Make the island bigger on the Board step. The two grids have to grow with it, and so does the random column and row."
+  ],
+  "replay": {
+    "inputs": [
+      "1,0",
+      "2,0",
+      "3,0",
+      "4,0",
+      "0,1",
+      "1,1",
+      "0,2",
+      "4,4"
+    ],
+    "seed": 7
+  }
+}

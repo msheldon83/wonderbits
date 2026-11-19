@@ -309,6 +309,22 @@ const Market = landmark(
     ))}
   </>,
 );
+const Scales = landmark(
+  <>
+    <Hills a="#c3dc8f" b="#aecf7a" />
+    <rect x={116} y={30} width={8} height={62} fill="#7a5b40" />
+    <path d="M96 96 H144 L136 88 H104 Z" fill="#7a5b40" />
+    <path d="M62 44 L178 28" stroke="#7a5b40" strokeWidth={6} strokeLinecap="round" />
+    <circle cx={120} cy={36} r={7} fill="#f2c230" />
+    <path d="M62 44 L46 74 H78 Z M178 28 L164 54 H192 Z" fill="none" stroke="#8a6a4a" strokeWidth={2} />
+    <path d="M42 74 H82 a20 12 0 0 1 -40 0 Z" fill="#e9862b" />
+    <path d="M160 54 H196 a18 11 0 0 1 -36 0 Z" fill="#3291d6" />
+    {[52, 62, 72].map((x) => (
+      <circle key={x} cx={x} cy={69} r={5} fill="#b8701a" />
+    ))}
+    <circle cx={178} cy={49} r={5} fill="#b8701a" />
+  </>,
+);
 const MapRoom = landmark(
   <>
     <Hills a="#a3cf6b" b="#8cbf55" />
@@ -470,6 +486,7 @@ const THEMES: Record<string, MapTheme> = {
   'forest-time': { sky: ['#d6ecf7', '#ecf6f6'], ground: '#bfe0d6', path: '#5b8fa8', landmark: ClockTower, decor: [() => <Waves />, () => <Log />, () => <Hourglass />], travel: { icon: 'boat', verb: 'Sail down the river to' } },
   'forest-memory': { sky: ['#e9e0f7', '#f5f2fa'], ground: '#d9e6c4', path: '#8a5cc7', landmark: Library, decor: [() => <Book />, () => <Cloud />, () => <Book c="#3291d6" />], travel: { icon: 'balloon', verb: 'Float in the balloon to' } },
   'forest-count': { sky: ['#fde8d8', '#faf4ea'], ground: '#e3eab8', path: '#b8701a', landmark: Market, decor: [() => <Abacus />, () => <Crate />, () => <Tree c="#7fbf5c" />], travel: { icon: 'wagon', verb: 'Ride the market wagon to' } },
+  'forest-compare': { sky: ['#e8f3dc', '#f6f6e6'], ground: '#d6e6ac', path: '#b8701a', landmark: Scales, decor: [() => <Crate />, () => <Abacus />, () => <Crate />], travel: { icon: 'hill', verb: 'Walk over the hill to' } },
   'forest-lists': { sky: ['#d3eaf8', '#eaf5f7'], ground: '#cfe2d8', path: '#5b8fa8', landmark: Lighthouse, decor: [() => <Crate />, () => <Waves />, () => <Crate />], travel: { icon: 'ferry', verb: 'Take the ferry to' } },
   'forest-grids': { sky: ['#e4f2dc', '#f2f7ea'], ground: '#cfe3a6', path: '#7a5b40', landmark: MapRoom, decor: [() => <Field />, () => <Tree />, () => <Field />], travel: { icon: 'kite', verb: 'Fly the kite to' } },
   'forest-shuffle': { sky: ['#fbe3ef', '#f7f3f8'], ground: '#e0e8c4', path: '#8a5cc7', landmark: Carnival, decor: [() => <Tent />, () => <Cards />, () => <Tent c="#3291d6" />], travel: { icon: 'flag', verb: 'Head on to' } },

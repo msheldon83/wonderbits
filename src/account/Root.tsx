@@ -120,7 +120,9 @@ function ChildGame({ deviceStore, account, child, device }: { deviceStore: KeyVa
       siblings: device.siblingSharing ? device.children.filter((c) => c.id !== child.id) : [],
       inbox,
       send: async (to, creation) => {
-        await api.share(to, creationToJson(creation));
+        // What a game remembers between plays (a best score, say) is its player's own, and stays behind.
+        const { saved: _saved, ...sendable } = creationToJson(creation);
+        await api.share(to, sendable);
       },
       settle: (id) => {
         setInbox((before) => before.filter((s) => s.id !== id));

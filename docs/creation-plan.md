@@ -209,6 +209,9 @@ and the parser, with tests in each, exactly as a concept pack did.
 
 ### 13e. The live run
 
+**Built 2026-11-19**, as far as live puzzles played with the arrow keys and
+a clock. Taps and robots acting at once wait for 13f (design-notes.md).
+
 The engine change the Workshop depends on. It is worth a spike before the
 rest of 13e to 13g is committed to.
 
@@ -234,6 +237,10 @@ rest of 13e to 13g is committed to.
   work between turns.
 
 ### 13f. The Workshop: starter games
+
+**Built 2026-11-19**: four starter games, each proved by a recorded play.
+The chaser's chase and the line check are built in where the plan hoped
+for cards (design-notes.md).
 
 A starter game is a creation of kind `game`: a world, a program made of When
 cards and functions, memory, and rules. It is content, in

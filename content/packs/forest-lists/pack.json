@@ -3,12 +3,12 @@
   "id": "forest-lists",
   "title": "In a row",
   "themeId": "forest",
-  "order": 11,
+  "order": 12,
   "concepts": [
     "lists"
   ],
   "prerequisites": [
-    "forest-count"
+    "forest-compare"
   ],
   "introduction": {
     "concept": "lists",

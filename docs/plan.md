@@ -195,6 +195,7 @@ Repeat was motivated by the instruction budget the child felt on level 15, and e
 | 8 | Time and the game loop | Tick tock | Built |
 | 9 | Representation and kinds of values | Two things to remember | Built |
 | 10 | Variables | Keep count (planned as Into the dark) | Built |
+| 10b | Comparison: less than, more than, and comparing two values | More or less | Built 2026-11-19 |
 | 11 | Lists | In a row | Built |
 | 12 | Randomness | Never the same twice | Built |
 | 13 | 2D grids | Reading the map | Built |
@@ -202,6 +203,8 @@ Repeat was motivated by the instruction budget the child felt on level 15, and e
 | 15 | Persistence | Overnight | Built |
 | 16 | Records and shapes | The notebook | Built |
 | 17 | Objects: blueprints and instances | Robot team | Built |
+
+**Comparison was missed, and is added (2026-11-19).** The spine went from "is" straight to lists: a check could ask whether count is 3, never whether it is less than 3, or more than another count. Less than, more than, and comparing two remembered values are among the most used tools in any program, and a high score, a timer running out and "the bigger pile" all need them. They are concept 10b, taught by a pack, More or less, placed right after Keep count, where the child has one number that changes and is ready to ask how it stands against another. The conditions exist already (`slot:count<3`, `slot:score>best`) and creation mode uses them; the pack was built the same day, ten levels with the usual mix: predict where a loop stops, say which branch runs, build with a score that jumps over the number, debug a comparison turned the wrong way round, and a closer where the lock takes the larger of two numbers (design-notes.md).
 
 Inheritance stays out of the puzzle curriculum. It is the least essential part of classes, and TypeScript style leans toward interfaces and composition. If it appears at all, it belongs in Phase 4.
 
@@ -245,6 +248,7 @@ Fourteen packs follow Look before you leap, at least ten levels each, like the e
 | Tick tock | A log drifts one tile per tick; wait for it, then cross | A Frogger-style crossing with three lanes at different speeds. Sets up: too much to track in your head. |
 | Two things to remember | Fill in the memory card for a paused robot, matching each value to its kind | A level where only two slots fit, the obvious pair fails, and the right pair needs a different kind of slot. Sets up: the robot needs to change what it remembers. |
 | Into the dark | Count acorns with a counter card to open a three-acorn gate | Dark tiles the robot must remember to avoid on the way back. Sets up: more things than slots, all alike. |
+| More or less (built 2026-11-19) | Each acorn is worth 2 points: walk until score is more than 5, which it never exactly is | Keep the bigger: count steps to a gate and points for acorns, on boards that shuffle; the lock takes whichever number is larger. Sets up: the best of many, and so a row of them. |
 | In a row | Find the first crate with an acorn in a row of five | Count how many crates match and open the gate with that number. Sets up: rows stacked into a whole board. |
 | Never the same twice | Roll a die so that every number can come up | A dice race: roll, walk that many, roll again, without running off the end. Sets up: boards that change, scanned by coordinates. |
 | Reading the map | Go straight to a row or column by its number | A minesweeper-style board where a finger on the map counts the rocks around each tile and marks them. Sets up: values that can drift apart. |
@@ -561,6 +565,8 @@ Work proceeds vertically: each step ends with something runnable on an iPad. Cod
 12. **Data.** The memory budget and kinds of values (Two things to remember); `set` and variables (Into the dark, built as Keep count); lists (In a row) — these three built 2026-11-09 (design-notes.md); 2D grids (Reading the map); seeded randomness (Never the same twice) — these two built 2026-11-09 as well; stored vs. derived (Two scoreboards, built 2026-11-11); the backpack and persistence (Overnight, built 2026-11-11); records (The notebook, built 2026-11-11); blueprints and instances (Robot team, built 2026-11-11). Step 12 is complete.
 13. **Creation mode.** Create on the map with its nudge; remix; design a puzzle with the validator as critic; the Workshop's turn-based and real-time starters; the design card and save-my-place for detours; grown-up review. Planned in sub-steps 13a to 13g in [creation-plan.md](creation-plan.md). The puzzle half, 13a to 13c, was built 2026-11-11 (design-notes.md).
 14. **AI design guide.** Gap detection by rules over the concept graph first, then the AI conversation behind a flag, in creation mode only.
+
+12b. **Comparison.** The More or less pack, after Keep count: less than, more than, and one value against another. The conditions were added to the IR, the interpreter and the printer on 2026-11-19 for creation mode; the pack, its introduction and its island on the map were built the same day.
 
 Steps 9 to 14 are the order of the spine, not a commitment to dates. A pack ships when its validators pass; play-testing between packs is not required (owner's decision, 2026-11-08).
 

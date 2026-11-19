@@ -3,10 +3,12 @@
  * readable TypeScript. Read-only through Phase 3; Phase 4 adds a parser that
  * lifts hand-edited code back into the IR using the @node comments.
  */
-import { isBirdSource, isPosition, isSenseId, MAIN, negationOf, parseWhole, parseField, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type IRNode, type MemorySlot, type ProgramIR, type SenseId, type Source, type Value } from '../ir/types';
+import { isBirdSource, isPosition, isSenseId, MAIN, negationOf, parseCount, parseLine, parseWhole, parseField, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type EndId, type ConditionId, type IRNode, type MemorySlot, type ProgramIR, type SenseId, type Source, type Value } from '../ir/types';
 import type { Teammate } from '../sim/types';
 
-const CALL: Record<CommandId, string> = {
+const CALL: Record<CommandId | EndId, string> = {
+  win: 'robot.win();',
+  lose: 'robot.gameOver();',
   forward: 'robot.forward();',
   rotateCW: 'robot.rotateClockwise();',
   rotateCCW: 'robot.rotateCounterClockwise();',
@@ -85,6 +87,10 @@ function sourceCode(source: Source): string {
   if (source === 'facing') return 'robot.facing()';
   const whole = parseWhole(source);
   if (whole) return `{ ...${whole} }`;
+  const line = parseLine(source);
+  if (line) return `lineOf(${line.grid}, ${line.count})`;
+  const tally = parseCount(source);
+  if (tally) return `countOf(${tally.grid}, ${tally.value})`;
   if (source === 'here') return 'robot.position()';
   if (source === 'acorns') return 'robot.acorns()';
   if (source === 'acornsLeft') return 'bird.acornsLeft()';
@@ -98,6 +104,9 @@ export function conditionCode(c: ConditionId): string {
   if (inner) return notCode(inner);
   if (isSenseId(c)) return SENSE[c];
   const t = parseSlotTest(c)!;
+  // Less than and more than, and any comparison with another slot.
+  if (t.op !== '=') return `${t.slot} ${t.op} ${t.value}`;
+  if (t.other !== undefined) return `${t.slot} === ${t.other}`;
   if (t.value === 'yes') return t.slot;
   if (t.value === 'no') return `!${t.slot}`;
   if (t.value === 'here') return `robot.isAt(${t.slot})`;
@@ -140,6 +149,10 @@ function typeImports(program: ProgramIR): string {
 function notCode(c: ConditionId): string {
   const code = conditionCode(c);
   if (code.startsWith('!')) return code.slice(1);
+  if (code.includes(' <= ')) return code.replace(' <= ', ' > ');
+  if (code.includes(' >= ')) return code.replace(' >= ', ' < ');
+  if (code.includes(' < ')) return code.replace(' < ', ' >= ');
+  if (code.includes(' > ')) return code.replace(' > ', ' <= ');
   if (code.includes(' !== ')) return code.replace(' !== ', ' === ');
   if (code.includes(' === ')) return code.replace(' === ', ' !== ');
   return /^[\w.()]+$/.test(code) ? `!${code}` : `!(${code})`;
@@ -220,6 +233,15 @@ function printNode(node: IRNode, depth: number, lines: string[]): void {
     case 'mark':
       lines.push(`${pad}${cellCode(node.grid, node.at)} = ${node.slot}; ${tag}`);
       return;
+    case 'win':
+      lines.push(`${pad}robot.win(${node.player ?? ''}); ${tag}`);
+      return;
+    case 'steer':
+      lines.push(`${pad}steer('${node.mover}', '${node.how}', { skill: '${node.skill}', every: ${node.every} }); ${tag}`);
+      return;
+    case 'uncover':
+      lines.push(`${pad}${node.grid} = uncover(${node.grid}, ${node.mines}, ${node.at === 'here' ? 'robot.position()' : node.at === 'ahead' ? 'robot.ahead()' : node.at}); ${tag}`);
+      return;
     case 'openGate':
       lines.push(`${pad}robot.openGate('${node.gate}'); ${tag}`);
       return;
@@ -227,7 +249,7 @@ function printNode(node: IRNode, depth: number, lines: string[]): void {
       lines.push(`${pad}robot.closeGate('${node.gate}'); ${tag}`);
       return;
     default:
-      lines.push(`${pad}${CALL[node.kind as CommandId]} ${tag}`);
+      lines.push(`${pad}${CALL[node.kind as CommandId | EndId]} ${tag}`);
   }
 }
 

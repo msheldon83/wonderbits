@@ -34,13 +34,13 @@ starting new work.
 
 The first child test passed on 2026-11-08, and this repository has finished
 **build step 12 of the plan: data**, the last pack of the concept spine. It
-has 175 levels in eighteen packs (Forest, five levels that teach the game; Forest trails, ten
+has 185 levels in nineteen packs (Forest, five levels that teach the game; Forest trails, ten
 sequencing levels; Around and around, Repeat; Look before you leap, If,
 If / else and Repeat until; Same trick, new place, functions; Flip the
 switch, switches and gates; When it happens, When cards for plates and
 acorns; Remote control, key scripts; Tick tock, logs, beetles and the Every
 tick card; Two things to remember, typed memory slots under a budget; Keep
-count, variables that change; In a row, lists; Never the same twice, a
+count, variables that change; More or less, less than, more than and comparing two numbers; In a row, lists; Never the same twice, a
 random generator; Reading the map, coordinates and a finger on the map;
 Two scoreboards, values worked out instead of stored; Overnight, levels of
 several days with a backpack kept overnight; The notebook, records of named
@@ -63,8 +63,10 @@ see it). Solved puzzles
 appear on the map under Made here. Add cards brings the later packs'
 ideas as kits (a counter, a list, the bird, the backpack and more), and a
 child can add and name their own functions, memory and When cards. That
-is sub-steps 13a to 13c and the first part of 13d; the Workshop's games
-come after a child test. See [docs/design-notes.md](docs/design-notes.md) for what is built, what
+is sub-steps 13a to 13f: a puzzle can also be played live, with the arrow
+keys and a clock, or by tapping; and the Workshop has four starter games
+(Crossing, Acorn chase, Noughts and crosses, Minesweeper) to play and then
+change. See [docs/design-notes.md](docs/design-notes.md) for what is built, what
 is deliberately not, and any deviations from the plan.
 
 ## Run it
@@ -147,6 +149,7 @@ src/
   perf/        Performance check page
 content/
   packs/       Level packs as JSON, validated in CI
+  starters/    Starter games as JSON, each with a recorded play that CI plays back to a win
 ```
 
 The editor writes the IR. The IR is printed to TypeScript for the "see the

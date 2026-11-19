@@ -1,5 +1,7 @@
-import { randomInt } from './random';
-import { isPosition, isSenseId, negationOf, parseWhole, parseField, splitSlotPath, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type GridPlace, type MemorySlot, type SenseId, type Source, type Value } from '../ir/types';
+import { nextRandom, randomInt } from './random';
+import { lineOf } from '../library/lineOf';
+import { steer } from '../library/steer';
+import { isPosition, isSenseId, negationOf, parseCount, parseLine, parseWhole, type Comparison, type SteerHow, type SteerSkill, parseField, splitSlotPath, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CommandId, type ConditionId, type GridPlace, type MemorySlot, type SenseId, type Source, type Value } from '../ir/types';
 import type { Cell, Facing, Gate, Mover, ObjectiveDefinition, Plate, SimState, Switch, TileKind, WorldDefinition } from './types';
 
 export const cellKey = (c: Cell): string => `${c.x},${c.y}`;
@@ -49,8 +51,29 @@ export function moverCell(mover: Mover, tick: number): Cell {
 }
 
 /** The mover of a kind on a cell right now, if any. */
+/** Where a mover is now: on its round by the tick, or, for a beetle the program moves, wherever it has been moved to. */
+export function moverPlace(mover: Mover, state: Pick<SimState, 'tick' | 'chasers'>): Cell {
+  return mover.steered ? (state.chasers?.[mover.id] ?? mover.path[0]!) : moverCell(mover, state.tick);
+}
+
 export function moverAt(world: WorldDefinition, state: SimState, cell: Cell, kind: Mover['kind']): Mover | undefined {
-  return moversOf(world).find((m) => m.kind === kind && sameCell(moverCell(m, state.tick), cell));
+  return moversOf(world).find((m) => m.kind === kind && sameCell(moverPlace(m, state), cell));
+}
+
+/**
+ * One move of a beetle the program moves, by a ready-made way of moving
+ * from the library. Its luck and its wander are drawn from the run's
+ * random generator, so the same seed moves it the same way. Returns the
+ * state unchanged when there is no such beetle. Pure.
+ */
+export function steerMover(world: WorldDefinition, state: SimState, id: string, how: SteerHow, skill: SteerSkill): SimState {
+  const mover = moversOf(world).find((m) => m.id === id && m.steered);
+  if (!mover) return state;
+  const canWalk = (c: Cell) => tileAt(world, c) === 'floor' && !closedGateAt(world, state, c) && !moversOf(world).some((m) => m !== mover && m.kind === 'beetle' && sameCell(moverPlace(m, state), c));
+  const luck = nextRandom(state.rng ?? 0);
+  const roll = nextRandom(luck.state);
+  const to = steer(how, skill, moverPlace(mover, state), state.robot, canWalk, luck.value, roll.value);
+  return { ...state, rng: roll.state, chasers: { ...state.chasers, [id]: { x: to.x, y: to.y } } };
 }
 
 export type MoverStep = 'up' | 'down' | 'left' | 'right' | 'stay';
@@ -159,6 +182,7 @@ function initialWorld(world: WorldDefinition): SimState {
   return {
     ...(world.team && { team: world.team.map((t) => ({ ...t.robot })), active: 0 }),
     robot: { ...(world.team?.[0]?.robot ?? world.robot) },
+    ...(moversOf(world).some((m) => m.steered) && { chasers: Object.fromEntries(moversOf(world).filter((m) => m.steered).map((m) => [m.id, { ...m.path[0]! }])) }),
     collected: [],
     open: gatesOf(world)
       .filter((g) => g.open)
@@ -174,7 +198,7 @@ function initialWorld(world: WorldDefinition): SimState {
  * they were.
  */
 export function stateKey(s: SimState, worldPeriod = 1): string {
-  return `${s.robot.x},${s.robot.y},${s.robot.facing}|${[...s.collected].sort().join(';')}|${s.open.join(';')}|${s.tick % worldPeriod}|${s.memory ? JSON.stringify(s.memory) : ''}|${s.rng ?? ''}|${s.day ?? ''}|${s.active ?? ''}:${(s.team ?? []).map((r) => `${r.x},${r.y}`).join(';')}`;
+  return `${s.robot.x},${s.robot.y},${s.robot.facing}|${[...s.collected].sort().join(';')}|${s.open.join(';')}|${s.tick % worldPeriod}|${s.memory ? JSON.stringify(s.memory) : ''}|${s.rng ?? ''}|${s.day ?? ''}|${s.active ?? ''}:${(s.team ?? []).map((r) => `${r.x},${r.y}`).join(';')}|${s.chasers ? JSON.stringify(s.chasers) : ''}`;
 }
 
 /** A board where time passes: something moves, or the program has an every-tick card. */
@@ -270,7 +294,7 @@ export function evaluate(world: WorldDefinition, state: SimState, condition: Con
   const { robot } = state;
   const target = ahead(robot, robot.facing);
   const test = parseSlotTest(condition);
-  if (test) return slotMatches(state, test.slot, test.value);
+  if (test) return slotMatches(state, test.slot, test.value, test.op, test.other);
   switch (condition as SenseId) {
     case 'pathAhead':
       return passable(world, state, target);
@@ -292,10 +316,17 @@ export function evaluate(world: WorldDefinition, state: SimState, condition: Con
 }
 
 /** The value a memory test compares with: 3, yes, E, or the robot's tile for "here". */
-function slotMatches(state: SimState, path: string, written: string): boolean {
+function slotMatches(state: SimState, path: string, written: string, op: Comparison = '=', other?: string): boolean {
   const { slot, field } = splitSlotPath(path);
   const whole = state.memory?.[slot];
   const value = field === undefined ? whole : recordField(whole, field);
+  // Compared with what another slot holds, or with a written number: is, is less than, is more than.
+  if (other !== undefined || op !== '=') {
+    const against = other !== undefined ? state.memory?.[other] : Number(written);
+    if (op === '=') return JSON.stringify(value) === JSON.stringify(against);
+    if (typeof value !== 'number' || typeof against !== 'number') return false;
+    return op === '<' ? value < against : value > against;
+  }
   if (written === 'here') return isPosition(value) && value.x === state.robot.x && value.y === state.robot.y;
   if (written === 'yes' || written === 'no') return value === (written === 'yes');
   if (/^\d+$/.test(written)) return value === Number(written);
@@ -361,6 +392,16 @@ export function shiftPlace(value: Value | undefined, dir: Facing): Value | undef
   return ahead(value, dir);
 }
 
+/**
+ * The piece with `count` in a row on a grid, across, down or slantwise, or
+ * 0 when no piece has. A piece is any number but 0, which is an empty tile.
+ */
+export function lineWinner(grid: Value | undefined, count: number): number {
+  // The library's lineOf does the looking; this only makes sure it is handed a grid of numbers.
+  if (!Array.isArray(grid)) return 0;
+  return lineOf(grid.map((row) => (Array.isArray(row) ? row.map((v) => (typeof v === 'number' ? v : 0)) : [])), count);
+}
+
 /** One field of a record, or undefined when the value is not a record with that field. */
 export function recordField(record: Value | undefined, field: string): Value | undefined {
   if (typeof record !== 'object' || record === null || Array.isArray(record) || isPosition(record)) return undefined;
@@ -371,6 +412,13 @@ export function readSource(world: WorldDefinition, state: SimState, source: Sour
   if (typeof source !== 'string') return source;
   const field = parseField(source);
   if (field) return recordField(state.memory?.[field.record], field.field) ?? false;
+  const line = parseLine(source);
+  if (line) return lineWinner(state.memory?.[line.grid], line.count);
+  const tally = parseCount(source);
+  if (tally) {
+    const grid = state.memory?.[tally.grid];
+    return Array.isArray(grid) ? grid.flat().filter((v) => v === tally.value).length : 0;
+  }
   // A whole record is copied, so the list it goes into keeps its own.
   const whole = parseWhole(source);
   if (whole) return structuredClone(state.memory?.[whole] ?? {});
@@ -472,6 +520,8 @@ export function teamOnFlags(world: WorldDefinition, state: SimState): boolean {
 }
 
 export function objectiveMet(world: WorldDefinition, objective: ObjectiveDefinition, state: SimState): boolean {
+  // A game's program wins it; the board alone never does.
+  if (objective.byProgram) return false;
   if (memoryShortfall(objective, state).length > 0) return false;
   if (!withinOutcomes(objective, state)) return false;
   if (objective.reachGoal && !teamOnFlags(world, state)) return false;

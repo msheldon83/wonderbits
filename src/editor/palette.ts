@@ -93,6 +93,7 @@ export function needsOf(command: CardId, memory: readonly MemorySlot[]): string 
       return lists.some((l) => memory.some((m) => m.kind === (l.of ?? 'number'))) ? null : `a ${WORDS[lists[0]!.of ?? 'number'] ?? 'slot'} to hold each item`;
     }
     case 'mark':
+    case 'uncover':
       return has('grid') ? null : 'a grid';
     case 'fly':
     case 'shift':

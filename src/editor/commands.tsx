@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { functionLabel, isPosition, isSenseId, negationOf, parseWhole, parseField, splitSlotPath, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CardId, type RandomSource, type ConditionId, type IRNode, type SenseId, type Source, type Value } from '../ir/types';
+import { functionLabel, isPosition, isSenseId, negationOf, parseCount, parseLine, parseWhole, parseField, splitSlotPath, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, type CardId, type RandomSource, type ConditionId, type IRNode, type SenseId, type Source, type Value } from '../ir/types';
 import { TurnArrow } from '../render/art';
 
 export interface CommandInfo {
@@ -221,6 +221,46 @@ export const COMMANDS: Record<CardId, CommandInfo> = {
     description: 'Run the cards of a function',
     icon: <FunctionIcon />,
   },
+  steer: {
+    label: 'Move a beetle',
+    description: 'Move a beetle the game controls: chase the robot, run from it, or wander',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <ellipse cx="13" cy="17" rx="7" ry="8" {...stroke} strokeWidth={2.6} />
+        <path d="M13 9v16M22 16h7M26 12l4 4-4 4" {...stroke} strokeWidth={2.6} />
+      </svg>
+    ),
+  },
+  uncover: {
+    label: 'Uncover',
+    description: 'Uncover a tile, and the empty area round it, as in Minesweeper',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <rect x="5" y="5" width="22" height="22" rx="4" {...stroke} strokeWidth={2.6} />
+        <path d="M5 16h22M16 5v22" {...stroke} strokeWidth={2} />
+        <circle cx="10.5" cy="10.5" r="2" fill="currentColor" />
+      </svg>
+    ),
+  },
+  win: {
+    label: 'Win',
+    description: 'The game is won: it ends here',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <path d="M10 6h12v6a6 6 0 0 1-12 0zM10 8H6c0 4 2 6 4 6M22 8h4c0 4-2 6-4 6M16 18v5M11 26h10" {...stroke} strokeWidth={2.6} />
+      </svg>
+    ),
+  },
+  lose: {
+    label: 'Game over',
+    description: 'The game is over: it ends here',
+    icon: (
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <circle cx="16" cy="16" r="10" {...stroke} strokeWidth={2.6} />
+        <path d="M12 12l8 8M20 12l-8 8" {...stroke} strokeWidth={2.6} />
+      </svg>
+    ),
+  },
 };
 
 /** Three cards folded into one: a function's icon, on its cards and its heading. */
@@ -275,6 +315,10 @@ export function sourceWords(source: Source): string {
   if (field) return `${field.record}'s ${field.field}`;
   const whole = parseWhole(source);
   if (whole) return `a copy of ${whole}`;
+  const line = parseLine(source);
+  if (line) return `the piece with ${line.count} in a row on ${line.grid}`;
+  const tally = parseCount(source);
+  if (tally) return tally.value === 9 ? `how many tiles of ${tally.grid} are covered` : `how many tiles of ${tally.grid} hold ${tally.value}`;
   const read = parseRead(source);
   if (read) return `${read.grid} ${placeWords(read.at)}`;
   const counted = parseLength(source);
@@ -304,11 +348,13 @@ export function conditionLabel(c: ConditionId): string {
   // A check turned round: "not at the flag", "count is not 3".
   const inner = negationOf(c);
   if (inner) return isSenseId(inner) ? `not ${CONDITIONS[inner].label}` : conditionLabel(inner).replace(' is ', ' is not ');
+  // "is not less than" reads as it should; so does "is not more than".
   if (isSenseId(c)) return CONDITIONS[c].label;
   const t = parseSlotTest(c);
   if (!t) return c;
   const { slot, field } = splitSlotPath(t.slot);
-  return `${field ? `${slot}'s ${field}` : slot} is ${t.value === 'here' ? 'here' : (DIRECTION_WORDS[t.value] ?? t.value)}`;
+  const how = t.op === '<' ? 'is less than' : t.op === '>' ? 'is more than' : 'is';
+  return `${field ? `${slot}'s ${field}` : slot} ${how} ${t.value === 'here' ? 'here' : (DIRECTION_WORDS[t.value] ?? t.value)}`;
 }
 
 /** A block's own words, with its count or condition filled in. */
@@ -366,6 +412,7 @@ export function eventLabel(event: string): string {
   if (kind === 'key') return `When ${KEY_WORDS[arg ?? ''] ?? arg} is pressed`;
   if (kind === 'acorn') return 'When an acorn is picked up';
   if (kind === 'tick') return 'Every tick';
+  if (kind === 'tap') return 'When a tile is tapped';
   return `When ${event}`;
 }
 
@@ -375,5 +422,6 @@ export function eventShort(event: string): string {
   if (kind === 'stepOn') return `plate ${arg}!`;
   if (kind === 'key') return KEY_WORDS[arg ?? ''] ?? String(arg);
   if (kind === 'acorn') return 'acorn!';
+  if (kind === 'tap') return 'tap!';
   return 'tick';
 }

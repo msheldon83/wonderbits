@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "id": "q04-more-than-two",
+  "title": "More than two",
+  "intro": "Put the cards in order: walk until steps is more than 2, then turn to the flag.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "....",
+      "...."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 3,
+      "y": 1
+    },
+    "collectibles": []
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "comparison",
+    "activity": "reorder"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "change",
+      "until"
+    ],
+    "allowedConditions": [
+      "slot:steps>2"
+    ],
+    "starterProgram": [
+      {
+        "remember": "steps",
+        "kind": "number",
+        "start": 0
+      }
+    ],
+    "suppliedCards": [
+      "until",
+      "forward",
+      "change",
+      "rotateCW",
+      "forward"
+    ]
+  },
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 1
+        }
+      ],
+      "text": "Three steps along the top, then one down to the flag."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "The loop holds a step and an Add, so steps counts every go."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 0,
+      "command": "until",
+      "text": "The loop goes first. More than 2 means it stops at 3."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "steps",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "until": "slot:steps>2",
+      "do": [
+        "forward",
+        {
+          "change": "steps",
+          "by": 1
+        }
+      ]
+    },
+    "rotateCW",
+    "forward"
+  ],
+  "stars": {
+    "noHints": true
+  }
+}

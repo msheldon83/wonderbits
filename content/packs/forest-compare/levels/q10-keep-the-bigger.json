@@ -1,0 +1,220 @@
+{
+  "schemaVersion": 1,
+  "id": "q10-keep-the-bigger",
+  "title": "Keep the bigger",
+  "intro": "One program for every shuffle. Count steps to the gate; acorns score 2 each. The lock takes whichever number is bigger.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      "........"
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 6,
+      "y": 0
+    },
+    "collectibles": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 3,
+        "y": 0
+      },
+      {
+        "x": 4,
+        "y": 0
+      }
+    ],
+    "gates": [
+      {
+        "id": "a",
+        "x": 5,
+        "y": 0,
+        "open": false,
+        "code": 6
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": true
+  },
+  "curriculum": {
+    "concept": "comparison",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "until",
+      "ifElse",
+      "change",
+      "unlock"
+    ],
+    "allowedConditions": [
+      "blockedAhead",
+      "slot:score>steps",
+      "slot:score<steps",
+      "slot:score=steps"
+    ],
+    "maxInstructions": 10,
+    "maxPerCommand": {
+      "change": 2
+    },
+    "starterProgram": [
+      {
+        "remember": "score",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "remember": "steps",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "on": "acorn",
+        "do": [
+          {
+            "change": "score",
+            "by": 2
+          }
+        ]
+      }
+    ]
+  },
+  "shuffles": [
+    {
+      "goal": {
+        "x": 7,
+        "y": 0
+      },
+      "collectibles": [
+        {
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "gates": [
+        {
+          "id": "a",
+          "x": 6,
+          "y": 0,
+          "open": false,
+          "code": 5
+        }
+      ]
+    },
+    {
+      "goal": {
+        "x": 5,
+        "y": 0
+      },
+      "collectibles": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "gates": [
+        {
+          "id": "a",
+          "x": 4,
+          "y": 0,
+          "open": false,
+          "code": 4
+        }
+      ]
+    }
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        }
+      ],
+      "text": "Shuffle moves the gate and the acorns. Sometimes score is bigger, sometimes steps."
+    },
+    {
+      "kind": "card",
+      "command": "ifElse",
+      "text": "Compare the two. One branch unlocks with score, the other with steps."
+    },
+    {
+      "kind": "fill",
+      "path": [],
+      "slot": 1,
+      "command": "ifElse",
+      "text": "After the walk: If score is more than steps, unlock with score, or else with steps."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "score",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "steps",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "until": "blockedAhead",
+      "do": [
+        "forward",
+        {
+          "change": "steps",
+          "by": 1
+        }
+      ]
+    },
+    {
+      "if": "slot:score>steps",
+      "do": [
+        {
+          "unlock": "a",
+          "with": "score"
+        }
+      ],
+      "else": [
+        {
+          "unlock": "a",
+          "with": "steps"
+        }
+      ]
+    },
+    "forward",
+    "forward",
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "change": "score",
+          "by": 2
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 9
+  }
+}

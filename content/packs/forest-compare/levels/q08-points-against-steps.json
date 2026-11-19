@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "id": "q08-points-against-steps",
+  "title": "Points against steps",
+  "intro": "Every step adds 1 to steps. Every acorn adds 2 to score. Stop when score is more than steps: the flag is just below.",
+  "themeId": "forest",
+  "world": {
+    "rows": [
+      ".......",
+      "......."
+    ],
+    "robot": {
+      "x": 0,
+      "y": 0,
+      "facing": "E"
+    },
+    "goal": {
+      "x": 3,
+      "y": 1
+    },
+    "collectibles": [
+      {
+        "x": 2,
+        "y": 0
+      },
+      {
+        "x": 3,
+        "y": 0
+      }
+    ]
+  },
+  "objective": {
+    "reachGoal": true,
+    "collectAll": false
+  },
+  "curriculum": {
+    "concept": "comparison",
+    "activity": "build"
+  },
+  "programming": {
+    "allowedCommands": [
+      "forward",
+      "rotateCW",
+      "until",
+      "change"
+    ],
+    "allowedConditions": [
+      "slot:score>steps",
+      "slot:score<steps",
+      "slot:score=steps"
+    ],
+    "maxInstructions": 7,
+    "maxPerCommand": {
+      "change": 2
+    },
+    "starterProgram": [
+      {
+        "remember": "score",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "remember": "steps",
+        "kind": "number",
+        "start": 0
+      },
+      {
+        "on": "acorn",
+        "do": [
+          {
+            "change": "score",
+            "by": 2
+          }
+        ]
+      }
+    ]
+  },
+  "shuffles": [
+    {
+      "goal": {
+        "x": 1,
+        "y": 1
+      },
+      "collectibles": [
+        {
+          "x": 1,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "goal": {
+        "x": 5,
+        "y": 1
+      },
+      "collectibles": [
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        }
+      ]
+    }
+  ],
+  "hints": [
+    {
+      "kind": "region",
+      "cells": [
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "text": "Here: 1 step, 0 points. 2 steps, 2 points. 3 steps, 4 points: stop."
+    },
+    {
+      "kind": "card",
+      "command": "until",
+      "text": "The loop needs a step and an Add 1 to steps, until score is more than steps."
+    },
+    {
+      "kind": "fill",
+      "path": [
+        0
+      ],
+      "slot": 1,
+      "command": "change",
+      "text": "Inside the loop, after the step: add 1 to steps."
+    }
+  ],
+  "referenceSolution": [
+    {
+      "remember": "score",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "remember": "steps",
+      "kind": "number",
+      "start": 0
+    },
+    {
+      "until": "slot:score>steps",
+      "do": [
+        "forward",
+        {
+          "change": "steps",
+          "by": 1
+        }
+      ]
+    },
+    "rotateCW",
+    "forward",
+    {
+      "on": "acorn",
+      "do": [
+        {
+          "change": "score",
+          "by": 2
+        }
+      ]
+    }
+  ],
+  "stars": {
+    "noHints": true,
+    "budget": 6
+  }
+}

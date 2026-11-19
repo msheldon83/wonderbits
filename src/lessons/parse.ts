@@ -3,7 +3,7 @@
  * contributors may write by hand, so errors name the exact path at fault.
  */
 import { slotOfSpec, type NodeSpec } from '../ir/spec';
-import { FUNCTION_NAME, parseWhole, SLOT_PATH, isCardId, isCommandId, isConditionId, isEventId, isSenseId, KEYS, BOARD_MAPS, parseItem, parseLength, parseRandom, parseRead, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, VALUE_KINDS, type CardId, type ConditionId, type ItemKind, type Key, type ListOf, parseField, type Source, type Value, type ValueKind } from '../ir/types';
+import { FUNCTION_NAME, GRID_SHOWS, isEndId, parseCount, STEER_EVERY, STEER_HOWS, STEER_SKILLS, type SteerHow, type SteerSkill, parseLine, parseWhole, SLOT_PATH, type GridShow, isCardId, isCommandId, isConditionId, isEventId, isSenseId, KEYS, BOARD_MAPS, parseItem, parseLength, parseRandom, parseRead, REPEAT_MAX, REPEAT_MIN, RESERVED_NAMES, VALUE_KINDS, type CardId, type ConditionId, type ItemKind, type Key, type ListOf, parseField, type Source, type Value, type ValueKind } from '../ir/types';
 import { FACINGS, type Cell, type Facing, type Gate, type Mover, type ObjectiveDefinition, type Plate, type Switch, type Teammate, type TileKind, type WorldDefinition } from '../sim/types';
 import { CONTENT_SCHEMA_VERSION, type MemoryField, type Activity, type ConceptIntroduction, type HintPath, type HintStep, type PackManifest, type PuzzleDefinition, type RealWord } from './types';
 
@@ -130,7 +130,7 @@ class Reader {
     return v.flatMap((s, i): NodeSpec[] => {
       const at = `${path}[${i}]`;
       if (typeof s === 'string') {
-        if (isCommandId(s)) return [s];
+        if (isCommandId(s) || isEndId(s)) return [s];
         this.fail(at, `unknown command ${JSON.stringify(s)}; blocks are objects like { "repeat": 3, "do": [...] }`);
         return [];
       }
@@ -152,6 +152,14 @@ class Reader {
       if ('unlock' in s) return [{ unlock: this.gateId(s.unlock, `${at}.unlock`), with: this.functionName(s.with, `${at}.with`) }];
       if ('push' in s) return [{ push: this.functionName(s.push, `${at}.push`), to: this.source(s.to, `${at}.to`) }];
       if ('mark' in s) return [{ mark: this.functionName(s.mark, `${at}.mark`), at: this.place(s.at, `${at}.at`), with: this.functionName(s.with, `${at}.with`) }];
+      if ('win' in s) return [{ win: this.functionName(s.win, `${at}.win`) }];
+      if ('steer' in s) {
+        const how = (STEER_HOWS as readonly unknown[]).includes(s.how) ? (s.how as SteerHow) : (this.fail(`${at}.how`, `expected one of ${STEER_HOWS.join(', ')}`), 'chase' as const);
+        const skill = (STEER_SKILLS as readonly unknown[]).includes(s.skill) ? (s.skill as SteerSkill) : (this.fail(`${at}.skill`, `expected one of ${STEER_SKILLS.join(', ')}`), 'hard' as const);
+        const every = (STEER_EVERY as readonly unknown[]).includes(s.every) ? (s.every as number) : (this.fail(`${at}.every`, `expected one of ${STEER_EVERY.join(', ')}`), 1);
+        return [{ steer: this.str(s.steer, `${at}.steer`), how, skill, every }];
+      }
+      if ('uncover' in s) return [{ uncover: this.functionName(s.uncover, `${at}.uncover`), mines: this.functionName(s.mines, `${at}.mines`), at: this.place(s.at, `${at}.at`) }];
       if ('goRow' in s) return [{ goRow: this.target(s.goRow, `${at}.goRow`) }];
       if ('goColumn' in s) return [{ goColumn: this.target(s.goColumn, `${at}.goColumn`) }];
       if ('shift' in s) {
@@ -282,13 +290,20 @@ class Reader {
     // A record may stand on the board, like a sign: "at" is its tile.
     if (o.at !== undefined && kind !== 'record') this.fail(`${path}.at`, 'only a record can stand on the board');
     const at = o.at !== undefined && kind === 'record' ? this.cell(o.at, `${path}.at`) : undefined;
-    const spec: Extract<NodeSpec, { remember: string }> = { remember: name, kind, ...(of && { of }), ...(shape && { shape: shape.shape, fields: shape.fields }), ...(at && { at }), ...(o.keep !== undefined && this.bool(o.keep, `${path}.keep`) && { keep: true }) };
+    const spec: Extract<NodeSpec, { remember: string }> = { remember: name, kind, ...(of && { of }), ...(shape && { shape: shape.shape, fields: shape.fields }), ...(at && { at }), ...(o.keep !== undefined && this.bool(o.keep, `${path}.keep`) && { keep: true }), ...(o.show !== undefined && { show: this.show(o.show, kind, `${path}.show`) }) };
     if (o.start !== undefined) {
       const map = kind === 'grid' && of === 'yesNo' && (BOARD_MAPS as readonly unknown[]).includes(o.start);
       if (!map && !valueFits(o.start, kind, of, shape?.fields)) this.fail(`${path}.start`, `expected a ${kind}${of ? ` of ${of}` : ''} value${shape ? ` with exactly the fields ${Object.keys(shape.fields).join(', ')}` : ''}`);
       else spec.start = o.start as Value;
     }
     return spec;
+  }
+  /** How a grid slot is drawn on the board's tiles: "pieces" or "numbers". */
+  show(v: unknown, kind: ValueKind, path: string): GridShow {
+    if (kind !== 'grid') this.fail(path, 'only a grid can be shown on the board');
+    if ((GRID_SHOWS as readonly unknown[]).includes(v)) return v as GridShow;
+    this.fail(path, `expected one of ${GRID_SHOWS.join(', ')}`);
+    return 'pieces';
   }
   /** A record's shape: { "shape": "Crate", "fields": { "number": "number", "key": "yesNo" } }. */
   shape(o: Obj, path: string): { shape: string; fields: Record<string, ItemKind> } {
@@ -321,7 +336,7 @@ class Reader {
   source(v: unknown, path: string): Source {
     if (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 999) return v;
     if (typeof v === 'boolean') return v;
-    if (typeof v === 'string' && (['N', 'E', 'S', 'W', 'facing', 'here', 'acorns', 'acornsLeft'].includes(v) || isSenseId(v) || parseRead(v) || parseLength(v) || parseRandom(v) || parseItem(v) || parseField(v) || parseWhole(v))) return v;
+    if (typeof v === 'string' && (['N', 'E', 'S', 'W', 'facing', 'here', 'acorns', 'acornsLeft'].includes(v) || isSenseId(v) || parseRead(v) || parseLength(v) || parseRandom(v) || parseItem(v) || parseField(v) || parseWhole(v) || parseLine(v) || parseCount(v))) return v;
     this.fail(path, `expected a value to set: a number, true or false, N, E, S or W, "facing", "here", "acorns", "acornsLeft", a sense or a random source, got ${JSON.stringify(v)}`);
     return 0;
   }
@@ -355,7 +370,10 @@ class Reader {
     const kind = o.kind === 'log' || o.kind === 'beetle' ? o.kind : (this.fail(`${path}.kind`, 'expected "log" or "beetle"'), 'log');
     const cells = this.list(o.path, `${path}.path`, (c, at) => this.cell(c, at));
     if (cells.length === 0) this.fail(`${path}.path`, 'expected at least one cell');
-    return { id: this.str(o.id, `${path}.id`), kind, path: cells };
+    // A beetle may be the program's to move, instead of walking a round.
+    const steered = o.steered === undefined ? false : this.bool(o.steered, `${path}.steered`);
+    if (steered && kind !== 'beetle') this.fail(`${path}.steered`, 'only a beetle can be moved by the program');
+    return { id: this.str(o.id, `${path}.id`), kind, path: cells, ...(steered && { steered: true }) };
   }
   /**
    * Shuffled versions of a board. Each lists only what changes (rows, the
@@ -480,6 +498,7 @@ function readObjective(r: Reader, v: unknown): ObjectiveDefinition {
     collectAll: r.bool(objective.collectAll, 'objective.collectAll'),
     ...(objective.memory !== undefined && { memory: r.obj(objective.memory, 'objective.memory') as Record<string, Value> }),
     ...(objective.covers !== undefined && { covers: r.covers(objective.covers, 'objective.covers') }),
+    ...(objective.byProgram !== undefined && r.bool(objective.byProgram, 'objective.byProgram') && { byProgram: true }),
   };
 }
 

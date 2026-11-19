@@ -114,7 +114,7 @@ export function validateWorld(world: WorldDefinition, objective: ObjectiveDefini
   world.collectibles.forEach((c) => {
     if (tileAt(world, c) !== 'floor') errors.push(`collectible at ${cellKey(c)} must be on a floor tile`);
   });
-  if (!objective.reachGoal && !objective.collectAll && !objective.memory && !objective.covers) errors.push('objective must ask for something');
+  if (!objective.reachGoal && !objective.collectAll && !objective.memory && !objective.covers && !objective.byProgram) errors.push('objective must ask for something');
 
   // World state: gates on floor, switches that flip real gates, and one thing per tile.
   const gates = gatesOf(world);
@@ -440,6 +440,12 @@ function slotUses(spec: readonly NodeSpec[]): SlotUse[] {
     for (const c of 'if' in s ? [s.if] : 'until' in s ? [s.until] : []) {
       const t = parseSlotTest(c);
       if (!t) continue;
+      // Compared with another slot, or as less or more: both sides are numbers the program remembers.
+      if (t.other !== undefined || t.op !== '=') {
+        own.push({ slot: t.slot.split('.')[0]!, kind: t.slot.includes('.') ? 'record' : 'number', card: 'a check' });
+        if (t.other !== undefined) own.push({ slot: t.other, kind: 'number', card: 'a check' });
+        continue;
+      }
       const path = splitSlotPath(t.slot);
       if (path.field === undefined) own.push({ slot: t.slot, kind: testKind(t.value), card: 'a check' });
       else own.push({ slot: path.slot, kind: 'record', card: 'a check' }, { slot: `${path.slot}.${path.field}`, kind: 'field', card: 'a check', list: path.slot, field: path.field, of: testKind(t.value) });
@@ -702,6 +708,7 @@ export function validateIntroduction(intro: ConceptIntroduction, errors: string[
     objects: [world.team !== undefined && trace.some((e) => e.op === 'next'), 'never has a second robot run the blueprint'],
     persistence: [trace.some((e) => e.op === 'night') && splitSpec(program).memory.some((m) => m.keep), 'never keeps a slot in the backpack overnight'],
     records: [setSources(program).some((src) => parseField(src) !== null) || conditionsOfSpec(program).some((c) => splitSlotPath(parseSlotTest(c)?.slot ?? '').field !== undefined), 'never reads a field of a record'],
+    comparison: [conditionsOfSpec(program).some((c) => { const t = parseSlotTest(c); return !!t && (t.op !== '=' || t.other !== undefined); }), 'never asks whether a number is less or more'],
     derived: [setSources(program).some((src) => typeof src === 'string' && !parseRandom(src) && !['N', 'E', 'S', 'W'].includes(src)), 'never works a value out from what is there'],
   };
   const check = shows[intro.concept];

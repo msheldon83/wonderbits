@@ -1,6 +1,6 @@
 import type { IdFactory } from './ids';
 import { buildNodes, specOf, splitSpec, type NodeSpec } from './spec';
-import { functionContainerId, functionOfContainer, handlerContainerId, handlerOfContainer, innerCondition, IR_VERSION, MAIN, parseField, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, parseWhole, type Branch, type CommandId, type EventHandler, type IRNode, type MemorySlot, type NodeId, type Place, type Procedure, type ProgramIR } from './types';
+import { functionContainerId, functionOfContainer, handlerContainerId, handlerOfContainer, innerCondition, IR_VERSION, MAIN, parseCount, parseField, parseLine, parseItem, parseLength, parseRandom, parseRead, parseSlotTest, parseWhole, type Branch, type CommandId, type EventHandler, type IRNode, type MemorySlot, type NodeId, type Place, type Procedure, type ProgramIR } from './types';
 
 export function emptyProgram(): ProgramIR {
   return { version: IR_VERSION, procedures: [{ name: MAIN, body: [] }], handlers: [] };
@@ -56,6 +56,12 @@ export function slotsInUse(program: ProgramIR): Set<string> {
       if (node.at !== 'here' && node.at !== 'ahead') used.add(node.at);
     }
     if (node.kind === 'push') used.add(node.list);
+    if (node.kind === 'win' && node.player) used.add(node.player);
+    if (node.kind === 'uncover') {
+      used.add(node.grid);
+      used.add(node.mines);
+      if (node.at !== 'here' && node.at !== 'ahead') used.add(node.at);
+    }
     if (node.kind === 'shift') used.add(node.slot);
     if (node.kind === 'fly') {
       used.add(node.slot);
@@ -67,6 +73,10 @@ export function slotsInUse(program: ProgramIR): Set<string> {
       if (counted) used.add(counted);
       const whole = parseWhole(node.to);
       if (whole) used.add(whole);
+      const line = parseLine(node.to);
+      if (line) used.add(line.grid);
+      const tally = parseCount(node.to);
+      if (tally) used.add(tally.grid);
       const field = parseField(node.to);
       if (field) used.add(field.record);
       const random = parseRandom(node.to);
@@ -92,6 +102,8 @@ export function slotsInUse(program: ProgramIR): Set<string> {
       const test = parseSlotTest(innerCondition(node.condition));
       // A test of a record's field uses the record.
       if (test) used.add(test.slot.split('.')[0]!);
+      // Compared with another slot: that one is used too.
+      if (test?.other) used.add(test.other);
     }
   }
   return used;

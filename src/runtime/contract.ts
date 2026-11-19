@@ -19,6 +19,29 @@ export interface RunLimits {
   maxMillis: number;
 }
 
+/**
+ * One thing that happens to a live run from outside: the player presses a
+ * key or taps a tile, or the clock ticks. A live run is its program, its board, its seed
+ * and the list of these in order: the same list always plays the same game.
+ */
+export type LiveInput = { kind: 'key'; key: Key } | { kind: 'tick' } | { kind: 'tap'; x: number; y: number };
+
+/** How a run stays alive after its program's own cards have run. */
+export interface LiveSettings {
+  /**
+   * True on a real-time game: the world moves only when the clock ticks,
+   * never because the robot acted. False on a turn-based one: nothing moves
+   * until the player does, and each robot action is followed by a tick as
+   * in a puzzle.
+   */
+  clock: boolean;
+  /** A recording to play back. Without it the run waits for each input. */
+  inputs?: LiveInput[];
+}
+
+/** The most events a live run makes in all, however long it is played. */
+export const LIVE_TOTAL_STEPS = 20000;
+
 export const DEFAULT_LIMITS: RunLimits = { maxSteps: 600, maxMillis: 2000 };
 
 export interface RunRequest {
@@ -35,6 +58,8 @@ export interface RunRequest {
   seed?: number;
   /** Levels of several days: the program runs once a day, keeping only the backpack overnight. */
   days?: number;
+  /** A live run: after main, key presses and ticks drive it. With `inputs`, a recording is played back. */
+  live?: LiveSettings;
 }
 
 export type TraceResult =
@@ -163,12 +188,21 @@ export interface UnlockEvent extends TraceBase {
   opened: boolean;
 }
 
-export type TraceEvent = ActionEvent | CheckEvent | LoopEvent | CallEvent | GateEvent | WhenEvent | PressEvent | TickEvent | SetEvent | FaceEvent | UnlockEvent | NightEvent | NextRobotEvent;
+/** A Move a beetle card moved a beetle the program controls. Its after state holds where the beetle now is. */
+export interface SteerEvent extends TraceBase {
+  op: 'steer';
+  mover: string;
+}
+
+export type TraceEvent = SteerEvent | ActionEvent | CheckEvent | LoopEvent | CallEvent | GateEvent | WhenEvent | PressEvent | TickEvent | SetEvent | FaceEvent | UnlockEvent | NightEvent | NextRobotEvent;
 
 export type RunOutcome =
-  | { status: 'success' }
+  /** The goal was met, or a Win card ran. A Win card may say which player won. */
+  | { status: 'success'; player?: number }
   | { status: 'incomplete' }
   | { status: 'blocked'; nodeId: NodeId; reason: BlockReason }
+  /** A game's program said the game is over, with a Game over card. */
+  | { status: 'lost'; nodeId: NodeId }
   | { status: 'halted'; reason: 'step-limit' | 'time-limit' | 'forever' }
   /** The program asked for something impossible. A card's error carries its node and a message a child can read. */
   | { status: 'error'; message: string; nodeId?: NodeId };
@@ -189,6 +223,8 @@ export interface CritiqueRequest {
   program: ProgramIR;
   input?: Key[];
   days?: number;
+  /** A live puzzle: whether it has a clock, and the maker's last winning play with its seed, if there is one. Played back, it is the maker's solution. */
+  live?: { clock: boolean; inputs?: LiveInput[]; seed?: number };
   /** How long the search for the shortest way may take; past it the critic says only what it knows. */
   searchMillis: number;
 }
@@ -203,10 +239,66 @@ export interface Critique {
   flat: { kind: 'found'; steps: number; /** That way uses more of some card than the puzzle allows, so a player cannot take it. */ overCardLimit?: boolean } | { kind: 'impossible' } | { kind: 'unknown' };
 }
 
+/** Start a live run. It answers with trace events, then `waiting` each time it needs an input, then `done`. */
+export interface LiveStartRequest {
+  type: 'live-start';
+  contract: typeof CONTRACT_VERSION;
+  /** Names the run: its inputs and its stop carry the same id. */
+  requestId: string;
+  program: ProgramIR;
+  world: WorldDefinition;
+  objective: ObjectiveDefinition;
+  /** For each turn: the most events one input may cause, and how long it may take. */
+  limits: RunLimits;
+  seed?: number;
+  clock: boolean;
+}
+
+/** The next input of a live run that is waiting. */
+export interface LiveInputRequest {
+  type: 'live-input';
+  requestId: string;
+  input: LiveInput;
+}
+
+/** End a live run where it stands. It answers with `done`. */
+export interface LiveStopRequest {
+  type: 'live-stop';
+  requestId: string;
+}
+
+export type LiveRequest = LiveStartRequest | LiveInputRequest | LiveStopRequest;
+
+/** How a live run ended, with the inputs that were played: its recording. */
+export interface LiveResult {
+  outcome: RunOutcome;
+  final: SimState | null;
+  inputs: LiveInput[];
+}
+
+/** What the app hears from a live run. */
+export interface LiveListener {
+  /** Something happened: draw it. Events arrive in order. */
+  event(event: TraceEvent): void;
+  /** The run has played everything so far and waits for the next input. */
+  waiting?(): void;
+  done(result: LiveResult): void;
+}
+
+/** The app's hold on a live run. */
+export interface LiveHandle {
+  /** The next input. Inputs sent while the run is busy wait their turn, in order. */
+  send(input: LiveInput): void;
+  /** End the run where it stands. */
+  stop(): void;
+}
+
 export type RuntimeMessage =
   | { type: 'trace'; requestId: string; event: TraceEvent }
   | { type: 'done'; requestId: string; outcome: RunOutcome; final: SimState; executedSteps: number }
-  | { type: 'critique'; requestId: string; critique: Critique };
+  | { type: 'critique'; requestId: string; critique: Critique }
+  /** A live run has nothing left to do until its next input. */
+  | { type: 'waiting'; requestId: string };
 
 export interface RunResult {
   trace: TraceEvent[];
@@ -220,5 +312,7 @@ export interface Runtime {
   run(input: Omit<RunRequest, 'type' | 'contract' | 'requestId'>): Promise<RunResult>;
   /** The critic's word on a child's puzzle, or null when it did not answer in time. Runs apart from `run`, so a search never holds up a run. */
   critique(input: Omit<CritiqueRequest, 'type' | 'contract' | 'requestId'>): Promise<Critique | null>;
+  /** Start a live run: main plays, then key presses and ticks drive it, one turn each. Runs apart from `run`. */
+  live(input: Omit<LiveStartRequest, 'type' | 'contract' | 'requestId'>, listener: LiveListener): LiveHandle;
   dispose(): void;
 }

@@ -3,7 +3,7 @@
  * start something new. It is always open; a quiet line points at the next
  * island to play, and nothing here is locked.
  */
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { Sharing } from '../app/App';
 import { Avatar } from '../account/avatars';
 import { hashFor, type LevelChoice } from '../app/levels';
@@ -11,6 +11,7 @@ import type { ProgressStore } from '../progress/store';
 import { blankCreation } from './blank';
 import { parseCreation } from './parse';
 import { remixOf } from './remix';
+import { gameFrom, loadStarters, type Starter } from './starters';
 import { BoardThumb } from './BoardThumb';
 import type { CreationStore } from './store';
 import { SIZE_DEFAULT, SIZE_MAX, SIZE_MIN, type Creation } from './types';
@@ -77,6 +78,12 @@ export function CreateScreen({ creations, store, progress, choices, onGoTo, shar
     progress.log({ levelId: made.id, kind: 'creation-started', basedOn: level.id });
     onGoTo(hashFor({ screen: 'make', id: made.id }));
   };
+  const starters = useMemo(loadStarters, []);
+  const startGame = (starter: Starter) => {
+    const made = store.add(gameFrom(starter, nextTitle(creations, starter.title)));
+    progress.log({ levelId: made.id, kind: 'creation-started', basedOn: `starter:${starter.id}` });
+    onGoTo(hashFor({ screen: 'make', id: made.id }));
+  };
   /** Choosing the size of a new island: null until the child asks for one. */
   const [sizing, setSizing] = useState<{ width: number; height: number } | null>(null);
   const startBlank = (width: number, height: number) => {
@@ -131,6 +138,27 @@ export function CreateScreen({ creations, store, progress, choices, onGoTo, shar
           ))}
       </section>
 
+      <section className="create-group" aria-labelledby="create-games">
+        <h2 id="create-games" className="panel-title">
+          The Workshop: start from a game
+        </h2>
+        <p className="create-empty">Each is a small whole game. Play it, then open it up and change how it works.</p>
+        <div className="create-starts">
+          {starters.map((s) => (
+            <button key={s.id} type="button" className="create-start starter-game" onClick={() => startGame(s)}>
+              <span className="starter-thumb">
+                <BoardThumb world={s.world} size={72} />
+              </span>
+              <span className="create-start-words">
+                <strong>{s.title}</strong>
+                <small>{s.blurb}</small>
+                <small className="starter-family">{s.family === 'real-time' ? 'Played with the arrow keys, against the clock' : 'Played by tapping, in turns'}</small>
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
+
       {inbox.length > 0 && (
         <section className="create-group" aria-labelledby="create-inbox">
           <h2 id="create-inbox" className="panel-title">
@@ -175,6 +203,7 @@ export function CreateScreen({ creations, store, progress, choices, onGoTo, shar
                 <a className="shelf-card" href={hashFor({ screen: 'make', id: c.id })}>
                   <BoardThumb world={c.world} />
                   <span className="shelf-title">{c.title}</span>
+                  {c.kind === 'game' && <span className="ready-tag is-draft">Game</span>}
                   {c.status === 'proved' && <span className="ready-tag">Ready to play</span>}
                 </a>
                 {sharing && removing !== c.id && (

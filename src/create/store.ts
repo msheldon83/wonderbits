@@ -91,7 +91,7 @@ export class CreationStore {
   update(id: string, patch: Partial<Omit<Creation, 'schemaVersion' | 'id' | 'createdAt' | 'updatedAt' | 'proof' | 'status'>>): Creation | undefined {
     const before = this.get(id);
     if (!before) return undefined;
-    const changesPuzzle = (['world', 'objective', 'programming', 'inputScript', 'days'] as const).some((k) => k in patch && JSON.stringify(patch[k]) !== JSON.stringify(before[k]));
+    const changesPuzzle = (['world', 'objective', 'programming', 'inputScript', 'days', 'clock', 'hideRobot'] as const).some((k) => k in patch && JSON.stringify(patch[k]) !== JSON.stringify(before[k]));
     const { proof: _proof, ...unproved } = before;
     const base: Creation = changesPuzzle ? { ...unproved, status: 'draft' } : before;
     return this.save({ ...base, ...patch, ...(patch.title !== undefined && { title: cleanTitle(patch.title, before.title) }), updatedAt: this.now() });

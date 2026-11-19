@@ -4,6 +4,264 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## The More or less pack: comparison (2026-11-19)
+
+Concept 10b, the pack the entry below planned. It is `forest-compare`,
+island 12, between Keep count and In a row; the later packs each move one
+place along. Ten levels, ids q01 to q10:
+
+| Level | Activity | What it asks |
+| --- | --- | --- |
+| Less than three | predict | left goes 10, 7, 4, 1; where does "until left is less than 3" stop? |
+| Which branch? | model | count is 2; is that less than 3? What does count hold after the If? |
+| Two points each | build | acorns score 2; walk until score is more than 5, which it never exactly is |
+| More than two | reorder | a loop that counts its steps until steps is more than 2 |
+| The wrong way round | debug | "less than 2" where "more than 2" was meant |
+| Big pile, small pile | build, shuffled | 1 to 4 acorns: more than 2 and the flag is up, otherwise down |
+| Where do they cross? | predict | near counts up, far counts down; until near is more than far |
+| Points against steps | build, shuffled | stop when score is more than steps |
+| The bigger number | debug | the lock wants the larger of score and steps; the check picks the smaller |
+| Keep the bigger | build, shuffled | unlock with whichever of score and steps is larger |
+
+The first six compare with a number, the last four compare two slots.
+"Is" is always among the choices where it is the tempting wrong answer.
+
+### Deviations and choices
+
+- **The plan's "gate that opens only while the counter is less than 3"
+  was not built.** It needs a new kind of gate. The same idea is taught
+  with what the board has: a loop's stopping check, an If that picks a
+  turn, and the number lock.
+- **The second number is steps, not a second pile.** One When card fires
+  for every acorn and plates have a card each, so two piles cannot be
+  counted apart with cards the child has by now. Steps counted in a loop
+  and points counted by a When card give two numbers that truly change.
+- **"Keep the bigger" unlocks with the bigger; it does not copy it into
+  a slot called best.** Copying one slot into another is not a value a
+  Set card offers in the lessons yet.
+- **A loop prints the other way round.** "Repeat until left is less than
+  3" prints as `while (left >= 3)`. That was already how Repeat until
+  prints; here it brings `<=` and `>=` with it, and the real words say so.
+- **The validator knows the concept.** An introduction for "comparison"
+  must use a check that is less, more, or against another slot.
+- **A finished level stays open.** Levels unlock in a row, so a new pack
+  in the middle would have locked the first level after it for a child
+  already past it. A level once completed is now always open; the child
+  still meets the new pack as the next thing to do.
+- **The island's picture** is a pair of scales on a hill.
+
+## Change: ready-made functions, comparison, and a winner that is named (2026-11-19)
+
+Feedback on the starter games: the chasing beetle may be too hard and
+should be a strategy with parameters, used in the game loop, not a whole
+program; the line check is fine ready-made, but its code should be there
+to read, with the algorithm explained; Minesweeper should open the empty
+area as the classic does; comparison was missed in the lessons and is
+needed for a high score; and Noughts and crosses should say who won.
+
+- **The Library** (`src/library/`, `#/library`). Three ready-made
+  functions, each with what it is for, how it works a step at a time, and
+  its code. They are written to be read, and each file is imported twice,
+  once as code and once as text: what the screen shows is what runs. A
+  link to it is in a game's rules and in the header of creation mode.
+  - `lineOf(grid, count)`: the piece with so many in a row.
+  - `steer(...)`, with `chase`, `flee` and `wander`: one move of an enemy.
+  - `uncover(shown, mines, at)`: open a tile and the empty area round it.
+- **An enemy is moved by a card in the game loop.** The built-in chase is
+  gone. A beetle may be "the game's program's to move" (a tick box on the
+  Board step), and a **Move a beetle** card moves it, usually from the
+  Every tick card. Its settings are the strategy and its parameters:
+  - how it moves: chases the robot, runs from it, or wanders;
+  - how clever: hard always makes its best move, medium two times in
+    three, easy once in three; the rest of the time it wanders;
+  - how often: every tick, every other, or every third.
+  Its luck comes from the run's random generator, so a recording still
+  plays back the same. Because it is a card, a game can put an If round
+  it, or give two beetles two different cards.
+- **Uncover** is a card. Minesweeper's tap now opens a whole empty patch
+  up to its numbered edge. A new reading, `count:<grid>=<n>`, counts the
+  tiles of a grid that hold a number; the game is won when the tiles
+  still covered are as many as the mines hidden.
+- **Comparison.** A memory test may be less than or more than a number,
+  and may compare with another slot: `slot:count<3`, `slot:score>best`,
+  `slot:left=hidden`. It prints as `count < 3`, and turned round as
+  `count >= 3`. In creation mode a check on memory is now built from
+  three parts (what, how it is compared, with what) instead of chosen
+  from one long list. The plan gains concept 10b and a pack, More or
+  less, to teach it after Keep count (plan.md section 4).
+- **A best time.** Acorn chase counts ticks in `time`, and on a win keeps
+  it in the backpack as `best` when it is less than the best so far.
+- **A Win card can name the winner**, by a number slot. Noughts and
+  crosses ends with "Player 1 (crosses) wins!" or "Player 2 (noughts)
+  wins!", in the message strip and in the dialog of a played game.
+
+### Deviations and choices
+
+- **The More or less pack was planned here**, and built the same day:
+  see the entry above.
+- **A full board with no line still says "Game over"**, not "a draw".
+  The Game over card has no words of its own.
+- **Flee and wander have no starter game yet.** They are there for a
+  child to try on a second beetle.
+- **Turned round, less and more are not offered by the picker.** "Is not
+  less than 3" is built as "is more than 2"; a program that holds one
+  still reads and runs.
+
+## Build step 13f: the Workshop and its starter games (2026-11-19)
+
+A child can open a small whole game, play it, and change how it works.
+
+- **A game is a kind of creation.** Its program is its maker's, and its
+  player only plays. Preview and Made here show a game with the board, its
+  controls and the memory card, and no program beside it.
+- **Four starter games**, content under `content/starters`:
+  - **Crossing** (real-time): cross a road of beetles and a river of
+    logs with the arrow keys.
+  - **Acorn chase** (real-time): collect every acorn while a beetle
+    chases the robot round the rocks, with a score.
+  - **Noughts and crosses** (turn-based): two players tap in turn; three
+    in a row wins; a full board ends it.
+  - **Minesweeper** (turn-based): four mines hidden at random; a number
+    says how many touch a tile; uncover the rest to win.
+- **Every starter carries a recorded play that wins it**, and CI plays it
+  back. The same recording makes a new game "Ready to play" the moment it
+  is opened: the critic plays it back.
+- **The Create screen has the Workshop's shelf.** A starter becomes the
+  child's own game, opens on Preview so it is played first, and lists
+  Things to try in Mechanics: changes of rising size, as suggestions.
+- **What the engine gained for games:**
+  - **Win and Game over cards.** A run can end lost. An objective may be
+    `byProgram`: nothing on the board wins it, only a Win card.
+  - **A grid drawn on the board's tiles**, as pieces (a cross, a nought)
+    or as numbers (a covered tile, an uncovered one, a count).
+  - **A reading for a line**: `line:<grid>@<n>` is the piece with n in a
+    row on a grid, any way, or 0. It is the whole win check of a board
+    game, as one Set card.
+  - **A beetle that chases.** Every other tick it takes one step along
+    the shortest way to the robot, round rocks and through open gates.
+    "Chases the robot" is a tick box on a beetle in the Board step.
+  - **No robot.** A board game leaves the robot out of the picture.
+  - **A real backpack.** A game's kept memory is saved when a play ends,
+    won or lost, and is there for the next one, on the creation itself.
+    Crossing and Acorn chase count their plays this way.
+- **In Mechanics a game's middle column is The game**: the goal may be
+  "The program decides"; the cards are "Cards you build with", with the
+  grid cards and the two ending cards among them; there are no limits on
+  a player's hand, because a game's player has none.
+- **A game is drawn quickly.** A lesson plays at a pace to be followed
+  card by card; a live game's cards run two and a half times as fast, and
+  a board game's at once, so a tap shows straight away.
+- **Leaving a game in play stops it cleanly**: its run, its clock and
+  whatever the board was still drawing.
+
+### Deviations and choices
+
+- **The chaser's chase is built in, not built from cards.** The plan's
+  "other actors with a program" would need a second program running
+  beside the robot's. A beetle that chases gives Acorn chase its game;
+  how it chases cannot be changed, only whether and how many.
+- **Three in a row is a reading, not a function of cards.** The plan
+  proposed a `lineOfThree` function a child could open. Written in cards
+  it came to some 150 of them, which nobody would read. The plan's
+  fallback, a single sense, is what was built.
+- **Minesweeper does not open the empty tiles around an empty tile.**
+  Each tap uncovers one. Doing more is a loop over a list of places,
+  which the cards cannot yet say.
+- **The backpack could not hold a best score** when this was built; the
+  entry above adds comparison, and Acorn chase now keeps a best time.
+- **Noughts and crosses says "You did it!" whoever wins.** The memory
+  card's `winner` says which: 1 for crosses, 2 for noughts.
+- **A child cannot make a grid from nothing yet.** A starter's grids can
+  be changed, marked and read; "+ New memory" does not offer one.
+- **Robots acting at once is still not built.** No starter needed it.
+
+## Build step 13e, completed: tap input (2026-11-19)
+
+- **A tap on a tile is an input to a live run**, beside a key press and a
+  tick: `{ kind: 'tap', x, y }`. It is recorded and played back like the
+  others.
+- **`tap` is an event** a When card can wait for: "When a tile is tapped".
+  It is also the name of the place slot the tapped tile goes into, when
+  the program remembers one. Adding the When card in the rules adds that
+  slot. A tap off the board is ignored; with no slot the card still runs.
+- **Go to row and Go to column take a remembered place**: its row, or its
+  column. That is what a tapped tile is for until grids arrive: "When a
+  tile is tapped: go to its column, go to its row".
+- **In a live run a Go to card stops at what is in its way** and play
+  goes on, as a plain step does.
+- **On the board**, tiles take taps while a tappable game is being
+  played; the arrows under the board show only when a key card exists.
+- **A ready-made set, Tap to move**, adds the place, the When card filled
+  in, and the two Go to cards.
+
+### Deviations and choices
+
+- **The code prints `robot.goToColumn(tap)`**, passing the place itself;
+  the library is taken to accept a place or a number.
+- **Still not built from 13e's list: robots acting at once.**
+
+## Build step 13e: the live run (2026-11-19)
+
+The engine change the Workshop depends on, built as the plan's spike and
+taken far enough to play: a child can make a puzzle that is played live,
+with the arrow keys and a clock.
+
+- **A run can stay alive.** After main, a live run takes inputs, one turn
+  each: a key press, which runs that key's When card, or a tick of the
+  clock, which moves the beetles and logs and runs the Every tick card. It
+  ends when the goal is met, when a beetle catches the robot, or when it
+  is stopped.
+- **One interpreter path, so a recording replays exactly.** The
+  interpreter's core either yields for each input (interactive) or reads
+  them from a list (a recording). `interpret` with `live.inputs` and
+  `interpretLive` fed the same inputs give the same trace, event for
+  event; a test holds them to it, with a seed and a random roll in play.
+- **Two kinds of time.** With a clock, the world moves only on ticks,
+  never because the robot acted: a real-time game. Without one, each
+  robot action is followed by a tick, as in a puzzle: turn-based.
+- **A bump is only a bump** in a live run: the robot stays where it is and
+  play goes on. Walking into a beetle, or being walked into, still ends it.
+- **The step limit is for each turn**, with a ceiling of 20,000 events for
+  a whole game, so one runaway When card cannot hang it and a long game
+  is not cut short.
+- **The contract** gains `live-start`, `live-input`, `live-stop` and a
+  `waiting` message. The client gives each live run an endpoint of its
+  own, sends inputs strictly in order however fast they arrive, keeps
+  them as the recording, drops any sent after Stop, and ends a turn that
+  does not come back in time.
+- **The board draws events as they come.** The sequencer's `extend` adds
+  to the end of a trace being played. The clock ticks only once the board
+  has caught up, so the game never runs ahead of what the player sees;
+  the recording holds the ticks that were sent, so this does not touch
+  replay.
+- **In creation mode:**
+  - When cards can wait for an arrow key. A ready-made set, Arrow keys,
+    adds Up (forward), Left and Right (turn).
+  - Limits has The clock: with the robot, or Slow, Steady or Fast (1, 2
+    or 4 ticks a second).
+  - A creation with a clock or an arrow-key When card is a live puzzle.
+    Run becomes Play, Step and Pause rest, and four arrows sit under the
+    board for fingers. Reset stops the game.
+  - Winning is the proof. The maker's winning play (its inputs and seed)
+    is kept on the creation and played back by the critic whenever the
+    puzzle changes: if it still wins, the puzzle is still proved.
+  - The critic speaks of winning and does not search for a shortest way.
+  - A player gets the key When cards empty, fills them in, then plays.
+
+### Deviations and choices
+
+- **Not yet: taps, and robots acting at once.** The plan's `tap` input
+  for turn-based games and a simultaneous team wait for the starter games
+  that need them (13f).
+- **The player programs the keys.** A live puzzle is still a puzzle: the
+  player writes what each key does, then plays. A game whose program is
+  its maker's and whose player only plays is the Workshop's kind.
+- **No pause in a live game**, only Reset.
+- **A win in Preview proves the puzzle but is not kept as the winning
+  play**, since it was won with another program than the maker's.
+- **Lessons are untouched.** Remote control's keys stay a written script;
+  only a creation is ever live.
+
 ## Build step 13d, the rest: not, functions using functions, records that are built (2026-11-12)
 
 The three parts of 13d left after names and kits. Each touched the IR and

@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "id": "forest-compare",
+  "title": "More or less",
+  "themeId": "forest",
+  "order": 11,
+  "concepts": [
+    "comparison"
+  ],
+  "prerequisites": [
+    "forest-count"
+  ],
+  "introduction": {
+    "concept": "comparison",
+    "title": "More or less",
+    "explanation": "A check can ask more than \"is it the same?\". It can ask if a number is less, or more, and it can compare two remembered numbers with each other.",
+    "realWords": [
+      {
+        "word": "less than",
+        "code": "<",
+        "text": "< means less than. count < 3 asks: is count smaller than 3? The answer is true or false. The small, pointed end of the sign points at the smaller number."
+      },
+      {
+        "word": "greater than",
+        "code": ">",
+        "text": "> means greater than, or more than. score > best asks: is score bigger than best? Both sides can be variables, so the program compares two numbers it remembers."
+      },
+      {
+        "word": "at most",
+        "code": "<=",
+        "text": "<= means less than or the same: at most. A loop that runs until count is more than 5 keeps going while count <= 5. Each sign has a partner like this: >= means at least."
+      }
+    ],
+    "demo": {
+      "world": {
+        "rows": [
+          "....."
+        ],
+        "robot": {
+          "x": 0,
+          "y": 0,
+          "facing": "E"
+        },
+        "goal": {
+          "x": 4,
+          "y": 0
+        },
+        "collectibles": [
+          {
+            "x": 1,
+            "y": 0
+          },
+          {
+            "x": 2,
+            "y": 0
+          },
+          {
+            "x": 3,
+            "y": 0
+          }
+        ]
+      },
+      "program": [
+        {
+          "remember": "score",
+          "kind": "number",
+          "start": 0
+        },
+        "forward",
+        "forward",
+        "forward",
+        {
+          "if": "slot:score>5",
+          "do": [
+            "forward"
+          ]
+        },
+        {
+          "on": "acorn",
+          "do": [
+            {
+              "change": "score",
+              "by": 2
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "levels": [
+    "q01-less-than-three",
+    "q02-which-branch",
+    "q03-two-points-each",
+    "q04-more-than-two",
+    "q05-the-wrong-way-round",
+    "q06-big-pile-small-pile",
+    "q07-where-do-they-cross",
+    "q08-points-against-steps",
+    "q09-the-bigger-number",
+    "q10-keep-the-bigger"
+  ]
+}

@@ -123,7 +123,8 @@ export class ProgressStore {
     if (this.snapshot.settings.openAllLevels) return true;
     const index = this.levels.findIndex((l) => l.id === levelId);
     if (index <= 0) return true;
-    return this.levelProgress(this.levels[index - 1]!.id).stars.complete;
+    // A level already finished stays open, even when a pack is added to the map before it.
+    return this.levelProgress(this.levels[index - 1]!.id).stars.complete || this.levelProgress(levelId).stars.complete;
   }
 
   /**
