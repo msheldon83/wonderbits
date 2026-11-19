@@ -41,6 +41,21 @@ npm test
 | `DATABASE_URL` | Any Postgres 13 or newer. Required. |
 | `PORT` | Port to listen on. Default 8080. |
 | `STATIC_DIR` | A built copy of the game to serve. The Docker image sets it. |
+| `PUBLIC_URL` | Where people reach the app, such as `https://wonderbits.example`. Sign-in links point here, and cookies are marked secure when it is https. |
+| `SMTP_URL` | Where to send mail, such as `smtps://user:pass@smtp.example.com`. Unset, mail is printed to the log. |
+| `MAIL_FROM` | The sender on that mail. |
+| `INVITE_REQUIRED` | `false` lets any grown-up sign up. Default: an invite code is needed. |
+
+## Grown-up accounts
+
+A grown-up signs in with a link sent to their email address; there are no
+passwords. While the server is invite-only, a new grown-up also needs a code:
+
+```bash
+DATABASE_URL=postgres://wonderbits:wonderbits@localhost:5432/wonderbits npm run invite -- --note "who it is for"
+```
+
+Add `--uses 5` for a code several families can share.
 
 ## The whole app in one container
 

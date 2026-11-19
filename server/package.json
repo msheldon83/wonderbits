@@ -12,17 +12,20 @@
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "migrate": "tsx src/migrate.ts",
+    "invite": "tsx src/invite.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.9",
     "hono": "^4.13.19",
+    "nodemailer": "^10.6.0",
     "postgres": "^4.1.1",
     "tsx": "^4.23.15"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
+    "@types/nodemailer": "^8.0.2",
     "typescript": "^7.0.2",
     "vitest": "^5.1.0"
   }

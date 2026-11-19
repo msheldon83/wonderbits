@@ -92,6 +92,7 @@ describe('readConfig', () => {
   it('needs a database and a real port', () => {
     expect(() => readConfig({})).toThrow(/DATABASE_URL/);
     expect(() => readConfig({ DATABASE_URL: 'postgres://x', PORT: 'eighty' })).toThrow(/PORT/);
-    expect(readConfig({ DATABASE_URL: 'postgres://x' })).toEqual({ databaseUrl: 'postgres://x', port: 8080, staticDir: undefined });
+    expect(readConfig({ DATABASE_URL: 'postgres://x' })).toMatchObject({ databaseUrl: 'postgres://x', port: 8080, staticDir: undefined, publicUrl: 'http://localhost:8080', inviteRequired: true });
+    expect(readConfig({ DATABASE_URL: 'postgres://x', PUBLIC_URL: 'https://w.example/', INVITE_REQUIRED: 'false' })).toMatchObject({ publicUrl: 'https://w.example', inviteRequired: false });
   });
 });
