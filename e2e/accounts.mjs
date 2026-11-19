@@ -259,6 +259,29 @@ try {
   await until('the answer in the mail', () => /An answer for Robin from Wonderbits/.test(log));
   step('the owner sees the level’s numbers, the shared wrong answer and the notes, and answers the question');
 
+  // ----- Offline, nothing is asked; what is done is still recorded -----
+  const twoSteps = async () => (await (await parent.request.get(`${BASE}/api/admin/levels`)).json()).levels.find((l) => l.levelId === 'l03-two-steps');
+  const before = await twoSteps();
+  await tablet.goto(`${BASE}/#/`);
+  await tablet.getByRole('button', { name: 'Tell us' }).waitFor();
+  await tablet.context().setOffline(true);
+  await tablet.getByRole('button', { name: 'Tell us' }).waitFor({ state: 'detached' });
+  await tablet.evaluate(() => (location.hash = '#/level/l03-two-steps'));
+  await tablet.getByRole('button', { name: 'Add Move forward one tile' }).click();
+  await run.click();
+  await tablet.getByRole('heading', { name: 'You did it!' }).waitFor({ timeout: 20_000 });
+  await tablet.getByRole('button', { name: 'Next level' }).waitFor();
+  if ((await tablet.getByText('How was that one?').count()) !== 0) throw new Error('A level finished offline still asks how hard it was');
+  await shot(tablet, 'offline-complete');
+  await tablet.context().setOffline(false);
+  await tablet.evaluate(() => (location.hash = '#/'));
+  await tablet.getByRole('button', { name: 'Tell us' }).waitFor();
+  await until('the level solved offline on the server', async () => {
+    const after = await twoSteps();
+    return after.visits === before.visits + 1 && after.ratings === before.ratings;
+  });
+  step('offline, the child is asked nothing; the level they solved is recorded and sent once back online');
+
   // ----- The "stuck?" nudge -----
   await tablet.goto(`${BASE}/#/level/l03-two-steps`);
   for (let i = 0; i < 5; i++) {

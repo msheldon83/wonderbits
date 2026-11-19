@@ -10,7 +10,7 @@ import { App, type AccountProps, type Sharing } from '../app/App';
 import { creationToJson } from '../create/parse';
 import { defaultStore, profilePrefix, scopedStore, type KeyValueStore } from '../progress/storage';
 import { Insight } from '../insight/recorder';
-import { api, ApiError, APP_VERSION, type ChildInfo, type DeviceInfo, type InboxShare } from '../sync/api';
+import { api, ApiError, APP_VERSION, OfflineError, type ChildInfo, type DeviceInfo, type InboxShare } from '../sync/api';
 import { SyncEngine, type SyncApi } from '../sync/engine';
 import { AdminScreen } from './AdminScreen';
 import { Avatar } from './avatars';
@@ -66,7 +66,7 @@ function Shell({ title, children }: { title: string; children: ReactNode }) {
 }
 
 /** The game for a signed-in child. */
-function ChildGame({ deviceStore, account, child, device }: { deviceStore: KeyValueStore; account: AccountStore; child: ChildInfo; device: DeviceInfo }) {
+function ChildGame({ deviceStore, account, child, device, startsOnline }: { deviceStore: KeyValueStore; account: AccountStore; child: ChildInfo; device: DeviceInfo; startsOnline: boolean }) {
   const local = useMemo(() => scopedStore(deviceStore, profilePrefix(child.id)), [deviceStore, child.id]);
   const engine = useMemo(() => new SyncEngine(local, syncApi), [local]);
   // Feedback loops: only while the grown-up leaves "Help improve Wonderbits" on.
@@ -89,6 +89,8 @@ function ChildGame({ deviceStore, account, child, device }: { deviceStore: KeyVa
   );
   const [saved, setSaved] = useState(true);
   const [inbox, setInbox] = useState<InboxShare[]>([]);
+  /** Whether the server can be reached right now, going by the last try. Offline, the child is not asked for feedback. */
+  const [online, setOnline] = useState(startsOnline);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -98,8 +100,13 @@ function ChildGame({ deviceStore, account, child, device }: { deviceStore: KeyVa
         .sync()
         .then(() => insight?.flush())
         .then(() => api.inbox())
-        .then(({ shares }) => live && setInbox(shares.filter((s) => !s.seenAt)))
+        .then(({ shares }) => {
+          if (!live) return;
+          setInbox(shares.filter((s) => !s.seenAt));
+          setOnline(true);
+        })
         .catch((e: unknown) => {
+          if (e instanceof OfflineError && live) setOnline(false);
           // Signed out from elsewhere, or the device was taken away: find out which.
           if (e instanceof ApiError && e.status === 401) void account.refresh();
         })
@@ -114,6 +121,8 @@ function ChildGame({ deviceStore, account, child, device }: { deviceStore: KeyVa
     };
     if (insight) insight.onWaiting = soon;
     const onVisible = () => run();
+    const onOffline = () => setOnline(false);
+    window.addEventListener('offline', onOffline);
     run();
     window.addEventListener('focus', onVisible);
     window.addEventListener('online', onVisible);
@@ -128,6 +137,7 @@ function ChildGame({ deviceStore, account, child, device }: { deviceStore: KeyVa
       if (insight) insight.onWaiting = () => {};
       window.removeEventListener('focus', onVisible);
       window.removeEventListener('online', onVisible);
+      window.removeEventListener('offline', onOffline);
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, [engine, insight, account]);
@@ -165,6 +175,7 @@ function ChildGame({ deviceStore, account, child, device }: { deviceStore: KeyVa
     onReload,
     sharing,
     insight,
+    prompts: online,
     who: (
       <a className="who-chip" href="#/who" title="Switch player">
         <Avatar id={child.avatar} size={32} />
@@ -275,7 +286,7 @@ function AccountRoot() {
         <WhoScreen account={account} players={state.device.children} current={state.child} online={state.online} />
       </Shell>
     );
-  return <ChildGame key={state.child.id} deviceStore={deviceStore} account={account} child={state.child} device={state.device} />;
+  return <ChildGame key={state.child.id} deviceStore={deviceStore} account={account} child={state.child} device={state.device} startsOnline={state.online} />;
 }
 
 export function Root({ accounts }: { accounts: boolean }) {

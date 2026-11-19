@@ -30,6 +30,8 @@ export interface LessonProps {
   onRemix?(): void;
   /** Feedback loops, for a signed-in child whose grown-up left them on: records the visit and its runs, and offers the prompts. */
   insight?: Insight | undefined;
+  /** Whether to ask the child anything just now: false while the game is offline. The visit is recorded either way. */
+  prompts?: boolean;
 }
 
 interface Completion {
@@ -37,7 +39,7 @@ interface Completion {
   newBadges: BadgeId[];
 }
 
-export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo, onRemix, insight }: LessonProps) {
+export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo, onRemix, insight, prompts = false }: LessonProps) {
   const [completion, setCompletion] = useState<Completion | null>(null);
   const completedRef = useRef(false);
   const activity = level.curriculum.activity;
@@ -64,10 +66,11 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo, o
   }, [insight, level.id]);
   /** After anything that might tip it over: is it time to ask whether the child is stuck? */
   const considerNudge = useCallback(() => {
-    if (!visit?.shouldAskIfStuck) return;
+    // Offline, the question is kept for later rather than used up.
+    if (!prompts || !visit?.shouldAskIfStuck) return;
     visit.askedIfStuck();
     setNudging(true);
-  }, [visit]);
+  }, [visit, prompts]);
 
   const record = useCallback(
     (event: EventInput) => {
@@ -125,7 +128,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo, o
       hintFor={hintFor}
       onSolved={onSolved}
       onAttempt={onAttempt}
-      belowControls={insight && visit && nudging ? <StuckNudge insight={insight} visit={visit} hasHints onDone={() => setNudging(false)} /> : undefined}
+      belowControls={insight && visit && nudging && prompts ? <StuckNudge insight={insight} visit={visit} hasHints onDone={() => setNudging(false)} /> : undefined}
       completion={({ restart }) =>
         completion && (
           <div className="dialog-backdrop" role="presentation">
@@ -156,7 +159,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo, o
                   ))}
                 </ul>
               )}
-              {insight && visit && <RateLevel insight={insight} visit={visit} />}
+              {insight && visit && prompts && <RateLevel insight={insight} visit={visit} />}
               <div className="dialog-actions">
                 {nextLevelId && store.isUnlocked(nextLevelId) && (
                   <button type="button" className="btn btn-run" autoFocus onClick={() => onGoTo(hashFor({ screen: 'level', id: nextLevelId }))}>

@@ -17,7 +17,8 @@ const KINDS: { kind: FeedbackKind; label: string; ask: string }[] = [
   { kind: 'question', label: 'I have a question', ask: 'What do you want to know?' },
 ];
 
-export function FeedbackButton({ insight, screen, levelId }: { insight: Insight; screen: string; levelId?: string | undefined }) {
+/** `offered` is false while the game is offline: the button goes, but a note already being written stays open. */
+export function FeedbackButton({ insight, offered, screen, levelId }: { insight: Insight; offered: boolean; screen: string; levelId?: string | undefined }) {
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<FeedbackKind>('confusing');
   const [text, setText] = useState('');
@@ -40,12 +41,14 @@ export function FeedbackButton({ insight, screen, levelId }: { insight: Insight;
 
   return (
     <>
-      <button type="button" className="btn btn-quiet btn-tell" aria-haspopup="dialog" onClick={start} title="Tell the people who make Wonderbits something">
-        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-          <path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-        </svg>
-        Tell us
-      </button>
+      {offered && (
+        <button type="button" className="btn btn-quiet btn-tell" aria-haspopup="dialog" onClick={start} title="Tell the people who make Wonderbits something">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+          </svg>
+          Tell us
+        </button>
+      )}
       {open && (
         <div className="dialog-backdrop" role="presentation" onClick={(e) => e.target === e.currentTarget && setOpen(false)}>
           <section className="dialog tell-dialog" role="dialog" aria-modal="true" aria-labelledby="tell-title">

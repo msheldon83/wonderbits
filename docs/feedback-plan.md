@@ -8,7 +8,8 @@ Built, steps 1 to 7. What differs from the plan as first written:
 - **A visit where nothing was done is not kept**, as with the local log. A child who opens a level and leaves at once leaves no record.
 - **The stuck nudge needs at least one failed run.** Four minutes of thinking without pressing Run does not trigger it.
 - **A visit cut short by closing the tab has no ending.** It is stored without `ended`, and is not counted as "left".
-- **Notes are sent at once, not queued.** Offline, the child is told a note did not send. Visits, runs and ratings do wait and are sent later.
+- **Notes are sent at once, not queued.** If the connection drops while a note is being written, the child is told it did not send. Visits, runs and ratings do wait and are sent later.
+- **Offline, nothing is asked.** The Tell us button, the difficulty faces and the stuck question are hidden while the game cannot reach the server, and return when it can. Visits and runs are still recorded and sent later; a level finished offline has no difficulty rating.
 - **Turning collection off** stops the server taking records at once; the prompts disappear from a device the next time it opens the game.
 - **`cards` on an attempt** counts the cards in the program, which is also what the budget star counts.
 
