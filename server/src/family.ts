@@ -15,7 +15,7 @@ import { cleanCode, hashToken, randomCode, randomToken } from './tokens';
 export const DEVICE_COOKIE = 'wb_device';
 export const CHILD_COOKIE = 'wb_child';
 /** The wording of the notice a grown-up agrees to. Raise it when what is stored about a child changes. */
-export const CONSENT_VERSION = '2026-11';
+export const CONSENT_VERSION = '2026-11b';
 
 const DEVICE_DAYS = 365;
 const CHILD_SESSION_DAYS = 90;
@@ -180,7 +180,14 @@ export function familyRoutes(ctx: Context): Hono {
     const shares = await sql`
       select id, from_child_id as "fromChildId", to_child_id as "toChildId", creation, created_at as "createdAt"
       from shares where from_child_id = ${id} or to_child_id = ${id} order by created_at`;
-    return c.json({ exportedAt: new Date().toISOString(), child, documents, shares });
+    const visits = await sql`
+      select id, level_id as "levelId", opened_at as "openedAt", ended_at as "endedAt", ended, runs, hints_opened as "hintsOpened", active_ms as "activeMs", stars, difficulty, stuck
+      from level_visits where child_id = ${id} order by opened_at`;
+    const attempts = await sql`
+      select a.visit_id as "visitId", a.seq, a.at, a.outcome, a.detail, a.program
+      from attempts a join level_visits v on v.id = a.visit_id where v.child_id = ${id} order by a.at`;
+    const feedback = await sql`select kind, text, context, created_at as "createdAt", reply from feedback where child_id = ${id} order by created_at`;
+    return c.json({ exportedAt: new Date().toISOString(), child, documents, shares, visits, attempts, feedback });
   });
 
   app.delete('/children/:id', async (c) => {
@@ -265,9 +272,9 @@ export function familyRoutes(ctx: Context): Hono {
     const device = await requireDevice(ctx, c);
     await sql`update devices set last_seen_at = now() where id = ${device.id}`;
     const children = await sql`select id, nickname, avatar from children where parent_id = ${device.parentId} order by created_at`;
-    const [family] = await sql<{ siblingSharing: boolean }[]>`select sibling_sharing as "siblingSharing" from parents where id = ${device.parentId}`;
+    const [family] = await sql<{ siblingSharing: boolean; improve: boolean }[]>`select sibling_sharing as "siblingSharing", improve from parents where id = ${device.parentId}`;
     const child = await requireChild(ctx, c).catch(() => undefined);
-    return c.json({ id: device.id, name: device.name, children, childId: child?.childId ?? null, siblingSharing: family!.siblingSharing });
+    return c.json({ id: device.id, name: device.name, children, childId: child?.childId ?? null, siblingSharing: family!.siblingSharing, improve: family!.improve });
   });
 
   app.post('/child/signin', async (c) => {

@@ -7,6 +7,8 @@ export interface Context {
   mailer: Mailer;
   publicUrl: string;
   inviteRequired: boolean;
+  /** The addresses of the people who run this copy. They may open the owner's page and are mailed new feedback. */
+  adminEmails: readonly string[];
 }
 
 /** A request the server understood and will not do. The code is for the app to turn into words. */

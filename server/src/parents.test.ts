@@ -46,7 +46,7 @@ describe('signing up', () => {
     const cookie = await signIn('  Grownup@Example.com ', showCode(code).toLowerCase());
     expect(mailer.sent[0]!.to).toBe('grownup@example.com');
     const me = await app.request('/api/parent/me', { headers: { Cookie: cookie } });
-    expect(await me.json()).toEqual({ email: 'grownup@example.com', notifyByEmail: true, siblingSharing: true });
+    expect(await me.json()).toEqual({ email: 'grownup@example.com', notifyByEmail: true, siblingSharing: true, improve: true, admin: false });
     const [spent] = await sql<{ uses: number }[]>`select uses from invites where code = ${code}`;
     expect(spent!.uses).toBe(1);
   });

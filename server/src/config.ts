@@ -13,6 +13,8 @@ export interface Config {
   mailFrom: string;
   /** While true, a grown-up needs an invite code to sign up. */
   inviteRequired: boolean;
+  /** Who runs this copy: grown-up accounts with these addresses may open the owner's page. Comma-separated in ADMIN_EMAILS. */
+  adminEmails: string[];
 }
 
 const isOff = (value: string | undefined) => value !== undefined && ['0', 'false', 'no', 'off'].includes(value.toLowerCase());
@@ -30,5 +32,9 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     smtpUrl: env.SMTP_URL || undefined,
     mailFrom: env.MAIL_FROM || 'Wonderbits <wonderbits@localhost>',
     inviteRequired: !isOff(env.INVITE_REQUIRED),
+    adminEmails: (env.ADMIN_EMAILS ?? '')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter((e) => e.length > 0),
   };
 }
