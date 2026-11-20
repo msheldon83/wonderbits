@@ -169,6 +169,14 @@ export interface PackManifest {
   prerequisites: string[];
   /** The show-first introduction to the pack's new concept. Absent on a pack that only practises. */
   introduction?: ConceptIntroduction;
+  /** More teaching cards, for cards that first appear part-way through the pack. Each shows before the level it names. */
+  cards?: LaterCard[];
+}
+
+/** A teaching card shown before a later level of a pack, such as If / else before the first level that has one. */
+export interface LaterCard extends ConceptIntroduction {
+  /** The id of the level it shows before: one of the pack's own, and not its first. */
+  beforeLevel: string;
 }
 
 /** What the child predicted before a run: the tile, and any memory card fields asked. */

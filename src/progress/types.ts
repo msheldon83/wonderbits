@@ -36,7 +36,7 @@ export interface Progress {
   version: typeof PROGRESS_VERSION;
   levels: Record<string, LevelProgress>;
   badges: BadgeId[];
-  /** Packs whose concept introduction the child has watched through to "Let's go". */
+  /** Teaching cards the child has watched through to "Let's go": a pack id for a pack's introduction, "<pack id>:<level id>" for a later card. */
   introsSeen: string[];
 }
 

@@ -4,6 +4,32 @@ Decisions and deviations recorded while building, as the plan's agent
 handoff contract requires. The plan itself is in [plan.md](plan.md); its build
 sequence is section 10. Newest first.
 
+## Change: a teaching card for If / else (2026-11-19)
+
+The If card's introduction shows an If and nothing else, so If / else
+arrived at level 4 of Look before you leap with one sentence of level text.
+It now has a teaching card of its own.
+
+- **A pack can have later cards.** `pack.json` takes `cards`: a list
+  written like `introduction`, each with a `beforeLevel`. The card shows
+  once before that level, the same screen as an introduction, and has its
+  own page in the card book straight after the pack's introduction. The
+  page opens when the child reaches the level. The island's heading links
+  to each of its cards the child has reached.
+- **If / else** shows before Otherwise (c04). Its demo is the If card's
+  board again: Repeat 4 around one If / else, path ahead, Forward, else
+  Rotate. Both parts run, and the card shows "yes" or "no" each go round.
+- **The real word `else`** moved from the If introduction to this card, so
+  it is shown under a demo that prints it. The code panel offers it from
+  Otherwise on, the first level whose code has an else.
+- **The validator** proves a later card as it does an introduction, and
+  checks that `beforeLevel` is a level of the pack, is not its first, and
+  has only one card.
+- **Saved progress.** `introsSeen` holds a page id: the pack id for an
+  introduction, as before, and `<pack id>:<level id>` for a later card. The
+  book's address is `#/book/<page id>`. Older saves need no change; a child
+  already past Otherwise finds the card in the card book.
+
 ## The More or less pack: comparison (2026-11-19)
 
 Concept 10b, the pack the entry below planned. It is `forest-compare`,

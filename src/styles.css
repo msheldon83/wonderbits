@@ -2149,6 +2149,9 @@ button.function-head {
   background: var(--blue-wash);
   color: var(--blue-deep);
   text-decoration: none;
+  /* An island can have more than one card. */
+  display: inline-block;
+  margin: 2px 3px;
 }
 
 .map-card-link:hover {

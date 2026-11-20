@@ -31,27 +31,33 @@ export function cardsTeaching(concept: string): readonly CardId[] | null {
   }
 }
 
-/** One page of the card book: a pack's introduction and where it is played. */
+/** One page of the card book: a teaching card and where it is played. */
 export interface BookEntry {
+  /** Names the page in its address and in the saved list of cards seen: the pack id for a pack's introduction, pack and level for a later card. */
+  id: string;
   packId: string;
   packTitle: string;
-  /** The level the introduction shows before. */
-  firstLevelId: string;
+  /** The level the card shows before: the pack's first for its introduction. */
+  levelId: string;
+  /** The title of that level, on a later card only: its page opens when the child reaches it. */
+  levelTitle?: string;
   introduction: ConceptIntroduction;
 }
 
-/** The card book, in map order: every pack that introduces a concept. */
+/** The card book, in map order: every pack's introduction, each followed by the pack's later cards in play order. */
 export function cardBook(packs: readonly LoadedPack[]): BookEntry[] {
-  return packs.flatMap(({ manifest, levels }) =>
-    manifest.introduction && levels[0]
-      ? [{ packId: manifest.id, packTitle: manifest.title, firstLevelId: levels[0].id, introduction: manifest.introduction }]
-      : [],
-  );
+  return packs.flatMap(({ manifest, levels }) => {
+    const pack = { packId: manifest.id, packTitle: manifest.title };
+    const later = levels.flatMap((level) =>
+      (manifest.cards ?? []).filter((c) => c.beforeLevel === level.id).map((c): BookEntry => ({ ...pack, id: `${manifest.id}:${level.id}`, levelId: level.id, levelTitle: level.title, introduction: c })),
+    );
+    return [...(manifest.introduction && levels[0] ? [{ ...pack, id: manifest.id, levelId: levels[0].id, introduction: manifest.introduction }] : []), ...later];
+  });
 }
 
-/** The introduction a level opens with: only a pack's first level has one. */
+/** The teaching card a level opens with: a pack's first level, and any later level that brings a card of its own. */
 export function introductionBefore(book: readonly BookEntry[], levelId: string): BookEntry | undefined {
-  return book.find((e) => e.firstLevelId === levelId);
+  return book.find((e) => e.levelId === levelId);
 }
 
 /**

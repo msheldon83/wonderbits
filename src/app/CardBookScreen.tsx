@@ -1,8 +1,8 @@
 /**
- * The card book: every concept the robot has learned, one page per pack,
- * with the sentence and a way to watch the introduction again. Pages for
- * islands the child has not reached yet stay closed, with a note saying
- * which island opens them.
+ * The card book: every concept the robot has learned, one page per teaching
+ * card, with the sentence and a way to watch the introduction again. Pages
+ * for islands and levels the child has not reached yet stay closed, with a
+ * note saying what opens them.
  */
 import { useEffect } from 'react';
 import type { BookEntry } from '../lessons/concepts';
@@ -19,9 +19,9 @@ export function CardBookScreen({ book, store, from }: { book: BookEntry[]; store
       <p className="book-lead">Every new card the robot has learned, with a demo you can watch again.</p>
       <ol className="book-list">
         {book.map((entry) => {
-          const open = store.isUnlocked(entry.firstLevelId);
+          const open = store.isUnlocked(entry.levelId);
           return (
-            <li key={entry.packId} className={`book-entry ${open ? '' : 'is-locked'}`}>
+            <li key={entry.id} className={`book-entry ${open ? '' : 'is-locked'}`}>
               <div className="book-entry-text">
                 <h2 className="book-entry-title">{entry.introduction.title}</h2>
                 <p className="book-entry-pack">{entry.packTitle}</p>
@@ -31,11 +31,11 @@ export function CardBookScreen({ book, store, from }: { book: BookEntry[]; store
                     {entry.introduction.realWords && <p className="book-entry-words">In real code: {entry.introduction.realWords.map((w) => w.word).join(', ')}</p>}
                   </>
                 ) : (
-                  <p className="book-entry-explanation">Reach the {entry.packTitle} island to open this card.</p>
+                  <p className="book-entry-explanation">{entry.levelTitle ? `Reach the level ${entry.levelTitle} on the ${entry.packTitle} island to open this card.` : `Reach the ${entry.packTitle} island to open this card.`}</p>
                 )}
               </div>
               {open ? (
-                <a className="btn btn-quiet" href={hashFor({ screen: 'book', packId: entry.packId })}>
+                <a className="btn btn-quiet" href={hashFor({ screen: 'book', pageId: entry.id })}>
                   Watch
                 </a>
               ) : (

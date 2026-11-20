@@ -59,6 +59,18 @@ describe('validatePack', () => {
     expect(validatePack(seq, [seq, later])).toEqual([]);
     expect(validatePack(parsePack({ ...seq, prerequisites: ['later'] }, 'seq'), [seq, later])).toEqual(['prerequisite "later" plays after this pack on the map']);
   });
+  it('proves a later teaching card: its level, its concept and its demo', () => {
+    const card = { ...intro, title: 'Repeat again', beforeLevel: 'r02' };
+    const two = (cards: unknown[]) => manifest({ levels: ['r01', 'r02'], cards });
+    expect(validatePack(two([card]), all)).toEqual([]);
+    expect(two([card]).cards?.[0]?.beforeLevel).toBe('r02');
+    expect(validatePack(two([{ ...card, beforeLevel: 'nope' }]), all)).toEqual(['cards[0].beforeLevel "nope" is not a level of this pack']);
+    expect(validatePack(two([{ ...card, beforeLevel: 'r01' }]), all)).toEqual(["cards[0].beforeLevel is the pack's first level; that is the introduction's place"]);
+    expect(validatePack(two([card, card]), all)).toEqual(['cards[1].beforeLevel "r02" already has a teaching card']);
+    expect(validatePack(two([{ ...card, concept: 'lists' }]), all)).toContain('cards[0] is for "lists", which is not one of this pack\'s concepts');
+    expect(validatePack(two([{ ...card, demo: { ...intro.demo, before: undefined, program: [{ repeat: 3, do: ['forward'] }] } }]), all)).toEqual(['cards[0].demo.program must reach the flag (and collect every acorn) on its board']);
+    expect(() => two([{ ...intro }])).toThrow(/cards\[0\].beforeLevel/);
+  });
   it('rejects an introduction for a concept the pack does not teach', () => {
     expect(validatePack(manifest({ concepts: ['sequencing'] }), all)).toContain('introduction is for "loops", which is not one of this pack\'s concepts');
   });
@@ -83,12 +95,21 @@ describe('card book', () => {
   ];
   it('has one page per pack with an introduction, in map order', () => {
     const book = cardBook(packs);
-    expect(book.map((e) => [e.packId, e.firstLevelId, e.introduction.title])).toEqual([['loops', 'r01', 'Repeat']]);
+    expect(book.map((e) => [e.packId, e.levelId, e.introduction.title])).toEqual([['loops', 'r01', 'Repeat']]);
   });
   it("finds the introduction a pack's first level opens with, and nothing for other levels", () => {
     const book = cardBook(packs);
     expect(introductionBefore(book, 'r01')?.packId).toBe('loops');
     expect(introductionBefore(book, 'l02')).toBeUndefined();
+  });
+  it('puts a later card after its pack\'s introduction, opening before its own level', () => {
+    const later = manifest({ levels: ['r01', 'r02'], cards: [{ ...intro, title: 'Repeat again', beforeLevel: 'r02' }] });
+    const book = cardBook([packs[0]!, { manifest: later, levels: [level('r01'), { id: 'r02', title: 'Twice round' } as PuzzleDefinition] }]);
+    expect(book.map((e) => [e.id, e.levelId, e.levelTitle, e.introduction.title])).toEqual([
+      ['loops', 'r01', undefined, 'Repeat'],
+      ['loops:r02', 'r02', 'Twice round', 'Repeat again'],
+    ]);
+    expect(introductionBefore(book, 'r02')?.id).toBe('loops:r02');
   });
   it('knows which cards show the built concepts', () => {
     expect(cardsTeaching('loops')).toEqual(['repeat']);
