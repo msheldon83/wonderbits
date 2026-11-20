@@ -9,7 +9,9 @@ COPY index.html tsconfig.json vite.config.ts ./
 COPY public ./public
 COPY content ./content
 COPY src ./src
-ENV VITE_ACCOUNTS=1
+# The commit being built, for tying what children did to the levels as they were: --build-arg APP_VERSION=$(git rev-parse --short HEAD)
+ARG APP_VERSION=dev
+ENV VITE_ACCOUNTS=1 APP_VERSION=$APP_VERSION
 RUN npx vite build
 
 FROM node:22-slim

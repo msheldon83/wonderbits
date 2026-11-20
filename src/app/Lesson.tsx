@@ -6,13 +6,15 @@
  * level id in App, so switching levels starts fresh.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { programSpec } from '../ir/program';
+import { RateLevel, StuckNudge } from '../insight/LevelPrompts';
+import type { Insight, Visit } from '../insight/recorder';
+import { countNodes, programSpec } from '../ir/program';
 import type { NodeId, ProgramIR } from '../ir/types';
 import { hintEffect } from '../lessons/hints';
 import type { PuzzleDefinition } from '../lessons/types';
 import type { ProgressStore } from '../progress/store';
 import type { BadgeId, EventInput, Settings, Stars } from '../progress/types';
-import type { Runtime } from '../runtime/contract';
+import type { RunOutcome, Runtime } from '../runtime/contract';
 import { BADGE_INFO, BadgeIcon, Star } from './icons';
 import { hashFor } from './levels';
 import { PlaySurface, type Solved } from './PlaySurface';
@@ -26,6 +28,10 @@ export interface LessonProps {
   onGoTo(hash: string): void;
   /** Change this level: copy it into creation mode as the child's own. Offered once the level is solved. */
   onRemix?(): void;
+  /** Feedback loops, for a signed-in child whose grown-up left them on: records the visit and its runs, and offers the prompts. */
+  insight?: Insight | undefined;
+  /** Whether to ask the child anything just now: false while the game is offline. The visit is recorded either way. */
+  prompts?: boolean;
 }
 
 interface Completion {
@@ -33,7 +39,7 @@ interface Completion {
   newBadges: BadgeId[];
 }
 
-export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo, onRemix }: LessonProps) {
+export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo, onRemix, insight, prompts = false }: LessonProps) {
   const [completion, setCompletion] = useState<Completion | null>(null);
   const completedRef = useRef(false);
   const activity = level.curriculum.activity;
@@ -49,13 +55,46 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo, o
     };
   }, [store, level.id]);
 
-  const record = useCallback((event: EventInput) => store.record(event), [store]);
+  // The visit, for the feedback loops: opened with the level, left with it unless it was finished.
+  const [visit, setVisit] = useState<Visit | null>(null);
+  const [nudging, setNudging] = useState(false);
+  useEffect(() => {
+    if (!insight) return;
+    const v = insight.open(level.id);
+    setVisit(v);
+    return () => v.leave();
+  }, [insight, level.id]);
+  /** After anything that might tip it over: is it time to ask whether the child is stuck? */
+  const considerNudge = useCallback(() => {
+    // Offline, the question is kept for later rather than used up.
+    if (!prompts || !visit?.shouldAskIfStuck) return;
+    visit.askedIfStuck();
+    setNudging(true);
+  }, [visit, prompts]);
+
+  const record = useCallback(
+    (event: EventInput) => {
+      store.record(event);
+      if (event.kind === 'hint-opened') visit?.hint(event.rung);
+      if (event.kind === 'prediction-made') visit?.predicted(event.correct);
+    },
+    [store, visit],
+  );
+  const onAttempt = useCallback(
+    ({ program, outcome, check }: { program: ProgramIR; outcome: RunOutcome; check?: 'roll' | 'unseen' }) => {
+      visit?.attempt({ program: programSpec(program), cards: countNodes(program), outcome, ...(check && { check }) });
+      considerNudge();
+    },
+    [visit, considerNudge],
+  );
   const hintFor = useCallback((rung: 0 | 1 | 2, program: ProgramIR, newId: () => NodeId, full: boolean) => hintEffect(level, rung, program, newId, full), [level]);
   const onProgram = useCallback(
     (program: ProgramIR) => {
       if (keepsPlace) store.saveDraft(level.id, programSpec(program));
+      visit?.edited(programSpec(program));
+      considerNudge();
     },
-    [store, level.id, keepsPlace],
+    [store, level.id, keepsPlace, visit, considerNudge],
   );
   const onSolved = useCallback(
     ({ usedHints, steps }: Solved) => {
@@ -65,9 +104,11 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo, o
       completedRef.current = true;
       // A solved level has no place to keep: it opens fresh next time.
       store.clearDraft(level.id);
+      visit?.complete((stars.complete ? 1 : 0) + (stars.noHints ? 1 : 0) + (stars.budget === true ? 1 : 0));
+      setNudging(false);
       setCompletion({ stars, newBadges: after.filter((b) => !before.includes(b)) });
     },
-    [store, level],
+    [store, level, visit],
   );
 
   const starSlots: { key: keyof Stars; label: string }[] = [
@@ -86,6 +127,8 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo, o
       record={record}
       hintFor={hintFor}
       onSolved={onSolved}
+      onAttempt={onAttempt}
+      belowControls={insight && visit && nudging && prompts ? <StuckNudge insight={insight} visit={visit} hasHints onDone={() => setNudging(false)} /> : undefined}
       completion={({ restart }) =>
         completion && (
           <div className="dialog-backdrop" role="presentation">
@@ -116,6 +159,7 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo, o
                   ))}
                 </ul>
               )}
+              {insight && visit && prompts && <RateLevel insight={insight} visit={visit} />}
               <div className="dialog-actions">
                 {nextLevelId && store.isUnlocked(nextLevelId) && (
                   <button type="button" className="btn btn-run" autoFocus onClick={() => onGoTo(hashFor({ screen: 'level', id: nextLevelId }))}>

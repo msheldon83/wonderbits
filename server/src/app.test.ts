@@ -17,11 +17,14 @@ describe('migrations', () => {
   it('build every table in the plan', async () => {
     const rows = await sql<{ table_name: string }[]>`select table_name from information_schema.tables where table_schema = 'public' order by 1`;
     expect(rows.map((r) => r.table_name)).toEqual([
+      'attempts',
       'children',
       'device_pairings',
       'devices',
       'documents',
+      'feedback',
       'invites',
+      'level_visits',
       'login_tokens',
       'parents',
       'pin_attempts',

@@ -21,6 +21,8 @@ export interface Parent {
   email: string;
   notifyByEmail: boolean;
   siblingSharing: boolean;
+  /** "Help improve Wonderbits": what children try and write may be kept for the people who run this copy. */
+  improve: boolean;
 }
 
 /** Loose on purpose: the link arriving is the real check. */
@@ -37,7 +39,7 @@ export async function requireParent(ctx: Context, c: Request): Promise<Parent> {
   const token = getCookie(c, PARENT_COOKIE);
   if (!token) throw new Refusal(401, 'signed-out');
   const [parent] = await ctx.sql<Parent[]>`
-    select p.id, p.email, p.notify_by_email as "notifyByEmail", p.sibling_sharing as "siblingSharing"
+    select p.id, p.email, p.notify_by_email as "notifyByEmail", p.sibling_sharing as "siblingSharing", p.improve
     from sessions s join parents p on p.id = s.parent_id
     where s.token_hash = ${hashToken(token)} and s.kind = 'parent' and s.expires_at > now()`;
   if (!parent) throw new Refusal(401, 'signed-out');
@@ -125,7 +127,7 @@ export function parentRoutes(ctx: Context): Hono {
 
   app.get('/me', async (c) => {
     const parent = await requireParent(ctx, c);
-    return c.json({ email: parent.email, notifyByEmail: parent.notifyByEmail, siblingSharing: parent.siblingSharing });
+    return c.json({ email: parent.email, notifyByEmail: parent.notifyByEmail, siblingSharing: parent.siblingSharing, improve: parent.improve, admin: ctx.adminEmails.includes(parent.email) });
   });
 
   app.patch('/me', async (c) => {
@@ -133,8 +135,9 @@ export function parentRoutes(ctx: Context): Hono {
     const body = await readJson(c);
     const notify = typeof body.notifyByEmail === 'boolean' ? body.notifyByEmail : parent.notifyByEmail;
     const sharing = typeof body.siblingSharing === 'boolean' ? body.siblingSharing : parent.siblingSharing;
-    await sql`update parents set notify_by_email = ${notify}, sibling_sharing = ${sharing} where id = ${parent.id}`;
-    return c.json({ email: parent.email, notifyByEmail: notify, siblingSharing: sharing });
+    const improve = typeof body.improve === 'boolean' ? body.improve : parent.improve;
+    await sql`update parents set notify_by_email = ${notify}, sibling_sharing = ${sharing}, improve = ${improve} where id = ${parent.id}`;
+    return c.json({ email: parent.email, notifyByEmail: notify, siblingSharing: sharing, improve, admin: ctx.adminEmails.includes(parent.email) });
   });
 
   /** The whole account: the parent, every child, everything they made, every device. Gone at once. */

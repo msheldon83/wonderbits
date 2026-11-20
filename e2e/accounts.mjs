@@ -21,7 +21,8 @@ const DATABASE_URL = process.env.E2E_DATABASE_URL ?? 'postgres://wonderbits:wond
 const PORT = process.env.E2E_PORT ?? '8099';
 const BASE = `http://localhost:${PORT}`;
 const SHOTS = process.env.E2E_SHOTS;
-const env = { ...process.env, DATABASE_URL, PORT, PUBLIC_URL: BASE, STATIC_DIR: `${root}dist` };
+// The grown-up in this story also runs this copy, so they can open the owner's page.
+const env = { ...process.env, DATABASE_URL, PORT, PUBLIC_URL: BASE, STATIC_DIR: `${root}dist`, ADMIN_EMAILS: 'lee@example.com' };
 const tsx = (script, args = []) => ['--import', 'tsx', `src/${script}`, ...args];
 
 execFileSync('psql', [DATABASE_URL, '-q', '-c', 'drop schema public cascade; create schema public'], { stdio: 'ignore' });
@@ -195,6 +196,129 @@ try {
   await shot(parent, 'dashboard-play');
   await parent.getByRole('button', { name: 'Back' }).click();
   step('the dashboard shows progress, creations and shares, and the grown-up can play one');
+
+  // ----- Feedback loops: what a child tries, says and asks -----
+  await tablet.goto(`${BASE}/#/level/l03-two-steps`);
+  const run = tablet.getByRole('button', { name: 'Run', exact: true });
+  for (let i = 0; i < 2; i++) {
+    // The level opens with one step where two are needed: the same wrong answer, twice.
+    await run.click();
+    // Let the robot finish its walk: a run that is reset half way is not an attempt.
+    const pause = tablet.getByRole('button', { name: 'Pause', exact: true });
+    await until('the run to start', () => pause.isEnabled());
+    await until('the run to end', () => pause.isDisabled(), 20_000);
+    await tablet.getByRole('button', { name: 'Reset', exact: true }).click();
+  }
+  await shot(tablet, 'two-failed-runs');
+  await tablet.getByRole('button', { name: 'Add Move forward one tile' }).click();
+  await run.click();
+  await tablet.getByRole('heading', { name: 'You did it!' }).waitFor({ timeout: 20_000 });
+  await tablet.getByRole('button', { name: 'Hard' }).click();
+  await tablet.getByRole('button', { name: 'Tell us something about this level' }).click();
+  await tablet.getByLabel('What do you want to tell us about this level?').fill('The second step surprised me');
+  await shot(tablet, 'level-rated');
+  await tablet.getByRole('button', { name: 'Send', exact: true }).click();
+  await tablet.getByText('Sent. Thank you!').waitFor();
+  step('a child fails a level twice, solves it, rates it hard and writes a note');
+
+  await tablet.goto(`${BASE}/#/`);
+  await tablet.getByRole('button', { name: 'Tell us' }).click();
+  await tablet.getByRole('button', { name: 'I have a question' }).click();
+  await tablet.getByLabel('What do you want to know?').fill('Can the robot swim?');
+  await shot(tablet, 'tell-us');
+  await tablet.getByRole('button', { name: 'Send', exact: true }).click();
+  await tablet.getByText('We will send the answer to your grown-up.').waitFor();
+  await tablet.getByRole('button', { name: 'Done' }).click();
+  await until('the mail to the owner', () => /Wonderbits: (one new note|\d+ new notes)/.test(log));
+  step('the child asks a question from the header, and the owner is mailed');
+
+  // ----- The owner's page -----
+  await until('the visit on the server', async () => {
+    const { levels } = await (await parent.request.get(`${BASE}/api/admin/levels`)).json();
+    const level = levels.find((l) => l.levelId === 'l03-two-steps');
+    return level?.finished === 1 && level.ratings === 1;
+  });
+  await parent.goto(`${BASE}/#/admin`);
+  const levelRow = parent.locator('.admin-levels tbody tr', { hasText: 'Two steps' });
+  await levelRow.waitFor();
+  const cells = (await levelRow.locator('td').allInnerTexts()).map((t) => t.trim());
+  // Children 1, finished 100%, left 0%, three runs to solve, rated 3 (hard) by one child.
+  if (cells[0] !== '1' || cells[1] !== '100%' || cells[2] !== '0%' || cells[3] !== '3.0' || !cells[6].startsWith('3.0')) throw new Error(`The level's numbers are wrong: ${cells.join(' | ')}`);
+  await shot(parent, 'admin-levels');
+  await levelRow.getByRole('button').click();
+  await parent.getByText('1 child, 2 runs').waitFor();
+  await parent.locator('.admin-code', { hasText: 'robot.forward()' }).first().waitFor();
+  await parent.getByText('The second step surprised me').waitFor();
+  await shot(parent, 'admin-level');
+  const adminText = await parent.locator('.admin').innerText();
+  if (/Robin|lee@example\.com/.test(adminText)) throw new Error('The owner\'s page names a child or a grown-up');
+  await parent.getByRole('button', { name: 'All levels' }).click();
+  const question = parent.locator('.note-list li', { hasText: 'Can the robot swim?' });
+  await question.getByRole('textbox').fill('Not yet, but it can cross on a log.');
+  await question.getByRole('button', { name: 'Send answer' }).click();
+  await until('the answer in the mail', () => /An answer for Robin from Wonderbits/.test(log));
+  step('the owner sees the level’s numbers, the shared wrong answer and the notes, and answers the question');
+
+  // ----- Offline, nothing is asked; what is done is still recorded -----
+  const twoSteps = async () => (await (await parent.request.get(`${BASE}/api/admin/levels`)).json()).levels.find((l) => l.levelId === 'l03-two-steps');
+  const before = await twoSteps();
+  await tablet.goto(`${BASE}/#/`);
+  await tablet.getByRole('button', { name: 'Tell us' }).waitFor();
+  await tablet.context().setOffline(true);
+  await tablet.getByRole('button', { name: 'Tell us' }).waitFor({ state: 'detached' });
+  await tablet.evaluate(() => (location.hash = '#/level/l03-two-steps'));
+  await tablet.getByRole('button', { name: 'Add Move forward one tile' }).click();
+  await run.click();
+  await tablet.getByRole('heading', { name: 'You did it!' }).waitFor({ timeout: 20_000 });
+  await tablet.getByRole('button', { name: 'Next level' }).waitFor();
+  if ((await tablet.getByText('How was that one?').count()) !== 0) throw new Error('A level finished offline still asks how hard it was');
+  await shot(tablet, 'offline-complete');
+  await tablet.context().setOffline(false);
+  await tablet.evaluate(() => (location.hash = '#/'));
+  await tablet.getByRole('button', { name: 'Tell us' }).waitFor();
+  await until('the level solved offline on the server', async () => {
+    const after = await twoSteps();
+    return after.visits === before.visits + 1 && after.ratings === before.ratings;
+  });
+  step('offline, the child is asked nothing; the level they solved is recorded and sent once back online');
+
+  // ----- The "stuck?" nudge -----
+  await tablet.goto(`${BASE}/#/level/l03-two-steps`);
+  for (let i = 0; i < 5; i++) {
+    await run.click();
+    const pause = tablet.getByRole('button', { name: 'Pause', exact: true });
+    await until('the run to start', () => pause.isEnabled());
+    await until('the run to end', () => pause.isDisabled(), 20_000);
+    if (i < 4) await tablet.getByRole('button', { name: 'Reset', exact: true }).click();
+  }
+  const nudge = tablet.getByRole('complementary', { name: 'Is this one tricky?' });
+  await nudge.waitFor();
+  await shot(tablet, 'stuck-nudge');
+  await nudge.getByRole('button', { name: 'A bit' }).click();
+  await nudge.getByRole('button', { name: 'I do not know which card to use' }).click();
+  await nudge.getByText(/Thank you/).waitFor();
+  await nudge.getByRole('button', { name: 'OK' }).click();
+  await nudge.waitFor({ state: 'detached' });
+  await tablet.goto(`${BASE}/#/`);
+  await until('the stuck visit on the server', async () => {
+    const detail = await (await parent.request.get(`${BASE}/api/admin/levels/l03-two-steps`)).json();
+    return detail.stuck.some((s) => s.stuck === 'a-bit') && detail.quits.length === 1 && detail.notes.some((n) => n.kind === 'stuck');
+  });
+  step('after five failed runs the child is asked if it is tricky, and leaving the level is recorded with its last run');
+
+  await parent.goto(`${BASE}/#/grownup`);
+  await parent.getByText(/What your family has written/).waitFor();
+  await parent.getByText('Not yet, but it can cross on a log.').waitFor();
+  await shot(parent, 'grownup-notes');
+  // The box changes once the server has agreed, so it is clicked, not "unchecked".
+  await parent.getByRole('checkbox', { name: 'Help improve Wonderbits' }).click();
+  await until('collection to be off', async () => (await (await parent.request.get(`${BASE}/api/parent/me`)).json()).improve === false);
+  await tablet.reload();
+  await tablet.locator('.who-chip').waitFor();
+  if ((await tablet.getByRole('button', { name: 'Tell us' }).count()) !== 0) throw new Error('The prompts are still offered after the grown-up turned them off');
+  const refusedBatch = await tablet.request.post(`${BASE}/api/insight/batch`, { data: { visits: [], attempts: [] }, headers: { Origin: BASE } });
+  if (refusedBatch.status() !== 403) throw new Error(`With collection off the server still takes records: ${refusedBatch.status()}`);
+  step('the answer reaches the grown-up, who turns collection off, and the prompts go away');
 
   // ----- Taking a device away signs its child out -----
   const row = parent.locator('.device-list li').first();

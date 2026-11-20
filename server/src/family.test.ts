@@ -2,7 +2,7 @@ import type { Hono } from 'hono';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from './app';
 import type { Sql } from './db';
-import { waitAfter } from './family';
+import { CONSENT_VERSION, waitAfter } from './family';
 import { memoryMailer } from './mail';
 import { hashPin, verifyPin } from './pins';
 import { addChild, Browser, childOn, emptyTables, freshDatabase, pairedDevice, signedInParent } from './testing';
@@ -29,7 +29,7 @@ describe('a child profile', () => {
     const family = await parent.ok(parent.get('/api/family'));
     expect(family.children).toMatchObject([{ id, nickname: 'Robin', avatar: 'fox', lastActiveAt: null }]);
     const [row] = await sql`select consent_version, consented_at, pin_hash from children where id = ${id}`;
-    expect(row!.consent_version).toBe('2026-11');
+    expect(row!.consent_version).toBe(CONSENT_VERSION);
     expect(row!.consented_at).toBeInstanceOf(Date);
     expect(row!.pin_hash).not.toContain('1234');
   });
@@ -71,7 +71,7 @@ describe('a child profile', () => {
     await device.ok(device.put('/api/sync/progress', { baseRev: 0, value: { version: 1 } }));
     await parent.ok(parent.patch(`/api/children/${id}`, { nickname: 'Wren', avatar: 'owl' }));
     const file = await parent.ok(parent.get(`/api/children/${id}/export`));
-    expect(file.child).toMatchObject({ nickname: 'Wren', avatar: 'owl', consentVersion: '2026-11' });
+    expect(file.child).toMatchObject({ nickname: 'Wren', avatar: 'owl', consentVersion: CONSENT_VERSION });
     expect(file.documents).toMatchObject([{ key: 'progress', value: { version: 1 } }]);
     await parent.ok(parent.delete(`/api/children/${id}`));
     const [left] = await sql<{ n: string }[]>`select (select count(*) from documents) + (select count(*) from sessions where kind = 'child') as n`;
