@@ -18,6 +18,7 @@ Built, steps 1 to 10. What differs from the plan as first written:
   Nothing is recorded when they do.
 - **Deploying is a workflow run by hand**, so a push to `main` cannot fail
   for want of a Fly token.
+- **The database is on Neon, not Fly.** The plan was to attach a Postgres cluster already on Fly; there is none (the owner's other Fly app uses SQLite), and Fly's Managed Postgres costs far more than this needs. The server is unchanged: it only reads `DATABASE_URL`.
 - **Not done:** renaming a device, changing a child's nickname or picture
   from the dashboard (the server can; no screen asks), and a service worker.
 
@@ -32,7 +33,7 @@ Decisions made with the owner:
 - **Scope v1:** parent accounts, child profiles, progress and creations synced across devices, a basic parent dashboard, and sharing creations inside one family (child to sibling, child to parent).
 - **Audience:** friends and family, invite-only.
 - **Child sign-in:** a parent must authorize the device first. On an authorized device the child picks their profile and enters a PIN. A nickname and PIN alone never open an account.
-- **Hosting:** Fly.io with Postgres, no PaaS lock-in. Everything must run from one Docker image against any Postgres so others can self-host.
+- **Hosting:** Fly.io for the server and Neon for the Postgres database, no PaaS lock-in. Everything must run from one Docker image against any Postgres so others can self-host.
 
 ## Principles
 
@@ -46,7 +47,7 @@ Decisions made with the owner:
 
 - **One Fly app serves both the built frontend and `/api`.** Same origin means plain httpOnly cookies work (no CORS, no Safari third-party-cookie trouble), and self-hosters get a single container.
 - **Server:** Node 22 + TypeScript in a new `server/` npm workspace. Hono for HTTP, `postgres` (postgres.js) with plain SQL migration files, Node's own scrypt for PIN hashing, `nodemailer` over SMTP for email (any provider).
-- **Database:** Postgres. On Fly, a new database on the existing cluster via `fly postgres attach`, or its own; only `DATABASE_URL` matters.
+- **Database:** Postgres, on Neon's free plan for the owner's copy. Only `DATABASE_URL` matters, so any Postgres will do.
 - **Config (env):** `DATABASE_URL`, `SESSION_SECRET`, `SMTP_URL`, `MAIL_FROM`, `PUBLIC_URL`, `INVITE_REQUIRED` (default true).
 
 ### Data model
@@ -150,9 +151,9 @@ Each step is a separate PR that leaves `main` working.
 7. **Parent dashboard.** Progress summary, creations, manage children and devices, export, delete.
 8. **Family sharing.** Send to sibling, show my grown-up, shelf inbox, email notice.
 9. **Privacy notice and polish.**
-10. **Deploy.** `fly.toml`, secrets, attach Postgres, deploy workflow. GitHub Pages keeps the accountless build.
+10. **Deploy.** `fly.toml`, secrets, a Neon database, deploy workflow. GitHub Pages keeps the accountless build.
 
-Steps 2 and 3 can go in parallel. The owner needs to supply: the Fly app and Postgres attachment, an SMTP provider, and a `FLY_API_TOKEN` secret for the deploy workflow.
+Steps 2 and 3 can go in parallel. The owner needs to supply: the Fly app, a Neon database, an SMTP provider, and a `FLY_API_TOKEN` secret for the deploy workflow.
 
 ## Left out of v1 on purpose
 

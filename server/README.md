@@ -123,22 +123,72 @@ E2E_DATABASE_URL=postgres://wonderbits:wonderbits@localhost:5432/wonderbits_e2e 
 `e2e/no-accounts.mjs` checks the other half of the promise: a build without
 accounts never calls a server.
 
-## Deploying to Fly.io
+## Deploying: Fly.io and Neon
 
-`fly.toml` runs the Dockerfile on one small machine. Once, by hand:
+The server runs on [Fly.io](https://fly.io) and the database is a free
+[Neon](https://neon.com) Postgres. `fly.toml` runs the Dockerfile on one small
+machine that sleeps when nobody is playing. Expect about $1 to $4 a month, all
+of it the Fly machine. Once, by hand:
 
-1. Put your app's name in `fly.toml` (`app` and `PUBLIC_URL`), then create it:
-   `fly apps create <name>`.
-2. Give it a database. To use a Postgres cluster you already have on Fly:
-   `fly postgres attach <cluster> --app <name>`, which sets `DATABASE_URL`.
-   Any other Postgres works too: `fly secrets set DATABASE_URL=...`.
-3. Give it somewhere to send mail, and say who runs it:
-   `fly secrets set SMTP_URL=... MAIL_FROM=... ADMIN_EMAILS=you@example.com`.
-   Without this nobody can sign in, because the links only reach the log.
-4. Deploy: `fly deploy`.
-5. Make the first invite: `fly ssh console -C "sh -c 'cd /app/server && node --import tsx src/invite.ts'"`.
+1. **Name the app.** Put your app's name in `fly.toml` (`app`, and
+   `PUBLIC_URL` as `https://<name>.fly.dev`), then create it:
 
-After that, the "Deploy to Fly.io" workflow deploys from GitHub when you run
-it, given a `FLY_API_TOKEN` repository secret.
+   ```bash
+   fly apps create <name>
+   ```
+
+2. **Make the database.** Create a Neon project in the region nearest the Fly
+   region you will deploy in. Copy its pooled connection string, make sure it
+   ends in `?sslmode=require`, and give it to the app:
+
+   ```bash
+   fly secrets set DATABASE_URL='postgresql://user:pass@ep-xxxx-pooler.region.aws.neon.tech/neondb?sslmode=require' --app <name>
+   ```
+
+   The server creates its tables on first start; there is nothing to set up
+   inside Neon.
+
+3. **Give it somewhere to send mail, and say who runs it.** Without mail
+   nobody can sign in, because the links only reach the log.
+
+   ```bash
+   fly secrets set SMTP_URL='smtps://user:pass@smtp.example.com' MAIL_FROM='Wonderbits <you@example.com>' ADMIN_EMAILS='you@example.com' --app <name>
+   ```
+
+4. **Deploy,** then check it answers `{"ok":true}`:
+
+   ```bash
+   fly deploy --build-arg APP_VERSION=$(git rev-parse --short HEAD)
+   ```
+
+   ```bash
+   curl https://<name>.fly.dev/api/health
+   ```
+
+   If either fails, `fly logs --app <name>` says why.
+
+5. **Make the first invite,** then sign up with it at `#/grownup` using an
+   address from `ADMIN_EMAILS`, add a child, and look at `#/admin`:
+
+   ```bash
+   fly ssh console --app <name> -C "sh -c 'cd /app/server && node --import tsx src/invite.ts'"
+   ```
+
+6. **Optional: deploy from GitHub.** Add the output of
+   `fly tokens create deploy --app <name>` as a repository secret named
+   `FLY_API_TOKEN`. The "Deploy to Fly.io" workflow then deploys when you run
+   it.
+
+What to expect:
+
+- **A slow first visit after a quiet spell.** The Fly machine and the Neon
+  database both sleep when idle and wake on the next request, which takes a
+  few seconds.
+- **Neon's free limits:** 1 GB of storage and 100 compute-hours a month,
+  counted only while the database is awake. Plenty for a few families.
+- **Mail about feedback** is sent only while the machine is awake.
+- **Any other Postgres works too.** Only `DATABASE_URL` matters, so a copy
+  hosted elsewhere can use whatever Postgres it has. Fly's own Managed
+  Postgres starts at about $38 a month, which is why it is not used here.
 
 GitHub Pages keeps serving the game without accounts, as before.
