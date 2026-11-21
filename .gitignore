@@ -6,3 +6,5 @@ coverage/
 .vite/
 .claude/worktrees/
 .neon
+.env.local
+.env.deploy

@@ -172,6 +172,13 @@ of it the Fly machine. Once, by hand:
 
    If either fails, `fly logs --app <name>` says why.
 
+   The first deploy starts two machines. One is enough, and is what the
+   costs above assume:
+
+   ```bash
+   fly scale count 1 --app <name>
+   ```
+
 5. **Make the first invite,** then sign up with it at `#/grownup` using an
    address from `ADMIN_EMAILS`, add a child, and look at `#/admin`:
 
