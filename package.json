@@ -18,6 +18,8 @@
     "validate:content": "vitest run src/lessons/content.test.ts"
   },
   "dependencies": {
+    "@neon/config": "^1.14.5",
+    "@neon/env": "^2.1.8",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
