@@ -148,6 +148,11 @@ of it the Fly machine. Once, by hand:
    The server creates its tables on first start; there is nothing to set up
    inside Neon.
 
+   The repository also carries a `neon.ts` for Neon's command-line tool
+   (`npm i -g neon`). Signed in with `neon login`, `neon deploy` applies it
+   to the linked project and `neon connection-string` prints the address to
+   use above. This is optional: the web console gives the same string.
+
 3. **Give it somewhere to send mail, and say who runs it.** Without mail
    nobody can sign in, because the links only reach the log.
 
