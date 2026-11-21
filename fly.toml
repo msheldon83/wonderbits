@@ -1,5 +1,7 @@
 # Wonderbits on Fly.io: one small machine running the Dockerfile, which holds
-# both the built game and the server. See server/README.md for the steps.
+# both the built game and the server. The database is elsewhere (a free Neon
+# Postgres) and is reached through the DATABASE_URL secret. See
+# server/README.md for the steps.
 #
 # Change `app` and PUBLIC_URL to your own app's name before the first deploy.
 
