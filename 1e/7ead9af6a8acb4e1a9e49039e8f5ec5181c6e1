@@ -1,0 +1,29 @@
+fly.toml
+  s_e1c4d800c872dc::t_0cdd87d87ba9b2 9
+.gitignore
+  s_e1c4d800c872dc::t_c2c06af2172def 9
+  s_e1c4d800c872dc::t_e6e82bc422b41e 10
+server/README.md
+  s_e1c4d800c872dc::t_869cf3ad141d36 175-181
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1e7ead9af6a8acb4e1a9e49039e8f5ec5181c6e1",
+  "prompts": {},
+  "humans": {
+    "h_76292d5883f271": {
+      "author": "Mike Sheldon <msheldon@redroverk12.com>"
+    }
+  },
+  "sessions": {
+    "s_e1c4d800c872dc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f875fdb1-1563-46e4-ad49-39716a31facc",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Mike Sheldon <msheldon@redroverk12.com>"
+    }
+  }
+}
