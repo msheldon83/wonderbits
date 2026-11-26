@@ -67,6 +67,12 @@ choose how many families it is good for, copy its link and send that. The
 link opens the sign-in with the code filled in. The page shows how much of
 each invite is used and can stop one, after which nobody new can use it.
 
+Someone without an invite can ask for one from the sign-in screen ("Ask for
+one"). Their address and a short note appear under Invites on the owner's
+page, and the owner is mailed that someone is waiting. Approving makes an
+invite for one family and mails them its link; declining mails nothing. An
+answered request is deleted after a month.
+
 The first code, before any owner has an account, comes from the command line:
 
 ```bash

@@ -425,6 +425,33 @@ try {
   await latecomer.getByRole('button', { name: 'Email me a link' }).click();
   await latecomer.getByText('That invite code is not right, or it has been used.').waitFor();
   step('the owner makes an invite for two families, a colleague joins by its link, and the stopped invite lets nobody else in');
+
+  // ----- No invite: ask for one, and the owner answers -----
+  await latecomer.getByRole('button', { name: 'Ask for one' }).click();
+  await latecomer.getByRole('heading', { name: 'Ask for an invite' }).waitFor();
+  if ((await latecomer.getByLabel('Your email address').inputValue()) !== 'latecomer@example.com') throw new Error('The address already typed was not carried over');
+  await latecomer.getByLabel('Who are you?').fill('A colleague, with two children');
+  await shot(latecomer, 'ask-for-invite');
+  await latecomer.getByRole('button', { name: 'Ask for an invite' }).click();
+  await latecomer.getByRole('heading', { name: 'Thank you for asking' }).waitFor();
+  await until('the mail telling the owner', () => /someone asked for an invite/.test(log));
+  await parent.reload();
+  const asking = parent.locator('.requests li', { hasText: 'latecomer@example.com' });
+  await asking.getByText('A colleague, with two children').waitFor();
+  await shot(parent, 'admin-requests');
+  await asking.getByRole('button', { name: 'Approve' }).click();
+  await parent.getByText('An invite has been mailed to latecomer@example.com.').waitFor();
+  const theirInvite = await until('the invite in the mail', () => /mail to latecomer@example\.com: Your invite to Wonderbits[\s\S]*?(http\S+\/#\/grownup\/invite\/\S+)/.exec(log)?.[1]);
+  await latecomer.goto(theirInvite);
+  await latecomer.reload();
+  await latecomer.getByText('You have been invited to Wonderbits').waitFor();
+  await latecomer.getByLabel('Your email address').fill('latecomer@example.com');
+  await latecomer.getByRole('button', { name: 'Email me a link' }).click();
+  await latecomer.getByRole('heading', { name: 'Check your email' }).waitFor();
+  const lateLink = await until('the latecomer’s sign-in mail', () => [...log.matchAll(/mail to latecomer@example\.com: Your Wonderbits sign-in link[\s\S]*?(http\S+\/#\/grownup\/signin\/\S+)/g)].at(-1)?.[1]);
+  await latecomer.goto(lateLink);
+  await latecomer.getByRole('heading', { name: 'Your children', exact: true }).waitFor();
+  step('someone with no invite asks for one, the owner approves, and the mailed invite lets them in');
   await parent.goto(`${BASE}/#/grownup`);
   await parent.getByRole('heading', { name: 'Your children', exact: true }).waitFor();
 

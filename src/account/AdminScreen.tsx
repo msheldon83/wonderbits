@@ -10,7 +10,7 @@ import { sequentialIdFactory } from '../ir/ids';
 import { programFromSpec } from '../ir/program';
 import type { NodeSpec } from '../ir/spec';
 import { printProgram } from '../projection/printTs';
-import { api, ApiError, OfflineError, type AdminFeedback, type AdminInvite, type AdminLevel, type AdminLevelDetail } from '../sync/api';
+import { api, ApiError, OfflineError, type AccessRequest, type AdminFeedback, type AdminInvite, type AdminLevel, type AdminLevelDetail } from '../sync/api';
 import { ago, Confirm } from './GrownupScreen';
 
 const pct = (part: number, whole: number): string => (whole === 0 ? '–' : `${Math.round((100 * part) / whole)}%`);
@@ -309,6 +309,81 @@ export const inviteOver = (i: AdminInvite): 'Stopped' | 'Used up' | null => (i.s
  * who has it, or its link, can use it until it runs out or is stopped. The
  * list shows how much of each is used, never by whom.
  */
+/** People asking for an invite. Approving makes one for a single family and mails them its link. */
+function Requests({ onApproved }: { onApproved(): void }) {
+  const [requests, setRequests] = useState<AccessRequest[] | null>(null);
+  const [said, setSaid] = useState<string | null>(null);
+  const load = useCallback(() => void api.adminRequests().then((r) => setRequests(r.requests)), []);
+  useEffect(load, [load]);
+  if (!requests || requests.length === 0) return null;
+  const waiting = requests.filter((r) => r.decision === null);
+  const answered = requests.filter((r) => r.decision !== null);
+  const fail = () => setSaid('That did not work. Try again in a moment.');
+  return (
+    <div className="requests">
+      <h3 className="requests-title">
+        Asking for an invite {waiting.length > 0 && <span className="count-dot">{waiting.length}</span>}
+      </h3>
+      {said && (
+        <p className="account-note" role="status">
+          {said}
+        </p>
+      )}
+      {waiting.length === 0 ? (
+        <p className="account-note">Nobody is waiting.</p>
+      ) : (
+        <ul className="invite-list">
+          {waiting.map((r) => (
+            <li key={r.id}>
+              <span className="invite-about">
+                <strong>{r.email}</strong>
+                <small>
+                  {r.note ? `${r.note} · ` : ''}asked {ago(r.createdAt)}
+                </small>
+              </span>
+              <span className="choice-row">
+                <button
+                  type="button"
+                  className="btn btn-run"
+                  onClick={() =>
+                    void api.adminApproveRequest(r.id).then((done) => {
+                      setSaid(done.mailed ? `An invite has been mailed to ${r.email}.` : `The mail to ${r.email} could not be sent. Their invite is ${showInvite(done.code)}: pass it on yourself.`);
+                      load();
+                      onApproved();
+                    }, fail)
+                  }
+                >
+                  Approve
+                </button>
+                <button type="button" className="btn btn-quiet" onClick={() => void api.adminDeclineRequest(r.id).then(load, fail)}>
+                  Decline
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {answered.length > 0 && (
+        <details className="child-more">
+          <summary>Answered in the last month ({answered.length})</summary>
+          <ul className="invite-list">
+            {answered.map((r) => (
+              <li key={r.id} className="is-over">
+                <span className="invite-about">
+                  <strong>{r.email}</strong>
+                  <small>
+                    {r.decision === 'approved' ? 'Approved' : 'Declined'} {ago(r.decidedAt)}
+                  </small>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
+  );
+}
+
 function Invites() {
   const [invites, setInvites] = useState<AdminInvite[] | null>(null);
   const [uses, setUses] = useState('1');
@@ -342,6 +417,7 @@ function Invites() {
         Invites
       </h2>
       <p className="account-note">A grown-up needs an invite to sign up. Anyone who has a code or its link can use it until it runs out or you stop it.</p>
+      <Requests onApproved={load} />
       <form className="invite-form" onSubmit={make}>
         <label className="field field-small">
           <span>How many families</span>

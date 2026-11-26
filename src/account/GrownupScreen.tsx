@@ -139,9 +139,79 @@ function Section({ id, title, children }: { id: string; title: string; children:
 
 // ----- Signing in -----
 
+/** For a grown-up with no invite: leave an address and a line about who they are, for the owner to answer. */
+function AskForInvite({ startEmail, onBack }: { startEmail: string; onBack(): void }) {
+  const [email, setEmail] = useState(startEmail);
+  const [note, setNote] = useState('');
+  const [state, setState] = useState<'writing' | 'sending' | 'sent'>('writing');
+  const [problem, setProblem] = useState<string | null>(null);
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    setState('sending');
+    setProblem(null);
+    void api.requestAccess(email, note).then(
+      () => setState('sent'),
+      (err: unknown) => {
+        setState('writing');
+        setProblem(words(err, { email: 'That does not look like an email address.', busy: 'A lot of people have asked just now. Please try again tomorrow.' }));
+      },
+    );
+  };
+  if (state === 'sent')
+    return (
+      <section className="account-card" aria-labelledby="asked-title">
+        <h1 id="asked-title" className="account-title">
+          Thank you for asking
+        </h1>
+        <p className="account-lead">
+          Your request has gone to the person who runs this copy of Wonderbits. If they say yes, an invite will arrive at <strong>{email.trim()}</strong>.
+        </p>
+        <p className="account-note">In the meantime, the first island is open to everyone.</p>
+        <p className="account-foot">
+          <a className="btn btn-run" href="#/">
+            Back to the game
+          </a>
+        </p>
+      </section>
+    );
+  return (
+    <section className="account-card" aria-labelledby="ask-title">
+      <h1 id="ask-title" className="account-title">
+        Ask for an invite
+      </h1>
+      <p className="account-lead">Wonderbits is shared by invitation for now. Leave your email address and a line about who you are, and the person who runs it will get back to you.</p>
+      <form className="account-form" onSubmit={submit}>
+        <label className="field">
+          <span>Your email address</span>
+          <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        </label>
+        <label className="field">
+          <span>Who are you?</span>
+          <input type="text" maxLength={200} placeholder="For example: a colleague of Mike's, with two children" value={note} onChange={(e) => setNote(e.target.value)} />
+          <small>Your address and this note are kept until your request is answered, and deleted a month after.</small>
+        </label>
+        {problem && (
+          <p className="account-problem" role="alert">
+            {problem}
+          </p>
+        )}
+        <p className="account-foot">
+          <button type="submit" className="btn btn-run" disabled={state === 'sending'}>
+            Ask for an invite
+          </button>
+          <button type="button" className="btn btn-quiet" onClick={onBack}>
+            Back
+          </button>
+        </p>
+      </form>
+    </section>
+  );
+}
+
 function SignIn({ invite }: { invite?: string | undefined }) {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState(invite ?? '');
+  const [asking, setAsking] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -158,6 +228,7 @@ function SignIn({ invite }: { invite?: string | undefined }) {
       setBusy(false);
     }
   };
+  if (asking) return <AskForInvite startEmail={email} onBack={() => setAsking(false)} />;
   if (sentTo)
     return (
       <section className="account-card" aria-labelledby="sent-title">
@@ -167,7 +238,13 @@ function SignIn({ invite }: { invite?: string | undefined }) {
         <p className="account-lead">
           A sign-in link is on its way to <strong>{sentTo}</strong>. It works once, for 15 minutes. Open it on this device.
         </p>
-        <p className="account-note">Nothing after a few minutes? The first time you sign in you need an invite code, so go back and add it.</p>
+        <p className="account-note">
+          Nothing after a few minutes? The first time you sign in you need an invite code, so go back and add it. No invite?{' '}
+          <button type="button" className="link-button" onClick={() => (setSentTo(null), setAsking(true))}>
+            Ask for one
+          </button>
+          .
+        </p>
         <p className="account-foot">
           <button type="button" className="btn btn-quiet" onClick={() => setSentTo(null)}>
             Back
@@ -195,6 +272,13 @@ function SignIn({ invite }: { invite?: string | undefined }) {
           <span>Invite code</span>
           <input type="text" autoComplete="off" autoCapitalize="characters" placeholder="Only the first time" value={code} onChange={(e) => setCode(e.target.value)} />
         </label>
+        <p className="account-note">
+          {invite ? 'Invite not working?' : 'New here, and no invite?'}{' '}
+          <button type="button" className="link-button" onClick={() => setAsking(true)}>
+            Ask for one
+          </button>
+          .
+        </p>
         {problem && (
           <p className="account-problem" role="alert">
             {problem}

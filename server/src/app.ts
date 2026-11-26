@@ -14,6 +14,7 @@ import { consoleMailer, type Mailer } from './mail';
 import { familyRoutes } from './family';
 import { insightRoutes } from './insight';
 import { parentRoutes } from './parents';
+import { requestAdminRoutes, requestRoutes } from './requests';
 import { shareRoutes } from './shares';
 import { syncRoutes } from './sync';
 
@@ -55,6 +56,8 @@ export function createApp({ sql, staticDir, mailer = consoleMailer, publicUrl = 
   app.route('/api', shareRoutes(ctx));
   app.route('/api', insightRoutes(ctx));
   app.route('/api/admin', adminRoutes(ctx));
+  app.route('/api/admin', requestAdminRoutes(ctx));
+  app.route('/api/access', requestRoutes(ctx));
 
   // An address under /api that nothing answers is a mistake, never a page of the game.
   app.all('/api/*', (c) => c.json({ error: 'not-found' }, 404));
