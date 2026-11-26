@@ -11,6 +11,7 @@ import { BADGE_IDS } from '../progress/types';
 import type { ProgressStore } from '../progress/store';
 import { BADGE_INFO, BadgeIcon, Star } from './icons';
 import { mapTheme, TravelIconArt } from './mapThemes';
+import { AskForAccount } from './WelcomeScreen';
 import { hashFor, type LevelChoice } from './levels';
 
 const STEP_Y = 108;
@@ -56,6 +57,8 @@ export function MapScreen({ choices, book, store, badges, packId, extra }: { cho
 
   const done = (i: Island) => i.levels.every((c) => store.levelProgress(c.level.id).stars.complete);
   const reached = (i: Island) => store.isUnlocked(i.levels[0]!.level.id);
+  /** Closed only because nobody is signed in: the island says so, and how to open it. */
+  const closed = (i: Island) => store.needsAccount(i.levels[0]!.level.id);
   const list = island.levels;
   const height = list.length * STEP_Y + 40;
   const points = list.map((_, i) => stoneAt(i));
@@ -71,14 +74,19 @@ export function MapScreen({ choices, book, store, badges, packId, extra }: { cho
           {islands.map((i, k) => (
             <li key={i.packId}>
               <a
-                className={`island-dot ${k === index ? 'is-here' : ''} ${done(i) ? 'is-done' : ''} ${reached(i) ? '' : 'is-far'}`}
+                className={`island-dot ${k === index ? 'is-here' : ''} ${done(i) ? 'is-done' : ''} ${reached(i) ? '' : 'is-far'} ${closed(i) ? 'is-closed' : ''}`}
                 href={hashFor({ screen: 'map', packId: i.packId })}
                 aria-current={k === index ? 'page' : undefined}
-                aria-label={`Island ${k + 1}: ${i.title}${done(i) ? ', finished' : reached(i) ? '' : ', not reached yet'}`}
+                aria-label={`Island ${k + 1}: ${i.title}${done(i) ? ', finished' : closed(i) ? ', needs an account' : reached(i) ? '' : ', not reached yet'}`}
                 title={i.title}
                 style={{ ['--island-sky' as string]: mapTheme(i.packId, k).sky[0], ['--island-ground' as string]: mapTheme(i.packId, k).ground }}
               >
                 {k + 1}
+                {closed(i) && (
+                  <svg className="island-lock" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+                    <path d="M7 11V8a5 5 0 0 1 10 0v3M6 11h12v9H6z" fill="currentColor" stroke="currentColor" strokeWidth={2} strokeLinejoin="round" />
+                  </svg>
+                )}
               </a>
             </li>
           ))}
@@ -109,7 +117,10 @@ export function MapScreen({ choices, book, store, badges, packId, extra }: { cho
           ))}
         </div>
 
-        <div className="map-trail" style={{ height }}>
+        {closed(island) && (
+          <AskForAccount title={`${island.title} needs an account`}>To play this island you need an account, so your stars are never lost. Ask your grown-up to set one up.</AskForAccount>
+        )}
+        <div className="map-trail" style={{ height }} hidden={closed(island)}>
           <svg className="map-path" viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" aria-hidden="true">
             <path d={path} fill="none" stroke={theme.path} strokeOpacity={0.45} strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" strokeDasharray="1 10" vectorEffect="non-scaling-stroke" />
           </svg>
@@ -172,9 +183,9 @@ export function MapScreen({ choices, book, store, badges, packId, extra }: { cho
         </div>
 
         {/* The way on: each island has its own way to travel to the next. */}
-        <div className="island-travel">
+        <div className="island-travel" hidden={closed(island)}>
           {next ? (
-            reached(next) ? (
+            reached(next) || (closed(next) && done(island)) ? (
               <a className="travel-button" href={hashFor({ screen: 'map', packId: next.packId })}>
                 <span className="travel-icon">
                   <TravelIconArt icon={theme.travel.icon} />

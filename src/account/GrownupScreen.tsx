@@ -180,7 +180,7 @@ function SignIn() {
       <h1 id="signin-title" className="account-title">
         For the grown-up
       </h1>
-      <p className="account-lead">Sign in to add your children, see how they are getting on, and keep their work safe. There is no password: we email you a link.</p>
+      <p className="account-lead">An account keeps your children's stars and creations safe, so they are never lost, and lets you see how they are getting on. It is free. There is no password: we email you a link.</p>
       <form className="account-form" onSubmit={(e) => void submit(e)}>
         <label className="field">
           <span>Your email address</span>
@@ -201,6 +201,9 @@ function SignIn() {
           </button>
           <a className="btn btn-quiet" href="#/privacy">
             What is kept
+          </a>
+          <a className="btn btn-quiet" href="#/welcome">
+            About Wonderbits
           </a>
           <a className="btn btn-quiet" href="#/">
             Back to the game

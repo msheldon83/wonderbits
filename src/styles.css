@@ -5356,3 +5356,198 @@ button.shelf-card {
   line-height: 1.45;
   text-align: left;
 }
+
+/* ---------- Onboarding: the welcome screen, and what waits for an account ---------- */
+
+.welcome {
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  padding-bottom: 12px;
+}
+
+.welcome-card {
+  width: 100%;
+  max-width: 680px;
+  height: max-content;
+  padding: 20px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-radius: 24px;
+  background: var(--paper);
+  box-shadow: 0 2px 0 var(--line);
+}
+
+.welcome-card > .account-title,
+.welcome-card > .account-lead {
+  text-align: center;
+}
+
+.welcome-art {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 0;
+  border-radius: var(--radius);
+  background: linear-gradient(#dff0fb, #eef6f2);
+  position: relative;
+  overflow: hidden;
+}
+
+/* The robot stands on the grass, clear of the trees. */
+.welcome-art .welcome-robot {
+  position: absolute;
+  top: auto;
+  right: auto;
+  left: 22%;
+  bottom: -8px;
+  width: 96px;
+  height: 96px;
+  margin: 0;
+  transform: none;
+}
+
+.welcome-art .welcome-robot svg {
+  width: 96px;
+  height: 96px;
+}
+
+.welcome-art svg {
+  width: min(240px, 70%);
+  height: auto;
+}
+
+.welcome-card h2 {
+  margin: 0 0 4px;
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.welcome-card section p,
+.welcome-card section ul {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.welcome-card section ul {
+  padding-left: 22px;
+}
+
+.welcome-card section p + ul {
+  margin-top: 8px;
+}
+
+.welcome-learn {
+  columns: 2;
+  column-gap: 28px;
+}
+
+.welcome-safe {
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--gold-wash);
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+
+.welcome-card .account-foot {
+  padding-top: 4px;
+}
+
+.settings-about {
+  margin: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.who-chip.is-guest {
+  padding: 0 18px;
+  background: var(--blue);
+  box-shadow: 0 3px 0 var(--blue-deep);
+  color: #fff;
+}
+
+/* Something that waits for an account, and the way to get one. */
+.needs-account {
+  width: 100%;
+  max-width: 520px;
+  margin: 12px auto;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  border-radius: 24px;
+  background: var(--paper);
+  box-shadow: 0 2px 0 var(--line);
+  text-align: center;
+}
+
+.needs-account-lock {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--gold-wash);
+  color: var(--amber-deep);
+}
+
+.needs-account-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.needs-account p {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.island-dot {
+  position: relative;
+}
+
+.island-lock {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  padding: 2px;
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--amber-deep);
+}
+
+.account-nudge {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--gold-wash);
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.account-nudge.is-end {
+  box-shadow: inset 0 0 0 2px var(--gold);
+  font-size: 17px;
+}
+
+@media (max-width: 520px) {
+  .welcome-learn {
+    columns: 1;
+  }
+}
+
+/* A closed island shows why it is closed, not its trail or the way on. */
+.map-trail[hidden],
+.island-travel[hidden] {
+  display: none;
+}

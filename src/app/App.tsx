@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useSyncExternalStore, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { introductionBefore, realWordsOf } from '../lessons/concepts';
 import { RealWordsContext } from '../editor/CodePanel';
 import { CreateScreen } from '../create/CreateScreen';
@@ -24,6 +24,7 @@ import { Lesson } from './Lesson';
 import { hashFor, loadContent, nextLevelId } from './levels';
 import { MapScreen } from './MapScreen';
 import { SettingsScreen } from './SettingsScreen';
+import { AskForAccount, WelcomeScreen } from './WelcomeScreen';
 
 const BookIcon = () => (
   <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
@@ -58,12 +59,22 @@ export interface AccountProps {
   insight?: Insight | undefined;
   /** Whether to ask the child for feedback just now: false while the server cannot be reached. What they do is still recorded and sent later. */
   prompts?: boolean;
+  /** Nobody is signed in on this device: only the first island is open, and making things waits for an account. */
+  guest?: boolean;
+  /** Storage that belongs to the device, not to a child: where "has seen the welcome screen" is kept. */
+  deviceStore?: KeyValueStore;
   /** Hands over a function that re-reads storage; called when another device's changes arrive. Returns how to stop. */
   onReload?(reload: () => void): () => void;
 }
 
+/** Kept on the device once the welcome screen has been seen there. */
+const WELCOME_KEY = 'welcome:seen';
+
 export function App({ storage: given, account }: { storage?: KeyValueStore; account?: AccountProps } = {}) {
-  const { choices, book } = useMemo(loadContent, []);
+  const { choices, book, packs: islands } = useMemo(loadContent, []);
+  const guest = account?.guest === true;
+  /** The levels a guest may play: the first island's. */
+  const openLevels = useMemo(() => choices.filter((c) => c.packId === choices[0]?.packId).map((c) => c.level.id), [choices]);
   const storage = useMemo(() => given ?? defaultStore(), [given]);
   const creationStore = useMemo(() => {
     const s = new CreationStore(storage);
@@ -76,8 +87,9 @@ export function App({ storage: given, account }: { storage?: KeyValueStore; acco
   const store = useMemo(() => {
     const s = new ProgressStore(storage);
     s.setLevels(choices.map((c) => c.level));
+    if (guest) s.setOpenLevels(openLevels);
     return s;
-  }, [choices, storage]);
+  }, [choices, storage, guest, openLevels]);
   const snap = useSyncExternalStore(store.subscribe, store.getSnapshot);
   useEffect(() => void store.load(), [store]);
   // Another device changed something: read it in, so the map and the shelf show it.
@@ -92,6 +104,25 @@ export function App({ storage: given, account }: { storage?: KeyValueStore; acco
   );
   const route = useRoute();
   const runtime = useRuntime();
+
+  // The welcome screen shows itself once on a device, and again when asked for.
+  const deviceStore = account?.deviceStore ?? storage;
+  const [welcomed, setWelcomed] = useState<boolean | undefined>(undefined);
+  useEffect(() => {
+    let live = true;
+    void deviceStore.get<boolean>(WELCOME_KEY).then((seen) => live && setWelcomed(seen === true));
+    return () => {
+      live = false;
+    };
+  }, [deviceStore]);
+  const leaveWelcome = () => {
+    setWelcomed(true);
+    void deviceStore.set(WELCOME_KEY, true);
+    if (route.screen === 'welcome') location.hash = hashFor({ screen: 'map' });
+  };
+  /** For a guest finishing a level: is an account needed after the next one ("soon"), or now? */
+  const openIndex = guest && route.screen === 'level' ? openLevels.indexOf(route.id) : -1;
+  const accountNext = openIndex < 0 ? undefined : openIndex === openLevels.length - 1 ? ('now' as const) : openIndex === openLevels.length - 2 ? ('soon' as const) : undefined;
 
   // A level that is not open yet sends the child back to the map.
   const choice = route.screen === 'level' ? choices.find((c) => c.level.id === route.id) : undefined;
@@ -159,12 +190,23 @@ export function App({ storage: given, account }: { storage?: KeyValueStore; acco
     location.hash = hash;
   };
 
-  if (!snap.loaded || !made.loaded) {
+  if (!snap.loaded || !made.loaded || welcomed === undefined) {
     return (
       <div className="app">
         <p className="loading" role="status">
           Loading…
         </p>
+      </div>
+    );
+  }
+
+  if (!welcomed || route.screen === 'welcome') {
+    return (
+      <div className="app screen-welcome">
+        <header className="app-header">
+          <span className="brand">Wonderbits</span>
+        </header>
+        <WelcomeScreen packs={islands} accounts={account !== undefined} guest={guest} onDone={leaveWelcome} />
       </div>
     );
   }
@@ -242,12 +284,17 @@ export function App({ storage: given, account }: { storage?: KeyValueStore; acco
           </a>
         )}
       </header>
-      {route.screen === 'map' && <MapScreen choices={choices} book={book} store={store} badges={snap.progress.badges} packId={route.packId} extra={<MadeHere creations={made.creations} progress={store} />} />}
+      {route.screen === 'map' && <MapScreen choices={choices} book={book} store={store} badges={snap.progress.badges} packId={route.packId} extra={guest ? undefined : <MadeHere creations={made.creations} progress={store} />} />}
       {route.screen === 'settings' && <SettingsScreen store={store} settings={snap.settings} creations={() => made.creations.map(creationToJson)} account={account?.panel} synced={account?.synced} />}
       {route.screen === 'library' && <LibraryScreen {...(route.id !== undefined && { entryId: route.id })} />}
-      {route.screen === 'create' && <CreateScreen creations={made.creations} store={creationStore} progress={store} choices={choices} onGoTo={goTo} sharing={account?.sharing} />}
-      {route.screen === 'make' && creation && <CreationScreen key={creation.id} creation={creation} store={creationStore} progress={store} runtime={runtime} settings={snap.settings} signposts={signposts} universe={universe} packs={packs} />}
-      {route.screen === 'play' && creation && playable && <PlayScreen key={`${creation.id}:${creation.proof?.provedAt}`} creation={creation} store={creationStore} progress={store} runtime={runtime} settings={snap.settings} />}
+      {guest && (route.screen === 'create' || route.screen === 'make' || route.screen === 'play') && (
+        <div className="account-page">
+          <AskForAccount title="Making things needs an account">The things you make are worth keeping. To make your own islands and games you need an account, so they are never lost. Ask your grown-up to set one up.</AskForAccount>
+        </div>
+      )}
+      {!guest && route.screen === 'create' && <CreateScreen creations={made.creations} store={creationStore} progress={store} choices={choices} onGoTo={goTo} sharing={account?.sharing} />}
+      {!guest && route.screen === 'make' && creation && <CreationScreen key={creation.id} creation={creation} store={creationStore} progress={store} runtime={runtime} settings={snap.settings} signposts={signposts} universe={universe} packs={packs} />}
+      {!guest && route.screen === 'play' && creation && playable && <PlayScreen key={`${creation.id}:${creation.proof?.provedAt}`} creation={creation} store={creationStore} progress={store} runtime={runtime} settings={snap.settings} />}
       {route.screen === 'book' && !page && <CardBookScreen book={book} store={store} from={cameFrom.current} />}
       {route.screen === 'book' && page && pageOpen && (
         <ConceptIntro key={`book-${page.id}`} entry={page} runtime={runtime} store={store} settings={snap.settings} replay onDone={() => goTo(hashFor({ screen: 'book' }))} />
@@ -266,11 +313,14 @@ export function App({ storage: given, account }: { storage?: KeyValueStore; acco
           onGoTo={goTo}
           insight={account?.insight}
           prompts={account?.prompts === true}
-          onRemix={() => {
-            const remix = creationStore.add(remixOf(choice.level));
-            store.log({ levelId: remix.id, kind: 'creation-started', basedOn: choice.level.id });
-            goTo(hashFor({ screen: 'make', id: remix.id }));
-          }}
+          accountNext={accountNext}
+          {...(!guest && {
+            onRemix: () => {
+              const remix = creationStore.add(remixOf(choice.level));
+              store.log({ levelId: remix.id, kind: 'creation-started', basedOn: choice.level.id });
+              goTo(hashFor({ screen: 'make', id: remix.id }));
+            },
+          })}
         />
       )}
     </div>

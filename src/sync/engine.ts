@@ -104,6 +104,11 @@ export class SyncEngine {
     return this.local.set(STATE_KEY, this.state);
   }
 
+  /** Documents were written straight to the local store (progress from before sign-in being brought along): send them too. */
+  async mark(keys: readonly string[]): Promise<void> {
+    for (const key of keys) if (isSynced(key)) await this.touch(key);
+  }
+
   /** True while something changed here has not reached the server. */
   get pending(): boolean {
     return this.state.dirty.length > 0;

@@ -97,7 +97,7 @@ try {
   // ----- A PIN from a browser nobody let in opens nothing -----
   const stranger = await device();
   await stranger.goto(`${BASE}/#/who`);
-  await stranger.getByRole('heading', { name: 'Set up this device' }).waitFor();
+  await stranger.getByRole('heading', { name: 'Sign in or set up an account' }).waitFor();
   const robinId = (await (await parent.request.get(`${BASE}/api/family`)).json()).children.find((c) => c.nickname === 'Robin').id;
   const refused = await stranger.request.post(`${BASE}/api/child/signin`, { data: { childId: robinId, pin: '1234' }, headers: { Origin: BASE } });
   if (refused.status() !== 401) throw new Error(`The right PIN from an unknown device got ${refused.status()}, not 401`);
@@ -117,9 +117,70 @@ try {
     await page.getByRole('button', { name: nickname }).click();
     for (const digit of pin) await page.getByRole('button', { name: digit, exact: true }).click();
     await page.getByRole('button', { name: 'Go' }).click();
-    await page.locator('.who-chip', { hasText: nickname }).waitFor();
+    // A device that has never shown the welcome screen shows it now, once.
+    const chip = page.locator('.who-chip', { hasText: nickname });
+    const welcome = page.getByRole('button', { name: 'Back to the game' });
+    await chip.or(welcome).first().waitFor();
+    if (await welcome.isVisible()) await welcome.click();
+    await chip.waitFor();
   };
   const tablet = await device();
+
+  // ----- Before anyone signs in: the welcome screen, the first island, and what waits for an account -----
+  /** Everything a guest read on the screens that ask for an account, to check its wording afterwards. */
+  let guestWords = '';
+  const read = async () => (guestWords += `\n${await tablet.locator('.app').innerText()}`);
+  await tablet.goto(`${BASE}/`);
+  await tablet.getByRole('heading', { name: 'Welcome to Wonderbits' }).waitFor();
+  for (const heading of ['What it is', 'What you will learn', 'What to expect', 'For your grown-up', 'Keeping your work safe']) await tablet.getByRole('heading', { name: heading }).waitFor();
+  await tablet.getByText('Repeating, without writing it twice').waitFor();
+  await shot(tablet, 'welcome');
+  await tablet.getByRole('button', { name: 'Start playing' }).click();
+  await tablet.locator('.who-chip.is-guest', { hasText: 'Sign in' }).waitFor();
+  await shot(tablet, 'guest-map');
+  await read();
+  await tablet.reload();
+  await tablet.locator('.who-chip.is-guest').waitFor();
+  if ((await tablet.getByRole('heading', { name: 'Welcome to Wonderbits' }).count()) !== 0) throw new Error('The welcome screen showed itself a second time');
+  await tablet.goto(`${BASE}/#/settings`);
+  await tablet.getByRole('link', { name: 'About Wonderbits' }).click();
+  await tablet.getByRole('heading', { name: 'Welcome to Wonderbits' }).waitFor();
+  await tablet.getByRole('button', { name: 'Start playing' }).click();
+  await tablet.locator('.who-chip.is-guest').waitFor();
+  step('a first visit is welcomed with what the game is and teaches, once, and the map offers Sign in');
+
+  await tablet.goto(`${BASE}/#/map/forest-trails`);
+  await tablet.getByRole('heading', { name: 'Forest trails needs an account' }).waitFor();
+  await shot(tablet, 'closed-island');
+  await read();
+  await tablet.goto(`${BASE}/#/level/l06-the-other-way`);
+  await tablet.waitForURL((url) => url.hash === '#/' || url.hash === '');
+  await tablet.goto(`${BASE}/#/create`);
+  await tablet.getByRole('heading', { name: 'Making things needs an account' }).waitFor();
+  await read();
+  step('a later island and Create say they need an account, and why');
+
+  const finish = async (levelId, cards) => {
+    await tablet.goto(`${BASE}/#/level/${levelId}`);
+    for (const card of cards) await tablet.locator(`.palette .card-${card}`).first().click();
+    await tablet.getByRole('button', { name: 'Run', exact: true }).click();
+    await tablet.getByRole('heading', { name: 'You did it!' }).waitFor({ timeout: 20_000 });
+  };
+  await finish('l05-turn-first', ['rotateCW', 'forward', 'forward']);
+  await tablet.getByText('1 level left on this island').waitFor();
+  await tablet.getByRole('button', { name: 'Next level' }).waitFor();
+  await read();
+  await finish('l07-in-order', ['forward', 'rotateCW', 'forward']);
+  await tablet.getByText('You finished the first island!').waitFor();
+  if ((await tablet.getByRole('button', { name: 'Next level' }).count()) !== 0) throw new Error('A guest is offered the next level past the first island');
+  if ((await tablet.getByRole('button', { name: 'Change this level' }).count()) !== 0) throw new Error('A guest is offered to change a level');
+  await shot(tablet, 'end-of-island');
+  await read();
+  const wrong = /\b(free|unlock\w*|upgrade\w*|trial|full game)\b/i.exec(guestWords);
+  if (wrong) throw new Error(`A guest's screen says "${wrong[0]}", which sounds like something to pay for`);
+  await tablet.getByRole('link', { name: 'Keep going' }).click();
+  await tablet.getByRole('heading', { name: 'Sign in or set up an account' }).waitFor();
+  step('finishing the first island says an account comes next, in words that never suggest paying');
   await letIn(tablet);
   await shot(tablet, 'who');
   step('a device shows a code, the grown-up types it, and the device is let in');
@@ -132,6 +193,19 @@ try {
   await shot(tablet, 'pin-wrong');
   await tablet.getByRole('button', { name: 'I am someone else' }).click();
   await signIn(tablet, 'Robin', '1234');
+  // The stars earned before signing in come along, once the child says they are theirs.
+  await tablet.getByRole('heading', { name: 'Are these yours?' }).waitFor();
+  await shot(tablet, 'are-these-yours');
+  await tablet.getByRole('button', { name: 'Yes, bring them' }).click();
+  await until('the earlier stars on the server', async () => {
+    const { docs } = await (await tablet.request.get(`${BASE}/api/sync?since=0`)).json();
+    const levels = docs.find((d) => d.key === 'progress')?.value.levels ?? {};
+    return levels['l05-turn-first']?.stars.complete && levels['l07-in-order']?.stars.complete;
+  });
+  await tablet.goto(`${BASE}/#/map/forest-trails`);
+  await tablet.getByRole('heading', { name: 'Forest trails', exact: true }).waitFor();
+  if ((await tablet.getByText('needs an account').count()) !== 0) throw new Error('A signed-in child is still told an island needs an account');
+  await tablet.goto(`${BASE}/#/`);
   await shot(tablet, 'map-signed-in');
   step('a wrong PIN is refused and the right one signs the child in');
 
@@ -328,7 +402,7 @@ try {
   await tablet.goto(`${BASE}/#/`);
   await tablet.reload();
   await tablet.locator('.app-header').waitFor();
-  if ((await tablet.locator('.who-chip').count()) !== 0) throw new Error('The child is still signed in on a device that was taken away');
+  if ((await tablet.locator('.who-chip:not(.is-guest)').count()) !== 0) throw new Error('The child is still signed in on a device that was taken away');
   const after = await tablet.request.get(`${BASE}/api/sync`);
   if (after.status() !== 401) throw new Error(`A device that was taken away still syncs: ${after.status()}`);
   await shot(tablet, 'taken-away');
