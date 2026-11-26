@@ -6,6 +6,7 @@
 # Change `app` and PUBLIC_URL to your own app's name before the first deploy.
 
 app = "wonderbits"
+primary_region = "iad"
 
 [build]
   dockerfile = "Dockerfile"
