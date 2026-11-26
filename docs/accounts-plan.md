@@ -19,10 +19,24 @@ Built, steps 1 to 10. What differs from the plan as first written:
 - **Deploying is a workflow run by hand**, so a push to `main` cannot fail
   for want of a Fly token.
 - **The database is on Neon, not Fly.** The plan was to attach a Postgres cluster already on Fly; there is none (the owner's other Fly app uses SQLite), and Fly's Managed Postgres costs far more than this needs. The server is unchanged: it only reads `DATABASE_URL`.
+- **A guest plays the first island only.** Added after the first build: see "Onboarding" below.
 - **Not done:** renaming a device, changing a child's nickname or picture
   from the dashboard (the server can; no screen asks), and a service worker.
 
 How to run, test and deploy it: [server/README.md](../server/README.md).
+
+## Onboarding
+
+Wonderbits is free, and so is an account. An account exists for one reason: so a child's stars and creations are kept on the server and are never lost. Onboarding makes that visible from the start, and makes an account the way past the intro lessons, so nobody gets far with nothing keeping their work safe.
+
+- **Welcome screen (`#/welcome`).** Says what the game is, what it teaches (built from the packs' concepts, so it follows the islands) and what to expect. It shows itself once per device, in both copies, and is reachable again from "About Wonderbits" in Settings.
+- **A guest** (the server copy, on a device no grown-up has let in) plays the first island. Every later island, and Create and the Workshop, wait for an account and say so, with the way to set one up. The map shows "Sign in" where a signed-in child's name would be.
+- **As the first island ends,** the completion dialog says an account comes next: a quiet line on the second-to-last level, and "Keep going" in place of "Next level" on the last.
+- **Stars come along.** The first time a child signs in on a device that holds earlier progress, they are asked once whether it is theirs; "yes" joins it into their profile.
+- **The copy with no server** closes nothing. It shows the welcome screen without the account part.
+- **Wording.** Nothing a child reads may suggest paying: no "unlock", "upgrade" or "trial". "It is free" is said only where a grown-up reads. The browser check enforces this on a guest's screens.
+
+The decision of what is open lives in one place, `ProgressStore.isUnlocked`, through `setOpenLevels`. It is a prompt to sign up, not a security wall: a guest never talks to the server.
 
 ## Context
 

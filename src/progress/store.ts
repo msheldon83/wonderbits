@@ -40,6 +40,7 @@ export class ProgressStore {
   private snapshot: Snapshot = { loaded: false, progress: emptyProgress(), settings: DEFAULT_SETTINGS, log: [] };
   private listeners = new Set<() => void>();
   private levels: readonly PuzzleDefinition[] = [];
+  private openLevels: ReadonlySet<string> | null = null;
   /** The child's place: the unfinished program of each level left half way, by level id. */
   private drafts: Record<string, NodeSpec[]> = {};
 
@@ -51,6 +52,21 @@ export class ProgressStore {
   /** Levels in play order, for badge rules and unlocking. */
   setLevels(levels: readonly PuzzleDefinition[]): void {
     this.levels = levels;
+  }
+
+  /**
+   * On a copy with accounts, with nobody signed in: the levels anyone may
+   * play. Every other level waits for an account, so that nobody gets far
+   * with nothing keeping their work safe. Null (the default) means there is
+   * no such limit.
+   */
+  setOpenLevels(ids: readonly string[] | null): void {
+    this.openLevels = ids === null ? null : new Set(ids);
+  }
+
+  /** True when this level is closed only because nobody is signed in. */
+  needsAccount(levelId: string): boolean {
+    return this.openLevels !== null && !this.openLevels.has(levelId);
   }
 
   async load(): Promise<void> {
@@ -121,6 +137,8 @@ export class ProgressStore {
 
   /** A level is open when the one before it is complete, or the adult opened them all. */
   isUnlocked(levelId: string): boolean {
+    // Needing an account comes first: neither the grown-up's setting nor an old star opens such a level.
+    if (this.needsAccount(levelId)) return false;
     if (this.snapshot.settings.openAllLevels) return true;
     const index = this.levels.findIndex((l) => l.id === levelId);
     if (index <= 0) return true;

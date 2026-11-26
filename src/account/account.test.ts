@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { memoryStore, profilePrefix, scopedStore } from '../progress/storage';
 import { emptyLevelProgress, emptyProgress, type Progress } from '../progress/types';
 import { SyncEngine, type SyncApi } from '../sync/engine';
+import { inviteLink, inviteOver, showInvite } from './AdminScreen';
 import { ago } from './GrownupScreen';
 import { dismissGuestProgress, hasGuestProgress, importGuestProgress } from './guest';
 import { parseAccountRoute } from './Root';
@@ -14,6 +15,7 @@ describe('account addresses', () => {
   it('are told apart from the game’s', () => {
     expect(parseAccountRoute('#/grownup')).toEqual({ screen: 'grownup' });
     expect(parseAccountRoute('#/grownup/signin/abc-DEF_1')).toEqual({ screen: 'grownup', token: 'abc-DEF_1' });
+    expect(parseAccountRoute('#/grownup/invite/ABCD-EFGH')).toEqual({ screen: 'grownup', invite: 'ABCD-EFGH' });
     expect(parseAccountRoute('#/who')).toEqual({ screen: 'who' });
     expect(parseAccountRoute('#/pair')).toEqual({ screen: 'pair' });
     expect(parseAccountRoute('#/privacy')).toEqual({ screen: 'privacy' });
@@ -62,6 +64,23 @@ describe('progress from before sign-in', () => {
     };
     await new SyncEngine(child, api).sync();
     expect(pushed.sort()).toEqual(['creation:c-guest', 'drafts', 'progress']);
+  });
+});
+
+describe('an invite', () => {
+  it('is shown in fours, and linked from wherever the page is served', () => {
+    expect(showInvite('ABCDEFGH')).toBe('ABCD-EFGH');
+    expect(inviteLink('ABCDEFGH', 'https://wonderbits.example/#/admin')).toBe('https://wonderbits.example/#/grownup/invite/ABCD-EFGH');
+    expect(inviteLink('ABCDEFGH', 'http://localhost:8080/sub/')).toBe('http://localhost:8080/sub/#/grownup/invite/ABCD-EFGH');
+    // The link is read back as the same invite.
+    expect(parseAccountRoute(new URL(inviteLink('ABCDEFGH', 'https://w.example/')).hash)).toEqual({ screen: 'grownup', invite: 'ABCD-EFGH' });
+  });
+
+  it('is over when stopped or used up', () => {
+    const invite = { code: 'ABCDEFGH', note: null, maxUses: 2, uses: 1, createdAt: '', stoppedAt: null };
+    expect(inviteOver(invite)).toBeNull();
+    expect(inviteOver({ ...invite, uses: 2 })).toBe('Used up');
+    expect(inviteOver({ ...invite, stoppedAt: '2026-11-26T00:00:00Z' })).toBe('Stopped');
   });
 });
 

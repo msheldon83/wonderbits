@@ -7,7 +7,7 @@
  * #/play/<id>. The library of ready-made functions is #/library.
  */
 import { cardBook, type BookEntry } from '../lessons/concepts';
-import { loadPacks } from '../lessons/content';
+import { loadPacks, type LoadedPack } from '../lessons/content';
 import type { PuzzleDefinition } from '../lessons/types';
 
 export interface LevelChoice {
@@ -23,6 +23,8 @@ export interface LevelChoice {
 export interface Content {
   choices: LevelChoice[];
   book: BookEntry[];
+  /** The islands in play order, for saying what the game teaches. */
+  packs: LoadedPack[];
 }
 
 export function loadContent(): Content {
@@ -30,6 +32,7 @@ export function loadContent(): Content {
   return {
     choices: packs.flatMap((pack, w) => pack.levels.map((level, i) => ({ level, packId: pack.manifest.id, packTitle: pack.manifest.title, number: i + 1, world: w + 1 }))),
     book: cardBook(packs),
+    packs,
   };
 }
 
@@ -43,7 +46,7 @@ export function nextLevelId(choices: readonly LevelChoice[], id: string): string
 }
 
 /** The map shows one island at a time; with no island named it opens on the one being played. */
-export type Route = { screen: 'map'; packId?: string } | { screen: 'settings' } | { screen: 'level'; id: string } | { screen: 'book'; pageId?: string } | { screen: 'create' } | { screen: 'make'; id: string } | { screen: 'play'; id: string } | { screen: 'library'; id?: string };
+export type Route = { screen: 'map'; packId?: string } | { screen: 'settings' } | { screen: 'level'; id: string } | { screen: 'book'; pageId?: string } | { screen: 'create' } | { screen: 'make'; id: string } | { screen: 'play'; id: string } | { screen: 'library'; id?: string } | { screen: 'welcome' };
 
 export function parseRoute(hash: string): Route {
   const path = hash.replace(/^#\/?/, '');
@@ -51,6 +54,7 @@ export function parseRoute(hash: string): Route {
   if (path === 'book') return { screen: 'book' };
   if (path === 'create') return { screen: 'create' };
   if (path === 'library') return { screen: 'library' };
+  if (path === 'welcome') return { screen: 'welcome' };
   const m = /^(level|book|map|create|play|library)\/([^/]+)$/.exec(path);
   if (m) {
     const id = decodeURIComponent(m[2]!);
@@ -76,6 +80,8 @@ export function hashFor(route: Route): string {
       return `#/create/${encodeURIComponent(route.id)}`;
     case 'play':
       return `#/play/${encodeURIComponent(route.id)}`;
+    case 'welcome':
+      return '#/welcome';
     case 'library':
       return route.id === undefined ? '#/library' : `#/library/${encodeURIComponent(route.id)}`;
     case 'book':

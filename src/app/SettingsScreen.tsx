@@ -43,6 +43,12 @@ export function SettingsScreen({ store, settings, creations, account, synced = f
         </div>
       </section>
 
+      <p className="settings-about">
+        <a className="btn btn-quiet" href="#/welcome">
+          About Wonderbits
+        </a>
+      </p>
+
       {account}
 
       <section className="settings-group" aria-labelledby="settings-adult">

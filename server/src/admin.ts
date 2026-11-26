@@ -11,6 +11,12 @@ import { Refusal, type Context } from './context';
 import { asId, readJson } from './http';
 import { cleanText, pseudonym } from './insight';
 import { requireParent, type Parent } from './parents';
+import { cleanCode, randomCode } from './tokens';
+
+/** The most families one invite may be good for, and the most invites that may be live at once. */
+export const INVITE_MAX_USES = 500;
+const INVITES_MAX_LIVE = 200;
+const INVITE_NOTE_MAX = 60;
 
 export const isAdmin = (ctx: Context, email: string): boolean => ctx.adminEmails.includes(email.toLowerCase());
 
@@ -156,6 +162,40 @@ export function adminRoutes(ctx: Context): Hono {
         text: [note.nickname ? `${note.nickname} wrote to us from Wonderbits:` : 'You wrote to us from Wonderbits:', '', `  ${note.text}`, '', 'Our answer:', '', `  ${reply}`, '', `It is also on your page: ${ctx.publicUrl}/#/grownup`].join('\n'),
       })
       .catch((e: unknown) => console.error('reply mail failed', e));
+    return c.json({ ok: true });
+  });
+
+  // ----- Invites: who may sign up -----
+
+  /** Every invite, newest first, with how much of it is used. Not who used it: only how many. */
+  app.get('/invites', async (c) => {
+    await requireAdmin(ctx, c);
+    const invites = await sql`
+      select code, note, max_uses as "maxUses", uses, created_at as "createdAt", stopped_at as "stoppedAt"
+      from invites order by created_at desc, code limit 500`;
+    return c.json({ invites });
+  });
+
+  /** Make an invite good for a number of families. */
+  app.post('/invites', async (c) => {
+    await requireAdmin(ctx, c);
+    const body = await readJson(c);
+    const wanted = typeof body.uses === 'number' && Number.isFinite(body.uses) ? Math.round(body.uses) : 1;
+    const uses = Math.min(Math.max(wanted, 1), INVITE_MAX_USES);
+    const note = typeof body.note === 'string' ? body.note.replace(/\s+/g, ' ').trim().slice(0, INVITE_NOTE_MAX) : '';
+    const [live] = await sql<{ n: string }[]>`select count(*) as n from invites where stopped_at is null and uses < max_uses`;
+    if (Number(live!.n) >= INVITES_MAX_LIVE) throw new Refusal(409, 'too-many-invites');
+    const [invite] = await sql`
+      insert into invites (code, max_uses, note) values (${randomCode()}, ${uses}, ${note || null})
+      returning code, note, max_uses as "maxUses", uses, created_at as "createdAt", stopped_at as "stoppedAt"`;
+    return c.json(invite, 201);
+  });
+
+  /** Stop an invite: nobody new can sign up with it. Families who already did are untouched. */
+  app.post('/invites/:code/stop', async (c) => {
+    await requireAdmin(ctx, c);
+    const stopped = await sql`update invites set stopped_at = coalesce(stopped_at, now()) where code = ${cleanCode(c.req.param('code'))} returning code`;
+    if (stopped.length === 0) throw new Refusal(404, 'not-found');
     return c.json({ ok: true });
   });
 

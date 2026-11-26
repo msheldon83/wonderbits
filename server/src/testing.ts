@@ -19,7 +19,7 @@ export async function freshDatabase(): Promise<Sql> {
   return sql;
 }
 
-export const emptyTables = (sql: Sql) => sql`truncate parents, invites, login_tokens, device_pairings cascade`;
+export const emptyTables = (sql: Sql) => sql`truncate parents, invites, login_tokens, device_pairings, access_requests cascade`;
 
 /** One browser: it remembers the cookies it is given, as a real one would. */
 export class Browser {

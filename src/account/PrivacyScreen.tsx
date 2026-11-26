@@ -32,6 +32,7 @@ export function PrivacyNotice() {
         <li>Your email address, used to sign you in and, if you leave it on, to tell you when a child shows you something.</li>
         <li>The devices you let in, with a name such as "iPad" and when each was last used.</li>
         <li>When you agreed to this notice.</li>
+        <li>If you ask for an invite: your email address and the note you write, until you are answered, then deleted a month later.</li>
       </ul>
       <h3>Who can see it</h3>
       <ul>

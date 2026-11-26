@@ -17,10 +17,11 @@ import { Avatar } from './avatars';
 import { GrownupScreen } from './GrownupScreen';
 import { PairScreen } from './PairScreen';
 import { PrivacyScreen } from './PrivacyScreen';
+import { dismissGuestProgress, hasGuestProgress, importGuestProgress } from './guest';
 import { AccountStore } from './session';
 import { WhoScreen } from './WhoScreen';
 
-export type AccountRoute = { screen: 'grownup'; token?: string } | { screen: 'pair' } | { screen: 'who' } | { screen: 'privacy' } | { screen: 'admin' } | null;
+export type AccountRoute = { screen: 'grownup'; token?: string; invite?: string } | { screen: 'pair' } | { screen: 'who' } | { screen: 'privacy' } | { screen: 'admin' } | null;
 
 /** The account screens' addresses. Anything else belongs to the game. */
 export function parseAccountRoute(hash: string): AccountRoute {
@@ -28,6 +29,9 @@ export function parseAccountRoute(hash: string): AccountRoute {
   if (path === 'grownup') return { screen: 'grownup' };
   const link = /^grownup\/signin\/([^/]+)$/.exec(path);
   if (link) return { screen: 'grownup', token: decodeURIComponent(link[1]!) };
+  // A link someone was sent: the invite code rides along, to be filled in for them.
+  const invited = /^grownup\/invite\/([^/]+)$/.exec(path);
+  if (invited) return { screen: 'grownup', invite: decodeURIComponent(invited[1]!) };
   if (path === 'pair' || path === 'who' || path === 'privacy' || path === 'admin') return { screen: path };
   return null;
 }
@@ -91,6 +95,17 @@ function ChildGame({ deviceStore, account, child, device, startsOnline }: { devi
   const [inbox, setInbox] = useState<InboxShare[]>([]);
   /** Whether the server can be reached right now, going by the last try. Offline, the child is not asked for feedback. */
   const [online, setOnline] = useState(startsOnline);
+  // Stars and creations from before anyone signed in on this device: ask the child, once, whether they are theirs.
+  const [earlier, setEarlier] = useState(false);
+  useEffect(() => void hasGuestProgress(deviceStore).then(setEarlier), [deviceStore]);
+  const bringEarlier = () => {
+    setEarlier(false);
+    void importGuestProgress(deviceStore, child.id, (keys) => engine.mark(keys)).then((keys) => engine.onPulled(keys));
+  };
+  const leaveEarlier = () => {
+    setEarlier(false);
+    void dismissGuestProgress(deviceStore);
+  };
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -176,6 +191,7 @@ function ChildGame({ deviceStore, account, child, device, startsOnline }: { devi
     sharing,
     insight,
     prompts: online,
+    deviceStore,
     who: (
       <a className="who-chip" href="#/who" title="Switch player">
         <Avatar id={child.avatar} size={32} />
@@ -206,7 +222,29 @@ function ChildGame({ deviceStore, account, child, device, startsOnline }: { devi
       </section>
     ),
   };
-  return <App storage={engine.store} account={props} />;
+  return (
+    <>
+      <App storage={engine.store} account={props} />
+      {earlier && (
+        <div className="dialog-backdrop" role="presentation">
+          <section className="dialog" role="dialog" aria-modal="true" aria-labelledby="earlier-title">
+            <h2 id="earlier-title" className="dialog-title">
+              Are these yours?
+            </h2>
+            <p className="account-lead">Someone played on this device before signing in. Are those stars, and anything that was made, yours?</p>
+            <div className="dialog-actions">
+              <button type="button" className="btn btn-run" autoFocus onClick={bringEarlier}>
+                Yes, bring them
+              </button>
+              <button type="button" className="btn btn-quiet" onClick={leaveEarlier}>
+                No
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+    </>
+  );
 }
 
 function AccountRoot() {
@@ -238,7 +276,7 @@ function AccountRoot() {
   if (route?.screen === 'grownup')
     return (
       <Shell title="For the grown-up">
-        <GrownupScreen account={account} deviceStore={deviceStore} token={route.token} />
+        <GrownupScreen account={account} deviceStore={deviceStore} token={route.token} invite={route.invite} />
       </Shell>
     );
   if (state.status === 'loading')
@@ -272,11 +310,16 @@ function AccountRoot() {
               For the grown-up
             </a>
           </span>
-          <small>With a grown-up's help, your stars and creations are saved and you can play on another device too. Until then, everything stays on this device.</small>
+          <small>An account keeps your stars and the things you make safe, so they are never lost, and lets you play on another device too. You need one to go past the first island. Ask your grown-up to set one up.</small>
         </div>
       </section>
     );
-    return <App storage={deviceStore} account={{ panel }} />;
+    const who = (
+      <a className="who-chip is-guest" href="#/pair" title="Sign in, or set up an account">
+        Sign in
+      </a>
+    );
+    return <App storage={deviceStore} account={{ panel, who, guest: true, deviceStore }} />;
   }
 
   // Let in, with nobody signed in: the only thing to do is say who is playing.

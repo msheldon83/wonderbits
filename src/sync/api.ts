@@ -127,6 +127,26 @@ export interface AdminLevelDetail {
   notes: { id: string; who: string; kind: string; text: string; createdAt: string; readAt: string | null; reply: string | null }[];
 }
 
+/** A grown-up asking for an invite. The one place the owner sees an address: it was given to them on purpose. */
+export interface AccessRequest {
+  id: string;
+  email: string;
+  note: string | null;
+  createdAt: string;
+  decision: 'approved' | 'declined' | null;
+  decidedAt: string | null;
+}
+
+/** An invite to sign up, as the owner sees it: how much of it is used, never by whom. */
+export interface AdminInvite {
+  code: string;
+  note: string | null;
+  maxUses: number;
+  uses: number;
+  createdAt: string;
+  stoppedAt: string | null;
+}
+
 export interface AdminFeedback {
   id: string;
   /** A made-up name: never a nickname or an address. */
@@ -203,4 +223,11 @@ export const api = {
   adminFeedback: (filter: { unread?: boolean; kind?: string } = {}) => call<{ unread: number; feedback: AdminFeedback[] }>('GET', `/admin/feedback?unread=${filter.unread ? 1 : 0}&kind=${filter.kind ?? ''}`),
   adminMarkRead: (id: string) => call<{ ok: true }>('POST', `/admin/feedback/${id}/read`, {}),
   adminReply: (id: string, text: string) => call<{ ok: true }>('POST', `/admin/feedback/${id}/reply`, { text }),
+  requestAccess: (email: string, note: string) => call<{ ok: true }>('POST', '/access/request', { email, note }),
+  adminRequests: () => call<{ requests: AccessRequest[] }>('GET', '/admin/requests'),
+  adminApproveRequest: (id: string) => call<{ ok: true; mailed: boolean; code: string }>('POST', `/admin/requests/${id}/approve`, {}),
+  adminDeclineRequest: (id: string) => call<{ ok: true }>('POST', `/admin/requests/${id}/decline`, {}),
+  adminInvites: () => call<{ invites: AdminInvite[] }>('GET', '/admin/invites'),
+  adminMakeInvite: (uses: number, note: string) => call<AdminInvite>('POST', '/admin/invites', { uses, note }),
+  adminStopInvite: (code: string) => call<{ ok: true }>('POST', `/admin/invites/${encodeURIComponent(code)}/stop`, {}),
 };

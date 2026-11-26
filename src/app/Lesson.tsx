@@ -32,6 +32,8 @@ export interface LessonProps {
   insight?: Insight | undefined;
   /** Whether to ask the child anything just now: false while the game is offline. The visit is recorded either way. */
   prompts?: boolean;
+  /** For a guest: an account is needed after the next level ("soon"), or to go any further ("now"). */
+  accountNext?: 'soon' | 'now' | undefined;
 }
 
 interface Completion {
@@ -39,7 +41,7 @@ interface Completion {
   newBadges: BadgeId[];
 }
 
-export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo, onRemix, insight, prompts = false }: LessonProps) {
+export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo, onRemix, insight, prompts = false, accountNext }: LessonProps) {
   const [completion, setCompletion] = useState<Completion | null>(null);
   const completedRef = useRef(false);
   const activity = level.curriculum.activity;
@@ -160,7 +162,18 @@ export function Lesson({ level, runtime, store, settings, nextLevelId, onGoTo, o
                 </ul>
               )}
               {insight && visit && prompts && <RateLevel insight={insight} visit={visit} />}
+              {accountNext === 'soon' && <p className="account-nudge">1 level left on this island. To keep going after that, you need an account so your stars stay safe.</p>}
+              {accountNext === 'now' && (
+                <p className="account-nudge is-end">
+                  <strong>You finished the first island!</strong> To keep going, ask your grown-up to set up an account. It keeps your stars safe, and they come with you.
+                </p>
+              )}
               <div className="dialog-actions">
+                {accountNext === 'now' && (
+                  <a className="btn btn-run" href="#/pair">
+                    Keep going
+                  </a>
+                )}
                 {nextLevelId && store.isUnlocked(nextLevelId) && (
                   <button type="button" className="btn btn-run" autoFocus onClick={() => onGoTo(hashFor({ screen: 'level', id: nextLevelId }))}>
                     Next level

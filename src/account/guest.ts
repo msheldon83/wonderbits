@@ -22,7 +22,8 @@ export async function hasGuestProgress(device: KeyValueStore): Promise<boolean> 
 /** The grown-up said "not now", or it is done: do not offer again. */
 export const dismissGuestProgress = (device: KeyValueStore): Promise<void> => device.set(DONE_KEY, true);
 
-export async function importGuestProgress(device: KeyValueStore, childId: string): Promise<void> {
+/** `mark` says how to note what changed for sending: a running sync engine's own way when there is one, else straight into storage. Returns the keys that changed. */
+export async function importGuestProgress(device: KeyValueStore, childId: string, mark?: (keys: string[]) => Promise<void>): Promise<string[]> {
   const child = scopedStore(device, profilePrefix(childId));
   const changed: string[] = [];
 
@@ -46,6 +47,7 @@ export async function importGuestProgress(device: KeyValueStore, childId: string
   const log = await device.get<ObservationEvent[]>('log');
   if (log && (await child.get('log')) === undefined) await child.set('log', log);
 
-  await markDirty(child, changed);
+  await (mark ? mark(changed) : markDirty(child, changed));
   await dismissGuestProgress(device);
+  return changed;
 }

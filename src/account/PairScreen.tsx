@@ -43,7 +43,7 @@ export function PairScreen({ account }: { account: AccountStore }) {
     <div className="account-page">
       <section className="account-card" aria-labelledby="pair-title">
         <h1 id="pair-title" className="account-title">
-          Set up this device
+          Sign in or set up an account
         </h1>
         {code ? (
           <>
@@ -57,7 +57,7 @@ export function PairScreen({ account }: { account: AccountStore }) {
           </>
         ) : (
           <>
-            <p className="account-lead">A grown-up needs to let this device in. Then your stars and the things you make are kept safe, and you can play on another device too.</p>
+            <p className="account-lead">An account keeps your stars and the things you make safe, so they are never lost. A grown-up sets it up and lets this device in. It is free and takes a few minutes.</p>
             <p className="account-foot">
               <button type="button" className="btn btn-run" disabled={busy} onClick={() => void start()}>
                 Show a code
@@ -75,7 +75,7 @@ export function PairScreen({ account }: { account: AccountStore }) {
             I am the grown-up
           </a>
           <a className="btn btn-quiet" href="#/">
-            Play without signing in
+            Back to the first island
           </a>
         </p>
       </section>

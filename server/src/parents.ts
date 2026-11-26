@@ -65,7 +65,7 @@ export function parentRoutes(ctx: Context): Hono {
     if (!existing) {
       if (ctx.inviteRequired) {
         if (!typedCode) return c.json({ ok: true });
-        const [invite] = await sql<{ code: string }[]>`select code from invites where code = ${typedCode} and uses < max_uses`;
+        const [invite] = await sql<{ code: string }[]>`select code from invites where code = ${typedCode} and uses < max_uses and stopped_at is null`;
         if (!invite) throw new Refusal(400, 'invite');
         inviteCode = invite.code;
       }
@@ -108,8 +108,8 @@ export function parentRoutes(ctx: Context): Hono {
       let [parent] = await tx<{ id: string }[]>`select id from parents where email = ${link.email}`;
       if (!parent) {
         if (ctx.inviteRequired) {
-          // The invite may have been spent by someone else since the link was sent.
-          const spent = link.invite_code === null ? [] : await tx`update invites set uses = uses + 1 where code = ${link.invite_code} and uses < max_uses returning code`;
+          // The invite may have been spent by someone else, or stopped, since the link was sent.
+          const spent = link.invite_code === null ? [] : await tx`update invites set uses = uses + 1 where code = ${link.invite_code} and uses < max_uses and stopped_at is null returning code`;
           if (spent.length === 0) throw new Refusal(400, 'invite');
         }
         [parent] = await tx<{ id: string }[]>`insert into parents (email) values (${link.email}) returning id`;

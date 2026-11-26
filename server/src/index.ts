@@ -5,6 +5,7 @@ import { readConfig } from './config';
 import { connect, migrate } from './db';
 import { DIGEST_MINUTES, prune, sendDigest } from './insight';
 import { consoleMailer, smtpMailer } from './mail';
+import { notifyOfRequests, pruneRequests } from './requests';
 
 const config = readConfig();
 const sql = connect(config.databaseUrl);
@@ -19,7 +20,14 @@ const pruned = await prune(sql);
 if (pruned > 0) console.log(`Deleted ${pruned} level visits past their keeping time.`);
 if (config.adminEmails.length === 0) console.log('ADMIN_EMAILS is not set: nobody can open the owner\'s page, and feedback is not mailed.');
 // Feedback that arrived during a quiet spell after the last mail is sent on from here.
-const digest = setInterval(() => void sendDigest(settings).catch((e: unknown) => console.error(e)), (DIGEST_MINUTES * 60 * 1000) / 3);
+await pruneRequests(sql);
+const digest = setInterval(
+  () =>
+    void sendDigest(settings)
+      .then(() => notifyOfRequests(settings))
+      .catch((e: unknown) => console.error(e)),
+  (DIGEST_MINUTES * 60 * 1000) / 3,
+);
 if (!config.smtpUrl) console.log('SMTP_URL is not set: sign-in links are printed here instead of mailed.');
 
 const server = serve({ fetch: app.fetch, port: config.port, hostname: '0.0.0.0' }, (info) => {
