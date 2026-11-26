@@ -60,7 +60,14 @@ npm test
 ## Grown-up accounts
 
 A grown-up signs in with a link sent to their email address; there are no
-passwords. While the server is invite-only, a new grown-up also needs a code:
+passwords. While the server is invite-only, a new grown-up also needs a code.
+
+The usual way to make one is the owner's page (`#/admin`, under Invites):
+choose how many families it is good for, copy its link and send that. The
+link opens the sign-in with the code filled in. The page shows how much of
+each invite is used and can stop one, after which nobody new can use it.
+
+The first code, before any owner has an account, comes from the command line:
 
 ```bash
 DATABASE_URL=postgres://wonderbits:wonderbits@localhost:5432/wonderbits npm run invite -- --note "who it is for"

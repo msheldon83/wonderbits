@@ -127,6 +127,16 @@ export interface AdminLevelDetail {
   notes: { id: string; who: string; kind: string; text: string; createdAt: string; readAt: string | null; reply: string | null }[];
 }
 
+/** An invite to sign up, as the owner sees it: how much of it is used, never by whom. */
+export interface AdminInvite {
+  code: string;
+  note: string | null;
+  maxUses: number;
+  uses: number;
+  createdAt: string;
+  stoppedAt: string | null;
+}
+
 export interface AdminFeedback {
   id: string;
   /** A made-up name: never a nickname or an address. */
@@ -203,4 +213,7 @@ export const api = {
   adminFeedback: (filter: { unread?: boolean; kind?: string } = {}) => call<{ unread: number; feedback: AdminFeedback[] }>('GET', `/admin/feedback?unread=${filter.unread ? 1 : 0}&kind=${filter.kind ?? ''}`),
   adminMarkRead: (id: string) => call<{ ok: true }>('POST', `/admin/feedback/${id}/read`, {}),
   adminReply: (id: string, text: string) => call<{ ok: true }>('POST', `/admin/feedback/${id}/reply`, { text }),
+  adminInvites: () => call<{ invites: AdminInvite[] }>('GET', '/admin/invites'),
+  adminMakeInvite: (uses: number, note: string) => call<AdminInvite>('POST', '/admin/invites', { uses, note }),
+  adminStopInvite: (code: string) => call<{ ok: true }>('POST', `/admin/invites/${encodeURIComponent(code)}/stop`, {}),
 };

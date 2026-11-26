@@ -21,7 +21,7 @@ import { dismissGuestProgress, hasGuestProgress, importGuestProgress } from './g
 import { AccountStore } from './session';
 import { WhoScreen } from './WhoScreen';
 
-export type AccountRoute = { screen: 'grownup'; token?: string } | { screen: 'pair' } | { screen: 'who' } | { screen: 'privacy' } | { screen: 'admin' } | null;
+export type AccountRoute = { screen: 'grownup'; token?: string; invite?: string } | { screen: 'pair' } | { screen: 'who' } | { screen: 'privacy' } | { screen: 'admin' } | null;
 
 /** The account screens' addresses. Anything else belongs to the game. */
 export function parseAccountRoute(hash: string): AccountRoute {
@@ -29,6 +29,9 @@ export function parseAccountRoute(hash: string): AccountRoute {
   if (path === 'grownup') return { screen: 'grownup' };
   const link = /^grownup\/signin\/([^/]+)$/.exec(path);
   if (link) return { screen: 'grownup', token: decodeURIComponent(link[1]!) };
+  // A link someone was sent: the invite code rides along, to be filled in for them.
+  const invited = /^grownup\/invite\/([^/]+)$/.exec(path);
+  if (invited) return { screen: 'grownup', invite: decodeURIComponent(invited[1]!) };
   if (path === 'pair' || path === 'who' || path === 'privacy' || path === 'admin') return { screen: path };
   return null;
 }
@@ -273,7 +276,7 @@ function AccountRoot() {
   if (route?.screen === 'grownup')
     return (
       <Shell title="For the grown-up">
-        <GrownupScreen account={account} deviceStore={deviceStore} token={route.token} />
+        <GrownupScreen account={account} deviceStore={deviceStore} token={route.token} invite={route.invite} />
       </Shell>
     );
   if (state.status === 'loading')

@@ -4,14 +4,14 @@
  * can open it (the server checks). Children appear under made-up names such
  * as K-3fa9c1; there is no nickname or address anywhere on it.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { loadContent } from '../app/levels';
 import { sequentialIdFactory } from '../ir/ids';
 import { programFromSpec } from '../ir/program';
 import type { NodeSpec } from '../ir/spec';
 import { printProgram } from '../projection/printTs';
-import { api, ApiError, OfflineError, type AdminFeedback, type AdminLevel, type AdminLevelDetail } from '../sync/api';
-import { ago } from './GrownupScreen';
+import { api, ApiError, OfflineError, type AdminFeedback, type AdminInvite, type AdminLevel, type AdminLevelDetail } from '../sync/api';
+import { ago, Confirm } from './GrownupScreen';
 
 const pct = (part: number, whole: number): string => (whole === 0 ? '–' : `${Math.round((100 * part) / whole)}%`);
 const mins = (ms: number | null): string => (ms === null ? '–' : ms < 60_000 ? `${Math.round(ms / 1000)}s` : `${(ms / 60_000).toFixed(1)}m`);
@@ -295,6 +295,106 @@ function Inbox() {
   );
 }
 
+/** A code as people read it: in fours, ABCD-EFGH. */
+export const showInvite = (code: string): string => code.replace(/(.{4})(?=.)/g, '$1-');
+
+/** The link to send someone: it opens the grown-up's sign-in with the code filled in. Built from this page's own address, so it is right on any host. */
+export const inviteLink = (code: string, page: string = location.href): string => `${page.split('#')[0]}#/grownup/invite/${showInvite(code)}`;
+
+/** Why an invite no longer works, or null while it does. */
+export const inviteOver = (i: AdminInvite): 'Stopped' | 'Used up' | null => (i.stoppedAt ? 'Stopped' : i.uses >= i.maxUses ? 'Used up' : null);
+
+/**
+ * Invites: who may sign up. A code is good for a number of families; anyone
+ * who has it, or its link, can use it until it runs out or is stopped. The
+ * list shows how much of each is used, never by whom.
+ */
+function Invites() {
+  const [invites, setInvites] = useState<AdminInvite[] | null>(null);
+  const [uses, setUses] = useState('1');
+  const [note, setNote] = useState('');
+  const [problem, setProblem] = useState<string | null>(null);
+  /** The code whose link was just copied, or is being shown to copy by hand. */
+  const [copied, setCopied] = useState<{ code: string; byHand: boolean } | null>(null);
+  const load = useCallback(() => void api.adminInvites().then((r) => setInvites(r.invites)), []);
+  useEffect(load, [load]);
+  const fail = (e: unknown) =>
+    setProblem(e instanceof OfflineError ? 'No internet right now.' : e instanceof ApiError && e.code === 'too-many-invites' ? 'That is a lot of live invites. Stop some you no longer need first.' : 'That did not work. Try again in a moment.');
+  const make = (e: FormEvent) => {
+    e.preventDefault();
+    setProblem(null);
+    void api.adminMakeInvite(Number(uses) || 1, note).then(() => {
+      setNote('');
+      setUses('1');
+      load();
+    }, fail);
+  };
+  const copy = (code: string) => {
+    // The clipboard is not always allowed (an old browser, a page not served securely): then show the link to copy by hand.
+    void (navigator.clipboard?.writeText(inviteLink(code)) ?? Promise.reject(new Error('no clipboard'))).then(
+      () => setCopied({ code, byHand: false }),
+      () => setCopied({ code, byHand: true }),
+    );
+  };
+  return (
+    <section className="settings-group" aria-labelledby="admin-invites">
+      <h2 id="admin-invites" className="panel-title">
+        Invites
+      </h2>
+      <p className="account-note">A grown-up needs an invite to sign up. Anyone who has a code or its link can use it until it runs out or you stop it.</p>
+      <form className="invite-form" onSubmit={make}>
+        <label className="field field-small">
+          <span>How many families</span>
+          <input type="number" min={1} max={500} required value={uses} onChange={(e) => setUses(e.target.value)} />
+        </label>
+        <label className="field">
+          <span>Who it is for</span>
+          <input type="text" maxLength={60} placeholder="A note for you, such as: work colleagues" value={note} onChange={(e) => setNote(e.target.value)} />
+        </label>
+        <button type="submit" className="btn btn-run">
+          Make invite
+        </button>
+      </form>
+      {problem && (
+        <p className="account-problem" role="alert">
+          {problem}
+        </p>
+      )}
+      {!invites ? (
+        <p className="account-note">Loading…</p>
+      ) : invites.length === 0 ? (
+        <p className="account-note">No invites yet.</p>
+      ) : (
+        <ul className="invite-list">
+          {invites.map((i) => {
+            const over = inviteOver(i);
+            return (
+              <li key={i.code} className={over ? 'is-over' : ''}>
+                <span className="invite-about">
+                  <span className="invite-code">{showInvite(i.code)}</span>
+                  <small>
+                    {i.uses} of {i.maxUses} used{i.note ? ` · ${i.note}` : ''} · made {ago(i.createdAt)}
+                    {over && ` · ${over}`}
+                  </small>
+                </span>
+                {!over && (
+                  <span className="choice-row">
+                    <button type="button" className="btn btn-quiet" onClick={() => copy(i.code)}>
+                      {copied?.code === i.code && !copied.byHand ? 'Copied' : 'Copy link'}
+                    </button>
+                    <Confirm label="Stop" yes="Yes, stop it" onYes={() => void api.adminStopInvite(i.code).then(load, fail)} />
+                  </span>
+                )}
+                {!over && copied?.code === i.code && copied.byHand && <input className="invite-link" readOnly aria-label={`Link for invite ${showInvite(i.code)}`} value={inviteLink(i.code)} autoFocus onFocus={(e) => e.target.select()} />}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 export function AdminScreen() {
   const nameOf = useLevelNames();
   const [levels, setLevels] = useState<AdminLevel[] | null>(null);
@@ -350,6 +450,7 @@ export function AdminScreen() {
   );
   return (
     <div className="settings grownup admin">
+      <Invites />
       <Inbox />
       <section className="settings-group" aria-labelledby="admin-levels">
         <h2 id="admin-levels" className="panel-title">

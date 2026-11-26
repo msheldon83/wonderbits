@@ -394,6 +394,40 @@ try {
   if (refusedBatch.status() !== 403) throw new Error(`With collection off the server still takes records: ${refusedBatch.status()}`);
   step('the answer reaches the grown-up, who turns collection off, and the prompts go away');
 
+  // ----- Invites: the owner makes one, shares its link, and stops it -----
+  await parent.goto(`${BASE}/#/admin`);
+  await parent.getByLabel('How many families').fill('2');
+  await parent.getByLabel('Who it is for').fill('work colleagues');
+  await parent.getByRole('button', { name: 'Make invite' }).click();
+  const inviteRow = parent.locator('.invite-list li', { hasText: 'work colleagues' });
+  await inviteRow.getByText('0 of 2 used').waitFor();
+  await shot(parent, 'admin-invites');
+  const shared = (await inviteRow.locator('.invite-code').innerText()).trim();
+  const colleague = await device({ width: 900, height: 900 });
+  await colleague.goto(`${BASE}/#/grownup/invite/${shared}`);
+  await colleague.getByText('You have been invited to Wonderbits').waitFor();
+  if ((await colleague.getByLabel('Invite code').inputValue()) !== shared) throw new Error('The share link did not fill the invite code in');
+  await shot(colleague, 'invited');
+  await colleague.getByLabel('Your email address').fill('colleague@example.com');
+  await colleague.getByRole('button', { name: 'Email me a link' }).click();
+  await colleague.getByRole('heading', { name: 'Check your email' }).waitFor();
+  const theirLink = await until('the colleague’s sign-in mail', () => [...log.matchAll(/mail to colleague@example\.com[\s\S]*?(http\S+\/#\/grownup\/signin\/\S+)/g)].at(-1)?.[1]);
+  await colleague.goto(theirLink);
+  await colleague.getByRole('heading', { name: 'Your children' }).waitFor();
+  await parent.reload();
+  await inviteRow.getByText('1 of 2 used').waitFor();
+  await inviteRow.getByRole('button', { name: 'Stop' }).click();
+  await inviteRow.getByRole('button', { name: 'Yes, stop it' }).click();
+  await inviteRow.getByText('Stopped').waitFor();
+  const latecomer = await device({ width: 900, height: 900 });
+  await latecomer.goto(`${BASE}/#/grownup/invite/${shared}`);
+  await latecomer.getByLabel('Your email address').fill('latecomer@example.com');
+  await latecomer.getByRole('button', { name: 'Email me a link' }).click();
+  await latecomer.getByText('That invite code is not right, or it has been used.').waitFor();
+  step('the owner makes an invite for two families, a colleague joins by its link, and the stopped invite lets nobody else in');
+  await parent.goto(`${BASE}/#/grownup`);
+  await parent.getByRole('heading', { name: 'Your children', exact: true }).waitFor();
+
   // ----- Taking a device away signs its child out -----
   const row = parent.locator('.device-list li').first();
   await row.getByRole('button', { name: 'Take away' }).click();

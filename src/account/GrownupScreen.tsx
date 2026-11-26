@@ -99,7 +99,7 @@ function parseShared(value: unknown): Creation | null {
 }
 
 /** A button that asks "are you sure?" in place before doing something that cannot be undone. */
-function Confirm({ label, yes, onYes }: { label: string; yes: string; onYes(): void }) {
+export function Confirm({ label, yes, onYes }: { label: string; yes: string; onYes(): void }) {
   const [asking, setAsking] = useState(false);
   if (!asking)
     return (
@@ -139,9 +139,9 @@ function Section({ id, title, children }: { id: string; title: string; children:
 
 // ----- Signing in -----
 
-function SignIn() {
+function SignIn({ invite }: { invite?: string | undefined }) {
   const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState(invite ?? '');
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -180,6 +180,11 @@ function SignIn() {
       <h1 id="signin-title" className="account-title">
         For the grown-up
       </h1>
+      {invite && (
+        <p className="invited" role="status">
+          You have been invited to Wonderbits. Enter your email and we will send you a sign-in link.
+        </p>
+      )}
       <p className="account-lead">An account keeps your children's stars and creations safe, so they are never lost, and lets you see how they are getting on. It is free. There is no password: we email you a link.</p>
       <form className="account-form" onSubmit={(e) => void submit(e)}>
         <label className="field">
@@ -733,7 +738,7 @@ function Playing({ creation, onBack }: { creation: Creation; onBack(): void }) {
   );
 }
 
-export function GrownupScreen({ account, deviceStore, token }: { account: AccountStore; deviceStore: KeyValueStore; token?: string | undefined }) {
+export function GrownupScreen({ account, deviceStore, token, invite }: { account: AccountStore; deviceStore: KeyValueStore; token?: string | undefined; invite?: string | undefined }) {
   /** undefined while asking the server; null when signed out. */
   const [parent, setParent] = useState<ParentInfo | null | undefined>(undefined);
   const [problem, setProblem] = useState<string | null>(null);
@@ -782,7 +787,7 @@ export function GrownupScreen({ account, deviceStore, token }: { account: Accoun
             {problem}
           </p>
         )}
-        <SignIn />
+        <SignIn invite={invite} />
       </div>
     );
   return <Dashboard parent={parent} account={account} deviceStore={deviceStore} onParent={setParent} />;
